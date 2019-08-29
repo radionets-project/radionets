@@ -2,7 +2,7 @@
 .ipynb_checkpoints
 
 # data
-/data
+mnist_cnn/data
 
 #vscode
-/.vscode
+mnist/.vscode
