@@ -35,10 +35,8 @@ y_valid = all_valid[0::2]
 x_valid = all_valid[1::2]
 
 # Write data to h5 file
-with h5py.File('mnist.h5', 'w') as hf:
+with h5py.File('data/mnist.h5', 'w') as hf:
     hf.create_dataset('x_train',  data=x_train)
     hf.create_dataset('y_train',  data=y_train)
     hf.create_dataset('x_valid',  data=x_valid)
     hf.create_dataset('y_valid',  data=y_valid)
-
-
