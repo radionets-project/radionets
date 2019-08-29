@@ -6,3 +6,6 @@ mnist_cnn/data
 
 #vscode
 mnist_cnn/.vscode
+
+#cache
+*/__pycache__
