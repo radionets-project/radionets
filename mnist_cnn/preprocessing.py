@@ -74,7 +74,7 @@ def quantile_mask(ar):
 
 
 class ArrayDataset():
-    "Sample array dataset"
+    ''' Sample array dataset '''
     def __init__(self, x, y):
         self.x, self.y = x, y
         self.c = x.shape[1] # binary label
