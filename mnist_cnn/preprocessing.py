@@ -18,7 +18,12 @@ def get_h5_data(path):
 
 
 def get_dataset(x, y, ratio):
-    ''' Preprocessing dataset '''
+    ''' Preprocessing dataset: 
+    log
+    split
+    normalize
+    create ArrayDataset
+    '''
     x = np.log(x)
     x, y = map(torch.tensor, (x, y))
     x_train, y_train, x_valid, y_valid = split_data(x, y, ratio)
