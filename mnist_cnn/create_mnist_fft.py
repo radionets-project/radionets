@@ -49,8 +49,8 @@ def main():
     # Write data to h5 file
     outpath_train = 'data/mnist_train.h5'
     write_h5(outpath_train, x_train, y_train)
-    outpath_test = 'data/mnist_train.h5'
-    write_h5(outpath_test, x_valid, y_valid)
+    outpath_valid = 'data/mnist_valid.h5'
+    write_h5(outpath_valid, x_valid, y_valid)
 
 
 if __name__ == '__main__':
