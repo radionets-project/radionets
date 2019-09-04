@@ -7,26 +7,28 @@ from torch.utils.data import DataLoader
 # Define torch device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def get_h5_data(path):
+def get_h5_data(path, columns):
     ''' Load mnist h5 data '''
     f = h5py.File(path, 'r')
-    x = np.abs(np.array(f['x_train']))
-    y = np.abs(np.array(f['y_train']))
+    x = np.abs(np.array(f[columns[0]]))
+    y = np.abs(np.array(f[columns[1]]))
 
     print(x.shape, y.shape)
     return x, y
 
 
-def get_dataset(x, y, ratio):
+def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False):
     ''' Preprocessing dataset: 
-    log
     split
     normalize
+    log (optional)
     create ArrayDataset
     '''
-    x = np.log(x)
-    x, y = map(torch.tensor, (x, y))
-    x_train, y_train, x_valid, y_valid = split_data(x, y, ratio)
+    if log is True:
+        x_train = np.log(x_train)
+        x_valid = np.log(x_valid)
+
+    x_train, y_train, x_valid, y_valid = map(torch.tensor, (x_train, y_train, x_valid, y_valid))
     x_train, x_valid = noramlize_data(x_train, x_valid)
     train_ds = ArrayDataset(x_train, y_train)
     valid_ds = ArrayDataset(x_valid, y_valid)
@@ -39,17 +41,6 @@ def get_dataset(x, y, ratio):
     print('Number of classes')
     print(train_ds.c)
     return train_ds, valid_ds
-    
-
-def split_data(x, y, ratio):
-    ''' Split dataset into train and validation '''
-    split_id = int(len(x) * (1 - ratio))
-    train_idx = range(0, split_id, 1)
-    valid_idx = range(split_id, len(x), 1)
-
-    x_train, y_train = x[train_idx], y[train_idx]
-    x_valid, y_valid = x[valid_idx], y[valid_idx]
-    return x_train, y_train, x_valid, y_valid
 
 
 def noramlize_data(x_train, x_valid):
