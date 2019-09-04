@@ -34,7 +34,7 @@ def evaluate(valid_ds, model):
 
 
 def test_initialization(dl, model, layer):
-    x, y = next(iter(dl))
+    x, _ = next(iter(dl))
     mnist_view = view_tfm(1, 64, 64)
     x = mnist_view(x).cuda()
     print('mean:', x.mean())
