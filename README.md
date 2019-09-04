@@ -8,6 +8,6 @@ Current status:
 Fourier transformation with CNN.
 
 Versions:
-Python 3.7.3
-pyTorch 1.1.0
-cuda V10.0.130
+* Python 3.7.3
+* pyTorch 1.1.0
+* cuda V10.0.130
