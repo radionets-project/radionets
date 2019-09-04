@@ -80,7 +80,7 @@ find_lr(learn)
 mnist_view = view_tfm(1, 64, 64)
 
 # Define schedueled learning rate
-sched = sched_no(3e-2, 3e-2)
+sched = sched_no(9e-1, 9e-1)
 
 # Define callback functions
 cbfs = [
@@ -99,7 +99,7 @@ run = Runner(cb_funcs=cbfs)
 model_summary(run, learn, data)
 
 # Train model
-run.fit(2500, learn)
+run.fit(4000, learn)
 
 # Evaluate model
 evaluate(valid_ds, learn.model)
