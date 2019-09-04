@@ -1,5 +1,6 @@
 # Jupyter Notebooks
 .ipynb_checkpoints
+*.ipynb
 
 # data
 mnist_cnn/data
