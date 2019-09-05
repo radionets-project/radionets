@@ -103,8 +103,18 @@ model_summary(run, learn, data)
 run.fit(4000, learn)
 
 # Evaluate model
+from inspection import evaluate
 evaluate(valid_ds, learn.model)
 
+# +
 # Save model
-state = learn.model.state_dict()
-torch.save(state, './mnist_cnn_small_1')
+# state = learn.model.state_dict()
+# torch.save(state, './mnist_cnn_big_1.model')
+
+# +
+# Load model
+# m = learn.model
+# m.load_state_dict((torch.load('./mnist_cnn_big_1.model')))
+# -
+
+
