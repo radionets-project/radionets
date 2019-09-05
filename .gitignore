@@ -10,3 +10,6 @@ mnist_cnn/.vscode
 
 #cache
 */__pycache__
+
+#model 
+*.model
