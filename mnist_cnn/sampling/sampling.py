@@ -49,25 +49,22 @@ plt.ylim(-mxabs/1e3, (mxabs+5)/1e3)
 plt.legend()
 
 
-def track_uv(listha, lengthbaseline, elevation, azimuth, latitude, dec, ntimeslots):
-
-    UVW = np.zeros((ntimeslots, 3), dtype=float)
-    for i in range(ntimeslots):
-        UVW[i, :] = np.dot(xyz_to_baseline(listha[i], dec),baseline_to_xyz(lengthbaseline, azimuth, elevation, latitude)).T
-    return UVW
-
-
-def baseline_angles(antennaPosition,lamb):
-    na = len(antennaPosition) #number of antennas
-    nbl = round(na*(na-1)/2) #number of independent baselines
+def baseline_angles(ant_pos,lamb):
+    # number of antennas
+    na = len(ant_pos)
+    # number of independent baselines
+    nbl = round(na*(na-1)/2)
     length_angle = np.zeros((nbl, 2))
     k = 0
     for i in range(na):
         for j in range(i+1, na):
-            length_angle[k,0] = lamb**(-1)*np.sqrt((antennaPosition[i,0]-antennaPosition[j,0])**2 + (antennaPosition[i,1]-antennaPosition[j,1])**2)
-            length_angle[k,1] = np.arctan2((antennaPosition[i,1]-antennaPosition[j,1]) , (antennaPosition[i,0]-antennaPosition[j,0]))
+            length_angle[k,0] = lamb**(-1)*np.sqrt((ant_pos[i,0]-ant_pos[j,0])**2 + (ant_pos[i,1]-ant_pos[j,1])**2)
+            length_angle[k,1] = np.arctan2((ant_pos[i,1]-ant_pos[j,1]) , (ant_pos[i,0]-ant_pos[j,0]))
             k = k +1
     return length_angle
+
+
+baseline_angles(antennaPosition, 0.02)
 
 
 def xyz_to_baseline(ha, dec):
@@ -124,11 +121,20 @@ def plotuv(antennaPos,L,dec,h,Ntimes,lamb):
 #     plt.legend(loc=2, markerscale=3)
 
 
+def track_uv(listha, lengthbaseline, elevation, azimuth, latitude, dec, ntimeslots):
+
+    UVW = np.zeros((ntimeslots, 3), dtype=float)
+    for i in range(ntimeslots):
+        UVW[i, :] = np.dot(xyz_to_baseline(listha[i], dec),baseline_to_xyz(lengthbaseline, azimuth, elevation, latitude)).T
+    return UVW
+
+
 def get_uv_tracks(antennaPos,L,dec,h,Ntimes,lamb):
     B = baseline_angles(antennaPos,lamb)
     na = len(antennaPos) #number of antennas
     nbl = round(na*(na-1)/2) #number of baselines
     maxuv=0.
+    print(B)
     for i in range (nbl):
         uv = track_uv(h,B[i, 0], 0., B[i, 1], L, dec, Ntimes)/1e6;
         if uv.max() > maxuv : maxuv=uv.max()
