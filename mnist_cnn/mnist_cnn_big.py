@@ -39,12 +39,28 @@ path_valid = 'data/mnist_valid.h5'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 
 # Create train and valid datasets
-train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True)
+train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid[0:5], y_valid[0:5], log=True, freq_samp=True)
 
 # Create databunch with definde batchsize
 bs = 128
 data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 # + {}
+# import numpy as np
+# a = data.train_ds.x.reshape(10, 4096)
+# print(a.shape)
+# a.mean()
+
+# +
+# from preprocessing import noramlize_data
+# a = data.train_ds.x.reshape(10, 4096)
+# b = data.valid_ds.x.reshape(10, 4096)
+# x_train, x_valid = noramlize_data(a, b)
+# -
+
+img = data.train_ds.x[2]
+plt.imshow(img.reshape(64, 64))
+
+# +
 # Define loss function
 loss_func = nn.MSELoss()
 
