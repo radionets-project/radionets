@@ -101,6 +101,9 @@ def plot_sampled_freq(mask, img):
     plt.imshow(img, cmap='RdBu_r', vmin=-5, vmax=5)
     plt.colorbar()
 
-def sample_freqs(mask, img):
+def sample_freqs(img, ant_pos):
+    img = img.reshape(64, 64)
+    uv_tracks = simulate_uv(ant_pos)
+    mask = get_mask(uv_tracks)
     img[~mask] = 0
     return img
