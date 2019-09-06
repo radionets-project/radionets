@@ -13,6 +13,10 @@
 #     name: python3
 # ---
 
+# %reload_ext autoreload
+# %autoreload 2
+# %matplotlib inline
+
 # +
 import sys
 sys.path.append('..')
@@ -20,7 +24,7 @@ sys.path.append('..')
 import numpy as np
 import matplotlib.pyplot as plt
 from preprocessing import get_h5_data
-from sampling import simulate_uv, get_mask, plot_sampled_freq
+from sampling import simulate_uv, get_mask, plot_sampled_freq, sample_freqs
 # -
 
 x_mnist, y_mnist = get_h5_data('../data/mnist_valid.h5', columns=['x_valid', 'y_valid'])
@@ -30,15 +34,14 @@ x, y, z, dish, statio = np.genfromtxt(config, unpack=True)
 ant_pos = np.array(list(zip(x, y)))
 
 # +
-uv_tracks = simulate_uv(ant_pos)
-print(uv_tracks.shape)
-mask = get_mask(uv_tracks)
-
-img = np.log(x_mnist[0].reshape(64, 64))
-plot_sampled_freq(mask, img)
+# uv_tracks = simulate_uv(ant_pos)
+# print(uv_tracks.shape)
+# mask = get_mask(uv_tracks)
 # -
 
+x_valid = [sample_freqs(i, ant_pos) for i in x_mnist[0:1000]] 
 
+plt.imshow(np.log(x_valid[650]))
 
 # +
 # antennaPosition = np.array(list(zip(x, y)))
