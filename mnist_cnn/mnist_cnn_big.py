@@ -39,7 +39,7 @@ path_valid = 'data/mnist_valid.h5'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 
 # Create train and valid datasets
-train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid[0:5], y_valid[0:5], log=True, freq_samp=True)
+train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True, freq_samp=True)
 
 # Create databunch with definde batchsize
 bs = 128
@@ -116,16 +116,15 @@ run = Runner(cb_funcs=cbfs)
 model_summary(run, learn, data)
 
 # Train model
-run.fit(4000, learn)
+run.fit(6000, learn)
 
 # Evaluate model
 from inspection import evaluate
 evaluate(valid_ds, learn.model)
 
-# +
 # Save model
-# state = learn.model.state_dict()
-# torch.save(state, './mnist_cnn_big_1.model')
+state = learn.model.state_dict()
+torch.save(state, './mnist_cnn_sampled_1.model')
 
 # +
 # Load model
