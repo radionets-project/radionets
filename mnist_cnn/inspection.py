@@ -25,7 +25,7 @@ def evaluate(valid_ds, model):
 
     fig, (ax0, ax1, ax2, cax) = plt.subplots(ncols=4, figsize=(18, 6), gridspec_kw={"width_ratios":[1,1,1, 0.05]})
     ax0.set_title('x')
-    ax0.imshow(img.view(h, h).cpu())
+    ax0.imshow(img.view(h, h).cpu(), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
     ax1.set_title('y_pred')
     im = ax1.imshow(pred.view(h, h), vmin=0, vmax=1)
     ax2.set_title('y_true')
