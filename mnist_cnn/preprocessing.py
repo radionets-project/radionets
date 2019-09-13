@@ -18,7 +18,7 @@ def get_h5_data(path, columns):
     return x, y
 
 
-def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=False):
+def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=False, quantile=False):
     ''' Preprocessing dataset: 
     split
     normalize
@@ -38,7 +38,7 @@ def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=Fal
         x_valid = [sample_freqs(img, ant_pos) for img in x_valid]
 
     x_train, y_train, x_valid, y_valid = map(torch.tensor, (x_train, y_train, x_valid, y_valid))
-    x_train, x_valid = noramlize_data(x_train, x_valid)
+    x_train, x_valid = noramlize_data(x_train, x_valid, quantile)
     train_ds = ArrayDataset(x_train, y_train)
     valid_ds = ArrayDataset(x_valid, y_valid)
     
@@ -52,11 +52,13 @@ def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=Fal
     return train_ds, valid_ds
 
 
-def noramlize_data(x_train, x_valid):
+def noramlize_data(x_train, x_valid, quantile=False):
     ''' Normalize dataset excluding 0.1 and 0.9 qunatile '''
-    # mask = quantile_mask(x_train)
-    # train_mean,train_std = x_train[mask].mean(),x_train[mask].std()
-    train_mean,train_std = x_train.mean(),x_train.std()
+    if quantile is True:
+        mask = quantile_mask(x_train)
+        train_mean,train_std = x_train[mask].mean(),x_train[mask].std()
+    else:
+        train_mean,train_std = x_train.mean(),x_train.std()
     x_train[np.isinf(x_train)] = train_mean
     x_train = normalize(x_train, train_mean, train_std)
     x_valid = normalize(x_valid, train_mean, train_std)
