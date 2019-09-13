@@ -13,3 +13,7 @@ __pycache__/
 
 #model 
 *.model
+
+*.jpg
+*.pdf
+mnist_cnn/visualize_preprocessing
