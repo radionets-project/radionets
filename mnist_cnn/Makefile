@@ -15,6 +15,7 @@ mnist_samp:	mnist_samp_train\
 mnist_fft: ./data/mnist_fft_done
 mnist_samp_train: ./data/mnist_samp_train.h5
 mnist_samp_valid: ./data/mnist_samp_valid.h5
+cnn_training: ./training_done
 
 #########################################################
 #	Tasks
@@ -34,3 +35,10 @@ mnist_samp_valid: ./data/mnist_samp_valid.h5
 		python create_mnist_fft_sampled.py\
 		data/mnist_valid.h5 data/mnist_samp_valid.h5\
 		sampling/vlba.txt -train False 
+
+./training_done:
+		python train_cnn.py ./data/mnist_samp_train.h5\
+		./data/mnist_samp_valid.h5 ./model/cnn_samp_pre.model\
+		10 9e-1 -log True -quantile False\
+		-pretrained True ./models/mnist_cnn_big.model
+		#touch ./training_done
