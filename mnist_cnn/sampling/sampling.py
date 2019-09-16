@@ -107,3 +107,9 @@ def sample_freqs(img, ant_pos):
     mask = get_mask(uv_tracks).ravel()
     img[~mask] = 0
     return img
+
+def get_antenna_config(config_path):
+    config = config_path
+    x, y, _, _, _ = np.genfromtxt(config, unpack=True)
+    ant_pos = np.array(list(zip(x, y)))
+    return ant_pos
