@@ -21,7 +21,7 @@ mnist_samp_valid: ./data/mnist_samp_valid.h5
 #
 
 ./data/mnist_fft_done:
-		python create_mnist_fft.py ./data/mnist/mnist.pkl.gz\
+		python create_mnist_fft.py ./../resources/mnist.pkl.gz\
 		./data
 		touch ./data/mnist_fft_done
 
