@@ -39,6 +39,7 @@ cnn_training: ./training_done
 ./training_done:
 		python train_cnn.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5 ./model/cnn_samp_pre.model\
-		10 9e-1 -log True -quantile False\
-		-pretrained True ./models/mnist_cnn_big.model
+		10 9e-1 -log True -quantile True\
+		-pretrained True ./models/mnist_cnn_big_1.model\
+		-inspection True
 		#touch ./training_done
