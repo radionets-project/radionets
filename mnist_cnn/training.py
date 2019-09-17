@@ -249,6 +249,15 @@ class CudaCallback(Callback):
     def begin_batch(self): self.run.xb,self.run.yb = self.xb.cuda(),self.yb.cuda()
 
 
+class SaveCallback(Callback):
+    _order=5
+    def after_epoch(self):
+        if round(self.n_epochs) % 10 is 0:
+            state = self.learn.model.state_dict()
+            torch.save(state, './temp.model')
+            print('Model saved.')
+
+
 class LR_Find(Callback):
     _order=1
     def __init__(self, max_iter=100, min_lr=1e-6, max_lr=10):
