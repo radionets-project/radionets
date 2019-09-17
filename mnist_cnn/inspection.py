@@ -13,7 +13,7 @@ def training_stats(run):
 #     run.recorder.plot()
     plt.tight_layout()
 
-def evaluate(valid_ds, model):
+def get_eval_img(valid_ds, model):
     x_t = valid_ds.x.float()
     rand = np.random.randint(0, len(x_t))
     img = x_t[rand].cuda()
@@ -22,15 +22,21 @@ def evaluate(valid_ds, model):
     model.eval()
     with torch.no_grad():
         pred = model(img).cpu()
+    return img, pred, h, rand
 
-    fig, (ax0, ax1, ax2, cax) = plt.subplots(ncols=4, figsize=(18, 6), gridspec_kw={"width_ratios":[1,1,1, 0.05]})
-    ax0.set_title('x')
-    ax0.imshow(img.view(h, h).cpu(), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
-    ax1.set_title('y_pred')
-    im = ax1.imshow(pred.view(h, h), vmin=0, vmax=1)
-    ax2.set_title('y_true')
-    ax2.imshow(valid_ds.y[rand].view(h, h), vmin=0, vmax=1)
-    fig.colorbar(im, cax=cax)
+def evaluate_model(valid_ds, model, nrows=3):
+    fig, axes = plt.subplots(nrows=nrows, ncols=4, figsize=(18, 6*nrows),
+                             gridspec_kw={"width_ratios":[1,1,1, 0.05]})
+    
+    for i in range(nrows):
+        img, pred, h, rand = get_eval_img(valid_ds, model)
+        axes[i][0].set_title('x')
+        axes[i][0].imshow(img.view(h, h).cpu(), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
+        axes[i][1].set_title('y_pred')
+        im = axes[i][1].imshow(pred.view(h, h), vmin=0, vmax=1)
+        axes[i][2].set_title('y_true')
+        axes[i][2].imshow(valid_ds.y[rand].view(h, h), vmin=0, vmax=1)
+        fig.colorbar(im, cax=axes[i][3])
     plt.tight_layout()
 
 
