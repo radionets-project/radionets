@@ -1,3 +1,7 @@
+import numpy as np
+import astropy.coordinates as ac
+
+
 class source():
     def __init__(self, lon, lat):
         self.lon = lon
