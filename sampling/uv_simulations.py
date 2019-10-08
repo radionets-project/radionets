@@ -36,7 +36,10 @@ class source():
             lat = lat[::-1]
         else:
             lat = np.arange(lat_start, lat_stop, lat_step)
-            
+        
+        if len(lon) != len(lat):
+            raise ValueError('Length of lon and lat are different!')
+
         self.lon_prop = lon
         self.lat_prop = lat
         return lon, lat
@@ -110,6 +113,9 @@ class antenna():
                 y_base = -y_base[y_base!=0] / 0.02
                 u = np.append(u, x_base)
                 v = np.append(v, y_base)
+        
+        if len(u) != len(v):
+            raise ValueError('Length of u and v are different!')
         return u, v, steps
 
 
