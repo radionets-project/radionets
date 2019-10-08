@@ -39,7 +39,6 @@ class source():
             
         self.lon_prop = lon
         self.lat_prop = lat
-        print(len(lon), len(lat))
         return lon, lat
     
 class antenna():
@@ -99,7 +98,6 @@ class antenna():
         u = ([])
         v = ([])
         steps = int(len(self.x_enu) / self.len)
-        print(steps)
         for j in range(steps):
             for i in range(self.len):
                 x = self.x_enu[j::steps]
@@ -112,10 +110,6 @@ class antenna():
                 y_base = -y_base[y_base!=0] / 0.02
                 u = np.append(u, x_base)
                 v = np.append(v, y_base)
-            
-        print(u.shape)
-        print(v.shape)
-        print("----")
         return u, v, steps
 
 
@@ -133,6 +127,16 @@ def get_uv_coverage(source, antenna, iterate=False):
 
 def create_mask(u, v):
     uv_hist, _, _ = np.histogram2d(u ,v , bins=64)
+    # exclude center
+    uv_hist[31,31] = 0
+    uv_hist[31,32] = 0
+    uv_hist[31,33] = 0
+    uv_hist[32,31] = 0
+    uv_hist[32,32] = 0
+    uv_hist[32,33] = 0
+    uv_hist[33,31] = 0
+    uv_hist[33,32] = 0
+    uv_hist[33,33] = 0
     mask = uv_hist > 0
     return mask
 
@@ -145,6 +149,7 @@ def sample_freqs(img, ant_config_path):
     s.propagate()
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
     mask = create_mask(u, v)
+    img = img.reshape(64, 64)
     img[~mask] = 0
     return img
 
