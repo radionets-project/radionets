@@ -22,14 +22,10 @@ class source():
     def propagate(self):
         steps = np.random.randint(20, 60)
         lon_start = self.lon
-        direction = np.sign(np.random.randint(0, 1) - 0.5)
-        lon_stop = lon_start + direction * steps
+        lon_stop = lon_start - steps
         lon_step = 0.5
-        if lon_start > lon_stop:
-            lon = np.arange(lon_stop, lon_start, lon_step)
-            lon = lon[::-1]
-        else:
-            lon = np.arange(lon_start, lon_stop, lon_step)
+        lon = np.arange(lon_stop, lon_start, lon_step)
+        lon = lon[::-1]
         
         lat_start = self.lat
         direction = np.sign(np.random.randint(0, 1) - 0.5)
