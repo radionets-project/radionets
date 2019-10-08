@@ -1,5 +1,7 @@
+import sys
+sys.path.append('..')
 import click 
-from sampling.sampling import get_antenna_config, sample_freqs
+from sampling.uv_simulations import sample_freqs
 from preprocessing import get_h5_data
 from utils import write_h5
 from tqdm import tqdm
@@ -11,15 +13,16 @@ from tqdm import tqdm
 @click.argument('antenna_config_path', type=click.Path(exists=True, dir_okay=True))
 @click.option('-train', type=bool)
 def main(data_path, out_path, antenna_config_path, train=True):
-    ant_pos = get_antenna_config(antenna_config_path)
-
     if train is True:
         x, y =  get_h5_data(data_path, columns=['x_train', 'y_train'])
     else:
         x, y =  get_h5_data(data_path, columns=['x_valid', 'y_valid'])
 
-    x_samp =[sample_freqs(i, ant_pos) for i in tqdm(x)]
-    y_samp = y
+    print(x.shape)
+    x_samp =[sample_freqs(i, antenna_config_path) for i in tqdm(x[0:10])]
+    y_samp = y[0:10]
+    from IPython import embed
+    embed()
 
     if train is True:
         write_h5(out_path, x_samp, y_samp, 'x_train', 'y_train')

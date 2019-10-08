@@ -1,8 +1,10 @@
+import sys
+sys.path.append('..')
 import h5py
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from sampling.sampling import sample_freqs
+from sampling.uv_simulations import sample_freqs
 
 
 # Define torch device
