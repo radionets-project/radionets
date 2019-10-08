@@ -53,16 +53,6 @@ def animate_baselines(source, antenna, filename, fps):
 
     ani.save(str(filename)+'.gif', writer=PillowWriter(fps=fps))
 
-def get_uv_coverage(source, antenna, iterate=False):
-    antenna.to_enu(*source.to_ecef(prop=True))
-    u, v, steps = antenna.get_uv()
-    
-    if iterate is True:
-        num_base = antenna.baselines
-        u.resize((steps, num_base))
-        v.resize((steps, num_base))
-            
-    return u, v, steps
 
 def animate_uv_coverage(source, antenna, filename, fps):
     u, v, steps = get_uv_coverage(source, antenna, iterate=True)

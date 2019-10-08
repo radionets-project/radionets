@@ -68,8 +68,8 @@ class antenna():
     def get_baselines(self):
         x_base = ([])
         y_base = ([])
-        for i in range(ant.len):
-            ref = np.ones((ant.len, 2)) * ([self.x_enu[i], self.y_enu[i]])
+        for i in range(self.len):
+            ref = np.ones((self.len, 2)) * ([self.x_enu[i], self.y_enu[i]])
             pairs = np.array([self.x_enu, self.y_enu])
             baselines = np.array(list(zip(ref, pairs.T))).ravel()
             x = baselines[0::2]
@@ -121,3 +121,40 @@ class antenna():
         print(v.shape)
         print("----")
         return u, v, steps
+
+
+def get_uv_coverage(source, antenna, iterate=False):
+    antenna.to_enu(*source.to_ecef(prop=True))
+    u, v, steps = antenna.get_uv()
+    
+    if iterate is True:
+        num_base = antenna.baselines
+        u.resize((steps, num_base))
+        v.resize((steps, num_base))
+            
+    return u, v, steps
+
+
+def create_mask(u, v):
+    uv_hist, _, _ = np.histogram2d(u ,v , bins=64)
+    mask = uv_hist > 0
+    return mask
+
+
+def sample_freqs(img, ant_config_path):
+    ant = antenna(*get_antenna_config(ant_config_path))
+    lon = np.random.randint(-90, -70)
+    lat = np.random.randint(30, 80)
+    s = source(lon, lat)
+    s.propagate()
+    u, v, _ = get_uv_coverage(s, ant, iterate=False)
+    mask = create_mask(u, v)
+    img[~mask] = 0
+    return img
+
+
+def get_antenna_config(config_path):
+    config = config_path
+    x, y, z, _, _ = np.genfromtxt(config, unpack=True)
+    ant_pos = np.array([x, y, z])
+    return ant_pos
