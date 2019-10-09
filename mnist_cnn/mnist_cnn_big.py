@@ -33,13 +33,13 @@ from training import find_lr
 
 # +
 # Load train and valid data
-path_train = 'data/mnist_train.h5'
+path_train = 'data/mnist_samp_train.h5'
 x_train, y_train = get_h5_data(path_train, columns=['x_train', 'y_train'])
-path_valid = 'data/mnist_valid.h5'
+path_valid = 'data/mnist_samp_valid.h5'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 
 # Create train and valid datasets
-train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True, freq_samp=True)
+train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True, quantile=True, positive=True)
 
 # Create databunch with definde batchsize
 bs = 128
@@ -57,8 +57,11 @@ data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 # x_train, x_valid = noramlize_data(a, b)
 # -
 
-img = data.train_ds.x[2]
-plt.imshow(img.reshape(64, 64))
+img = data.train_ds.x[4]
+plt.imshow(img.reshape(64, 64), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
+plt.xlabel('u')
+plt.ylabel('v')
+plt.colorbar(label='Amplitude')
 
 # +
 # Define loss function
@@ -97,7 +100,7 @@ find_lr(learn)
 mnist_view = view_tfm(1, 64, 64)
 
 # Define schedueled learning rate
-sched = sched_no(9e-1, 9e-1)
+sched = sched_no(9e-2, 9e-2)
 
 # Define callback functions
 cbfs = [
@@ -116,20 +119,26 @@ run = Runner(cb_funcs=cbfs)
 model_summary(run, learn, data)
 
 # Train model
-run.fit(6000, learn)
-
-# Evaluate model
-from inspection import evaluate
-evaluate(valid_ds, learn.model)
-
-# Save model
-state = learn.model.state_dict()
-torch.save(state, './mnist_cnn_sampled_1.model')
+run.fit(10, learn)
 
 # +
-# Load model
+# Evaluate model
+from inspection import evaluate_model
+
+evaluate_model(valid_ds, learn.model, nrows=7)
+# plt.savefig('mnist_big_results1.pdf', dpi=300, bbox_inches='tight', pad_inches=0)
+
+# +
+# Save model
+# state = learn.model.state_dict()
+# torch.save(state, './mnist_cnn_big_1.model')
+
+# +
+# # Load model
 # m = learn.model
-# m.load_state_dict((torch.load('./mnist_cnn_big_1.model')))
+# m.load_state_dict((torch.load('./models/mnist_cnn_big_1.model')))
+# learn.model.cuda()
 # -
+
 
 
