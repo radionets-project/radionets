@@ -1,9 +1,9 @@
 # radionets
 
-### Imaging radio interferometric data with neural networks.
+### Imaging radio interferometric data with neural networks
 
 Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct calibrated observations with convolutional neural networks. 
-The different directories of the repository form modules to perform individual analysis steps. You can find tools to simulate radio interferometric observations and a deep learning training framework, which is highly inspired by the fast.ai v3 course. ([Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html))
+The different directories of the repository form modules to perform individual analysis steps. You can find tools to simulate radio interferometric observations and a deep learning training framework, which is highly inspired by the fast.ai v3 course ([Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html)).
 The mnist_cnn directory contains a first feasibility study using toy data created with the mnist dataset.
 
 ## Sampling
