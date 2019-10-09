@@ -18,11 +18,8 @@ def main(data_path, out_path, antenna_config_path, train=True):
     else:
         x, y =  get_h5_data(data_path, columns=['x_valid', 'y_valid'])
 
-    print(x.shape)
-    x_samp =[sample_freqs(i, antenna_config_path) for i in tqdm(x[0:10])]
-    y_samp = y[0:10]
-    from IPython import embed
-    embed()
+    x_samp =[sample_freqs(i, antenna_config_path) for i in tqdm(x)]
+    y_samp = y
 
     if train is True:
         write_h5(out_path, x_samp, y_samp, 'x_train', 'y_train')
