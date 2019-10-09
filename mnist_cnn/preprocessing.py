@@ -1,7 +1,10 @@
+import sys
+sys.path.append('..')
 import h5py
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from sampling.uv_simulations import sample_freqs
 
 
 # Define torch device
@@ -17,19 +20,28 @@ def get_h5_data(path, columns):
     return x, y
 
 
-def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False):
+def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=False, quantile=False,
+                    positive=False):
     ''' Preprocessing dataset: 
     split
     normalize
     log (optional)
+    freq_sampling (optional)
     create ArrayDataset
     '''
     if log is True:
         x_train = np.log(x_train)
         x_valid = np.log(x_valid)
 
+    if freq_samp is True:
+        config = 'sampling/vlba.txt'
+        x, y, _, _, _ = np.genfromtxt(config, unpack=True)
+        ant_pos = np.array(list(zip(x, y)))
+        x_train = [sample_freqs(img, ant_pos) for img in x_train]
+        x_valid = [sample_freqs(img, ant_pos) for img in x_valid]
+
     x_train, y_train, x_valid, y_valid = map(torch.tensor, (x_train, y_train, x_valid, y_valid))
-    x_train, x_valid = noramlize_data(x_train, x_valid)
+    x_train, x_valid = noramlize_data(x_train, x_valid, quantile, positive)
     train_ds = ArrayDataset(x_train, y_train)
     valid_ds = ArrayDataset(x_valid, y_valid)
     
@@ -43,11 +55,23 @@ def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False):
     return train_ds, valid_ds
 
 
-def noramlize_data(x_train, x_valid):
+def noramlize_data(x_train, x_valid, quantile=False, positive=False):
     ''' Normalize dataset excluding 0.1 and 0.9 qunatile '''
-    mask = quantile_mask(x_train)
-    train_mean,train_std = x_train[mask].mean(),x_train[mask].std()
+    if quantile is True:
+        mask = quantile_mask(x_train)
+        train_mean,train_std = x_train[mask].mean(),x_train[mask].std()
+    else:
+        train_mean,train_std = x_train.mean(),x_train.std()
+    if positive is True:
+        mask = x_train > 0
+        train_mean,train_std = x_train[mask].mean(),x_train[mask].std()
+    else:
+        train_mean,train_std = x_train.mean(),x_train.std()
     x_train[np.isinf(x_train)] = train_mean
+    x_valid[np.isinf(x_valid)] = train_mean
+    # from IPython import embed
+    # embed()
+    # train_std = x_train.std()
     x_train = normalize(x_train, train_mean, train_std)
     x_valid = normalize(x_valid, train_mean, train_std)
 
@@ -64,6 +88,7 @@ def normalize(x, m, s): return (x-m)/s
 def quantile_mask(ar):
     ''' Generating 0.1 and 0.9 quantile mask '''
     l = np.quantile(ar, 0.1)
+    print(l)
     h = np.quantile(ar, 0.9)
     mask = (l < ar) & (ar < h)
     return mask
