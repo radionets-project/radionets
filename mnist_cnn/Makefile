@@ -29,17 +29,17 @@ cnn_training: ./training_done
 ./data/mnist_samp_train.h5:
 		python create_mnist_fft_sampled.py\
 		data/mnist_train.h5 data/mnist_samp_train.h5\
-		sampling/vlba.txt -train True
+		../sampling/layouts/vlba.txt -train True
 
 ./data/mnist_samp_valid.h5:
 		python create_mnist_fft_sampled.py\
 		data/mnist_valid.h5 data/mnist_samp_valid.h5\
-		sampling/vlba.txt -train False 
+		../sampling/layouts/vlba.txt -train False 
 
 ./training_done:
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./model/cnn_samp_pre.model\
-		10 9e-1 -log True -quantile True\
-		-pretrained True ./models/mnist_cnn_big_1.model\
+		./data/mnist_samp_valid.h5 ./models/cnn_samp.model\
+		2500 9e-1 -log True -quantile False -positive True\
+		-pretrained True ./models/cnn_samp.model\
 		-inspection True
-		#touch ./training_done
+		touch ./training_done
