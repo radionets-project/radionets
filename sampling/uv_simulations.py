@@ -19,7 +19,7 @@ class source():
         z = quant[2].value
         return x, y, z
     
-    def propagate(self):
+    def propagate(self, multi_pointing=False):
         steps = np.random.randint(20, 60)
         lon_start = self.lon
         lon_stop = lon_start - steps
@@ -39,6 +39,10 @@ class source():
         
         if len(lon) != len(lat):
             raise ValueError('Length of lon and lat are different!')
+
+        if multi_pointing is True:
+            lon = mod_delete(lon, 5, 20)
+            lat = mod_delete(lat, 5, 20)
 
         self.lon_prop = lon
         self.lat_prop = lat
