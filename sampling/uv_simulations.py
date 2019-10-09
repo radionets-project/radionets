@@ -41,13 +41,17 @@ class source():
             raise ValueError('Length of lon and lat are different!')
 
         if multi_pointing is True:
-            lon = mod_delete(lon, 5, 20)
-            lat = mod_delete(lat, 5, 20)
+            lon = self.mod_delete(lon, 5, 20)
+            lat = self.mod_delete(lat, 5, 20)
 
         self.lon_prop = lon
         self.lat_prop = lat
         return lon, lat
-    
+
+    def mod_delete(self, a, n, m):
+        return a[np.mod(np.arange(a.size), n + m) < n]
+
+
 class antenna():
     def __init__(self, X, Y, Z):
         self.all = np.array(list(zip(X, Y, Z)))
@@ -156,11 +160,12 @@ def sample_freqs(img, ant_config_path):
     lon = np.random.randint(-90, -70)
     lat = np.random.randint(30, 80)
     s = source(lon, lat)
-    s.propagate()
+    s.propagate(multi_pointing=True)
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
     mask = create_mask(u, v)
     img = img.reshape(64, 64)
     img[~mask] = 0
+    img = img.reshape(4096)
     return img
 
 
