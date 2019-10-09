@@ -1,4 +1,4 @@
-<p style="text-align: center;"> # radionets </p>
+<p style="text-align: center;"> <b>radionets</b> </p>
 ## Imaging radio interferometric data with neural networks.
 
 First mission:
