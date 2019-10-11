@@ -1,10 +1,10 @@
 import torch.nn as nn
-
+import torch.nn.functional as F
 
 def conv(ni, nc, ks, stride):
     conv = nn.Conv2d(ni, nc, ks, stride),
     bn = nn.BatchNorm2d(nc),
-    act = nn.ReLU()
+    act = GeneralRelu(leak=0.4) #nn.ReLU()
     layers = [*conv, *bn, act]
     return layers
 
@@ -33,3 +33,15 @@ class Lambda(nn.Module):
     def forward(self, x): return self.func(x)
 
 def flatten(x): return x.view(x.shape[0], -1)
+
+
+class GeneralRelu(nn.Module):
+    def __init__(self, leak=None, sub=None, maxv=None):
+        super().__init__()
+        self.leak,self.sub,self.maxv = leak,sub,maxv
+
+    def forward(self, x): 
+        x = F.leaky_relu(x,self.leak) if self.leak is not None else F.relu(x)
+        if self.sub is not None: x.sub_(self.sub)
+        if self.maxv is not None: x.clamp_max_(self.maxv)
+        return x
