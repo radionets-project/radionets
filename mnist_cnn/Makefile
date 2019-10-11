@@ -38,8 +38,8 @@ cnn_training: ./training_done
 
 ./training_done:
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/cnn_samp_leak.model\
-		4000 5e-1 -log True -quantile False -positive True\
+		./data/mnist_samp_valid.h5 ./models/cnn_samp_leak_fixed_mask.model\
+		6000 5e-1 -log True -quantile True -positive True\
 		-pretrained False\
 		-inspection True
 		touch ./training_done
