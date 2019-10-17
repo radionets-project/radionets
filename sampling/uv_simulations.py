@@ -152,7 +152,7 @@ def create_mask(u, v):
     uv_hist[33,32] = 0
     uv_hist[33,33] = 0
     mask = uv_hist > 0
-    return mask
+    return np.rot90(mask)
 
 
 def sample_freqs(img, ant_config_path):
@@ -166,7 +166,7 @@ def sample_freqs(img, ant_config_path):
     img = img.reshape(64, 64)
     img[~mask] = 0
     img = img.reshape(4096)
-    return img
+    return img#, mask
 
 
 def get_antenna_config(config_path):

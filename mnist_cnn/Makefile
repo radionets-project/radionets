@@ -38,8 +38,8 @@ cnn_training: ./training_done
 
 ./training_done:
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/cnn_samp.model\
-		2500 9e-1 -log True -quantile False -positive True\
-		-pretrained True ./models/cnn_samp.model\
+		./data/mnist_samp_valid.h5 ./models/cuda_test.model\
+		10 5e-1 -log True -quantile True -positive True\
+		-pretrained False\
 		-inspection True
 		touch ./training_done
