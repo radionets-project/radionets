@@ -89,13 +89,15 @@ learn = Learner(*get_model(data), loss_func, data)
 
 # Initialize convolutional layers
 init_cnn(learn.model)
-# -
 
-
-# Find learning rate
-find_lr(learn)
 
 # +
+# Find learning rate
+# find_lr(learn)
+
+# +
+from training import MixUp
+
 # Define resize for mnist data
 mnist_view = view_tfm(1, 64, 64)
 
@@ -113,32 +115,36 @@ cbfs = [
 
 # Define runner
 run = Runner(cb_funcs=cbfs)
+
+# +
+# Show model summary
+# model_summary(run, learn, data)
 # -
 
-# Show model summary
-model_summary(run, learn, data)
+
 
 # Train model
 run.fit(10, learn)
+
+# %debug
 
 # +
 # Evaluate model
 from inspection import evaluate_model
 
-evaluate_model(valid_ds, learn.model, nrows=7)
-# plt.savefig('mnist_big_results1.pdf', dpi=300, bbox_inches='tight', pad_inches=0)
+evaluate_model(valid_ds, learn.model, nrows=2)
+plt.savefig('mnist_samp_results2.pdf', dpi=100, bbox_inches='tight', pad_inches=0.01)
 
 # +
 # Save model
 # state = learn.model.state_dict()
 # torch.save(state, './mnist_cnn_big_1.model')
-
-# +
-# # Load model
-# m = learn.model
-# m.load_state_dict((torch.load('./models/mnist_cnn_big_1.model')))
-# learn.model.cuda()
 # -
+
+# Load model
+m = learn.model
+m.load_state_dict((torch.load('./models/cnn_samp_leak_fixed_mask.model')))
+learn.model.cuda()
 
 
 
