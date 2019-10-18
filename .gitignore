@@ -26,3 +26,5 @@ mnist_cnn/visualize_preprocessing
 # old stuff
 mnist_cnn/old_sampling
 
+
+*.vscode
