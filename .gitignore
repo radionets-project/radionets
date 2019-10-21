@@ -27,4 +27,5 @@ mnist_cnn/visualize_preprocessing
 mnist_cnn/old_sampling
 
 
+*.pyc
 *.vscode
