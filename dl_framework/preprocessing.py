@@ -1,0 +1,1 @@
+def normalize(x, m, s): return (x-m)/s
