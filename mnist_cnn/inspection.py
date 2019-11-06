@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-from training import view_tfm
+from dl_framework.callbacks import view_tfm
 
 def training_stats(run):
     plt.figure(figsize=(12, 4))

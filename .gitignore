@@ -24,5 +24,7 @@ mnist_cnn/visualize_preprocessing
 *_done
 
 # old stuff
-mnist_cnn/old_sampling
+mnist_cnn/old
 
+*.pyc
+*.vscode

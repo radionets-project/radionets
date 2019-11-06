@@ -3,10 +3,13 @@
 ### Imaging radio interferometric data with neural networks
 
 Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct calibrated observations with convolutional neural networks. 
-The different directories of the repository form modules to perform individual analysis steps. You can find tools to simulate radio interferometric observations and a deep learning training framework, which is highly inspired by the fast.ai v3 course ([Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html)).
-The mnist_cnn directory contains a first feasibility study using toy data created with the mnist dataset.
+At the moment the repository covers the following blocks:
 
-## Sampling
+## dl_framework
+
+Framework used to create and train neural networks. Most of it can be found in [Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html). Check it out for more information including a nice tutorial about deep learning.
+
+## sampling
 
 Functions to simulate and illustrate radio interferometric observations.
 
@@ -25,5 +28,5 @@ Feasibility study to test analysis strategies with convulotional neural networks
 ## Versions used
 
 * Python 3.7.3
-* pyTorch 1.1.0
-* cuda V10.0.130
+* pyTorch 1.2.0
+* cuda V10.1.243
