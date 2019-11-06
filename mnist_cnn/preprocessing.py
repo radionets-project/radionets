@@ -15,8 +15,6 @@ def get_h5_data(path, columns):
     f = h5py.File(path, 'r')
     x = np.abs(np.array(f[columns[0]]))
     y = np.abs(np.array(f[columns[1]]))
-
-    print(x.shape, y.shape)
     return x, y
 
 
@@ -37,14 +35,11 @@ def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=Fal
     x_train, x_valid = noramlize_data(x_train, x_valid, quantile, positive)
     train_ds = ArrayDataset(x_train, y_train)
     valid_ds = ArrayDataset(x_valid, y_valid)
-    
-    print('')
-    print('Tensor shapes')
-    print(x_train.shape, y_train.shape)
-    print(x_valid.shape, y_valid.shape)
-    print('')
-    print('Number of classes')
-    print(train_ds.c)
+
+    assert x_train.shape, y_train.shape != (50000, 4096)
+    assert x_valid.shape, y_valid.shape != (10000, 4096)
+    assert train_ds.c, valid_ds.c != 4096
+    # print(train_ds.c)
     return train_ds, valid_ds
 
 
@@ -60,8 +55,8 @@ def noramlize_data(x_train, x_valid, quantile=False, positive=False):
         train_mean,train_std = x_train[mask].mean(),x_train[mask].std()
     else:
         train_mean,train_std = x_train.mean(),x_train.std()
-    x_train[np.isinf(x_train)] = train_mean
-    x_valid[np.isinf(x_valid)] = train_mean
+    x_train[torch.isinf(x_train)] = train_mean
+    x_valid[torch.isinf(x_valid)] = train_mean
     # from IPython import embed
     # embed()
     # train_std = x_train.std()
@@ -74,9 +69,7 @@ def noramlize_data(x_train, x_valid, quantile=False, positive=False):
     print(x_valid.mean(), x_valid.std())
     return x_train, x_valid
 
-
 def normalize(x, m, s): return (x-m)/s
-
 
 def quantile_mask(ar):
     ''' Generating 0.1 and 0.9 quantile mask '''
@@ -86,12 +79,12 @@ def quantile_mask(ar):
     mask = (l < ar) & (ar < h)
     return mask
 
-
 class ArrayDataset():
     ''' Sample array dataset '''
     def __init__(self, x, y):
-        self.x, self.y = x, y
-        self.c = x.shape[1] # binary label
+        self.x = x
+        self.y = y
+        self.c = x.shape[1]
     
     def __len__(self):
         return len(self.x)
@@ -99,20 +92,22 @@ class ArrayDataset():
     def __getitem__(self, i):
         return self.x[i].float(), self.y[i].float()
 
-
 def get_dls(train_ds, valid_ds, bs, **kwargs):
     ''' Define data loaders '''
     return(DataLoader(train_ds, batch_size=bs, shuffle=True, drop_last=True, pin_memory=False, **kwargs),
            DataLoader(valid_ds, batch_size=bs*2, shuffle=False,  drop_last=True, pin_memory=False, **kwargs))
 
-
 class DataBunch():
     ''' Define data bunch '''
     def __init__(self, train_dl, valid_dl, c=None):
-        self.train_dl, self.valid_dl, self.c = train_dl, valid_dl, c
+        self.train_dl = train_dl
+        self.valid_dl = valid_dl
+        self.c = c
     
     @property
-    def train_ds(self): return self.train_dl.dataset
+    def train_ds(self):
+        return self.train_dl.dataset
     
     @property
-    def valid_ds(self): return self.valid_dl.dataset
+    def valid_ds(self):
+        return self.valid_dl.dataset
