@@ -157,7 +157,7 @@ def reduce_loss(loss, reduction='mean'):
 
 class MixUp(Callback):
     _order = 90 #Runs after normalization and cuda
-    def __init__(self, α:float=5.0): self.distrib = Beta(torch.tensor([α], dtype=torch.float), torch.tensor([α], dtype=torch.float))
+    def __init__(self, α:float=0.4): self.distrib = Beta(torch.tensor([α], dtype=torch.float), torch.tensor([α], dtype=torch.float))
 
     def begin_fit(self): self.old_loss_func,self.run.loss_func = self.run.loss_func,self.loss_func
 
