@@ -155,7 +155,7 @@ def create_mask(u, v):
     return np.rot90(mask)
 
 
-def sample_freqs(img, ant_config_path):
+def sample_freqs(img, ant_config_path, plot=False):
     ant = antenna(*get_antenna_config(ant_config_path))
     lon = np.random.randint(-90, -70)
     lat = np.random.randint(30, 80)
@@ -166,7 +166,10 @@ def sample_freqs(img, ant_config_path):
     img = img.reshape(64, 64)
     img[~mask] = 0
     img = img.reshape(4096)
-    return img#, mask
+    if plot is True:
+        return img, mask
+    else:
+        return img
 
 
 def get_antenna_config(config_path):
