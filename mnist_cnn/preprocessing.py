@@ -33,13 +33,6 @@ def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=Fal
         x_train = np.log(x_train)
         x_valid = np.log(x_valid)
 
-    if freq_samp is True:
-        config = 'sampling/vlba.txt'
-        x, y, _, _, _ = np.genfromtxt(config, unpack=True)
-        ant_pos = np.array(list(zip(x, y)))
-        x_train = [sample_freqs(img, ant_pos) for img in x_train]
-        x_valid = [sample_freqs(img, ant_pos) for img in x_valid]
-
     x_train, y_train, x_valid, y_valid = map(torch.tensor, (x_train, y_train, x_valid, y_valid))
     x_train, x_valid = noramlize_data(x_train, x_valid, quantile, positive)
     train_ds = ArrayDataset(x_train, y_train)
