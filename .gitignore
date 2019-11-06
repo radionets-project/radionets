@@ -18,7 +18,6 @@ __pycache__/
 *.pdf
 *.gif
 *.uvf
-mnist_cnn/visualize_preprocessing
 
 # make
 *_done
