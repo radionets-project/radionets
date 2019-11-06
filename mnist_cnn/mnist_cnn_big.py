@@ -125,11 +125,13 @@ xtra_step=None
 adam_opt = partial(StatefulOptimizer, steppers=[adam_step,weight_decay],
                    stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()])
 
-from dl_framework.param_scheduling import sched_cos, combine_scheds
+from dl_framework.param_scheduling import sched_cos, combine_scheds, sched_lin
 from dl_framework.callbacks import MixUp
 
 # sched = combine_scheds([0.3,0.7], [sched_cos(1e-3, 5e-2), sched_cos(5e-2, 8e-4)])
-sched = combine_scheds([0.2,0.8], [sched_cos(8e-4, 7e-3), sched_cos(7e-3, 8e-5)])
+sched = combine_scheds([0.4,0.6], [sched_cos(5e-2, 2e-1), sched_cos(2e-1, 4e-2)])
+sched = combine_scheds([0.7, 0.3], [sched, sched_lin(4e-2, 4e-2)])
+sched = sched_lin(9e-2, 9e-2)
 
 mnist_view = view_tfm(1, 64, 64)
 
@@ -149,13 +151,13 @@ learn = get_learner(data, 1e-1, opt_func=adam_opt, cb_funcs=cbfs)
 
 learn.opt
 
-learn.fit(2500)
+learn.fit(50)
 
 # +
 # Evaluate model
 from inspection import evaluate_model
 
-evaluate_model(valid_ds, learn.model, nrows=2)
+evaluate_model(valid_ds, learn.model, nrows=4)
 # -
 learn.recorder.plot_loss()
 plt.yscale('log')
