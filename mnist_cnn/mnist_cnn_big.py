@@ -38,11 +38,11 @@ path_valid = 'data/mnist_samp_valid.h5'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 
 # Create train and valid datasets
-# train_ds, valid_ds = prepare_dataset(x_train[0:8], y_train[0:8], x_valid[0:8], y_valid[0:8], log=True, quantile=True, positive=True)
-train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True, quantile=True, positive=True)
+# train_ds, valid_ds = prepare_dataset(x_train[0:8], y_train[0:8], x_valid[0:8], y_valid[0:8], log=True, use_mask=True)
+train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True, use_mask=True)
 
 # Create databunch with definde batchsize
-bs = 128
+bs = 256
 data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 # + {}
 # import numpy as np
@@ -128,10 +128,10 @@ adam_opt = partial(StatefulOptimizer, steppers=[adam_step,weight_decay],
 from dl_framework.param_scheduling import sched_cos, combine_scheds, sched_lin
 from dl_framework.callbacks import MixUp
 
-# sched = combine_scheds([0.3,0.7], [sched_cos(1e-3, 5e-2), sched_cos(5e-2, 8e-4)])
+sched = combine_scheds([0.3,0.7], [sched_cos(1e-3, 5e-2), sched_cos(5e-2, 8e-4)])
 sched = combine_scheds([0.4,0.6], [sched_cos(5e-2, 2e-1), sched_cos(2e-1, 4e-2)])
 sched = combine_scheds([0.7, 0.3], [sched, sched_lin(4e-2, 4e-2)])
-sched = sched_lin(9e-2, 9e-2)
+# sched = sched_lin(9e-2, 9e-2)
 
 mnist_view = view_tfm(1, 64, 64)
 

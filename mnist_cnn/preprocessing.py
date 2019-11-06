@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from sampling.uv_simulations import sample_freqs
+import warnings
 
 
 # Define torch device
@@ -15,13 +16,10 @@ def get_h5_data(path, columns):
     f = h5py.File(path, 'r')
     x = np.abs(np.array(f[columns[0]]))
     y = np.abs(np.array(f[columns[1]]))
-
-    print(x.shape, y.shape)
     return x, y
 
 
-def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=False, quantile=False,
-                    positive=False):
+def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, use_mask=False):
     ''' Preprocessing dataset: 
     split
     normalize
@@ -30,75 +28,67 @@ def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False, freq_samp=Fal
     create ArrayDataset
     '''
     if log is True:
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
         x_train = np.log(x_train)
         x_valid = np.log(x_valid)
 
-    if freq_samp is True:
-        config = 'sampling/vlba.txt'
-        x, y, _, _, _ = np.genfromtxt(config, unpack=True)
-        ant_pos = np.array(list(zip(x, y)))
-        x_train = [sample_freqs(img, ant_pos) for img in x_train]
-        x_valid = [sample_freqs(img, ant_pos) for img in x_valid]
-
     x_train, y_train, x_valid, y_valid = map(torch.tensor, (x_train, y_train, x_valid, y_valid))
-    x_train, x_valid = noramlize_data(x_train, x_valid, quantile, positive)
+    x_train, x_valid = noramlize_data(x_train, x_valid, use_mask)
     train_ds = ArrayDataset(x_train, y_train)
     valid_ds = ArrayDataset(x_valid, y_valid)
-    
-    print('')
-    print('Tensor shapes')
-    print(x_train.shape, y_train.shape)
-    print(x_valid.shape, y_valid.shape)
-    print('')
-    print('Number of classes')
-    print(train_ds.c)
+
+    assert x_train.shape, y_train.shape != (50000, 4096)
+    assert x_valid.shape, y_valid.shape != (10000, 4096)
+    assert train_ds.c, valid_ds.c != 4096
     return train_ds, valid_ds
 
 
-def noramlize_data(x_train, x_valid, quantile=False, positive=False):
-    ''' Normalize dataset excluding 0.1 and 0.9 qunatile '''
-    if quantile is True:
-        mask = quantile_mask(x_train)
-        train_mean,train_std = x_train[mask].mean(),x_train[mask].std()
+def noramlize_data(x_train, x_valid, use_mask=False):
+    ''' Normalize dataset setting inf pixel to mean '''
+    if use_mask is True:
+        mask = create_mask(x_train)
+        train_mean, train_std = x_train[mask].mean(), x_train[mask].std()
     else:
-        train_mean,train_std = x_train.mean(),x_train.std()
-    if positive is True:
-        mask = x_train > 0
-        train_mean,train_std = x_train[mask].mean(),x_train[mask].std()
-    else:
-        train_mean,train_std = x_train.mean(),x_train.std()
-    x_train[np.isinf(x_train)] = train_mean
-    x_valid[np.isinf(x_valid)] = train_mean
-    # from IPython import embed
-    # embed()
-    # train_std = x_train.std()
+        train_mean, train_std = x_train.mean(), x_train.std()
+
+    mask = create_mask(x_valid)
+    valid_mean = x_valid[mask].mean()
+    x_train[torch.isinf(x_train)] = train_mean
+    x_valid[torch.isinf(x_valid)] = valid_mean
+    train_std = x_train.std()
+    # assert len(x_train[torch.isinf(x_train)]) != 0
+    # assert len(x_valid[torch.isinf(x_valid)]) != 0
+
     x_train = normalize(x_train, train_mean, train_std)
     x_valid = normalize(x_valid, train_mean, train_std)
 
-    print(train_mean, train_std)
-    print('Normalization')
-    print(x_train.mean(), x_train.std())
-    print(x_valid.mean(), x_valid.std())
+    if not np.isclose(x_train.mean(), 0, atol=1e-1):
+        print('Training mean is ', x_train.mean())
+    if not np.isclose(x_train.std(), 1, atol=1e-1):
+        print('Training std is ', x_train.std())
+    if not np.isclose(x_valid.mean(), 0, atol=1e-1):
+        print('Valid mean is ', x_valid.mean())
+    if not np.isclose(x_valid.std(), 1, atol=1e-1):
+        print('Valid std is ', x_valid.std())
     return x_train, x_valid
-
 
 def normalize(x, m, s): return (x-m)/s
 
-
-def quantile_mask(ar):
-    ''' Generating 0.1 and 0.9 quantile mask '''
-    l = np.quantile(ar, 0.1)
-    print(l)
-    h = np.quantile(ar, 0.9)
+def create_mask(ar):
+    ''' Generating mask with min and max value != inf'''
+    val = ar.clone()
+    val[torch.isinf(val)] = 0
+    l = val.min()
+    h = val.max()
     mask = (l < ar) & (ar < h)
     return mask
-
 
 class ArrayDataset():
     ''' Sample array dataset '''
     def __init__(self, x, y):
-        self.x, self.y = x, y
-        self.c = x.shape[1] # binary label
+        self.x = x
+        self.y = y
+        self.c = x.shape[1]
     
     def __len__(self):
         return len(self.x)
@@ -106,20 +96,22 @@ class ArrayDataset():
     def __getitem__(self, i):
         return self.x[i].float(), self.y[i].float()
 
-
 def get_dls(train_ds, valid_ds, bs, **kwargs):
     ''' Define data loaders '''
     return(DataLoader(train_ds, batch_size=bs, shuffle=True, drop_last=True, pin_memory=False, **kwargs),
            DataLoader(valid_ds, batch_size=bs*2, shuffle=False,  drop_last=True, pin_memory=False, **kwargs))
 
-
 class DataBunch():
     ''' Define data bunch '''
     def __init__(self, train_dl, valid_dl, c=None):
-        self.train_dl, self.valid_dl, self.c = train_dl, valid_dl, c
+        self.train_dl = train_dl
+        self.valid_dl = valid_dl
+        self.c = c
     
     @property
-    def train_ds(self): return self.train_dl.dataset
+    def train_ds(self):
+        return self.train_dl.dataset
     
     @property
-    def valid_ds(self): return self.valid_dl.dataset
+    def valid_ds(self):
+        return self.valid_dl.dataset
