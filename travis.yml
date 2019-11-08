@@ -1,0 +1,13 @@
+language: python
+python:
+  - "3.7"
+
+before_install:
+  - apt install libgeos-dev
+  - apt install libproj-dev
+
+install:
+  - pip install .
+
+script:
+- python setup.py test
