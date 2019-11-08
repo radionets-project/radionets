@@ -4,7 +4,7 @@ setup(
     name='radionets',
     version='0.0.1',
     description='Imaging radio interferometric data with neural networks',
-    url='https://github.com/Kevin2/radionets/tree/make_package',
+    url='https://github.com/Kevin2/radionets',
     author='Kevin Schmidt',
     author_email='kevin3.schmidt@tu-dortmund.de',
     license='MIT',
