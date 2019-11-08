@@ -1,4 +1,4 @@
-# radionets
+# radionets [![Build Status](https://travis-ci.com/Kevin2/radionets.svg?branch=master)](https://travis-ci.org/kevin2/radionets)
 
 ### Imaging radio interferometric data with neural networks
 

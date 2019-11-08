@@ -28,3 +28,6 @@ mnist_cnn/old
 
 *.pyc
 *.vscode
+
+*.eggs
+*.egg-info
