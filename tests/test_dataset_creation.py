@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 
-def example_test():
+def test_example():
     a = 1
     b = 1
     assert a != b
@@ -53,3 +53,5 @@ def example_test():
 
 # test_open_mnist()
 # test_process_image()
+
+test_example()
