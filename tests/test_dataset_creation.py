@@ -1,6 +1,11 @@
 import sys
 sys.path.append('..')
 
+def example_test():
+    a = 1
+    b = 1
+    assert a != b
+
 # def test_open_mnist():
 #     from mnist_cnn.create_mnist_fft import open_mnist
 
