@@ -33,7 +33,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     x_valid, y_valid = get_h5_data(valid_path, columns=['x_valid', 'y_valid'])
 
     # Create train and valid datasets
-    train_ds, valid_ds = prepare_dataset(x_train[0:8], y_train[0:8], x_valid[0:8], y_valid[0:8],
+    train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid,
                                          log=log, use_mask=mask)
 
     # Create databunch with definde batchsize
