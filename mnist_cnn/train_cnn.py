@@ -5,12 +5,11 @@ import torch.optim as optim
 from functools import partial
 import matplotlib.pyplot as plt
 from preprocessing import get_h5_data, prepare_dataset, get_dls, DataBunch
-from dl_framework.model import conv, Lambda, flatten
+from dl_framework.model import conv, Lambda, flatten, init_cnn
 from dl_framework.param_scheduling import sched_no
 from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    BatchTransformXCallback, CudaCallback,\
                                    SaveCallback, view_tfm, ParamScheduler
-# from dl_framework.learner import get_learner
 from inspection import evaluate_model
 
 
@@ -41,9 +40,6 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     bs = 128
     data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 
-    # Define loss function
-    loss_func = nn.MSELoss()
-
     # Define model
     def get_model(data, lr=1e-1):
         model = nn.Sequential(
@@ -68,7 +64,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     # Define callback functions
     cbfs = [
         Recorder,
-        partial(AvgStatsCallback, loss_func),
+        partial(AvgStatsCallback, nn.MSELoss()),
         partial(ParamScheduler, 'lr', sched),
         CudaCallback,
         partial(BatchTransformXCallback, mnist_view),
@@ -76,16 +72,16 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     ]
 
     from dl_framework.learner import Learner
-    def get_learner(data, lr, opt_func, loss_func=torch.nn.MSELoss(),
-                    cb_funcs=None, **kwargs):
-        model = get_model(data, **kwargs)
-        # init_cnn(model)
-        return Learner(model, data, loss_func, lr=lr, cb_funcs=cb_funcs,
-                       opt_func=opt_func)
-
     from dl_framework.optimizer import sgd_opt
+
+    def get_learner(data, lr, loss_func=nn.MSELoss(),
+                cb_funcs=None, opt_func=sgd_opt, **kwargs):
+        model = get_model(data, **kwargs)
+        init_cnn(model)
+        return Learner(model, data, loss_func, lr=lr, cb_funcs=cb_funcs, opt_func=opt_func)
+
     # Combine model and data in learner
-    learn = get_learner(data, 1e-3, opt_func=sgd_opt, loss_func=nn.MSELoss(), cb_funcs=cbfs)
+    learn = get_learner(data, 1e-3, opt_func=sgd_opt,  cb_funcs=cbfs)
 
     if pretrained is True:
         # Load model
@@ -94,7 +90,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
         m.load_state_dict((torch.load(pretrained_model)))
 
     # Train model
-    learn.fit(num_epochs, learn)
+    learn.fit(num_epochs)
 
     # Save model
     state = learn.model.state_dict()
