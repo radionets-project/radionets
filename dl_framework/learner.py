@@ -92,9 +92,3 @@ class Learner():
         for cb in sorted(self.cbs, key=lambda x: x._order): res = cb(cb_name) and res
         return res
 
-
-def get_learner(data, lr, model, opt_func, loss_func=torch.nn.MSELoss(),
-                cb_funcs=None, **kwargs):
-    init_cnn(model)
-    return Learner(model, data, loss_func, lr=lr, cb_funcs=cb_funcs,
-                   opt_func=opt_func)
