@@ -36,7 +36,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid,
                                          log=log, use_mask=mask)
 
-    # Create databunch with definde batchsize
+    # Create databunch with defined batchsize
     bs = 128
     data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 
@@ -58,7 +58,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     # Define resize for mnist data
     mnist_view = view_tfm(1, 64, 64)
 
-    # Define schedueled learning rate
+    # Define scheduled learning rate
     sched = sched_no(lr, lr)
 
     # Define callback functions
