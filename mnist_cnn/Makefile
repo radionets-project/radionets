@@ -22,6 +22,7 @@ cnn_training: ./training_done
 #
 
 ./data/mnist_fft_done:
+		mkdir -p data/
 		python create_mnist_fft.py ./../resources/mnist.pkl.gz\
 		./data
 		touch ./data/mnist_fft_done
@@ -39,7 +40,7 @@ cnn_training: ./training_done
 ./training_done:
 		python train_cnn.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5 ./models/cuda_test.model\
-		10 5e-1 -log True -quantile True -positive True\
+		10 5e-1 -log True -mask True\
 		-pretrained False\
 		-inspection True
 		touch ./training_done
