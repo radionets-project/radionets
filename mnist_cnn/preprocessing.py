@@ -4,7 +4,6 @@ import h5py
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-# from sampling.uv_simulations import sample_freqs
 import warnings
 
 
