@@ -1,7 +1,7 @@
 import click
 import torch
 import torch.nn as nn
-import torch.optim as optim
+# import torch.optim as optim
 from functools import partial
 import matplotlib.pyplot as plt
 from preprocessing import get_h5_data, prepare_dataset, get_dls, DataBunch

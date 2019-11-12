@@ -13,12 +13,12 @@ def main(data_path, out_path):
     train_x, valid_x = open_mnist(path)
 
     # Process train images, split into x and y
-    all_train = np.concatenate([process_img(img) for img in tqdm(train_x)]) 
+    all_train = np.concatenate([process_img(img) for img in tqdm(train_x)])
     y_train = all_train[0::2]
     x_train = all_train[1::2]
 
     # Process valid images, split into x and y
-    all_valid = np.concatenate([process_img(img) for img in tqdm(valid_x)]) 
+    all_valid = np.concatenate([process_img(img) for img in tqdm(valid_x)])
     y_valid = all_valid[0::2]
     x_valid = all_valid[1::2]
 
