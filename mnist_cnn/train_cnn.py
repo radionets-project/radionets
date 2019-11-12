@@ -75,10 +75,11 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     from dl_framework.optimizer import sgd_opt
 
     def get_learner(data, lr, loss_func=nn.MSELoss(),
-                cb_funcs=None, opt_func=sgd_opt, **kwargs):
+                    cb_funcs=None, opt_func=sgd_opt, **kwargs):
         model = get_model(data, **kwargs)
         init_cnn(model)
-        return Learner(model, data, loss_func, lr=lr, cb_funcs=cb_funcs, opt_func=opt_func)
+        return Learner(model, data, loss_func, lr=lr, cb_funcs=cb_funcs,
+                       opt_func=opt_func)
 
     # Combine model and data in learner
     learn = get_learner(data, 1e-3, opt_func=sgd_opt,  cb_funcs=cbfs)

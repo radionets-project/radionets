@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import torch
 from dl_framework.callbacks import view_tfm
 
+
 def training_stats(run):
     plt.figure(figsize=(12, 4))
     plt.subplot(131)
@@ -12,6 +13,7 @@ def training_stats(run):
 #     plt.subplot(133)
 #     run.recorder.plot()
     plt.tight_layout()
+
 
 def get_eval_img(valid_ds, model):
     x_t = valid_ds.x.float()
@@ -24,14 +26,16 @@ def get_eval_img(valid_ds, model):
         pred = model(img).cpu()
     return img, pred, h, rand
 
+
 def evaluate_model(valid_ds, model, nrows=3):
     fig, axes = plt.subplots(nrows=nrows, ncols=4, figsize=(18, 6*nrows),
-                             gridspec_kw={"width_ratios":[1,1,1, 0.05]})
-    
+                             gridspec_kw={"width_ratios": [1, 1, 1, 0.05]})
+
     for i in range(nrows):
         img, pred, h, rand = get_eval_img(valid_ds, model)
         axes[i][0].set_title('x')
-        axes[i][0].imshow(img.view(h, h).cpu(), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
+        axes[i][0].imshow(img.view(h, h).cpu(), cmap='RdGy_r',
+                          vmax=img.max(), vmin=-img.max())
         axes[i][1].set_title('y_pred')
         im = axes[i][1].imshow(pred.view(h, h), vmin=0, vmax=1)
         axes[i][2].set_title('y_true')
