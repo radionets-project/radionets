@@ -1,12 +1,6 @@
 import sys
 sys.path.append('.')
 
-
-def test_example():
-    a = 1
-    b = 1
-    assert a == b
-
 # def test_open_mnist():
 #     from mnist_cnn.create_mnist_fft import open_mnist
 
@@ -52,7 +46,7 @@ def test_example():
 #     os.remove('./mnist.h5')
 
 
-def test_open_small():
+def test_create_mnist_fft():
     import numpy as np
     from mnist_cnn.utils import open_mnist, process_img
     from tqdm import tqdm
@@ -75,9 +69,3 @@ def test_open_small():
     assert x_train.shape == (50, 4096)
     assert y_valid.shape == (50, 4096)
     assert x_valid.shape == (50, 4096)
-
-
-# test_open_mnist()
-# test_process_image()
-
-test_example()
