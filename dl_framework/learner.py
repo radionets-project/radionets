@@ -2,6 +2,7 @@ from dl_framework.utils import listify, param_getter
 from dl_framework.callbacks import TrainEvalCallback
 import torch
 from dl_framework.optimizer import sgd_opt
+from dl_framework.model import init_cnn
 
 class CancelTrainException(Exception): pass
 class CancelEpochException(Exception): pass
@@ -90,3 +91,4 @@ class Learner():
         assert cb_name in self.ALL_CBS
         for cb in sorted(self.cbs, key=lambda x: x._order): res = cb(cb_name) and res
         return res
+

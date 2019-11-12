@@ -12,11 +12,12 @@ def open_mnist(path):
 
 
 def process_img(image):
-    ''' Resize images to 64 x 64 and calculate fft 
+    ''' Resize images to 64 x 64 and calculate fft
         Return images as vector
     '''
     img_reshaped = image.reshape(28, 28)
-    img_rescaled = resize(img_reshaped, (64, 64), anti_aliasing=True, mode='constant')
+    img_rescaled = resize(img_reshaped, (64, 64), anti_aliasing=True,
+                          mode='constant')
     img_fft = np.fft.fftshift(np.fft.fft2(img_rescaled))
     return img_rescaled.reshape(4096), img_fft.reshape(4096)
 

@@ -1,10 +1,5 @@
 import sys
-sys.path.append('..')
-
-def test_example():
-    a = 1
-    b = 1
-    assert a == b
+sys.path.append('.')
 
 # def test_open_mnist():
 #     from mnist_cnn.create_mnist_fft import open_mnist
@@ -51,7 +46,26 @@ def test_example():
 #     os.remove('./mnist.h5')
 
 
-# test_open_mnist()
-# test_process_image()
+def test_create_mnist_fft():
+    import numpy as np
+    from mnist_cnn.utils import open_mnist, process_img
+    from tqdm import tqdm
 
-test_example()
+    path = './resources/mnist.pkl.gz'
+    train_x, valid_x = open_mnist(path)
+    train_x = train_x[0:50]
+    valid_x = valid_x[0:50]
+    # Process train images, split into x and y
+    all_train = np.concatenate([process_img(img) for img in tqdm(train_x)])
+    y_train = all_train[0::2]
+    x_train = all_train[1::2]
+
+    # Process valid images, split into x and y
+    all_valid = np.concatenate([process_img(img) for img in tqdm(valid_x)])
+    y_valid = all_valid[0::2]
+    x_valid = all_valid[1::2]
+
+    assert y_train.shape == (50, 4096)
+    assert x_train.shape == (50, 4096)
+    assert y_valid.shape == (50, 4096)
+    assert x_valid.shape == (50, 4096)
