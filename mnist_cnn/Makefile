@@ -16,11 +16,6 @@ mnist_fft: ./data/mnist_fft_done
 mnist_samp_train: ./data/mnist_samp_train.h5
 mnist_samp_valid: ./data/mnist_samp_valid.h5
 cnn_training: ./training_done
-clean:
-	rm -rf ./data
-	rm -f ./training_done
-clean_training:
-	rm -f ./training_done
 
 #########################################################
 #	Tasks
@@ -29,7 +24,7 @@ clean_training:
 ./data/mnist_fft_done:
 		mkdir -p data/
 		python create_mnist_fft.py ./../resources/mnist.pkl.gz\
-		./data
+		./data -test False
 		touch ./data/mnist_fft_done
 
 ./data/mnist_samp_train.h5:
@@ -50,3 +45,10 @@ clean_training:
 		-pretrained False\
 		-inspection True
 		touch ./training_done
+
+clean:
+	rm -rf ./data
+	rm -f ./training_done
+clean_training:
+	rm -f ./training_done
+
