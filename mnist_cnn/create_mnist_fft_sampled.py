@@ -1,10 +1,10 @@
 import sys
+sys.path.append('..')
 import click
 from sampling.uv_simulations import sample_freqs
 from preprocessing import get_h5_data
 from utils import write_h5
 from tqdm import tqdm
-sys.path.append('..')
 
 
 @click.command()
