@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.1
+#       jupytext_version: 1.2.4
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -38,11 +38,11 @@ path_valid = 'data/mnist_samp_valid.h5'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 
 # Create train and valid datasets
-# train_ds, valid_ds = prepare_dataset(x_train[0:8], y_train[0:8], x_valid[0:8], y_valid[0:8], log=True, use_mask=True)
-train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True, use_mask=True)
+train_ds, valid_ds = prepare_dataset(x_train[0:8], y_train[0:8], x_valid[0:8], y_valid[0:8], log=True, use_mask=True)
+# train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True, use_mask=True)
 
 # Create databunch with definde batchsize
-bs = 256
+bs = 4
 data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 # + {}
 # import numpy as np
@@ -55,22 +55,22 @@ data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 # a = data.train_ds.x.reshape(10, 4096)
 # b = data.valid_ds.x.reshape(10, 4096)
 # x_train, x_valid = noramlize_data(a, b)
-# -
 
-img = data.train_ds.x[4]
-plt.imshow(img.reshape(64, 64), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
-plt.xlabel('u')
-plt.ylabel('v')
-plt.colorbar(label='Amplitude')
+# +
+# img = data.train_ds.x[4]
+# plt.imshow(img.reshape(64, 64), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
+# plt.xlabel('u')
+# plt.ylabel('v')
+# plt.colorbar(label='Amplitude')
 
 # +
 from torch import optim
 # Define model
-def get_model(data): #1e-1
+def get_model(data):
     model = nn.Sequential(
-        *conv(1, 4, (3,3), 2, 3//2),
-        *conv(4, 8, (3,3), 2, 3//2),
-        *conv(8, 16, (3,3), 2, 3//2),
+        *conv(1, 4, (3,3), 2, 1),
+        *conv(4, 8, (3,3), 2, 1),
+        *conv(8, 16, (3,3), 2, 1),
         nn.MaxPool2d((3,3)),
         *conv(16, 32, (2,2), 2, 1),
         *conv(32, 64, (2,2), 2, 1),
@@ -149,8 +149,6 @@ learn = get_learner(data, 1e-1, opt_func=adam_opt, cb_funcs=cbfs)
 # -
 
 
-learn.opt
-
 learn.fit(50)
 
 # +
@@ -227,8 +225,22 @@ plt.savefig('mnist_samp_results2.pdf', dpi=100, bbox_inches='tight', pad_inches=
 # Load model
 import torch
 m = learn.model
-m.load_state_dict((torch.load('./models/mnist_mixup_adam_leaky.model')))
+m.load_state_dict(torch.load('./models/mnist_mixup_adam_leaky.model'))
 learn.model.cuda()
 
+import imp
+module = imp.load_source('get_model', 'models/simple_cnn.py')
+
+module.get_model()
+
+import numpy as np
+a = np.arange(4096)
+a = a.reshape(1, 1, 64, 64)
+a.shape
+
+a.resize(1, 1, 2, 2)
+a.shape
+
+a
 
 
