@@ -15,6 +15,7 @@ mnist_samp:	mnist_samp_train\
 mnist_fft: ./data/mnist_fft_done
 mnist_samp_train: ./data/mnist_samp_train.h5
 mnist_samp_valid: ./data/mnist_samp_valid.h5
+calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
 
 #########################################################
@@ -36,6 +37,11 @@ cnn_training: ./training_done
 		python create_mnist_fft_sampled.py\
 		data/mnist_valid.h5 data/mnist_samp_valid.h5\
 		../sampling/layouts/vlba.txt -train False 
+
+./data/normalization_factors.csv:
+		python calculate_normalization.py\
+		data/mnist_samp_train.h5 data/mnist_samp_valid.h5\
+		data/normalization_factors.csv
 
 ./training_done:
 		mkdir -p models/
