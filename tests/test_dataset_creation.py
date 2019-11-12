@@ -1,5 +1,5 @@
 import sys
-sys.path.append('..')
+sys.path.append('.')
 
 
 def test_example():
@@ -57,7 +57,7 @@ def test_open_small():
     from mnist_cnn.utils import open_mnist, process_img
     from tqdm import tqdm
 
-    path = './../resources/mnist.pkl.gz'
+    path = './resources/mnist.pkl.gz'
     train_x, valid_x = open_mnist(path)
     train_x = train_x[0:50]
     valid_x = valid_x[0:50]
