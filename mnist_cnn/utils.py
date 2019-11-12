@@ -31,3 +31,24 @@ def write_h5(path, x, y, name_x='x_train', name_y='y_train'):
         hf.create_dataset(name_x,  data=x)
         hf.create_dataset(name_y,  data=y)
         hf.close()
+
+
+def get_h5_data(path, columns):
+    ''' Load mnist h5 data '''
+    f = h5py.File(path, 'r')
+    x = np.abs(np.array(f[columns[0]]))
+    y = np.abs(np.array(f[columns[1]]))
+    return x, y
+
+
+def normalize(x, m, s): return (x-m)/s
+
+
+def create_mask(ar):
+    ''' Generating mask with min and max value != inf'''
+    val = ar.copy()
+    val[np.isinf(val)] = 0
+    l = val.min()
+    h = val.max()
+    mask = (l < ar) & (ar < h)
+    return mask
