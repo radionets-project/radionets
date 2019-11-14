@@ -5,7 +5,7 @@ def test_normalization():
     import numpy as np
     import os
     import pandas as pd
-    train_path = 'mnist_cnn/data/mnist_samp_train.h52'
+    train_path = 'mnist_cnn/data/mnist_samp_train.h5'
     valid_path = 'mnist_cnn/data/mnist_samp_valid.h5'
     normalization = 'mnist_cnn/data/normalization_factors.csv'
     if (os.path.exists(train_path) & os.path.exists(valid_path)
@@ -19,14 +19,10 @@ def test_normalization():
         x_train = normalize(x_train, train_mean, train_std)
         x_valid = normalize(x_valid, train_mean, train_std)
 
-        if not np.isclose(x_train.mean(), 0, atol=1e-1):
-            print('Training mean is ', x_train.mean())
-        if not np.isclose(x_train.std(), 1, atol=1e-1):
-            print('Training std is ', x_train.std())
-        if not np.isclose(x_valid.mean(), 0, atol=1e-1):
-            print('Valid mean is ', x_valid.mean())
-        if not np.isclose(x_valid.std(), 1, atol=1e-1):
-            print('Valid std is ', x_valid.std())
+        assert np.isclose(x_train.mean(), 0, atol=1e-1)
+        assert np.isclose(x_train.std(), 1, atol=1e-1)
+        assert np.isclose(x_valid.mean(), 0, atol=1e-1)
+        assert np.isclose(x_valid.std(), 1, atol=1e-1)
     else:
         warnings.warn(UserWarning('Test can only be run after mnist_fft_samp creation!'))
         pass
