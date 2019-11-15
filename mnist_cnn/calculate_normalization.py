@@ -33,9 +33,13 @@ def main(train_path, valid_path, out_path, log=False, use_mask=False):
     x_valid[np.isinf(x_valid)] = valid_mean
     train_std = x_train.std()
 
-    d= {'mean': [train_mean], 'std': [train_std]}
+    d = {'train_mean': [train_mean],
+         'train_std': [train_std],
+         'valid_mean': [valid_mean]
+         }
     df = pd.DataFrame(data=d)
     df.to_csv(out_path)
+
 
 if __name__ == '__main__':
     main()
