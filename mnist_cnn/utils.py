@@ -48,7 +48,7 @@ def create_mask(ar):
     ''' Generating mask with min and max value != inf'''
     val = ar.copy()
     val[np.isinf(val)] = 0
-    l = val.min()
-    h = val.max()
-    mask = (l < ar) & (ar < h)
+    low = val.min()
+    high = val.max()
+    mask = (low < ar) & (ar < high)
     return mask
