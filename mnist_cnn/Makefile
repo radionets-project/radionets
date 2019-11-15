@@ -40,6 +40,7 @@ cnn_training: ./training_done
 
 ./data/normalization_factors.csv:
 		python calculate_normalization.py\
+		-log True -use_mask True\
 		data/mnist_samp_train.h5 data/mnist_samp_valid.h5\
 		data/normalization_factors.csv
 

@@ -1,5 +1,6 @@
 import warnings
 
+
 def test_normalization():
     from mnist_cnn.utils import get_h5_data, normalize
     import numpy as np
@@ -9,10 +10,10 @@ def test_normalization():
     valid_path = 'mnist_cnn/data/mnist_samp_valid.h5'
     normalization = 'mnist_cnn/data/normalization_factors.csv'
     if (os.path.exists(train_path) & os.path.exists(valid_path)
-        & os.path.exists(normalization)):
+                                   & os.path.exists(normalization)):
         norm_values = pd.read_csv(normalization)
-        train_mean = norm_values['mean'].values
-        train_std = norm_values['std'].values
+        train_mean = norm_values['train_mean'].values
+        train_std = norm_values['train_std'].values
         x_train, _ = get_h5_data(train_path, columns=['x_train', 'y_train'])
         x_valid, _ = get_h5_data(valid_path, columns=['x_valid', 'y_valid'])
 
@@ -24,5 +25,6 @@ def test_normalization():
         assert np.isclose(x_valid.mean(), 0, atol=1e-1)
         assert np.isclose(x_valid.std(), 1, atol=1e-1)
     else:
-        warnings.warn(UserWarning('Test can only be run after mnist_fft_samp creation!'))
+        warnings.warn(UserWarning(
+            'Test can only be run after mnist_fft_samp creation!'))
         pass
