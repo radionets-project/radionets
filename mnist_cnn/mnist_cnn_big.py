@@ -160,7 +160,7 @@ learn.fit(100)
 from inspection import evaluate_model
 
 evaluate_model(valid_ds, learn.model, norm_path='./data/normalization_factors.csv', nrows=2)
-plt.savefig('mixup_results.png', dpi=100, bbox_inches='tight', pad_inches=0.01)
+# plt.savefig('mixup_results.png', dpi=100, bbox_inches='tight', pad_inches=0.01)
 # -
 learn.recorder.plot_loss()
 plt.yscale('log')
