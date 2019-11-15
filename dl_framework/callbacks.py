@@ -178,11 +178,11 @@ def normalize_tfm(norm_path):
         if self.in_train:
             x[torch.isinf(x)] = train_mean
             x = normalize(x, train_mean, train_std)
-            assert torch.isinf(x).any() is False
+            assert not torch.isinf(x).any()
         if not self.in_train:
             x[torch.isinf(x)] = valid_mean
             x = normalize(x, train_mean, train_std)
-            assert torch.isinf(x).any() is False
+            assert not torch.isinf(x).any()
         return x
     return _inner
 
