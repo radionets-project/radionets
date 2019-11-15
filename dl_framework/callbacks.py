@@ -4,6 +4,8 @@ import torch
 import matplotlib.pyplot as plt
 from functools import partial
 from torch.distributions.beta import Beta
+import pandas as pd
+from utils import normalize
 
 
 class CancelTrainException(Exception):
@@ -158,18 +160,30 @@ class CudaCallback(Callback):
 class BatchTransformXCallback(Callback):
     _order = 2
     def __init__(self, tfm): self.tfm = tfm
-    def begin_batch(self): self.run.xb = self.tfm(self.run.xb)
+    def begin_batch(self): self.run.xb = self.tfm(self.run.xb, self)
 
 
 def view_tfm(*size):
-    def _inner(x):
+    def _inner(x, kwargs):
         return x.view(*((-1,)+size))
     return _inner
 
 
-def normalize_tfm():
-    def _inner(x):
-        return
+def normalize_tfm(norm_path):
+    def _inner(x, self):
+        norm = pd.read_csv(norm_path)
+        train_mean = torch.tensor(norm['train_mean'].values[0]).float()
+        train_std = torch.tensor(norm['train_std'].values[0]).float()
+        valid_mean = torch.tensor(norm['valid_mean'].values[0]).float()
+        if self.in_train:
+            x[torch.isinf(x)] = train_mean
+            x = normalize(x, train_mean, train_std)
+            assert torch.isinf(x).any() is False
+        if not self.in_train:
+            x[torch.isinf(x)] = valid_mean
+            x = normalize(x, train_mean, train_std)
+            assert torch.isinf(x).any() is False
+        return x
     return _inner
 
 
