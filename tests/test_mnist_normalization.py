@@ -16,8 +16,10 @@ def test_normalization():
         train_mean = norm_values['train_mean'].values
         valid_mean = norm_values['valid_mean'].values
         train_std = norm_values['train_std'].values
-        x_train, _ = np.log(get_h5_data(train_path, columns=['x_train', 'y_train']))
-        x_valid, _ = np.log(get_h5_data(valid_path, columns=['x_valid', 'y_valid']))
+        x_train, _ = np.log(get_h5_data(train_path,
+                            columns=['x_train', 'y_train']))
+        x_valid, _ = np.log(get_h5_data(valid_path,
+                            columns=['x_valid', 'y_valid']))
 
         x_train[np.isinf(x_train)] = train_mean
         x_valid[np.isinf(x_valid)] = valid_mean
