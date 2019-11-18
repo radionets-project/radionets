@@ -3,10 +3,12 @@
 #
 
 all:	mnist_fft\
-		mnist_samp
+		mnist_samp\
+		calc_normalization
 
 quick_data_and_training: mnist_fft_quick\
 						 mnist_samp\
+						 calc_normalization\
 						 cnn_training
 
 #--------------------------------------------------------
@@ -58,7 +60,7 @@ cnn_training: ./training_done
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/cuda_test.model\
+		./data/mnist_samp_valid.h5 ./models/cuda_test.model ./data/normalization_factors.csv\
 		10 5e-1 -log True -mask True\
 		-pretrained False\
 		-inspection True
