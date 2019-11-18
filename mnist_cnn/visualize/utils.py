@@ -16,8 +16,8 @@ def load_pre_model(model, pretrained_path):
     return model
 
 
-def load_model(model_path):
-    module = imp.load_source('get_model', '../models/simple_cnn.py')
+def load_architecture(arch_path):
+    module = imp.load_source('get_model', arch_path)
     model = module.get_model()
     return model
 
