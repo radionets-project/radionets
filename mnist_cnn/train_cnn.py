@@ -1,15 +1,16 @@
 import click
 import torch
 import torch.nn as nn
-# import torch.optim as optim
+from mnist_cnn.visualize.utils import load_architecture
 from functools import partial
 import matplotlib.pyplot as plt
 from preprocessing import get_h5_data, prepare_dataset, get_dls, DataBunch
-from dl_framework.model import conv, Lambda, flatten, init_cnn
+from dl_framework.model import init_cnn
 from dl_framework.param_scheduling import sched_no
 from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    BatchTransformXCallback, CudaCallback,\
-                                   SaveCallback, view_tfm, ParamScheduler
+                                   SaveCallback, view_tfm, ParamScheduler,\
+                                   normalize_tfm
 from inspection import evaluate_model
 
 
@@ -17,16 +18,17 @@ from inspection import evaluate_model
 @click.argument('train_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('valid_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('model_path', type=click.Path(exists=False, dir_okay=True))
+@click.argument('arch_path', type=click.Path(exists=False, dir_okay=True))
+@click.argument('norm_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('num_epochs', type=int)
 @click.argument('lr', type=float)
 @click.option('-log', type=bool, required=False)
-@click.option('-mask', type=bool, required=False)
 @click.option('-pretrained', type=bool, required=False)
 @click.option('-inspection', type=bool, required=False)
 @click.argument('pretrained_model',
                 type=click.Path(exists=True, dir_okay=True), required=False)
-def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
-         mask=False, pretrained=False, pretrained_model=None,
+def main(train_path, valid_path, model_path, arch_path, norm_path, num_epochs,
+         lr, log=True, pretrained=False, pretrained_model=None,
          inspection=False):
     # Load data
     x_train, y_train = get_h5_data(train_path, columns=['x_train', 'y_train'])
@@ -34,29 +36,18 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
 
     # Create train and valid datasets
     train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid,
-                                         log=log, use_mask=mask)
+                                         log=log)
 
     # Create databunch with defined batchsize
-    bs = 128
+    bs = 256
     data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 
     # Define model
-    def get_model(data, lr=1e-1):
-        model = nn.Sequential(
-            *conv(1, 4, (3, 3), 1, 0),
-            *conv(4, 8, (3, 3), 1, 0),
-            *conv(8, 16, (3, 3), 1, 0),
-            nn.MaxPool2d((3, 3)),
-            *conv(16, 32, (2, 2), 1, 0),
-            *conv(32, 64, (2, 2), 1, 0),
-            nn.MaxPool2d((2, 2)),
-            Lambda(flatten),
-            nn.Linear(4096, data.c)
-        )
-        return model
+    get_model = load_architecture(arch_path)
 
     # Define resize for mnist data
     mnist_view = view_tfm(1, 64, 64)
+    normalize = normalize_tfm(norm_path)
 
     # Define scheduled learning rate
     sched = sched_no(lr, lr)
@@ -67,6 +58,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
         partial(AvgStatsCallback, nn.MSELoss()),
         partial(ParamScheduler, 'lr', sched),
         CudaCallback,
+        partial(BatchTransformXCallback, normalize),
         partial(BatchTransformXCallback, mnist_view),
         SaveCallback,
     ]
@@ -76,13 +68,22 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
 
     def get_learner(data, lr, loss_func=nn.MSELoss(),
                     cb_funcs=None, opt_func=sgd_opt, **kwargs):
-        model = get_model(data, **kwargs)
+        model = get_model
         init_cnn(model)
         return Learner(model, data, loss_func, lr=lr, cb_funcs=cb_funcs,
                        opt_func=opt_func)
 
+    from dl_framework.optimizer import (StatefulOptimizer, weight_decay,
+                                        AverageGrad)
+
+    from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
+
+    adam_opt = partial(StatefulOptimizer, steppers=[adam_step, weight_decay],
+                       stats=[AverageGrad(dampening=True), AverageSqrGrad(),
+                       StepCount()])
+
     # Combine model and data in learner
-    learn = get_learner(data, 1e-3, opt_func=sgd_opt,  cb_funcs=cbfs)
+    learn = get_learner(data, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
 
     if pretrained is True:
         # Load model
@@ -98,7 +99,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     torch.save(state, model_path)
 
     if inspection is True:
-        evaluate_model(valid_ds, learn.model)
+        evaluate_model(valid_ds, learn.model, norm_path=norm_path)
         plt.savefig('inspection_plot.pdf', dpi=300, bbox_inches='tight',
                     pad_inches=0.01)
 
