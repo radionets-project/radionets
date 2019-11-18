@@ -5,7 +5,7 @@ setup(
     version='0.0.1',
     description='Imaging radio interferometric data with neural networks',
     url='https://github.com/Kevin2/radionets',
-    author='Kevin Schmidt',
+    author='Kevin Schmidt, Felix Geyer',
     author_email='kevin3.schmidt@tu-dortmund.de',
     license='MIT',
     packages=find_packages(),
@@ -25,6 +25,8 @@ setup(
         'jupytext==1.2.4',
         'obspy==1.1.1',
         'h5py==2.9.0',
+        'scikit-image==0.16.2',
+        'pandas==0.25.3'
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
