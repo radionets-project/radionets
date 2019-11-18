@@ -6,7 +6,7 @@ setup(
     description='Imaging radio interferometric data with neural networks',
     url='https://github.com/Kevin2/radionets',
     author='Kevin Schmidt, Felix Geyer',
-    author_email='kevin3.schmidt@tu-dortmund.de',
+    author_email='kevin3.schmidt@tu-dortmund.de', 'felix.geyer@tu-dortmund.de',
     license='MIT',
     packages=find_packages(),
     install_requires=[
