@@ -58,11 +58,13 @@ cnn_training: ./training_done
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/cuda_test.model\
-		10 5e-1 -log True -mask True\
-		-pretrained False\
+		./data/mnist_samp_valid.h5 ./models/hamburg3.model\
+		./models/cnn_architecture.py\
+		./data/normalization_factors.csv\
+		250 8e-4 -log True\
+		-pretrained True ./models/hamburg2.model\
 		-inspection True
-		touch ./training_done
+		# touch ./training_done
 
 clean:
 	rm -rf ./data
