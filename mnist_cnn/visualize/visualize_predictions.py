@@ -1,23 +1,27 @@
-from utils import load_model, load_pre_model, eval_model
-from mnist_cnn.preprocessing import get_h5_data, prepare_dataset
+from mnist_cnn.visualize.utils import (load_architecture, load_pre_model,
+                                       eval_model)
+from mnist_cnn.preprocessing import get_h5_data
+from mnist_cnn.inspection import get_normalization
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 
-i = 12
+i = 0
 
 arch_path = '../models/cnn_architecture.py'
-pretrained_path = '../models/mnist_mixup_adam_leaky_2500.model'
+pretrained_path = '../models/hamburg2.model'
 path_valid = '../data/mnist_samp_valid.h5'
+norm_path = '../data/normalization_factors.csv'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 img = torch.tensor(x_valid[i])
-img_reshaped = img.view(1, 1, 64, 64)
+img_log = torch.log(img)
+img_reshaped = img_log.view(1, 1, 64, 64)
 print(img_reshaped.shape)
-
+img_normed = get_normalization(img_reshaped, norm_path)
+print(img_normed.shape)
 
 model = load_architecture(arch_path)
 model_pre = load_pre_model(model, pretrained_path)
-prediction = eval_model(img_reshaped, model_pre)
+prediction = eval_model(img_normed, model_pre)
 
 print(prediction)
 print(prediction.shape)

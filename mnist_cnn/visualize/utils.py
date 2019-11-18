@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 import imp
 
+
 def plot_mnist(img):
     plt.imshow(img, cmap="RdGy", vmin=-img.max(), vmax=img.max())
     plt.colorbar(label='Amplitude')
@@ -20,6 +21,7 @@ def load_architecture(arch_path):
     module = imp.load_source('get_model', arch_path)
     model = module.get_model()
     return model
+
 
 def eval_model(img, model):
     model.eval()
