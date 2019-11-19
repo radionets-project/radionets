@@ -24,6 +24,7 @@ mnist_samp_train: ./data/mnist_samp_train.h5
 mnist_samp_valid: ./data/mnist_samp_valid.h5
 calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
+input_plot: ./data/plots/input_done
 
 #########################################################
 #	Tasks
@@ -32,13 +33,13 @@ cnn_training: ./training_done
 ./data/mnist_fft_done:
 		mkdir -p data/
 		python create_mnist_fft.py ./../resources/mnist.pkl.gz\
-		./data -test False
+		./data -test False -noise True
 		touch ./data/mnist_fft_done
 
 ./data/mnist_fft_done_quick:
 		mkdir -p data/
 		python create_mnist_fft.py ./../resources/mnist.pkl.gz\
-		./data -test True
+		./data -test True -noise False
 		touch ./data/mnist_fft_done
 
 ./data/mnist_samp_train.h5:
@@ -61,14 +62,24 @@ cnn_training: ./training_done
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5 ./models/cuda_test.model ./data/normalization_factors.csv\
-		10 5e-1 -log True -mask True\
+		10 5e-1 -log True\
 		-pretrained False\
 		-inspection True
 		touch ./training_done
 
+./data/plots/input_done:
+		mkdir -p data/
+		mkdir -p data/plots
+		python create_input_plot.py ./../resources/mnist.pkl.gz
+		touch ./data/plots/input_done
+
 clean:
 	rm -rf ./data
 	rm -f ./training_done
+
 clean_training:
 	rm -f ./training_done
+
+clean_input_plot:
+	rm -rf ./data/plots
 
