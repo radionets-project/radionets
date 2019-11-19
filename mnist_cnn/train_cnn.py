@@ -22,13 +22,12 @@ from inspection import evaluate_model
 @click.argument('num_epochs', type=int)
 @click.argument('lr', type=float)
 @click.option('-log', type=bool, required=False)
-@click.option('-mask', type=bool, required=False)
 @click.option('-pretrained', type=bool, required=False)
 @click.option('-inspection', type=bool, required=False)
 @click.argument('pretrained_model',
                 type=click.Path(exists=True, dir_okay=True), required=False)
 def main(train_path, valid_path, model_path, norm_path, num_epochs, lr, log=True,
-         mask=False, pretrained=False, pretrained_model=None,
+         pretrained=False, pretrained_model=None,
          inspection=False):
     # Load data
     x_train, y_train = get_h5_data(train_path, columns=['x_train', 'y_train'])
