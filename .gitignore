@@ -29,3 +29,5 @@ mnist_cnn/old
 
 *.eggs
 *.egg-info
+
+/mnist_cnn/visualize/test_data
