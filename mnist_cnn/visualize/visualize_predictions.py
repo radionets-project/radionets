@@ -1,21 +1,22 @@
 import click
-from mnist_cnn.visualize.utils import (load_architecture, load_pre_model,
-                                       eval_model)
+from mnist_cnn.visualize.utils import eval_model
 from mnist_cnn.preprocessing import get_h5_data
 from mnist_cnn.inspection import get_normalization
 import matplotlib.pyplot as plt
 import torch
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import dl_framework.architectures as architecture
+from dl_framework.model import load_pre_model
 
 
 @click.command()
-@click.argument('arch_path', type=click.Path(exists=True, dir_okay=True))
+@click.argument('arch', type=str)
 @click.argument('pretrained_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('in_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('norm_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
 @click.option('-index', type=int, required=False)
-def main(arch_path, pretrained_path, in_path,
+def main(arch, pretrained_path, in_path,
          norm_path, out_path, index=None):
     i = index
     x_valid, y_valid = get_h5_data(in_path, columns=['x_valid', 'y_valid'])
@@ -24,9 +25,14 @@ def main(arch_path, pretrained_path, in_path,
     img_reshaped = img_log.view(1, 1, 64, 64)
     img_normed = get_normalization(img_reshaped, norm_path)
 
-    model = load_architecture(arch_path)
-    model_pre = load_pre_model(model, pretrained_path)
-    prediction = eval_model(img_normed, model_pre)
+    # get arch
+    arch = getattr(architecture, arch)()
+
+    # load pretrained model
+    load_pre_model(arch, pretrained_path)
+
+    # predict image
+    prediction = eval_model(img_normed, arch)
 
     print(prediction)
     print(prediction.shape)
