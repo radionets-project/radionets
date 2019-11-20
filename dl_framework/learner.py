@@ -2,11 +2,19 @@ from dl_framework.utils import listify, param_getter
 from dl_framework.callbacks import TrainEvalCallback
 import torch
 from dl_framework.optimizer import sgd_opt
-from dl_framework.model import init_cnn
 
-class CancelTrainException(Exception): pass
-class CancelEpochException(Exception): pass
-class CancelBatchException(Exception): pass
+
+class CancelTrainException(Exception):
+    pass
+
+
+class CancelEpochException(Exception):
+    pass
+
+
+class CancelBatchException(Exception):
+    pass
+
 
 class Learner():
     def __init__(self, model, data, loss_func, opt_func=sgd_opt, lr=1e-2, splitter=param_getter,

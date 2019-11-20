@@ -22,6 +22,7 @@ mnist_cnn/visualize_preprocessing
 
 # make
 *_done
+mnist_cnn/Makefile
 
 # old stuff
 mnist_cnn/old

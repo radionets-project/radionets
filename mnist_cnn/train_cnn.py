@@ -9,7 +9,8 @@ from dl_framework.model import conv, Lambda, flatten, init_cnn
 from dl_framework.param_scheduling import sched_no
 from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    BatchTransformXCallback, CudaCallback,\
-                                   SaveCallback, view_tfm, ParamScheduler
+                                   SaveCallback, view_tfm, ParamScheduler,\
+                                   normalize_tfm
 from inspection import evaluate_model
 
 
@@ -17,16 +18,16 @@ from inspection import evaluate_model
 @click.argument('train_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('valid_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('model_path', type=click.Path(exists=False, dir_okay=True))
+@click.argument('norm_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('num_epochs', type=int)
 @click.argument('lr', type=float)
 @click.option('-log', type=bool, required=False)
-@click.option('-mask', type=bool, required=False)
 @click.option('-pretrained', type=bool, required=False)
 @click.option('-inspection', type=bool, required=False)
 @click.argument('pretrained_model',
                 type=click.Path(exists=True, dir_okay=True), required=False)
-def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
-         mask=False, pretrained=False, pretrained_model=None,
+def main(train_path, valid_path, model_path, norm_path, num_epochs, lr, log=True,
+         pretrained=False, pretrained_model=None,
          inspection=False):
     # Load data
     x_train, y_train = get_h5_data(train_path, columns=['x_train', 'y_train'])
@@ -34,7 +35,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
 
     # Create train and valid datasets
     train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid,
-                                         log=log, use_mask=mask)
+                                         log=log)
 
     # Create databunch with defined batchsize
     bs = 128
@@ -58,6 +59,9 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     # Define resize for mnist data
     mnist_view = view_tfm(1, 64, 64)
 
+    # make normalisation
+    norm = normalize_tfm(norm_path)
+
     # Define scheduled learning rate
     sched = sched_no(lr, lr)
 
@@ -67,6 +71,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
         partial(AvgStatsCallback, nn.MSELoss()),
         partial(ParamScheduler, 'lr', sched),
         CudaCallback,
+        partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         SaveCallback,
     ]
@@ -86,7 +91,8 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
 
     if pretrained is True:
         # Load model
-        print('Load pretrained model.')
+        name_pretrained = pretrained_model.split("/")[-1].split(".")[0]
+        print('\nLoad pretrained model: {}\n'.format(name_pretrained))
         m = learn.model
         m.load_state_dict((torch.load(pretrained_model)))
 
@@ -98,7 +104,7 @@ def main(train_path, valid_path, model_path, num_epochs, lr, log=True,
     torch.save(state, model_path)
 
     if inspection is True:
-        evaluate_model(valid_ds, learn.model)
+        evaluate_model(valid_ds, learn.model, norm_path)
         plt.savefig('inspection_plot.pdf', dpi=300, bbox_inches='tight',
                     pad_inches=0.01)
 

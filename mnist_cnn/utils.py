@@ -2,7 +2,9 @@ import gzip
 import pickle
 import numpy as np
 import h5py
+import matplotlib.pyplot as plt
 from skimage.transform import resize
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def open_mnist(path):
@@ -11,15 +13,49 @@ def open_mnist(path):
     return train_x, valid_x
 
 
-def process_img(image):
+def process_img(image, noise=False):
     ''' Resize images to 64 x 64 and calculate fft
         Return images as vector
     '''
+    if noise:
+        image = add_noise(image)
     img_reshaped = image.reshape(28, 28)
     img_rescaled = resize(img_reshaped, (64, 64), anti_aliasing=True,
                           mode='constant')
     img_fft = np.fft.fftshift(np.fft.fft2(img_rescaled))
     return img_rescaled.reshape(4096), img_fft.reshape(4096)
+
+
+def add_noise(image, mean=0, std=1, index=0, plotting=False):
+    """
+    Used for adding noise and plotting the original and noised picture,
+    if asked.
+    """
+    noise = np.random.normal(mean, std, size=image.shape)*0.15
+    image_noised = image + noise
+    image = image.reshape(28, 28)
+    image_noised = image_noised.reshape(28, 28)
+
+    if plotting:
+        print('Plotting')
+        fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
+
+        ax1.set_title(r'Original')
+        im1 = ax1.imshow(image)
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        fig.colorbar(im1, cax=cax, orientation='vertical')
+
+        ax2.set_title(r"Noised")
+        im2 = ax2.imshow(image_noised)
+        divider = make_axes_locatable(ax2)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        fig.colorbar(im2, cax=cax, orientation='vertical')
+        fig.savefig('data/plots/input_plot_{}.pdf'.format(index), pad_inches=0,
+                    bbox_inches='tight')
+
+    image_noised = image_noised.reshape(784,)
+    return image_noised
 
 
 def reshape_img(img, size=64):
@@ -31,3 +67,24 @@ def write_h5(path, x, y, name_x='x_train', name_y='y_train'):
         hf.create_dataset(name_x,  data=x)
         hf.create_dataset(name_y,  data=y)
         hf.close()
+
+
+def get_h5_data(path, columns):
+    ''' Load mnist h5 data '''
+    f = h5py.File(path, 'r')
+    x = np.abs(np.array(f[columns[0]]))
+    y = np.abs(np.array(f[columns[1]]))
+    return x, y
+
+
+def normalize(x, m, s): return (x-m)/s
+
+
+def create_mask(ar):
+    ''' Generating mask with min and max value != inf'''
+    val = ar.copy()
+    val[np.isinf(val)] = 0
+    low = val.min()
+    high = val.max()
+    mask = (low < ar) & (ar < high)
+    return mask
