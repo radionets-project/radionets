@@ -264,5 +264,5 @@ class SaveCallback(Callback):
     def after_epoch(self):
         if round(self.n_epochs) % 10 == 0:
             state = self.model.state_dict()
-            torch.save(state, './temp.model')
-            print('Model saved.')
+            torch.save(state, './models/temp.model')
+            print('\nFinished Epoch {}, model saved.\n'.format(round(self.n_epochs)))

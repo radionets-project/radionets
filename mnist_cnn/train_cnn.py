@@ -47,7 +47,9 @@ def main(train_path, valid_path, model_path, arch_path, norm_path, num_epochs,
 
     # Define resize for mnist data
     mnist_view = view_tfm(1, 64, 64)
-    normalize = normalize_tfm(norm_path)
+
+    # make normalisation
+    norm = normalize_tfm(norm_path)
 
     # Define scheduled learning rate
     sched = sched_no(lr, lr)
@@ -58,7 +60,7 @@ def main(train_path, valid_path, model_path, arch_path, norm_path, num_epochs,
         partial(AvgStatsCallback, nn.MSELoss()),
         partial(ParamScheduler, 'lr', sched),
         CudaCallback,
-        partial(BatchTransformXCallback, normalize),
+        partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         SaveCallback,
     ]
@@ -87,7 +89,8 @@ def main(train_path, valid_path, model_path, arch_path, norm_path, num_epochs,
 
     if pretrained is True:
         # Load model
-        print('Load pretrained model.')
+        name_pretrained = pretrained_model.split("/")[-1].split(".")[0]
+        print('\nLoad pretrained model: {}\n'.format(name_pretrained))
         m = learn.model
         m.load_state_dict((torch.load(pretrained_model)))
 
@@ -99,7 +102,7 @@ def main(train_path, valid_path, model_path, arch_path, norm_path, num_epochs,
     torch.save(state, model_path)
 
     if inspection is True:
-        evaluate_model(valid_ds, learn.model, norm_path=norm_path)
+        evaluate_model(valid_ds, learn.model, norm_path)
         plt.savefig('inspection_plot.pdf', dpi=300, bbox_inches='tight',
                     pad_inches=0.01)
 

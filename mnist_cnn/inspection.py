@@ -49,9 +49,12 @@ def evaluate_model(valid_ds, model, norm_path, nrows=3):
         axes[i][0].imshow(img.view(h, h).cpu(), cmap='RdGy_r',
                           vmax=img.max(), vmin=-img.max())
         axes[i][1].set_title('y_pred')
-        im = axes[i][1].imshow(pred.view(h, h), vmin=0, vmax=1)
+        im = axes[i][1].imshow(pred.view(h, h), vmin=valid_ds.y[rand].min(),
+                               vmax=valid_ds.y[rand].max())
         axes[i][2].set_title('y_true')
-        axes[i][2].imshow(valid_ds.y[rand].view(h, h), vmin=0, vmax=1)
+        axes[i][2].imshow(valid_ds.y[rand].view(h, h),
+                          vmin=valid_ds.y[rand].min(),
+                          vmax=valid_ds.y[rand].max())
         fig.colorbar(im, cax=axes[i][3])
     plt.tight_layout()
 
