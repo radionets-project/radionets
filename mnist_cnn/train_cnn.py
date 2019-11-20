@@ -12,6 +12,11 @@ from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    SaveCallback, view_tfm, ParamScheduler,\
                                    normalize_tfm
 from inspection import evaluate_model
+from dl_framework.learner import Learner
+from dl_framework.optimizer import sgd_opt
+from dl_framework.optimizer import (StatefulOptimizer, weight_decay,
+                                    AverageGrad)
+from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 
 
 @click.command()
@@ -65,20 +70,12 @@ def main(train_path, valid_path, model_path, arch_path, norm_path, num_epochs,
         SaveCallback,
     ]
 
-    from dl_framework.learner import Learner
-    from dl_framework.optimizer import sgd_opt
-
     def get_learner(data, lr, loss_func=nn.MSELoss(),
                     cb_funcs=None, opt_func=sgd_opt, **kwargs):
         model = get_model
         init_cnn(model)
         return Learner(model, data, loss_func, lr=lr, cb_funcs=cb_funcs,
                        opt_func=opt_func)
-
-    from dl_framework.optimizer import (StatefulOptimizer, weight_decay,
-                                        AverageGrad)
-
-    from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 
     adam_opt = partial(StatefulOptimizer, steppers=[adam_step, weight_decay],
                        stats=[AverageGrad(dampening=True), AverageSqrGrad(),
