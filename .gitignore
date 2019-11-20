@@ -20,7 +20,6 @@ __pycache__/
 # make
 *_done
 */build
-mnist_cnn/Makefile
 
 # old stuff
 mnist_cnn/old
