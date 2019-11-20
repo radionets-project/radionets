@@ -91,7 +91,8 @@ def main(train_path, valid_path, model_path, norm_path, num_epochs, lr, log=True
 
     if pretrained is True:
         # Load model
-        print('Load pretrained model.')
+        name_pretrained = pretrained_model.split("/")[-1].split(".")[0]
+        print('\nLoad pretrained model: {}\n'.format(name_pretrained))
         m = learn.model
         m.load_state_dict((torch.load(pretrained_model)))
 
