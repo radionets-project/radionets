@@ -61,7 +61,7 @@ cnn_training: ./training_done
 		./data/mnist_samp_valid.h5 ./models/hamburg3.model\
 		./models/cnn_architecture.py\
 		./data/normalization_factors.csv\
-		250 8e-4 -log True\
+		50 8e-5 -log True\
 		-pretrained True ./models/hamburg2.model\
 		-inspection True
 		# touch ./training_done
