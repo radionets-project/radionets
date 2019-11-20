@@ -80,9 +80,20 @@ class RunningBatchNorm(nn.Module):
         if self.training: self.update_stats(x)
         return x*self.factor + self.offset
 
+
 def conv(ni, nc, ks, stride, padding):
     conv = nn.Conv2d(ni, nc, ks, stride, padding),
     bn = nn.BatchNorm2d(nc),
     act = GeneralRelu(leak=0.1, sub=0.4) # nn.ReLU()
     layers = [*conv, *bn, act]
     return layers
+
+
+def load_pre_model(model, pre_path):
+    """
+    :param model:       object of type learn.model
+    :param pre_path:    string wich contains the path of the model
+    """
+    name_pretrained = pre_path.split("/")[-1].split(".")[0]
+    print('\nLoad pretrained model: {}\n'.format(name_pretrained))
+    model.load_state_dict(torch.load(pre_path))

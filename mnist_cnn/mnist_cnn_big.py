@@ -57,13 +57,13 @@ data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 # a = data.train_ds.x.reshape(10, 4096)
 # b = data.valid_ds.x.reshape(10, 4096)
 # x_train, x_valid = noramlize_data(a, b)
-# -
 
-img = data.train_ds.x[4]
-plt.imshow(img.reshape(64, 64), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
-plt.xlabel('u')
-plt.ylabel('v')
-plt.colorbar(label='Amplitude')
+# +
+# img = data.train_ds.x[4]
+# plt.imshow(img.reshape(64, 64), cmap='RdGy_r', vmax=img.max(), vmin=-img.max())
+# plt.xlabel('u')
+# plt.ylabel('v')
+# plt.colorbar(label='Amplitude')
 
 # +
 from torch import optim
@@ -153,7 +153,7 @@ learn = get_learner(data, 1e-1, opt_func=adam_opt, cb_funcs=cbfs)
 # -
 
 
-learn.fit(100)
+learn.fit(50)
 
 # +
 # Evaluate model
@@ -231,7 +231,7 @@ plt.savefig('mnist_samp_results2.pdf', dpi=100, bbox_inches='tight', pad_inches=
 # Load model
 import torch
 m = learn.model
-m.load_state_dict(torch.load('./models/mnist_mixup_adam_leaky_7500.model'))
+m.load_state_dict(torch.load('./models/mnist_mixup_adam_leaky.model'))
 learn.model.cuda()
 
 import imp

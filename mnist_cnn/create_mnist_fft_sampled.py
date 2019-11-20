@@ -1,5 +1,3 @@
-import sys
-sys.path.append('..')
 import click
 from sampling.uv_simulations import sample_freqs
 from preprocessing import get_h5_data

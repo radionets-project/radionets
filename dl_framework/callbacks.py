@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
-from utils import normalize
+from dl_framework.data import normalize
 
 
 class CancelTrainException(Exception):
