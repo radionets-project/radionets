@@ -1,7 +1,6 @@
 import click
 from sampling.uv_simulations import sample_freqs
-from preprocessing import get_h5_data
-from utils import write_h5
+from mnist_cnn.utils import write_h5, get_h5_data
 from tqdm import tqdm
 
 
