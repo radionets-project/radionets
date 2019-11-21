@@ -1,8 +1,24 @@
 from torch.utils.data import DataLoader
+import torch
 
 
 def normalize(x, m, s):
     return (x-m)/s
+
+
+def do_normalisation(x, norm):
+    """
+    :param x        Object to be normalized
+    :param norm     Pandas Dataframe which includes the normalisation factors
+    """
+    train_mean_real = torch.tensor(norm['train_mean_real'].values[0]).float()
+    train_std_real = torch.tensor(norm['train_std_real'].values[0]).float()
+    train_mean_imag = torch.tensor(norm['train_mean_imag'].values[0]).float()
+    train_std_imag = torch.tensor(norm['train_std_imag'].values[0]).float()
+    x[:, 0] = normalize(x[:, 0], train_mean_real, train_std_real)
+    x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
+    assert not torch.isinf(x).any()
+    return x
 
 
 class Dataset():
