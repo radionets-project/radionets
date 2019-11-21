@@ -1,12 +1,13 @@
 import click
+import pandas as pd
 from mnist_cnn.visualize.utils import eval_model
 from mnist_cnn.utils import get_h5_data
-from mnist_cnn.inspection import get_normalization
 import matplotlib.pyplot as plt
 import torch
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
+from dl_framework.data import do_normalisation
 
 
 @click.command()
@@ -23,7 +24,8 @@ def main(arch, pretrained_path, in_path,
     img = torch.tensor(x_valid[i])
     img_log = torch.log(img)
     img_reshaped = img_log.view(1, 1, 64, 64)
-    img_normed = get_normalization(img_reshaped, norm_path)
+    norm = pd.read_csv(norm_path)
+    img_normed = do_normalisation(img_reshaped, norm)
 
     # get arch
     arch = getattr(architecture, arch)()
