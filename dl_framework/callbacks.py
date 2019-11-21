@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
-from dl_framework.data import normalize
+from dl_framework.data import do_normalisation
 
 
 class CancelTrainException(Exception):
@@ -110,6 +110,8 @@ class Recorder(Callback):
         if not self.in_train:
             return
         self.lrs.append(self.opt.hypers[-1]['lr'])
+
+    def after_epoch(self):
         self.losses.append(self.loss.detach().cpu())
 
     def plot_lr(self):
@@ -176,14 +178,7 @@ def view_tfm(*size):
 def normalize_tfm(norm_path):
     def _inner(x):
         norm = pd.read_csv(norm_path)
-        train_mean_real = torch.tensor(norm['train_mean_real'].values[0]).float()
-        train_std_real = torch.tensor(norm['train_std_real'].values[0]).float()
-        train_mean_imag = torch.tensor(norm['train_mean_imag'].values[0]).float()
-        train_std_imag = torch.tensor(norm['train_std_imag'].values[0]).float()
-
-        x[:, 0] = normalize(x[:, 0], train_mean_real, train_std_real)
-        x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
-        assert not torch.isinf(x).any()
+        x = do_normalisation(x, norm)
         return x
     return _inner
 
