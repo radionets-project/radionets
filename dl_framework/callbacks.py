@@ -160,29 +160,30 @@ class CudaCallback(Callback):
 class BatchTransformXCallback(Callback):
     _order = 2
     def __init__(self, tfm): self.tfm = tfm
-    def begin_batch(self): self.run.xb = self.tfm(self.run.xb, self)
+    def begin_batch(self): self.run.xb = self.tfm(self.run.xb)
 
 
 def view_tfm(*size):
-    def _inner(x, kwargs):
-        return x.view(*((-1,)+size))
+    def _inner(x):
+        """
+        add correct shape (bs, #channels, shape of array)
+        """
+        a = x.view(*((-1,)+size))
+        return a
     return _inner
 
 
 def normalize_tfm(norm_path):
-    def _inner(x, self):
+    def _inner(x):
         norm = pd.read_csv(norm_path)
-        train_mean = torch.tensor(norm['train_mean'].values[0]).float()
-        train_std = torch.tensor(norm['train_std'].values[0]).float()
-        valid_mean = torch.tensor(norm['valid_mean'].values[0]).float()
-        if self.in_train:
-            x[torch.isinf(x)] = train_mean
-            x = normalize(x, train_mean, train_std)
-            assert not torch.isinf(x).any()
-        if not self.in_train:
-            x[torch.isinf(x)] = valid_mean
-            x = normalize(x, train_mean, train_std)
-            assert not torch.isinf(x).any()
+        train_mean_real = torch.tensor(norm['train_mean_real'].values[0]).float()
+        train_std_real = torch.tensor(norm['train_std_real'].values[0]).float()
+        train_mean_imag = torch.tensor(norm['train_mean_imag'].values[0]).float()
+        train_std_imag = torch.tensor(norm['train_std_imag'].values[0]).float()
+
+        x[:, 0] = normalize(x[:, 0], train_mean_real, train_std_real)
+        x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
+        assert not torch.isinf(x).any()
         return x
     return _inner
 
