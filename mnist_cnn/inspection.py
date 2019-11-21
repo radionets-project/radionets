@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-from dl_framework.callbacks import view_tfm
 import pandas as pd
-from dl_framework.data import normalize
+from dl_framework.callbacks import view_tfm
+from dl_framework.data import do_normalisation
 
 
 def training_stats(run):
@@ -15,24 +15,12 @@ def training_stats(run):
     plt.tight_layout()
 
 
-def get_normalization(img, norm_path):
-    norm = pd.read_csv(norm_path)
-    train_mean_real = torch.tensor(norm['train_mean_real'].values[0]).float()
-    train_std_real = torch.tensor(norm['train_std_real'].values[0]).float()
-    train_mean_imag = torch.tensor(norm['train_mean_imag'].values[0]).float()
-    train_std_imag = torch.tensor(norm['train_std_imag'].values[0]).float()
-
-    img[:, 0] = normalize(img[:, 0], train_mean_real, train_std_real)
-    img[:, 1] = normalize(img[:, 1], train_mean_imag, train_std_imag)
-    # assert not torch.isinf().any()
-    return img
-
-
 def get_eval_img(valid_ds, model, norm_path):
     x_t = valid_ds.x.float()
     rand = np.random.randint(0, len(x_t))
     img = x_t[rand].cuda()
-    img = get_normalization(img, norm_path)
+    norm = pd.read_csv(norm_path)
+    img = do_normalisation(img, norm)
     h = int(np.sqrt(img.shape[1]))
     img = img.view(-1, h, h).unsqueeze(0)
     model.eval()
@@ -72,3 +60,10 @@ def test_initialization(dl, model, layer):
     print('after layer ' + str(layer))
     print('mean:', p.mean())
     print('std:', p.std())
+
+
+def plot_loss(learn, model_path):
+    name_model = model_path.split("/")[-1].split(".")[0]
+    print('\nPlotting Loss for: {}\n'.format(name_model))
+    learn.recorder.plot_loss()
+    plt.savefig('./models/loss.pdf', bbox_inches='tight', pad_inches=0.01)
