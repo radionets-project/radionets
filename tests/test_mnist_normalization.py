@@ -2,7 +2,8 @@ import warnings
 
 
 def test_normalization():
-    from mnist_cnn.utils import get_h5_data, normalize
+    from dl_framework.data import normalize
+    from mnist_cnn.utils import get_h5_data
     import numpy as np
     import os
     import pandas as pd
