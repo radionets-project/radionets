@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from functools import partial
 import matplotlib.pyplot as plt
-from preprocessing import get_h5_data, prepare_dataset, get_dls, DataBunch
+from preprocessing import prepare_dataset, get_dls, DataBunch
 from dl_framework.param_scheduling import sched_no
 from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    BatchTransformXCallback, CudaCallback,\
@@ -16,6 +16,7 @@ from dl_framework.optimizer import (StatefulOptimizer, weight_decay,
 from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
+from mnist_cnn.utils import get_h5_data
 
 
 @click.command()
@@ -50,7 +51,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     arch = getattr(architecture, arch)()
 
     # Define resize for mnist data
-    mnist_view = view_tfm(1, 64, 64)
+    mnist_view = view_tfm(2, 64, 64)
 
     # make normalisation
     norm = normalize_tfm(norm_path)
@@ -79,7 +80,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     if pretrained is True:
         # Load model
         load_pre_model(learn.model, pretrained_model)
-
+    print(learn.model)
     # Train model
     learn.fit(num_epochs)
 
