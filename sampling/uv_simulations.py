@@ -21,7 +21,7 @@ class source():
         return x, y, z
 
     def propagate(self, multi_pointing=False):
-        steps = np.random.randint(20, 60)
+        steps = 50  # np.random.randint(20, 60)
         lon_start = self.lon
         lon_stop = lon_start - steps
         lon_step = 0.5
@@ -99,7 +99,8 @@ class antenna():
                              np.cos(lat)*np.sin(lon), np.sin(lat)]
                              ])
 
-        enu = np.array([rot(lon_ref[j], lat_ref[j]) @ (self.all[i] - ref[j]) for i in range(self.len) for j in range(len(lon_ref))])
+        enu = np.array([rot(lon_ref[j], lat_ref[j]) @ (self.all[i] - ref[j])
+                        for i in range(self.len) for j in range(len(lon_ref))])
         self.ant_enu = enu
         self.x_enu = enu.ravel()[0::3]
         self.y_enu = enu.ravel()[1::3]
@@ -158,8 +159,8 @@ def create_mask(u, v):
 
 def sample_freqs(img, ant_config_path, plot=False):
     ant = antenna(*get_antenna_config(ant_config_path))
-    lon = np.random.randint(-90, -70)
-    lat = np.random.randint(30, 80)
+    lon = -80  # np.random.randint(-90, -70)
+    lat = 50  # np.random.randint(30, 80)
     s = source(lon, lat)
     s.propagate(multi_pointing=True)
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
