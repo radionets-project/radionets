@@ -1,7 +1,8 @@
 from torch.utils.data import DataLoader
 
 
-def normalize(x, m, s): return (x-m)/s
+def normalize(x, m, s):
+    return (x-m)/s
 
 
 class Dataset():
