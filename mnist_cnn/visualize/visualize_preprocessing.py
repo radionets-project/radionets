@@ -3,7 +3,8 @@ sys.path.append('../..')
 
 import matplotlib.pyplot as plt
 import numpy as np
-from mnist_cnn.preprocessing import get_h5_data, prepare_dataset, get_dls, DataBunch
+from mnist_cnn.preprocessing import prepare_dataset, get_dls, DataBunch
+from mnist_cnn.utils import get_h5_data
 from sampling.uv_simulations import sample_freqs
 from mnist_cnn.visualize.utils import plot_mnist
 from tqdm import tqdm
