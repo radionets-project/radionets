@@ -1,6 +1,6 @@
 import click
 from mnist_cnn.visualize.utils import eval_model
-from mnist_cnn.preprocessing import get_h5_data
+from mnist_cnn.utils import get_h5_data
 from mnist_cnn.inspection import get_normalization
 import matplotlib.pyplot as plt
 import torch
