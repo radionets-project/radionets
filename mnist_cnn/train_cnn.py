@@ -9,7 +9,7 @@ from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    BatchTransformXCallback, CudaCallback,\
                                    SaveCallback, view_tfm, ParamScheduler,\
                                    normalize_tfm
-from inspection import evaluate_model
+from inspection import evaluate_model, plot_loss
 from dl_framework.learner import get_learner
 from dl_framework.optimizer import (StatefulOptimizer, weight_decay,
                                     AverageGrad)
@@ -80,9 +80,10 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     if pretrained is True:
         # Load model
         load_pre_model(learn.model, pretrained_model)
-    print(learn.model)
+    print(learn.model, '\n')
     # Train model
     learn.fit(num_epochs)
+    plot_loss(learn, model_path)
 
     # Save model
     state = learn.model.state_dict()
