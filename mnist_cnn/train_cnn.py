@@ -83,11 +83,13 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     print(learn.model, '\n')
     # Train model
     learn.fit(num_epochs)
-    plot_loss(learn, model_path)
 
     # Save model
     state = learn.model.state_dict()
     torch.save(state, model_path)
+
+    # Plot loss
+    plot_loss(learn, model_path)
 
     if inspection is True:
         evaluate_model(valid_ds, learn.model, norm_path)
