@@ -35,7 +35,7 @@ Feasibility study to test analysis strategies with convulotional neural networks
 
 ## Versions used
 
-* Python 3.7.3
+* Python 3.7.5
 * pyTorch 1.2.0
 * cuda V10.1.243
 
