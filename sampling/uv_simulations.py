@@ -139,8 +139,14 @@ def get_uv_coverage(source, antenna, iterate=False):
     return u, v, steps
 
 
-def create_mask(u, v):
-    uv_hist, _, _ = np.histogram2d(u ,v , bins=64)
+def create_mask(u, v, size=64):
+    ''' Create 2d mask from a given (uv)-coverage
+
+    u: array of u coordinates
+    v: array of v coordinates
+    size: number of bins
+    '''
+    uv_hist, _, _ = np.histogram2d(u ,v , bins=size)
     # exclude center
     uv_hist[31,31] = 0
     uv_hist[31,32] = 0
