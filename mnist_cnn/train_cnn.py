@@ -27,14 +27,29 @@ from mnist_cnn.utils import get_h5_data
 @click.argument('norm_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('num_epochs', type=int)
 @click.argument('lr', type=float)
-@click.option('-log', type=bool, required=False)
-@click.option('-pretrained', type=bool, required=False)
-@click.option('-inspection', type=bool, required=False)
 @click.argument('pretrained_model',
                 type=click.Path(exists=True, dir_okay=True), required=False)
+@click.option('-log', type=bool, required=False, help='use of logarith')
+@click.option('-pretrained', type=bool, required=False,
+              help='use of a pretrained model')
+@click.option('-inspection', type=bool, required=False,
+              help='make an inspection plot')
 def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
          lr, log=True, pretrained=False, pretrained_model=None,
          inspection=False):
+    """
+    Train the neural network with existing training and validation data.
+
+    TRAIN_PATH is the path to the training data\n
+    VALID_PATH ist the path to the validation data\n
+    MODEL_PATH is the Path to which the model is saved\n
+    ARCH is the name of the architecture which is used\n
+    NORM_PATH is the path to the normalisation factors\n
+    NUM_EPOCHS is the number of epochs\n
+    LR is the learning rate\n
+    PRETRAINED_MODEL is the path to a pretrained model, which is
+                     loaded at the beginning of the training\n
+    """
     # Load data
     x_train, y_train = get_h5_data(train_path, columns=['x_train', 'y_train'])
     x_valid, y_valid = get_h5_data(valid_path, columns=['x_valid', 'y_valid'])
