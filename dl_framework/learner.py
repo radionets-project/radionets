@@ -2,10 +2,21 @@ from dl_framework.utils import listify, param_getter
 from dl_framework.callbacks import TrainEvalCallback
 import torch
 from dl_framework.optimizer import sgd_opt
+import torch.nn as nn
+from dl_framework.model import init_cnn
 
-class CancelTrainException(Exception): pass
-class CancelEpochException(Exception): pass
-class CancelBatchException(Exception): pass
+
+class CancelTrainException(Exception):
+    pass
+
+
+class CancelEpochException(Exception):
+    pass
+
+
+class CancelBatchException(Exception):
+    pass
+
 
 class Learner():
     def __init__(self, model, data, loss_func, opt_func=sgd_opt, lr=1e-2, splitter=param_getter,
@@ -90,3 +101,10 @@ class Learner():
         assert cb_name in self.ALL_CBS
         for cb in sorted(self.cbs, key=lambda x: x._order): res = cb(cb_name) and res
         return res
+
+
+def get_learner(data, arch, lr, loss_func=nn.MSELoss(),
+                cb_funcs=None, opt_func=sgd_opt, **kwargs):
+    init_cnn(arch)
+    return Learner(arch, data, loss_func, lr=lr, cb_funcs=cb_funcs,
+                   opt_func=opt_func)

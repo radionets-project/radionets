@@ -4,9 +4,7 @@
 
 # data
 mnist_cnn/data
-
-# vscode
-mnist_cnn/.vscode
+*.uvf
 
 # cache
 __pycache__/
@@ -14,14 +12,14 @@ __pycache__/
 # model 
 *.model
 
+# images
 *.jpg
 *.pdf
 *.gif
-*.uvf
-mnist_cnn/visualize_preprocessing
 
 # make
 *_done
+*/build
 
 # old stuff
 mnist_cnn/old
@@ -31,3 +29,5 @@ mnist_cnn/old
 
 *.eggs
 *.egg-info
+
+/mnist_cnn/visualize/test_data
