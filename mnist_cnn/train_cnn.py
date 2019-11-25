@@ -11,8 +11,8 @@ from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    normalize_tfm
 from inspection import evaluate_model, plot_loss
 from dl_framework.learner import get_learner
-from dl_framework.optimizer import (StatefulOptimizer, weight_decay,
-                                    AverageGrad)
+from dl_framework.optimizer import StatefulOptimizer, weight_decay,\
+                                   AverageGrad
 from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
@@ -85,6 +85,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
         SaveCallback,
     ]
 
+    # Define optimiser function
     adam_opt = partial(StatefulOptimizer, steppers=[adam_step, weight_decay],
                        stats=[AverageGrad(dampening=True), AverageSqrGrad(),
                        StepCount()])
@@ -92,10 +93,14 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     # Combine model and data in learner
     learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
 
+    # use pre-trained model if asked
     if pretrained is True:
         # Load model
         load_pre_model(learn.model, pretrained_model)
+
+    # Print model architecture
     print(learn.model, '\n')
+
     # Train model
     learn.fit(num_epochs)
 
@@ -106,6 +111,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     # Plot loss
     plot_loss(learn, model_path)
 
+    # plot inout, prediction and true image if asked
     if inspection is True:
         evaluate_model(valid_ds, learn.model, norm_path)
         plt.savefig('inspection_plot.pdf', dpi=300, bbox_inches='tight',
