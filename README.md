@@ -26,14 +26,14 @@ Framework used to create and train neural networks. Most of it can be found in [
 Functions to simulate and illustrate radio interferometric observations.
 
 * Define antenna arrays
-* Calcalute baselines
+* Calculate baselines
 * Simulate (uv)-coverages
 * Create (uv)-masks
 * Illustrate uv-coverages and baselines for different observations
 
 ## mnist_cnn
 
-Feasibility study to test analysis strategies with convulotional neural networks.
+Feasibility study to test analysis strategies with convolutional neural networks.
 
 * Reconstruct handwritten digits from their sampled Fourier spectrum
 * Simulated VLBA observations used for sampling
