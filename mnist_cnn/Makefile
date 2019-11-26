@@ -54,16 +54,16 @@ input_plot: ./data/plots/input_done
 
 ./data/normalization_factors.csv:
 		python calculate_normalization.py\
-		-log False -use_mask False\
+		-log True -use_mask True\
 		data/mnist_samp_train.h5 data/mnist_samp_valid.h5\
 		data/normalization_factors.csv
 
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/one_mask_no_noise.model\
+		./data/mnist_samp_valid.h5 ./models/one_mask_no_noise_log.model\
 		cnn ./data/normalization_factors.csv\
-		750 1e-3 -log False\
+		750 3e-1 -log True\
 		-pretrained False \
 		-inspection True
 		touch ./training_done
