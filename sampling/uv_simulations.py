@@ -20,17 +20,18 @@ class source():
         z = quant[2].value
         return x, y, z
 
-    def propagate(self, multi_pointing=False):
-        steps = 50  # np.random.randint(20, 60)
+    def propagate(self, num_steps=None, multi_pointing=False):
+        if num_steps is None:
+            num_steps = np.random.randint(30, 60)
         lon_start = self.lon
-        lon_stop = lon_start - steps
+        lon_stop = lon_start - num_steps
         lon_step = 0.5
         lon = np.arange(lon_stop, lon_start, lon_step)
         lon = lon[::-1]
 
         lat_start = self.lat
         direction = np.sign(np.random.randint(0, 1) - 0.5)
-        lat_stop = round((lat_start + direction * steps/50) + 0.005, 3)
+        lat_stop = round((lat_start + direction * num_steps/50) + 0.005, 3)
         lat_step = 0.01
         if lat_start > lat_stop:
             lat = np.arange(lat_stop, lat_start, lat_step)
@@ -157,12 +158,15 @@ def create_mask(u, v):
     return np.rot90(mask)
 
 
-def sample_freqs(img, ant_config_path, plot=False):
+def sample_freqs(img, ant_config_path, lon=None, lat=None, num_steps=None,
+                 plot=False):
     ant = antenna(*get_antenna_config(ant_config_path))
-    lon = -80  # np.random.randint(-90, -70)
-    lat = 50  # np.random.randint(30, 80)
+    if lon is None:
+        lon = np.random.randint(-90, -70)
+    if lat is None:
+        lat = np.random.randint(30, 80)
     s = source(lon, lat)
-    s.propagate(multi_pointing=True)
+    s.propagate(num_steps=num_steps, multi_pointing=True)
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
     mask = create_mask(u, v)
     img = img.reshape(64, 64)
