@@ -4,7 +4,7 @@
 
 Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct (image) calibrated observations with convolutional neural networks. 
 This repository is build up as a python package. After cloning you can install it with
-    pip install .
+`pip install .`.
 While installing you may experience some problems with cartopy. In this case you have to install a proj and a geos library before:
 ```
 sudo apt-get -y install libgeos-dev
@@ -25,8 +25,10 @@ Framework used to create and train neural networks. Most of it can be found in [
 
 Functions to simulate and illustrate radio interferometric observations.
 
-* Simulate antenna arrays
+* Define antenna arrays
 * Calcalute baselines
+* Simulate (uv)-coverages
+* Create (uv)-masks
 * Illustrate uv-coverages and baselines for different observations
 
 ## mnist_cnn
@@ -36,6 +38,12 @@ Feasibility study to test analysis strategies with convulotional neural networks
 * Reconstruct handwritten digits from their sampled Fourier spectrum
 * Simulated VLBA observations used for sampling
 * Simple CNN model for reconstruction and retransformation
+
+All analysis steps can be run using the Makefile inside the mnist_cnn directory. The different steps for an example analysis are
+1. mnist_fft: rescale and create the Fourier transformation of the mnist images
+2. mnist_samp: sample the Fourier space with simulated (uv)-coverages
+3. calc_normalization: calculate normalization factors to normalize train and valid dataset
+4. cnn_training: train the convolutional neural network, many options are available here
 
 ## Versions used
 
