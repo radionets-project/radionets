@@ -6,10 +6,10 @@ Executables to simulate and analyze radio interferometric data in python. The go
 This repository is build up as a python package. After cloning you can install it with
     pip install .
 While installing you may experience some problems with cartopy. In this case you have to install a proj and a geos library before:
-    sudo apt-get -y install libgeos-dev
-    sudo apt-get -y install libproj-dev
+`sudo apt-get -y install libgeos-dev`
+`sudo apt-get -y install libproj-dev`
 When you still have problems installing cartopy you can try the version on conda-forge:
-    conda install --channel conda-forge cartopy
+`conda install --channel conda-forge cartopy`
 
 At the moment the repository covers the following blocks:
 
