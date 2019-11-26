@@ -4,7 +4,7 @@
 
 Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct (image) calibrated observations with convolutional neural networks. 
 This repository is build up as a python package. After cloning you can install it with
-`pip install .`.
+`pip install .` after navigating to the folder.
 While installing you may experience some problems with cartopy. In this case you have to install a proj and a geos library before:
 ```
 sudo apt-get -y install libgeos-dev
