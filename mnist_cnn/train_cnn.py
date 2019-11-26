@@ -111,7 +111,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     # Plot loss
     plot_loss(learn, model_path)
 
-    # plot inout, prediction and true image if asked
+    # Plot input, prediction and true image if asked
     if inspection is True:
         evaluate_model(valid_ds, learn.model, norm_path)
         plt.savefig('inspection_plot.pdf', dpi=300, bbox_inches='tight',
