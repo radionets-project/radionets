@@ -39,7 +39,8 @@ Feasibility study to test analysis strategies with convulotional neural networks
 * Simulated VLBA observations used for sampling
 * Simple CNN model for reconstruction and retransformation
 
-All analysis steps can be run using the Makefile inside the mnist_cnn directory. The different steps for an example analysis are
+All analysis steps can be run using the Makefile inside the mnist_cnn directory.
+The different steps for an example analysis are:
 1. mnist_fft: rescale and create the Fourier transformation of the mnist images
 2. mnist_samp: sample the Fourier space with simulated (uv)-coverages
 3. calc_normalization: calculate normalization factors to normalize train and valid dataset
