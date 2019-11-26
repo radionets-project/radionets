@@ -33,7 +33,7 @@ input_plot: ./data/plots/input_done
 ./data/mnist_fft_done:
 		mkdir -p data/
 		python create_mnist_fft.py ./../resources/mnist.pkl.gz\
-		./data -test False -noise True
+		./data -test False -noise False
 		touch ./data/mnist_fft_done
 
 ./data/mnist_fft_done_quick:
@@ -45,26 +45,34 @@ input_plot: ./data/plots/input_done
 ./data/mnist_samp_train.h5:
 		python create_mnist_fft_sampled.py\
 		data/mnist_train.h5 data/mnist_samp_train.h5\
-		../sampling/layouts/vlba.txt -train True
+		../sampling/layouts/vlba.txt -train True\
+		-specific_mask True\
+		-lon -80\
+		-lat 50\
+		-steps 50
 
 ./data/mnist_samp_valid.h5:
 		python create_mnist_fft_sampled.py\
 		data/mnist_valid.h5 data/mnist_samp_valid.h5\
-		../sampling/layouts/vlba.txt -train False 
+		../sampling/layouts/vlba.txt -train False\
+		-specific_mask True\
+		-lon -80\
+		-lat 50\
+		-steps 50
 
 ./data/normalization_factors.csv:
 		python calculate_normalization.py\
-		-log True -use_mask True\
+		-log False -use_mask True\
 		data/mnist_samp_train.h5 data/mnist_samp_valid.h5\
 		data/normalization_factors.csv
 
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/cuda_test.model\
+		./data/mnist_samp_valid.h5 ./models/test_one_mask.model\
 		cnn ./data/normalization_factors.csv\
-		10 5e-1 -log True\
-		-pretrained False\
+		10 3e-1 -log False\
+		-pretrained False \
 		-inspection True
 		touch ./training_done
 
