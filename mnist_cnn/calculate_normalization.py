@@ -14,6 +14,9 @@ import pandas as pd
 @click.option('-use_mask', type=bool, required=False)
 def main(train_path, valid_path, out_path, log=False, use_mask=False):
     x_train, _ = get_h5_data(train_path, columns=['x_train', 'y_train'])
+    
+    # log option disabled, improve or drop in future versions
+    
     # x_valid, _ = get_h5_data(valid_path, columns=['x_valid', 'y_valid'])
 
     # split in real and imaginary part
