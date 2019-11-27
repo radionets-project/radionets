@@ -149,7 +149,7 @@ def create_mask(u, v, size=64):
     v: array of v coordinates
     size: number of bins
     '''
-    uv_hist, _, _ = np.histogram2d(u ,v , bins=size)
+    uv_hist, _, _ = np.histogram2d(u, v, bins=size)
     # exclude center
     uv_hist[31, 31] = 0
     uv_hist[31, 32] = 0
