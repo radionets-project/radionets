@@ -20,8 +20,8 @@ def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot=0, center=None):
         y_0 = center[1]
 
     rotation = np.deg2rad(rot)
-    x_rot = (np.cos(rotation) * x - np.sin(rotation) * y) 
-    y_rot = (np.sin(rotation) * x + np.cos(rotation) * y) 
+    x_rot = (np.cos(rotation) * x - np.sin(rotation) * y)
+    y_rot = (np.sin(rotation) * x + np.cos(rotation) * y)
 
     gauss = flux * np.exp(- ((x_rot - x_0)**2/(2*(x_fwhm)**2) +
                           (y_rot - y_0)**2 / (2*(y_fwhm)**2)))
@@ -40,7 +40,8 @@ def create_grid(pixel):
 
 
 def gaussian_source(X, Y, blur=False):
-    ''' Creates a gaussian source consisting of different gaussian componentes on a 2d grid
+    ''' Creates a gaussian source consisting of different gaussian componentes
+        on a 2d grid
 
     X: x coordinates of 2d grid
     Y: y coordinates of 2d grid
@@ -69,8 +70,8 @@ def simulate_gaussian_source(pixel, blur=False):
         using create_grid and gaussian_source
 
     pixel: grid size in x and y
-    blur: smear the components with a gaussian filter 
-    
+    blur: smear the components with a gaussian filter
+
     number of components
     list of components?
     2 sided /  1 sided
