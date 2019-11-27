@@ -17,7 +17,7 @@ def plot_uv_coverage(u, v):
     plt.xlabel(r'u / $\lambda$', fontsize=16)
     plt.ylabel(r'v / $\lambda$', fontsize=16)
     plt.tight_layout()
-    
+
 
 def plot_baselines(antenna):
     ''' Visualize baselines of an antenna layout
@@ -27,9 +27,10 @@ def plot_baselines(antenna):
     x_base, y_base = antenna.get_baselines()
     plt.plot(x_base, y_base, linestyle='--',
              color='#2ca02c', zorder=0, label='Baselines', alpha=0.35)
-    
 
-def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines=False):
+
+def plot_antenna_distribution(source_lon, source_lat, source, antenna,
+                              baselines=False):
     ''' Visualize antenna distribution seen from a specific source position
 
     source_lon: longitude of the source
@@ -38,7 +39,7 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
     antenna: antenna class object
     baselines: enable baseline plotting
     '''
-    x, y, z = source.to_ecef(val=[source_lon, source_lat])  # only use source class ?
+    x, y, z = source.to_ecef(val=[source_lon, source_lat])  # only use source ?
     x_enu_ant, y_enu_ant = antenna.to_enu(x, y, z)
 
     ax = plt.axes(projection=ccrs.Orthographic(source_lon, source_lat))
@@ -47,8 +48,9 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
 
     plt.plot(x_enu_ant, y_enu_ant, marker='o', markersize=6, color='#1f77b4',
              linestyle='none', label='Antenna positions')
-    plt.plot(x, y, marker='*', linestyle='none', color='#ff7f0e', markersize=15,
-             transform=ccrs.Geodetic(), zorder=10, label='Source')
+    plt.plot(x, y, marker='*', linestyle='none', color='#ff7f0e',
+             markersize=15, transform=ccrs.Geodetic(), zorder=10,
+             label='Source')
 
     if baselines is True:
         plot_baselines(antenna)
@@ -58,7 +60,7 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
 
 
 def animate_baselines(source, antenna, filename, fps):
-    ''' Create gif to animate change of baselines during an observation 
+    ''' Create gif to animate change of baselines during an observation
 
     source: source class object
     antenna: antenna class object
@@ -67,7 +69,7 @@ def animate_baselines(source, antenna, filename, fps):
     '''
     s_lon = source.lon_prop
     s_lat = source.lat_prop
-    
+
     fig = plt.figure(figsize=(6, 6), dpi=100)
 
     def init():
@@ -85,13 +87,13 @@ def animate_baselines(source, antenna, filename, fps):
 
 
 def animate_uv_coverage(source, antenna, filename, fps):
-    ''' Create gif to animate improvement of (uv)-coverage during an observation 
+    ''' Create gif to animate improvement of (uv)-coverage during an observation
 
     source: source class object
     antenna: antenna class object
     filename: name of the created gif
     fps: frames per seconds of the gif
-    '''    
+    '''
     u, v, steps = get_uv_coverage(source, antenna, iterate=True)
 
     fig = plt.figure(figsize=(6, 6), dpi=100)
@@ -114,10 +116,11 @@ def plot_source(img, ft=False):
     ''' Visualize a radio source
 
     img: 2d array of the image
-    ft: if True, the Fourier transformation (frequency space) of the image is plotted
+    ft: if True, the Fourier transformation (frequency space) of the image
+        is plotted
     '''
     plt.rcParams.update({'font.size': 18})
-    fig = plt.figure(figsize=(8,6))
+    fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111)
     if ft is False:
         img = img
@@ -133,7 +136,7 @@ def plot_source(img, ft=False):
     s = ax.imshow(img, cmap=viridis_white_r)  # drop special cmap?
     ax.set_yticklabels([])
     ax.set_xticklabels([])
-    ax.xaxis.set_ticks_position('none') 
+    ax.xaxis.set_ticks_position('none')
     ax.yaxis.set_ticks_position('none')
     plt.tight_layout()
 
