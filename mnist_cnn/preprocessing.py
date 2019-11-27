@@ -1,20 +1,13 @@
-import h5py
+
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
 import warnings
+from mnist_cnn.utils import split_real_imag, combine_and_swap_axes
 
 
 # Define torch device
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-
-def get_h5_data(path, columns):
-    ''' Load mnist h5 data '''
-    f = h5py.File(path, 'r')
-    x = np.abs(np.array(f[columns[0]]))
-    y = np.abs(np.array(f[columns[1]]))
-    return x, y
 
 
 def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False):
@@ -23,6 +16,13 @@ def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False):
     log (optional)
     create ArrayDataset
     '''
+
+    x_train_real, x_train_imag = split_real_imag(x_train)
+    x_valid_real, x_valid_imag = split_real_imag(x_valid)
+
+    x_train = combine_and_swap_axes(x_train_real, x_train_imag)
+    x_valid = combine_and_swap_axes(x_valid_real, x_valid_imag)
+
     if log is True:
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         x_train = np.log(x_train)
@@ -30,12 +30,10 @@ def prepare_dataset(x_train, y_train, x_valid, y_valid, log=False):
 
     x_train, y_train, x_valid, y_valid = map(torch.tensor, (x_train, y_train,
                                                             x_valid, y_valid))
+
     train_ds = ArrayDataset(x_train, y_train)
     valid_ds = ArrayDataset(x_valid, y_valid)
 
-    assert x_train.shape, y_train.shape != (50000, 4096)
-    assert x_valid.shape, y_valid.shape != (10000, 4096)
-    assert train_ds.c, valid_ds.c != 4096
     return train_ds, valid_ds
 
 

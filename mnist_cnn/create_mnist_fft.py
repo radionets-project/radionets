@@ -22,12 +22,12 @@ def main(data_path, out_path, test=False, noise=False):
 
     # Process train images, split into x and y
     all_train = np.concatenate([process_img(img, noise) for img in tqdm(train_x)])
-    y_train = all_train[0::2]
+    y_train = np.abs(all_train[0::2])
     x_train = all_train[1::2]
 
     # Process valid images, split into x and y
     all_valid = np.concatenate([process_img(img, noise) for img in tqdm(valid_x)])
-    y_valid = all_valid[0::2]
+    y_valid = np.abs(all_valid[0::2])
     x_valid = all_valid[1::2]
 
     # Write data to h5 file

@@ -3,19 +3,20 @@ import torch
 import torch.nn as nn
 from functools import partial
 import matplotlib.pyplot as plt
-from preprocessing import get_h5_data, prepare_dataset, get_dls, DataBunch
+from preprocessing import prepare_dataset, get_dls, DataBunch
 from dl_framework.param_scheduling import sched_no
 from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    BatchTransformXCallback, CudaCallback,\
                                    SaveCallback, view_tfm, ParamScheduler,\
                                    normalize_tfm
-from inspection import evaluate_model
+from inspection import evaluate_model, plot_loss
 from dl_framework.learner import get_learner
 from dl_framework.optimizer import (StatefulOptimizer, weight_decay,
                                     AverageGrad)
 from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
+from mnist_cnn.utils import get_h5_data
 
 
 @click.command()
@@ -50,7 +51,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     arch = getattr(architecture, arch)()
 
     # Define resize for mnist data
-    mnist_view = view_tfm(1, 64, 64)
+    mnist_view = view_tfm(2, 64, 64)
 
     # make normalisation
     norm = normalize_tfm(norm_path)
@@ -79,13 +80,16 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     if pretrained is True:
         # Load model
         load_pre_model(learn.model, pretrained_model)
-
+    print(learn.model, '\n')
     # Train model
     learn.fit(num_epochs)
 
     # Save model
     state = learn.model.state_dict()
     torch.save(state, model_path)
+
+    # Plot loss
+    plot_loss(learn, model_path)
 
     if inspection is True:
         evaluate_model(valid_ds, learn.model, norm_path)
