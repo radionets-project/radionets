@@ -126,14 +126,15 @@ def plot_source(img, ft=False):
         img = img
         ax.set_xlabel('l')
         ax.set_ylabel('m')
+        s = ax.imshow(img, cmap=viridis_white_r)  # drop special cmap?
         fig.colorbar(s, label='Intensity')
     else:
         img = FT(img)
         ax.set_xlabel('u')
         ax.set_ylabel('v')
+        s = ax.imshow(img, cmap=viridis_white_r)  # drop special cmap?
         fig.colorbar(s, label='Amplitude')
 
-    s = ax.imshow(img, cmap=viridis_white_r)  # drop special cmap?
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     ax.xaxis.set_ticks_position('none')
