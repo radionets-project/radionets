@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 import cartopy.crs as ccrs
 from matplotlib.animation import FuncAnimation
 from matplotlib.animation import PillowWriter
