@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
-from dl_framework.data import normalize
+from dl_framework.data import do_normalisation
 
 
 class CancelTrainException(Exception):
@@ -110,6 +110,8 @@ class Recorder(Callback):
         if not self.in_train:
             return
         self.lrs.append(self.opt.hypers[-1]['lr'])
+
+    def after_epoch(self):
         self.losses.append(self.loss.detach().cpu())
 
     def plot_lr(self):
@@ -160,29 +162,23 @@ class CudaCallback(Callback):
 class BatchTransformXCallback(Callback):
     _order = 2
     def __init__(self, tfm): self.tfm = tfm
-    def begin_batch(self): self.run.xb = self.tfm(self.run.xb, self)
+    def begin_batch(self): self.run.xb = self.tfm(self.run.xb)
 
 
 def view_tfm(*size):
-    def _inner(x, kwargs):
-        return x.view(*((-1,)+size))
+    def _inner(x):
+        """
+        add correct shape (bs, #channels, shape of array)
+        """
+        a = x.view(*((-1,)+size))
+        return a
     return _inner
 
 
 def normalize_tfm(norm_path):
-    def _inner(x, self):
+    def _inner(x):
         norm = pd.read_csv(norm_path)
-        train_mean = torch.tensor(norm['train_mean'].values[0]).float()
-        train_std = torch.tensor(norm['train_std'].values[0]).float()
-        valid_mean = torch.tensor(norm['valid_mean'].values[0]).float()
-        if self.in_train:
-            x[torch.isinf(x)] = train_mean
-            x = normalize(x, train_mean, train_std)
-            assert not torch.isinf(x).any()
-        if not self.in_train:
-            x[torch.isinf(x)] = valid_mean
-            x = normalize(x, train_mean, train_std)
-            assert not torch.isinf(x).any()
+        x = do_normalisation(x, norm)
         return x
     return _inner
 

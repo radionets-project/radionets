@@ -9,7 +9,7 @@ mnist_cnn/data
 # cache
 __pycache__/
 
-# model 
+# model
 *.model
 
 # images

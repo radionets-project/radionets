@@ -72,12 +72,9 @@ def write_h5(path, x, y, name_x='x_train', name_y='y_train'):
 def get_h5_data(path, columns):
     ''' Load mnist h5 data '''
     f = h5py.File(path, 'r')
-    x = np.abs(np.array(f[columns[0]]))
-    y = np.abs(np.array(f[columns[1]]))
+    x = np.array(f[columns[0]])
+    y = np.array(f[columns[1]])
     return x, y
-
-
-def normalize(x, m, s): return (x-m)/s
 
 
 def create_mask(ar):
@@ -88,3 +85,18 @@ def create_mask(ar):
     high = val.max()
     mask = (low < ar) & (ar < high)
     return mask
+
+
+def split_real_imag(array):
+    """
+    takes a complex array and returns the real and the imaginary part
+    """
+    return array.real, array.imag
+
+
+def mean_and_std(array):
+    return array.mean(), array.std()
+
+
+def combine_and_swap_axes(array1, array2):
+    return np.swapaxes(np.dstack((array1, array2)), 1, 2)

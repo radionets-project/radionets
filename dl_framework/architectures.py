@@ -3,8 +3,12 @@ from dl_framework.model import conv, Lambda, flatten
 
 
 def cnn():
+    """
+    conv-layer: number of entry channels, number of exit channels,
+                kerner size, stride, padding
+    """
     arch = nn.Sequential(
-        *conv(1, 4, (3, 3), 2, 1),
+        *conv(2, 4, (3, 3), 2, 1),
         *conv(4, 8, (3, 3), 2, 1),
         *conv(8, 16, (3, 3), 2, 1),
         nn.MaxPool2d((3, 3)),

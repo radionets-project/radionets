@@ -9,9 +9,13 @@ class Lambda(nn.Module):
         super().__init__()
         self.func = func
 
-    def forward(self, x): return self.func(x)
+    def forward(self, x):
+        return self.func(x)
 
-def flatten(x):      return x.view(x.shape[0], -1)
+
+def flatten(x):
+    a = x.view(x.shape[0], -1)
+    return a
 
 
 class GeneralRelu(nn.Module):
@@ -31,6 +35,7 @@ def init_cnn_(m, f):
         f(m.weight, a=0.1)
         if getattr(m, 'bias', None) is not None: m.bias.data.zero_()
     for l in m.children(): init_cnn_(l, f)
+
 
 def init_cnn(m, uniform=False):
     f = nn.init.kaiming_uniform_ if uniform else nn.init.kaiming_normal_
