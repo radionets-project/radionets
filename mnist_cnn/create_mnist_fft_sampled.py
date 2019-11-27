@@ -10,13 +10,22 @@ from tqdm import tqdm
 @click.argument('antenna_config_path', type=click.Path(exists=True,
                                                        dir_okay=True))
 @click.option('-train', type=bool)
-def main(data_path, out_path, antenna_config_path, train=True):
+@click.option('-specific_mask', type=bool)
+@click.option('-lon', type=float, required=False)
+@click.option('-lat', type=float, required=False)
+@click.option('-steps', type=float, required=False)
+def main(data_path, out_path, antenna_config_path, specific_mask=False,
+         lon=None, lat=None, steps=None, train=True):
     if train is True:
         x, y = get_h5_data(data_path, columns=['x_train', 'y_train'])
     else:
         x, y = get_h5_data(data_path, columns=['x_valid', 'y_valid'])
 
-    x_samp = [sample_freqs(i, antenna_config_path) for i in tqdm(x)]
+    if specific_mask is True:
+        x_samp = [sample_freqs(i, antenna_config_path, lon, lat, steps)
+                  for i in tqdm(x)]
+    else:
+        x_samp = [sample_freqs(i, antenna_config_path) for i in tqdm(x)]
     y_samp = y
 
     if train is True:
