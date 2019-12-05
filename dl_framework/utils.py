@@ -39,11 +39,8 @@ class AvgStats():
     @property
     def all_stats(self):
         """
-        Mit item wird nur der der tatsächliche Wert abgegriffen,
-        statt tensor(3561161, device='cuda:0').
-        self.tot_mets ist eine Liste von der gleichen Struktur wie oben,
-        und mit dem '+' wird die zweite Liste an das Ende der ersten Liste
-        angehängt
+        Creates a list with the total loss and appends the total metric
+        of every used metric to that list.
         """
         all_stats_list = [self.tot_loss.item()]
         for i in range(len(self.tot_mets)):
@@ -53,9 +50,9 @@ class AvgStats():
     @property
     def avg_stats(self):
         """
-        Hier wird durch die totale Anzahl der Bilder geteilt, die
-        bisher verwendet wurde, um einen Ausdruck für den Mittelwert
-        zu erhalten.
+        Creates a list which contains the value of the averaged loss and
+        the value of every given metric. For a clear output, the name of
+        every metric is printed in front of the corresponding value
         """
         stats_list = []
         i = 0
