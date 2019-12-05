@@ -45,10 +45,10 @@ class AvgStats():
         und mit dem '+' wird die zweite Liste an das Ende der ersten Liste
         angehängt
         """
-        print("\ntot_loss: ", self.tot_loss)
-        print("tot_mets: ", self.tot_mets[0])
-        print("addition: ", [self.tot_loss.item()] + [self.tot_mets[0].item()], "\n")
-        return [self.tot_loss.item()] + self.tot_mets
+        all_stats_list = [self.tot_loss.item()]
+        for i in range(len(self.tot_mets)):
+            all_stats_list += [self.tot_mets[i].item()]
+        return all_stats_list
 
     @property
     def avg_stats(self):
@@ -57,7 +57,16 @@ class AvgStats():
         bisher verwendet wurde, um einen Ausdruck für den Mittelwert
         zu erhalten.
         """
-        return [o/self.count for o in self.all_stats]
+        stats_list = []
+        i = 0
+        for o in self.all_stats:
+            if i == 0:
+                stats_list = ['Loss: ', o/self.count]
+            else:
+                name = str(self.metrics[i-1]).split('()')[0]
+                stats_list += [name, o/self.count]
+            i += 1
+        return stats_list
 
     def __repr__(self):
         if not self.count:

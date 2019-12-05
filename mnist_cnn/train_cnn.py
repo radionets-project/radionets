@@ -77,7 +77,8 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     # Define callback functions
     cbfs = [
         Recorder,
-        partial(AvgStatsCallback, nn.MSELoss()),
+        # test for use of multiple Metrics or Loss functions
+        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         partial(ParamScheduler, 'lr', sched),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
