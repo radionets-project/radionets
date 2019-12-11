@@ -20,15 +20,19 @@ from tqdm import tqdm
 @click.argument('norm_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
 @click.option('-log', type=bool, required=False)
+@click.option('-index', type=int, required=False)
 def main(arch, pretrained_path, in_path, norm_path,
          out_path, index=None, log=False):
-    indexes = np.random.randint(0, 10000, size=10)
     x_valid, y_valid = get_h5_data(in_path, columns=['x_valid', 'y_valid'])
 
     x_valid_real, x_valid_imag = split_real_imag(x_valid)
     x_valid = combine_and_swap_axes(x_valid_real, x_valid_imag)
 
-    img = torch.tensor(x_valid[indexes])
+    if index is None:
+        indexes = np.random.randint(0, 10000, size=10)
+        img = torch.tensor(x_valid[indexes])
+    else:
+        img = torch.tensor(x_valid[index])
 
     if log is True:
         img = torch.log(img)
@@ -39,10 +43,58 @@ def main(arch, pretrained_path, in_path, norm_path,
     # load pretrained model
     load_pre_model(arch, pretrained_path)
 
-    for i in tqdm(range(10)):
+    if index is None:
+        print('\nPlotting ten pictures.\n')
+        for i in tqdm(range(10)):
 
-        index = indexes[i]
-        img_reshaped = img[i].view(1, 2, 64, 64)
+            index = indexes[i]
+            img_reshaped = img[i].view(1, 2, 64, 64)
+            norm = pd.read_csv(norm_path)
+            img_normed = do_normalisation(img_reshaped, norm)
+
+            # predict image
+            prediction = eval_model(img_normed, arch)
+
+            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
+
+            inp = img_normed.numpy()
+
+            inp_real = inp[0, 0, :]
+            im1 = ax1.imshow(inp_real, cmap='RdBu', vmin=-inp_real.max(),
+                             vmax=inp_real.max())
+            divider = make_axes_locatable(ax1)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            ax1.set_title(r'Real Input')
+            fig.colorbar(im1, cax=cax, orientation='vertical')
+
+            inp_imag = inp[0, 1, :]
+            im2 = ax2.imshow(inp_imag, cmap='RdBu', vmin=-inp_imag.max(),
+                             vmax=inp_imag.max())
+            divider = make_axes_locatable(ax2)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            ax2.set_title(r'Imaginary Input')
+            fig.colorbar(im2, cax=cax, orientation='vertical')
+
+            pred_img = prediction.reshape(64, 64).numpy()
+            im3 = ax3.imshow(pred_img)
+            divider = make_axes_locatable(ax3)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            ax3.set_title(r'Prediction')
+            im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+            fig.colorbar(im4, cax=cax, orientation='vertical')
+
+            # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+            divider = make_axes_locatable(ax4)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            ax4.set_title(r'Truth')
+            fig.colorbar(im4, cax=cax, orientation='vertical')
+
+            outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
+            plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+            plt.clf()
+    else:
+        print('\nPlotting a single index.\n')
+        img_reshaped = img.view(1, 2, 64, 64)
         norm = pd.read_csv(norm_path)
         img_normed = do_normalisation(img_reshaped, norm)
 
@@ -50,7 +102,6 @@ def main(arch, pretrained_path, in_path, norm_path,
         prediction = eval_model(img_normed, arch)
 
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
-
         inp = img_normed.numpy()
 
         inp_real = inp[0, 0, :]
@@ -59,8 +110,8 @@ def main(arch, pretrained_path, in_path, norm_path,
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         ax1.set_title(r'Real Input')
-        fig.colorbar(im1, cax=cax, orientation='vertical')
 
+        fig.colorbar(im1, cax=cax, orientation='vertical')
         inp_imag = inp[0, 1, :]
         im2 = ax2.imshow(inp_imag, cmap='RdBu', vmin=-inp_imag.max(),
                          vmax=inp_imag.max())
@@ -74,16 +125,15 @@ def main(arch, pretrained_path, in_path, norm_path,
         divider = make_axes_locatable(ax3)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         ax3.set_title(r'Prediction')
-        fig.colorbar(im3, cax=cax, orientation='vertical')
-
         im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+        fig.colorbar(im4, cax=cax, orientation='vertical')
+
+        # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         ax4.set_title(r'Truth')
         fig.colorbar(im4, cax=cax, orientation='vertical')
-
-        outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
-        plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+        plt.savefig(str(out_path), bbox_inches='tight', pad_inches=0.01)
         plt.clf()
 
 
