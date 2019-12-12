@@ -103,7 +103,7 @@ class Learner():
         return res
 
 
-def get_learner(data, arch, lr, loss_func=nn.L1Loss(),
+def get_learner(data, arch, lr, loss_func=nn.MSELoss(),
                 cb_funcs=None, opt_func=sgd_opt, **kwargs):
     init_cnn(arch)
     return Learner(arch, data, loss_func, lr=lr, cb_funcs=cb_funcs,
