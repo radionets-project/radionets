@@ -29,8 +29,8 @@ def main(arch, pretrained_path, in_path, norm_path,
     x_valid = combine_and_swap_axes(x_valid_real, x_valid_imag)
 
     if index is None:
-        indexes = np.random.randint(0, 10000, size=10)
-        img = torch.tensor(x_valid[indexes])
+        indices = np.random.randint(0, 10000, size=10)
+        img = torch.tensor(x_valid[indices])
     else:
         img = torch.tensor(x_valid[index])
 
@@ -45,9 +45,9 @@ def main(arch, pretrained_path, in_path, norm_path,
 
     if index is None:
         print('\nPlotting ten pictures.\n')
-        for i in tqdm(range(10)):
+        for i in tqdm(range(len(indices)):
 
-            index = indexes[i]
+            index = indices[i]
             img_reshaped = img[i].view(1, 2, 64, 64)
             norm = pd.read_csv(norm_path)
             img_normed = do_normalisation(img_reshaped, norm)
