@@ -16,6 +16,9 @@ def camel2snake(name):
     return re.sub(_camel_re2, r'\1_\2', s1).lower()
 
 
+def is_listy(x): return isinstance(x, (tuple, list))
+
+
 def listify(o):
     if o is None:
         return []
