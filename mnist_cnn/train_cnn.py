@@ -59,7 +59,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
                                          log=log)
 
     # Create databunch with defined batchsize
-    bs = 256
+    bs = 10
     data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 
     # Define model
