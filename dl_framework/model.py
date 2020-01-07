@@ -2,7 +2,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from math import sqrt
-import numpy as np
 
 
 class Lambda(nn.Module):
@@ -15,8 +14,15 @@ class Lambda(nn.Module):
 
 
 def fft(x):
-    a = np.fft.fftshift(np.fft.ifft(x))
+    a = torch.abs(
+                torch.ifft(x, signal_ndim=1)
+    )
     return a
+
+
+def shape(x):
+    print(x.shape)
+    return x
 
 
 def flatten(x):

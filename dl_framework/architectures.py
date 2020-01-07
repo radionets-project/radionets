@@ -1,5 +1,5 @@
 from torch import nn
-from dl_framework.model import conv, Lambda, flatten
+from dl_framework.model import conv, Lambda, flatten, shape, fft
 
 
 def cnn():
@@ -16,6 +16,8 @@ def cnn():
         *conv(32, 64, (2, 2), 2, 1),
         nn.MaxPool2d((2, 2)),
         Lambda(flatten),
-        nn.Linear(64, 4096)
+        nn.Linear(64, 4096),
+        Lambda(fft),
+        Lambda(shape),
     )
     return arch
