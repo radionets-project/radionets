@@ -20,7 +20,6 @@ build/visualize_predictions_done:
 	../data/mnist_samp_valid.h5 \
 	$(norm) \
 	build/prediction.png \
-	-index 42 \
 	-num 20
 
 # ------------------------------------------------------
