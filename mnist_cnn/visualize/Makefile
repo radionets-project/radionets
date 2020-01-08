@@ -4,7 +4,7 @@ all: visualize_preprocessing \
 visualize_preprocessing: build/visualize_preprocessing_done
 visualize_predictions: build/visualize_predictions_done
 
-model=../models/two_channels.model
+model=../models/test_pred.model
 norm=../data/normalization_factors.csv
 
 build/visualize_preprocessing_done:
@@ -19,8 +19,8 @@ build/visualize_predictions_done:
 	$(model) \
 	../data/mnist_samp_valid.h5 \
 	$(norm) \
-	build/prediction1.pdf \
-	-index 42
+	build/prediction.png \
+	-num 20
 
 # ------------------------------------------------------
 new_shapes: new_shapes/visualize_gauss_done \
