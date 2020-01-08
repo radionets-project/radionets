@@ -1,5 +1,6 @@
 import click
 import torch
+import sys
 import torch.nn as nn
 from functools import partial
 import matplotlib.pyplot as plt
@@ -77,7 +78,8 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     # Define callback functions
     cbfs = [
         Recorder,
-        partial(AvgStatsCallback, nn.MSELoss()),
+        # test for use of multiple Metrics or Loss functions
+        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         partial(ParamScheduler, 'lr', sched),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
@@ -101,8 +103,28 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     # Print model architecture
     print(learn.model, '\n')
 
-    # Train model
-    learn.fit(num_epochs)
+    # Train the model, make it possible to stop at any given time
+    try:
+        learn.fit(num_epochs)
+
+    except KeyboardInterrupt:
+        print('\nKeyboardInterrupt, do you wanna save the model: yes-(y), no-(n)')
+        save = str(input())
+        if save == 'y':
+            print('Saving the model after epoch {}'.format(learn.epoch))
+            state = learn.model.state_dict()
+            torch.save(state, model_path)
+            # Plot loss
+            plot_loss(learn, model_path)
+
+            # Plot input, prediction and true image if asked
+            if inspection is True:
+                evaluate_model(valid_ds, learn.model, norm_path)
+                plt.savefig('inspection_plot.pdf', dpi=300,
+                            bbox_inches='tight', pad_inches=0.01)
+        else:
+            print('Stopping after epoch {}'.format(learn.epoch))
+        sys.exit(1)
 
     # Save model
     state = learn.model.state_dict()
