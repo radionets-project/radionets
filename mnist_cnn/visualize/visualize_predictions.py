@@ -21,15 +21,16 @@ from tqdm import tqdm
 @click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
 @click.option('-log', type=bool, required=False)
 @click.option('-index', type=int, required=False)
+@click.option('-num', type=int, required=False)
 def main(arch, pretrained_path, in_path, norm_path,
-         out_path, index=None, log=False):
+         out_path, index=None, log=False, num=None):
     x_valid, y_valid = get_h5_data(in_path, columns=['x_valid', 'y_valid'])
 
     x_valid_real, x_valid_imag = split_real_imag(x_valid)
     x_valid = combine_and_swap_axes(x_valid_real, x_valid_imag)
 
     if index is None:
-        indices = np.random.randint(0, 10000, size=10)
+        indices = np.random.randint(0, 10000, size=num)
         img = torch.tensor(x_valid[indices])
     else:
         img = torch.tensor(x_valid[index])
@@ -44,9 +45,8 @@ def main(arch, pretrained_path, in_path, norm_path,
     load_pre_model(arch, pretrained_path)
 
     if index is None:
-        print('\nPlotting ten pictures.\n')
-        for i in tqdm(range(len(indices)):
-
+        print('\nPlotting {} pictures.\n'.format(num))
+        for i in tqdm(range(len(indices))):
             index = indices[i]
             img_reshaped = img[i].view(1, 2, 64, 64)
             norm = pd.read_csv(norm_path)
