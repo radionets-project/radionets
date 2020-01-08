@@ -29,8 +29,9 @@ def main(arch, pretrained_path, in_path, norm_path,
     x_valid_real, x_valid_imag = split_real_imag(x_valid)
     x_valid = combine_and_swap_axes(x_valid_real, x_valid_imag)
 
+    print(len(x_valid))
     if index is None:
-        indices = np.random.randint(0, 10000, size=num)
+        indices = np.random.randint(0, len(x_valid), size=num)
         img = torch.tensor(x_valid[indices])
     else:
         img = torch.tensor(x_valid[index])
