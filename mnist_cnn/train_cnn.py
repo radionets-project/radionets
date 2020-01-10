@@ -18,6 +18,7 @@ from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
 from mnist_cnn.utils import get_h5_data
+from torchvision.models import vgg16_bn
 
 
 @click.command()
@@ -91,6 +92,12 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     adam_opt = partial(StatefulOptimizer, steppers=[adam_step, weight_decay],
                        stats=[AverageGrad(dampening=True), AverageSqrGrad(),
                        StepCount()])
+
+    # feature_loss
+    vgg_m = vgg16_bn(True).features.cuda().eval()
+    requires_grad(vgg_m, False)
+    blocks = [i-1 for i,o in enumerate(children(vgg_m)) if isinstance(o,nn.MaxPool2d)]
+
 
     # Combine model and data in learner
     learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
