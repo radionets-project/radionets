@@ -60,7 +60,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
                                          log=log)
 
     # Create databunch with defined batchsize
-    bs = 10
+    bs = 128
     data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 
     # Define model
@@ -135,7 +135,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
 
     # Plot input, prediction and true image if asked
     if inspection is True:
-        evaluate_model(valid_ds, learn.model, norm_path)
+        evaluate_model(valid_ds, learn.model, norm_path, nrows=10)
         plt.savefig('inspection_plot.pdf', dpi=300, bbox_inches='tight',
                     pad_inches=0.01)
 

@@ -14,13 +14,16 @@ class Lambda(nn.Module):
 
 
 def fft(x):
-    a = torch.abs(
-                torch.ifft(x, signal_ndim=1)
-    )
-    return a
+    arr_real = x[:, 0:4096].reshape(-1, 64, 64)
+    arr_imag = x[:, 4096:8192].reshape(-1, 64, 64)
+    arr = torch.stack((arr_real, arr_imag), dim=-1)
+    arr_fft = torch.ifft(arr, 2)
+    arr_fft_abs = torch.sqrt(arr_fft[:,:,:,0]**2 + arr_fft[:,:,:,1]**2)
+    return arr_fft_abs.reshape(-1, 4096)
 
 
 def shape(x):
+    print(x.reshape(-1, 64, 64))
     print(x.shape)
     return x
 
