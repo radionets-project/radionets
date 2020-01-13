@@ -1,5 +1,6 @@
 from functools import partial
-from dl_framework.utils import ListContainer, get_batch, find_modules, is_lin_layer
+from dl_framework.utils import ListContainer, get_batch, find_modules,\
+                                is_lin_layer
 from torch import Tensor
 
 

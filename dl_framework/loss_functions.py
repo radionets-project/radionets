@@ -40,9 +40,13 @@ class FeatureLoss(nn.Module):
         self.feat_losses += [self.base_loss(f_in, f_out)*w
                              for f_in, f_out, w in zip(in_feat, out_feat,
                                                        self.wgts)]
-        self.feat_losses += [self.base_loss(gram_matrix(f_in), gram_matrix(f_out))*w**2 * 5e3
-                             for f_in, f_out, w in zip(in_feat, out_feat,
-                                                       self.wgts)]
+
+        # erstmall den Teil mit der gram_matrix auskommentiert, bis er
+        # verstanden ist
+        # self.feat_losses += [self.base_loss(gram_matrix(f_in), gram_matrix(f_out))*w**2 * 5e3
+        #                      for f_in, f_out, w in zip(in_feat, out_feat,
+        #                                                self.wgts)]
+
         # Wird als Liste gespeichert, um es in metrics abspeichern
         # zu können und printen zu können
         self.metrics = dict(zip(self.metric_names, self.feat_losses))
