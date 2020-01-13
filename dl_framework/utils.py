@@ -141,3 +141,8 @@ class ListContainer():
         if len(self) > 10:
             res = res[:-1] + '...]'
         return res
+
+
+def children(m):
+    "returns the children of m as a list"
+    return list(m.children())
