@@ -16,9 +16,12 @@ from dl_framework.optimizer import StatefulOptimizer, weight_decay,\
                                    AverageGrad
 from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 import dl_framework.architectures as architecture
+from dl_framework.utils import children
 from dl_framework.model import load_pre_model
 from mnist_cnn.utils import get_h5_data
 from torchvision.models import vgg16_bn
+from dl_framework.loss_functions import FeatureLoss
+import torch.nn.functional as F
 
 
 @click.command()
@@ -94,13 +97,18 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
                        StepCount()])
 
     # feature_loss
+    ###########################################################################
     vgg_m = vgg16_bn(True).features.cuda().eval()
-    requires_grad(vgg_m, False)
-    blocks = [i-1 for i,o in enumerate(children(vgg_m)) if isinstance(o,nn.MaxPool2d)]
-
+    for param in vgg_m.parameters():
+        param.requires_grad = False
+    # requires_grad(vgg_m, False)
+    blocks = [i-1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)]
+    feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
+    ###########################################################################
 
     # Combine model and data in learner
-    learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
+    learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs,
+                        loss_func=feat_loss)
 
     # use pre-trained model if asked
     if pretrained is True:
