@@ -1,4 +1,5 @@
 from torch import nn
+from dl_framework.test_hook import hook_outputs
 
 
 class FeatureLoss(nn.Module):
