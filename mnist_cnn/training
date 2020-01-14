@@ -3,11 +3,8 @@
 #
 
 all:	mnist_fft\
-		mnist_samp\
-		calc_normalization\
 		clean_training\
-		cnn_training\
-		input_plot
+		cnn_training
 
 quick_data_and_training: mnist_fft_quick\
 						 clean_samp\
@@ -15,10 +12,6 @@ quick_data_and_training: mnist_fft_quick\
 						 calc_normalization\
 						 clean_training\
 						 cnn_training
-
-training: calc_normalization\
-                                                 clean_training\
-                                                 cnn_training
 
 #--------------------------------------------------------
 
@@ -78,10 +71,10 @@ input_plot: ./data/plots/input_done
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/cnn_mnist.model\
+		./data/mnist_samp_valid.h5 ./models/two_channels.model\
 		cnn ./data/normalization_factors.csv\
 		50 1e-3 -log False\
-		-pretrained False ./models/autoencoder_mnist.model \
+		-pretrained False ./models/two_channels.model \
 		-inspection False
 		touch ./training_done
 

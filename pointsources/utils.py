@@ -101,4 +101,17 @@ def mean_and_std(array):
 def combine_and_swap_axes(array1, array2):
     return np.swapaxes(np.dstack((array1, array2)), 1, 2)
 
+def pointsources(num_img, pi, targets):
+    """
+    generate images with random pointsources
+    N is the number of images
+    pi is the number of pixels
+    targets is the number of pointsources
+    """
+    a = np.zeros((num_img,pi), dtype=np.int8)
+    for i in range(num_img):
+        for j in range(targets):
+            x = np.random.randint(0,pi)
+            a[i,x] = 1
+    return a
 

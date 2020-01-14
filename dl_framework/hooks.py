@@ -1,5 +1,6 @@
 from functools import partial
-# from dl_framework.utils import listify
+#from dl_framework.utils import listify
+#from torch import Tensor
 
 
 class Hook():
@@ -66,3 +67,17 @@ class Hooks(ListContainer):
     def remove(self):
         for h in self:
             h.remove()
+
+# ab hier aus dem source code von fastai kopiert
+# https://github.com/fastai/fastai/blob/master/fastai/callbacks/hooks.py#L58
+
+
+def is_listy(x): return isinstance(x, (tuple, list))
+
+
+def _hook_inner(m, i, o): return o if isinstance(o, Tensor) else o if is_listy(o) else list(o)
+
+
+def hook_outputs(modules, detach=True, grad=False):
+    "Return `Hooks` that store activations of all `modules` in `self.stored`"
+    return Hooks(modules, _hook_inner, detach=detach, is_forward=not grad)

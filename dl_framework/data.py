@@ -11,6 +11,7 @@ def do_normalisation(x, norm):
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
+    '''
     train_mean_real = torch.tensor(norm['train_mean_real'].values[0]).float()
     train_std_real = torch.tensor(norm['train_std_real'].values[0]).float()
     train_mean_imag = torch.tensor(norm['train_mean_imag'].values[0]).float()
@@ -18,6 +19,10 @@ def do_normalisation(x, norm):
     x[:, 0] = normalize(x[:, 0], train_mean_real, train_std_real)
     x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
     assert not torch.isinf(x).any()
+    '''
+    train_mean = torch.tensor(norm['train_mean'].values[0]).float()
+    train_std = torch.tensor(norm['train_std'].values[0]).float()
+    x = normalize(x,train_mean, train_std)
     return x
 
 

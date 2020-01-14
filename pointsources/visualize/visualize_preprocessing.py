@@ -10,9 +10,9 @@ from mnist_cnn.visualize.utils import plot_mnist
 from tqdm import tqdm
 
 # Load train and valid data
-path_train = '../data/mnist_train.h5'
+path_train = '../data/pointsources_train.h5'
 x_train, y_train = get_h5_data(path_train, columns=['x_train', 'y_train'])
-path_valid = '../data/mnist_valid.h5'
+path_valid = '../data/pointsources_valid.h5'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 
 # Create train and valid datasets

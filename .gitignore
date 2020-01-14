@@ -5,12 +5,21 @@
 # data
 mnist_cnn/data
 *.uvf
+*.h5
+
+pointsources/data
+*.uvf
+*.h5
 
 # cache
 __pycache__/
 
 # model
 *.model
+
+#slurm
+*.slurm
+*.log
 
 # images
 *.jpg

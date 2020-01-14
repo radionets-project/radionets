@@ -23,16 +23,14 @@ def main(arch, pretrained_path, in_path, norm_path,
          out_path, index=None, log=False):
     i = index
     x_valid, y_valid = get_h5_data(in_path, columns=['x_valid', 'y_valid'])
-
-    x_valid_real, x_valid_imag = split_real_imag(x_valid)
-    x_valid = combine_and_swap_axes(x_valid_real, x_valid_imag)
-
+    
     img = torch.tensor(x_valid[i])
     if log is True:
         img = torch.log(img)
-    img_reshaped = img.view(1, 2, 64, 64)
+    img_reshaped = img.view(1, 1, 64, 64)
     norm = pd.read_csv(norm_path)
     img_normed = do_normalisation(img_reshaped, norm)
+    #img_normed = img_reshaped
 
     # get arch
     arch = getattr(architecture, arch)()
@@ -51,13 +49,12 @@ def main(arch, pretrained_path, in_path, norm_path,
     inp = img_normed.numpy()
 
     inp_real = inp[0, 0, :]
-    im1 = ax1.imshow(inp_real, cmap='RdBu', vmin=-inp_real.max(),
-                     vmax=inp_real.max())
+    im1 = ax1.imshow(inp_real)
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     fig.colorbar(im1, cax=cax, orientation='vertical')
 
-    inp_imag = inp[0, 1, :]
+    inp_imag = inp[0, 0, :]
     im2 = ax2.imshow(inp_imag, cmap='RdBu', vmin=-inp_imag.max(),
                      vmax=inp_imag.max())
     divider = make_axes_locatable(ax2)

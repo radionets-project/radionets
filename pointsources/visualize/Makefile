@@ -1,9 +1,13 @@
-all: visualize_prediction \
+all: visualize_preprocessing \
+	visualize_predictions \
+	visualize_predictions_mnist
 
 visualize_preprocessing: build/visualize_preprocessing_done
 visualize_predictions: build/visualize_predictions_done
+visualize_predictions_mnist: build/visualize_predictions_mnist
 
-model=../models/unet_mnist.model
+
+model=../models/autoencoder_pointsources.model
 norm=../data/normalization_factors.csv
 
 build/visualize_preprocessing_done:
@@ -14,12 +18,23 @@ build/visualize_preprocessing_done:
 build/visualize_predictions_done:
 	mkdir -p build
 	python visualize_prediction.py \
-	UNet \
+	autoencoder \
 	$(model) \
-	../data/mnist_samp_valid.h5 \
+	../data/pointsources_samp_valid.h5 \
 	$(norm) \
-	build/prediction1.pdf \
+	build/prediction.pdf \
 	-index 42
+
+build/visualize_predictions_mnist:
+	mkdir -p build
+	python visualize_prediction.py \
+	autoencoder \
+        ../models/autoencoder_mnist.model \
+        ../data/pointsources_samp_valid.h5 \
+        $(norm) \
+        build/using_mnist.pdf \
+        -index 42
+
 
 # ------------------------------------------------------
 new_shapes: new_shapes/visualize_gauss_done \
