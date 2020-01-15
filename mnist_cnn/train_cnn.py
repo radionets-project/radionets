@@ -103,7 +103,8 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
         param.requires_grad = False
     # requires_grad(vgg_m, False)
     blocks = [i-1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)]
-    feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
+    # feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
+    feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:4], [5, 15])
     ###########################################################################
 
     # Combine model and data in learner

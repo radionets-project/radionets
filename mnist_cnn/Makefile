@@ -72,7 +72,7 @@ input_plot: ./data/plots/input_done
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5 ./models/test_pred.model\
-		cnn ./data/normalization_factors.csv\
+		autoencoder ./data/normalization_factors.csv\
 		20 1e-3 -log False\
 		-pretrained False ./models/test.model\
 		-inspection True
