@@ -84,7 +84,7 @@ class AvgStatsCallback(Callback):
 
 
 class ParamScheduler(Callback):
-    _order = 1
+    _order = 3
 
     def __init__(self, pname, sched_funcs):
         self.pname = pname
@@ -125,12 +125,13 @@ class Recorder(Callback):
         n = len(losses)-skip_last
         plt.xscale('log')
         plt.plot(self.lrs[:n], losses[:n])
+        plt.show()
 
 
 class LR_Find(Callback):
     _order = 1
 
-    def __init__(self, max_iter=100, min_lr=1e-6, max_lr=10):
+    def __init__(self, max_iter=100, min_lr=1e-6, max_lr=1):
         self.max_iter = max_iter
         self.min_lr = min_lr
         self.max_lr = max_lr
@@ -139,8 +140,9 @@ class LR_Find(Callback):
     def begin_batch(self):
         if not self.in_train:
             return
-        pos = self.n_iter/self.max_iter
+        pos = self.run.n_iter/self.max_iter
         lr = self.min_lr * (self.max_lr/self.min_lr) ** pos
+        print(self.min_lr * (self.max_lr/self.min_lr))
         for pg in self.opt.hypers:
             pg['lr'] = lr
 
