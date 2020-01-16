@@ -27,6 +27,7 @@ mnist_samp_valid: ./data/mnist_samp_valid.h5
 calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
 input_plot: ./data/plots/input_done
+learning_rate: ./lr_find
 
 #########################################################
 #	Tasks
@@ -73,10 +74,21 @@ input_plot: ./data/plots/input_done
 		python train_cnn.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5 ./models/test_pred.model\
 		autoencoder ./data/normalization_factors.csv\
-		20 1e-3 -log False\
-		-pretrained False ./models/test.model\
+		1 1e-3 -log False\
+		-pretrained True ./models/test_pred.model\
 		-inspection True
 		touch ./training_done
+
+./lr_find:
+		mkdir -p models/
+		python find_lr.py ./data/mnist_samp_train.h5\
+		./data/mnist_samp_valid.h5 ./models/test_pred.model\
+		autoencoder ./data/normalization_factors.csv\
+		100 1e-3 -log False\
+		-pretrained False ./models/test.model\
+		-inspection True
+		# touch ./lr_find
+
 
 ./data/plots/input_done:
 		mkdir -p data/
