@@ -72,10 +72,10 @@ learning_rate: ./lr_find
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/test_pred.model\
+		./data/mnist_samp_valid.h5 ./models/test.model\
 		autoencoder ./data/normalization_factors.csv\
-		1 1e-3 -log False\
-		-pretrained True ./models/test_pred.model\
+		20 1e-4 mse -log False\
+		-pretrained False ./models/test_pred.model\
 		-inspection True
 		touch ./training_done
 
