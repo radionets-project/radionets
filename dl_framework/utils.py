@@ -1,5 +1,8 @@
 import re
 from typing import Iterable
+
+import numpy as np
+
 from torch import nn
 
 
@@ -60,10 +63,10 @@ class AvgStats():
         i = 0
         for o in self.all_stats:
             if i == 0:
-                stats_list = ['Loss: ', o/self.count]
+                stats_list = ['Loss: ', np.round(o/self.count, 7)]
             else:
                 name = str(self.metrics[i-1]).split('()')[0]
-                stats_list += [name, o/self.count]
+                stats_list += [name, np.round(o/self.count, 7)]
             i += 1
         return stats_list
 
