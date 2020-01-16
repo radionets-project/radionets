@@ -8,7 +8,7 @@ from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
     CudaCallback,
-    Recorder,
+    Recorder_lr_find,
     SaveCallback,
     normalize_tfm,
     view_tfm,
@@ -93,9 +93,9 @@ def main(
     # Define callback functions
     cbfs = [
         LR_Find,
-        Recorder,
+        Recorder_lr_find,
         # test for use of multiple Metrics or Loss functions
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+        # partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
@@ -112,16 +112,8 @@ def main(
     learn = get_learner(
         data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs,
     )
-
-    # use pre-trained model if asked
-    if pretrained is True:
-        # Load model
-        load_pre_model(learn.model, pretrained_model)
-
-    # Print model architecture
-    print(learn.model, "\n")
     learn.fit(2)
-    learn.recorder.plot()
+    learn.recorder_lr_find.plot(skip_last=5)
 
 
 if __name__ == "__main__":

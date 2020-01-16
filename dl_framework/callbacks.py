@@ -6,6 +6,7 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
+import numpy as np
 
 
 class CancelTrainException(Exception):
@@ -124,14 +125,42 @@ class Recorder(Callback):
         losses = [o.item() for o in self.losses]
         n = len(losses)-skip_last
         plt.xscale('log')
+        plt.xlabel(r'learning rate')
+        plt.ylabel(r'loss')
         plt.plot(self.lrs[:n], losses[:n])
+
+
+class Recorder_lr_find(Callback):
+    def begin_fit(self):
+        self.lrs = []
+        self.losses = []
+
+    def after_batch(self):
+        if not self.in_train:
+            return
+        self.lrs.append(self.opt.hypers[-1]['lr'])
+        self.losses.append(self.loss.detach().cpu())
+
+    def plot_lr(self):
+        plt.plot(self.lrs)
+
+    def plot_loss(self):
+        plt.plot(self.losses)
+
+    def plot(self, skip_last=0):
+        losses = [o.item() for o in self.losses]
+        n = len(losses)-skip_last
+        plt.plot(self.lrs[:n], losses[:n])
+        plt.xscale('log')
+        plt.xlabel(r'learning rate')
+        plt.ylabel(r'loss')
         plt.show()
 
 
 class LR_Find(Callback):
     _order = 1
 
-    def __init__(self, max_iter=100, min_lr=1e-6, max_lr=10):
+    def __init__(self, max_iter=400, min_lr=1e-6, max_lr=0.1):
         self.max_iter = max_iter
         self.min_lr = min_lr
         self.max_lr = max_lr
