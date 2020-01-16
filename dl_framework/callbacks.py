@@ -131,6 +131,11 @@ class Recorder(Callback):
 
 
 class Recorder_lr_find(Callback):
+    """
+    Recorder class for the lr_find. Main difference between the recorder
+    and this class is that the loss is appended after each batch and not
+    after each epoch.
+    """
     def begin_fit(self):
         self.lrs = []
         self.losses = []
@@ -140,12 +145,6 @@ class Recorder_lr_find(Callback):
             return
         self.lrs.append(self.opt.hypers[-1]['lr'])
         self.losses.append(self.loss.detach().cpu())
-
-    def plot_lr(self):
-        plt.plot(self.lrs)
-
-    def plot_loss(self):
-        plt.plot(self.losses)
 
     def plot(self, skip_last=0):
         losses = [o.item() for o in self.losses]
@@ -161,6 +160,9 @@ class LR_Find(Callback):
     _order = 1
 
     def __init__(self, max_iter=400, min_lr=1e-6, max_lr=0.1):
+        """
+        max_iter should be slightly bigger than the number of batches.
+        """
         self.max_iter = max_iter
         self.min_lr = min_lr
         self.max_lr = max_lr
