@@ -45,6 +45,7 @@ from torchvision.models import vgg16_bn
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("num_epochs", type=int)
 @click.argument("lr", type=float)
+@click.argument("loss_func", type=str)
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
@@ -61,6 +62,7 @@ def main(
     norm_path,
     num_epochs,
     lr,
+    loss_func,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -120,22 +122,29 @@ def main(
         steppers=[adam_step, weight_decay],
         stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
     )
-
-    # feature_loss
-    ###########################################################################
-    vgg_m = vgg16_bn(True).features.cuda().eval()
-    for param in vgg_m.parameters():
-        param.requires_grad = False
-    # requires_grad(vgg_m, False)
-    blocks = [
-        i - 1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)
-    ]
-    feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
-    ###########################################################################
-
+    if loss_func == "feature_loss":
+        # feature_loss
+        ###########################################################################
+        vgg_m = vgg16_bn(True).features.cuda().eval()
+        for param in vgg_m.parameters():
+            param.requires_grad = False
+        # requires_grad(vgg_m, False)
+        blocks = [
+            i - 1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)
+        ]
+        feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
+        ###########################################################################
+        loss_func = feat_loss
+    elif loss_func == "l1":
+        loss_func = nn.L1Loss()
+    elif loss_func == "mse":
+        loss_func = nn.MSELoss()
+    else:
+        print("\n No matching loss function! Exiting. \n")
+        sys.exit(1)
     # Combine model and data in learner
     learn = get_learner(
-        data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs, loss_func=feat_loss
+        data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs, loss_func=loss_func
     )
 
     # use pre-trained model if asked

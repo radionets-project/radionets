@@ -40,6 +40,7 @@ class FeatureLoss(nn.Module):
         target = target.view(-1, 2, 64, 64)
         input = input.view(-1, 2, 64, 64)
 
+        # create dummy tensor of zeros to add another dimension
         padding_target = torch.zeros(
             target.size(0), 1, target.size(2), target.size(3)
         ).cuda()
@@ -47,6 +48,7 @@ class FeatureLoss(nn.Module):
             input.size(0), 1, input.size(2), input.size(3)
         ).cuda()
 
+        # 'add' the extra channel
         target = torch.cat((target, padding_target), 1)
         input = torch.cat((input, padding_input), 1)
 
