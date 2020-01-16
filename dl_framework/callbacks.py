@@ -125,6 +125,7 @@ class Recorder(Callback):
         n = len(losses)-skip_last
         plt.xscale('log')
         plt.plot(self.lrs[:n], losses[:n])
+        plt.show()
 
 
 class LR_Find(Callback):
