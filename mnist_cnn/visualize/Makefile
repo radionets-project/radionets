@@ -15,7 +15,7 @@ build/visualize_preprocessing_done:
 build/visualize_predictions_done:
 	mkdir -p build
 	python visualize_predictions.py \
-	cnn \
+	autoencoder \
 	$(model) \
 	../data/mnist_samp_valid.h5 \
 	$(norm) \
