@@ -3,9 +3,7 @@ from functools import partial
 import click
 
 import dl_framework.architectures as architecture
-import torch.nn as nn
 from dl_framework.callbacks import (
-    AvgStatsCallback,
     BatchTransformXCallback,
     CudaCallback,
     Recorder_lr_find,
@@ -24,9 +22,9 @@ from dl_framework.optimizer import (
     adam_step,
     weight_decay,
 )
-from dl_framework.param_scheduling import sched_no
 from mnist_cnn.utils import get_h5_data
 from preprocessing import DataBunch, get_dls, prepare_dataset
+from inspection import plot_lr_loss
 
 
 @click.command()
@@ -35,8 +33,6 @@ from preprocessing import DataBunch, get_dls, prepare_dataset
 @click.argument("model_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("arch", type=str)
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
-@click.argument("num_epochs", type=int)
-@click.argument("lr", type=float)
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
@@ -44,19 +40,17 @@ from preprocessing import DataBunch, get_dls, prepare_dataset
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
-@click.option("-inspection", type=bool, required=False, help="make an inspection plot")
+@click.option("-save", type=bool, required=False, help="save the lr vs loss plot")
 def main(
     train_path,
     valid_path,
     model_path,
     arch,
     norm_path,
-    num_epochs,
-    lr,
     log=True,
     pretrained=False,
     pretrained_model=None,
-    inspection=False,
+    save=False,
 ):
     """
     Train the neural network with existing training and validation data.
@@ -92,10 +86,8 @@ def main(
 
     # Define callback functions
     cbfs = [
-        LR_Find,
+        partial(LR_Find, max_iter=400, max_lr=0.1),
         Recorder_lr_find,
-        # test for use of multiple Metrics or Loss functions
-        # partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
@@ -109,11 +101,18 @@ def main(
         stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
     )
     # Combine model and data in learner
-    learn = get_learner(
-        data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs,
-    )
+    learn = get_learner(data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs,)
+
+    # use pre-trained model if asked
+    if pretrained is True:
+        # Load model
+        load_pre_model(learn.model, pretrained_model)
+
     learn.fit(2)
-    learn.recorder_lr_find.plot(skip_last=5)
+    if save:
+        plot_lr_loss(learn, model_path, skip_last=5)
+    else:
+        learn.recorder_lr_find.plot(skip_last=5)
 
 
 if __name__ == "__main__":
