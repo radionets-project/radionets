@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.1
+#       jupytext_version: 1.2.4
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 from matplotlib.colors import LogNorm
+import h5py
 
 
 def create_grid(pixel):
@@ -102,7 +103,7 @@ def create_gaussian_source(comps, amp, x, y, sig_x, sig_y, rot, grid, sides=0, b
     components should not have too big gaps between each other
     '''
     
-    if side == 1:
+    if sides == 1:
         comps += comps-1
         amp = np.append(amp, amp[1:])
         x = np.append(x, -x[1:])
@@ -165,58 +166,91 @@ def gauss_paramters():
     # jet rotation
     rot = np.random.randint(0, 360)
     # jet one- or two-sided
-    side = np.random.randint(0, 2)
+    sides = np.random.randint(0, 2)
     
-    return comps, amp, x , y, sig_x, sig_y, rot, side
+    return comps, amp, x , y, sig_x, sig_y, rot, sides
 
 
-np.random.random(
-)
+def gaussian_source():
+    grid = create_grid(128)
+    comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
+    s = create_gaussian_source(comps, amp, x, y, sig_x, sig_y, rot, grid, sides, blur=True)
+    return s
 
-grid = create_grid(128)
-comps, amp, x, y, sig_x, sig_y, rot, side = gauss_paramters()
-s = create_gaussian_source(comps, amp, x, y, sig_x, sig_y, rot, grid, side, blur=True)
-print(side)
+
+s = gaussian_source()
 plt.imshow(s, norm=LogNorm(vmin=1e-8, vmax=10))
 plt.colorbar()
 
-sig_x
 
-(np.random.random() + 0.5) / 4
-
-2/4
-
-
-
-def gaussian_source(X, Y, blur=False):
-    ''' Creates a gaussian source consisting of different gaussian componentes
-        on a 2d grid
-
-    X: x coordinates of 2d grid
-    Y: y coordinates of 2d grid
-    blur: smear the components with a gaussian filter
-    '''
-    source = np.zeros(X.shape)
-    cent = len(X)//2
-
-    center = np.array([[cent, cent], [cent+10, cent], [cent-10, cent],
-                       [cent+20, cent], [cent-20, cent]])
-    intens = np.array([5, 2, 2, 1, 1])
-    fwhm = np.array([2, 4, 4, 6, 6])
-
-    for i in range(0, 5):
-        source += gaussian_component(X, Y, intens[i], fwhm[i], fwhm[i],
-                                     center=center[i])
-
-    if blur is True:
-        source = gaussian_filter(source, sigma=3)
-
-    return source
+def save_bundle(path, bundle, counter, name='gs_bundle'):
+    with h5py.File(path + str(counter) + '.h5', 'w') as hf:
+        hf.create_dataset(name,  data=bundle)
+        hf.close()
 
 
+def open_bundle(path):
+    f = h5py.File(path, 'r')
+    bundle = np.array(f['gs_bundle'])
+    return bundle
 
-source = simulate_gaussian_source(128)
 
-plt.imshow(source)
+def running_stats(path, num_bundles):
+    means = np.array([])
+    stds = np.array([])
+    
+    for i in range(num_bundles):
+        bundle_path = path + str(i) + '.h5'
+        bundle = open_bundle(bundle_path)
+        bundle_mean = bundle.mean()
+        bundle_std = bundle.std()
+        means = np.append(bundle_mean, means)
+        stds = np.append(bundle_std, stds)
+    mean = means.mean()
+    std = stds.mean()
+    return mean, std
+
+
+# %%time
+for i in range(1024):
+    grid = create_grid(128)
+    comps, amp, x, y, sig_x, sig_y, rot, side = gauss_paramters()
+    s = create_gaussian_source(comps, amp, x, y, sig_x, sig_y, rot, grid, side, blur=True)
+
+# %%time
+bundle = np.array([gaussian_source() for i in range(1024)])
+print(bundle.shape)
+
+# %%time
+path = 'gaussian_sources/bundle_'
+for j in range(20):
+    bundle = np.array([gaussian_source() for i in range(1024)])
+    save_bundle(path, bundle, j)
+
+mean, std = running_stats('gaussian_sources/bundle_', 5)
+mean,std
+
+
+
+
+
+
+
+
+
+
+
+plt.imshow(bundle[1], norm=LogNorm(vmax=10, vmin=1e-10))
+plt.colorbar()
+
+
+
+
+
+
+
+
+
+
 
 
