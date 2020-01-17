@@ -5,7 +5,7 @@ import h5py
 import matplotlib.pyplot as plt
 from skimage.transform import resize
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-
+from scipy import ndimage
 
 def open_mnist(path):
     with gzip.open(path, 'rb') as f:
@@ -19,7 +19,7 @@ def process_img(image, noise=False):
     '''
     if noise:
         image = add_noise(image)
-    img_reshaped = image.reshape(64, 64)
+    img_reshaped = image.reshape(64,64)
     img_rescaled = resize(img_reshaped, (64, 64), anti_aliasing=True,
                           mode='constant')
     img_fft = np.fft.fftshift(np.fft.fft2(img_rescaled))
@@ -115,46 +115,36 @@ def pointsources(num_img, pi, targets):
             a[i,x] = 1
     return a
 
-def gauss(mx,my,sx,sy): 
-    x=np.arange(64)[None].astype(np.float) 
-    y=x.T 
-    return np.exp(-(y-my)**2/sy).dot(np.exp(-(x-mx)**2/sx)) 
- 
-def create_gauss(N,sources,spherical): 
-    img = np.zeros((N,64,64)) 
-    mx = np.random.randint(1,64,size=(N,sources)) 
-    my = np.random.randint(1,64,size=(N,sources)) 
-     
-    if spherical: 
-        sx = np.random.randint(1,15,size=(N,sources)) 
-        sy = sx 
-    else: 
-        sx = np.random.randint(1,15,size=(N,sources)) 
-        sy = np.random.randint(1,15,size=(N,sources)) 
-        theta = np.random.randint(0,360,size=(N,sources)) 
-     
-    for i in range(N): 
-        for j in range(sources): 
-            g = gauss(mx[i,j],my[i,j],sx[i,j],sy[i,j]) 
-            if spherical: 
-                img[i] += g 
-            else: 
-                # rotation around center of the source 
-                padX = [g.shape[0] - mx[i,j], mx[i,j]] 
-                padY = [g.shape[1] - my[i,j], my[i,j]] 
-                imgP = np.pad(g, [padY, padX], 'constant') 
-                imgR = ndimage.rotate(imgP, theta[i,j], reshape=False) 
-                imgC = imgR[padY[0] : -padY[1], padX[0] : -padX[1]] 
-                img[i] += imgC 
-    return img 
+def gauss(mx,my,sx,sy):
+    x=np.arange(64)[None].astype(np.float)
+    y=x.T
+    return np.exp(-(y-my)**2/sy).dot(np.exp(-(x-mx)**2/sx))
 
-def gauss_pointsources(num_img, sources):
-    img = np.zeros((num_img,64,64))
-    mx = np.random.randint(0,64,size=(num_img,sources))
-    my = np.random.randint(0,64,size=(num_img,sources))
-    sigma = 0.1
-    for i in range(num_img):
+def create_gauss(N,sources,spherical):
+    img = np.zeros((N,64,64))
+    mx = np.random.randint(1,64,size=(N,sources))
+    my = np.random.randint(1,64,size=(N,sources))
+    
+    if spherical:
+        sx = np.random.randint(1,15,size=(N,sources))
+        sy = sx
+    else:
+        sx = np.random.randint(1,15,size=(N,sources))
+        sy = np.random.randint(1,15,size=(N,sources))
+        theta = np.random.randint(0,360,size=(N,sources))
+    
+    for i in range(N):
         for j in range(sources):
-            g = gauss(mx[i,j],my[i,j],sigma,sigma)
-            img[i] += g
+            g = gauss(mx[i,j],my[i,j],sx[i,j],sy[i,j])
+            if spherical:
+                img[i] += g
+            else:
+                # rotation around center of the source
+                padX = [g.shape[0] - mx[i,j], mx[i,j]]
+                padY = [g.shape[1] - my[i,j], my[i,j]]
+                imgP = np.pad(g, [padY, padX], 'constant')
+                imgR = ndimage.rotate(imgP, theta[i,j], reshape=False)
+                imgC = imgR[padY[0] : -padY[1], padX[0] : -padX[1]]
+                img[i] += imgC
     return img
+
