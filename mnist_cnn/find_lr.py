@@ -59,8 +59,6 @@ def main(
     MODEL_PATH is the Path to which the model is saved\n
     ARCH is the name of the architecture which is used\n
     NORM_PATH is the path to the normalisation factors\n
-    NUM_EPOCHS is the number of epochs\n
-    LR is the learning rate\n
     PRETRAINED_MODEL is the path to a pretrained model, which is
                      loaded at the beginning of the training\n
     """
@@ -74,6 +72,9 @@ def main(
     # Create databunch with defined batchsize
     bs = 256
     data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
+
+    # First guess for max_iter
+    print("\nTotal number of batches ~ ", data.train_ds.x.size(0)*2//bs)
 
     # Define model
     arch = getattr(architecture, arch)()
