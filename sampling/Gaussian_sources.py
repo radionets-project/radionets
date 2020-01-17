@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.4'
-#       jupytext_version: 1.2.4
+#       jupytext_version: 1.2.1
 #   kernelspec:
 #     display_name: Python 3
 #     language: python
@@ -17,6 +17,7 @@ from sampling.source_simulations import simulate_gaussian_source
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
+from matplotlib.colors import LogNorm
 
 
 def create_grid(pixel):
@@ -90,7 +91,7 @@ def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
     return gaussian
 
 
-def create_gaussian_source(grid, sides=1, blur=True):
+def create_gaussian_source(comps, amp, x, y, sig_x, sig_y, rot, grid, sides=0, blur=True):
     '''
     takes grid
     side: one-sided or two-sided
@@ -100,15 +101,17 @@ def create_gaussian_source(grid, sides=1, blur=True):
     
     components should not have too big gaps between each other
     '''
-    source = grid[0]
-    amp = np.array([2, 1])
-    x = np.array([10, 30])
-    y = np.array([0, 0])
-    sig_x = np.array([2, 4])
-    sig_y = np.array([2, 4])
-    rot = 45
     
-    for i in range(1):
+    if side == 1:
+        comps += comps-1
+        amp = np.append(amp, amp[1:])
+        x = np.append(x, -x[1:])
+        y = np.append(y, -y[1:])
+        sig_x = np.append(sig_x, sig_x[1:])
+        sig_y = np.append(sig_y, sig_y[1:])
+        
+    
+    for i in range(comps):
         source = add_gaussian(
             grid = grid,
             amp = amp[i],
@@ -123,15 +126,65 @@ def create_gaussian_source(grid, sides=1, blur=True):
     return source
 
 
+
+
+
+
+
+def gauss_paramters():
+    '''
+    
+    '''
+    # random number of components between 4 and 9
+    comps = np.random.randint(4, 10)
+    
+    # start amplitude between 10 and 1e-3
+    amp_start = (np.random.randint(0, 100) * np.random.random()) / 10
+    # if start amp is 0, draw a new number
+    while amp_start == 0:
+        amp_start = (np.random.randint(0, 100) * np.random.random()) / 10
+    # logarithmic decrease to outer components
+    amp = np.array([amp_start/np.exp(i) for i in range(comps)])
+    
+    # linear distance bestween the components
+    x = np.arange(0, comps) * 5
+    y = np.zeros(comps)
+    
+    # extension of components
+    # random start value between 1 - 0.375 and 1 - 0 
+    # linear distance between components
+    # distances scaled by factor between 0.25 and 0.5
+    # randomnized for each sigma
+    off1 = (np.random.random() + 0.5) / 4
+    off2 = (np.random.random() + 0.5) / 4
+    fac1 = (np.random.random() + 1) / 4
+    fac2 = (np.random.random() + 1) / 4
+    sig_x = (np.arange(1, comps+1) - off1 ) * fac1
+    sig_y = (np.arange(1, comps+1) - off2 ) * fac2
+    
+    # jet rotation
+    rot = np.random.randint(0, 360)
+    # jet one- or two-sided
+    side = np.random.randint(0, 2)
+    
+    return comps, amp, x , y, sig_x, sig_y, rot, side
+
+
+np.random.random(
+)
+
 grid = create_grid(128)
-s = create_gaussian_source(grid)
-s.shape
-plt.imshow(s)
+comps, amp, x, y, sig_x, sig_y, rot, side = gauss_paramters()
+s = create_gaussian_source(comps, amp, x, y, sig_x, sig_y, rot, grid, side, blur=True)
+print(side)
+plt.imshow(s, norm=LogNorm(vmin=1e-8, vmax=10))
 plt.colorbar()
 
-74, 64
+sig_x
 
+(np.random.random() + 0.5) / 4
 
+2/4
 
 
 
