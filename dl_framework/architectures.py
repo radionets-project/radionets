@@ -44,17 +44,18 @@ class UNet(nn.Module):
         self.dconv_down1 = double_conv(1, 4)
         self.dconv_down2 = double_conv(4, 8)
         self.dconv_down3 = double_conv(8, 16)
-        self.dconv_down4 = double_conv(16, 32)        
+        self.dconv_down4 = double_conv(16, 32)
+        self.dconv_down5 = double_conv(32, 64) 
 
         self.maxpool = nn.MaxPool2d(2)
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)        
         
+        self.dconv_up4 = double_conv(32 + 64, 32)
         self.dconv_up3 = double_conv(16 + 32, 16)
         self.dconv_up2 = double_conv(8 + 16, 8)
         self.dconv_up1 = double_conv(4 + 8, 4)
         
         self.conv_last = nn.Conv2d(4, 1, 1)
-
         self.flatten = Flatten()
         
         
@@ -68,7 +69,15 @@ class UNet(nn.Module):
         conv3 = self.dconv_down3(x)
         x = self.maxpool(conv3)   
         
-        x = self.dconv_down4(x)
+        conv4 = self.dconv_down4(x)
+        x = self.maxpool(conv4)
+        
+        x = self.dconv_down5(x)
+        
+        x = self.upsample(x)
+        x = torch.cat([x,conv4], dim=1)
+        
+        x = self.dconv_up4(x)
         
         x = self.upsample(x)        
         x = torch.cat([x, conv3], dim=1)
@@ -84,7 +93,7 @@ class UNet(nn.Module):
         x = self.dconv_up1(x)
         
         x = self.conv_last(x)
-
+        
         out = self.flatten(x)
         
         return out
