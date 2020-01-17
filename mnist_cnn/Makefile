@@ -78,8 +78,8 @@ input_plot: ./data/plots/input_done
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/cnn_mnist.model\
-		cnn ./data/normalization_factors.csv\
+		./data/mnist_samp_valid.h5 ./models/unet_mnist.model\
+		UNet ./data/normalization_factors.csv\
 		50 1e-3 -log False\
 		-pretrained False ./models/autoencoder_mnist.model \
 		-inspection False

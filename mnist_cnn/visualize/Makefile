@@ -2,7 +2,7 @@ all: visualize_prediction \
 
 visualize_preprocessing: build/visualize_preprocessing_done
 visualize_predictions: build/visualize_predictions_done
-
+predictions: build/predictions_done
 model=../models/unet_mnist.model
 norm=../data/normalization_factors.csv
 
@@ -20,6 +20,17 @@ build/visualize_predictions_done:
 	$(norm) \
 	build/prediction1.pdf \
 	-index 42
+
+build/predictions_done:
+	mkdir -p build
+	python predictions.py \
+	UNet \
+	$(model) \
+	../data/mnist_samp_valid.h5 \
+	$(norm) \
+	build/prediction.png \
+	-num 20
+
 
 # ------------------------------------------------------
 new_shapes: new_shapes/visualize_gauss_done \

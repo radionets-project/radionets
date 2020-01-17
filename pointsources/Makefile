@@ -43,7 +43,7 @@ input_plot: ./data/plots/input_done
 ./data/pointsources_fft_done:
 		mkdir -p data/
 		python create_pointsources_fft.py ./data\
-		20000 784 20\
+		20000 784 10\
 		-test False -noise False
 		touch ./data/pointsources_fft_done
 
@@ -81,10 +81,10 @@ input_plot: ./data/plots/input_done
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/pointsources_samp_train.h5\
-		./data/pointsources_samp_valid.h5 ./models/autoencoder_pointsources.model\
-		autoencoder ./data/normalization_factors.csv\
+		./data/pointsources_samp_valid.h5 ./models/unet_pointsources.model\
+		UNet ./data/normalization_factors.csv\
 		50 1e-3 -log False\
-		-pretrained True ./models/autoencoder_mnist.model \
+		-pretrained True ./models/unet_gauss.model \
 		-inspection False
 		touch ./training_done
 
