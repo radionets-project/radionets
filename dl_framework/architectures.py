@@ -16,7 +16,7 @@ def cnn():
         *conv(32, 64, (2, 2), 2, 1),
         nn.MaxPool2d((2, 2)),
         Lambda(flatten),
-        nn.Linear(32, 4096)
+        nn.Linear(64, 4096)
     )
     return arch
 
