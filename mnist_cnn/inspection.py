@@ -6,12 +6,6 @@ import pandas as pd
 from dl_framework.callbacks import view_tfm
 from dl_framework.data import do_normalisation
 
-# to prevent the localhost error from happening
-# first change the backende and second turn off
-# the interactive mode
-matplotlib.use("Agg")
-plt.ioff()
-
 
 def training_stats(run):
     plt.figure(figsize=(12, 4))
@@ -70,10 +64,16 @@ def test_initialization(dl, model, layer):
 
 
 def plot_loss(learn, model_path):
+    # to prevent the localhost error from happening
+    # first change the backende and second turn off
+    # the interactive mode
+    matplotlib.use("Agg")
+    plt.ioff()
     name_model = model_path.split("/")[-1].split(".")[0]
     print('\nPlotting Loss for: {}\n'.format(name_model))
     learn.recorder.plot_loss()
     plt.savefig('./models/loss.pdf', bbox_inches='tight', pad_inches=0.01)
+    matplotlib.rcParams.update(mpl.rcParamsDefault)
 
 
 def plot_lr_loss(learn, model_path, skip_last):
