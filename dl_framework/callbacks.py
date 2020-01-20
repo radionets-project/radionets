@@ -176,7 +176,6 @@ class LR_Find(Callback):
             return
         pos = self.run.n_iter/self.max_iter
         lr = self.min_lr * (self.max_lr/self.min_lr) ** pos
-        print(self.min_lr * (self.max_lr/self.min_lr))
         for pg in self.opt.hypers:
             pg['lr'] = lr
 
