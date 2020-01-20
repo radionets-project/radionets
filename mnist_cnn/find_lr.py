@@ -1,6 +1,9 @@
 from functools import partial
-
+import sys
 import click
+import torch.nn as nn
+import torch.nn.functional as F
+
 
 import dl_framework.architectures as architecture
 from dl_framework.callbacks import (
@@ -25,12 +28,16 @@ from dl_framework.optimizer import (
 from mnist_cnn.utils import get_h5_data
 from preprocessing import DataBunch, get_dls, prepare_dataset
 from inspection import plot_lr_loss
+from dl_framework.utils import children
+from torchvision.models import vgg16_bn
+from dl_framework.loss_functions import FeatureLoss
 
 
 @click.command()
 @click.argument("train_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("valid_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("arch", type=str)
+@click.argument("loss_func", type=str)
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
@@ -45,6 +52,7 @@ def main(
     valid_path,
     arch,
     norm_path,
+    loss_func,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -71,7 +79,7 @@ def main(
     data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 
     # First guess for max_iter
-    print("\nTotal number of batches ~ ", data.train_ds.x.size(0)*2//bs)
+    print("\nTotal number of batches ~ ", data.train_ds.x.size(0) * 2 // bs)
 
     # Define model
     arch_name = arch
@@ -85,7 +93,7 @@ def main(
 
     # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=400, max_lr=0.1),
+        partial(LR_Find, max_iter=400, max_lr=1),
         Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),
@@ -99,8 +107,30 @@ def main(
         steppers=[adam_step, weight_decay],
         stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
     )
+    if loss_func == "feature_loss":
+        # feature_loss
+        ###########################################################################
+        vgg_m = vgg16_bn(True).features.cuda().eval()
+        for param in vgg_m.parameters():
+            param.requires_grad = False
+        # requires_grad(vgg_m, False)
+        blocks = [
+            i - 1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)
+        ]
+        feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
+        ###########################################################################
+        loss_func = feat_loss
+    elif loss_func == "l1":
+        loss_func = nn.L1Loss()
+    elif loss_func == "mse":
+        loss_func = nn.MSELoss()
+    else:
+        print("\n No matching loss function! Exiting. \n")
+        sys.exit(1)
     # Combine model and data in learner
-    learn = get_learner(data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs,)
+    learn = get_learner(
+        data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs, loss_func=loss_func
+    )
 
     # use pre-trained model if asked
     if pretrained is True:
