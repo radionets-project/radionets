@@ -72,10 +72,10 @@ find_lr: ./lr_find
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/feature_loss_500.model\
-		autoencoder ./data/normalization_factors.csv\
-		500 1e-4 feature_loss -log False\
-		-pretrained True ./models/feature_loss_500.model\
+		./data/mnist_samp_valid.h5 ./models/test.model\
+		cnn ./data/normalization_factors.csv\
+		20 1e-4 mse -log False\
+		-pretrained False ./models/feature_loss_500.model\
 		-inspection True
 		touch ./training_done
 
@@ -83,18 +83,7 @@ find_lr: ./lr_find
 		mkdir -p models/
 		python find_lr.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5 ./models/test_pred.model\
-		autoencoder ./data/normalization_factors.csv\
-		100 1e-3 -log False\
-		-pretrained False ./models/test.model\
-		-inspection True
-		# touch ./lr_find
-
-
-./lr_find:
-		mkdir -p models/
-		python find_lr.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/test_pred.model\
-		cnn ./data/normalization_factors.csv -log False\
+		autoencoder ./data/normalization_factors.csv -log False\
 		-pretrained False ./models/test.model\
 		-save False
 
