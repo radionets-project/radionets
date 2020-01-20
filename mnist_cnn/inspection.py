@@ -1,9 +1,16 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 from dl_framework.callbacks import view_tfm
 from dl_framework.data import do_normalisation
+
+# to prevent the localhost error from happening
+# first change the backende and second turn off
+# the interactive mode
+matplotlib.use("Agg")
+plt.ioff()
 
 
 def training_stats(run):
