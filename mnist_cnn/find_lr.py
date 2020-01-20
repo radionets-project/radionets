@@ -30,7 +30,6 @@ from inspection import plot_lr_loss
 @click.command()
 @click.argument("train_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("valid_path", type=click.Path(exists=True, dir_okay=True))
-@click.argument("model_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("arch", type=str)
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument(
@@ -44,7 +43,6 @@ from inspection import plot_lr_loss
 def main(
     train_path,
     valid_path,
-    model_path,
     arch,
     norm_path,
     log=True,
@@ -56,7 +54,6 @@ def main(
     Train the neural network with existing training and validation data.
     TRAIN_PATH is the path to the training data\n
     VALID_PATH ist the path to the validation data\n
-    MODEL_PATH is the Path to which the model is saved\n
     ARCH is the name of the architecture which is used\n
     NORM_PATH is the path to the normalisation factors\n
     PRETRAINED_MODEL is the path to a pretrained model, which is
@@ -77,6 +74,7 @@ def main(
     print("\nTotal number of batches ~ ", data.train_ds.x.size(0)*2//bs)
 
     # Define model
+    arch_name = arch
     arch = getattr(architecture, arch)()
 
     # Define resize for mnist data
@@ -111,7 +109,7 @@ def main(
 
     learn.fit(2)
     if save:
-        plot_lr_loss(learn, model_path, skip_last=5)
+        plot_lr_loss(learn, arch_name, skip_last=5)
     else:
         learn.recorder_lr_find.plot(skip_last=5)
 
