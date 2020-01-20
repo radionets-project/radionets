@@ -27,6 +27,7 @@ mnist_samp_valid: ./data/mnist_samp_valid.h5
 calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
 input_plot: ./data/plots/input_done
+find_lr: ./lr_find
 
 #########################################################
 #	Tasks
@@ -77,6 +78,14 @@ input_plot: ./data/plots/input_done
 		-pretrained False ./models/test.model\
 		-inspection True
 		touch ./training_done
+
+./lr_find:
+		mkdir -p models/
+		python find_lr.py ./data/mnist_samp_train.h5\
+		./data/mnist_samp_valid.h5 ./models/test_pred.model\
+		cnn ./data/normalization_factors.csv -log False\
+		-pretrained False ./models/test.model\
+		-save False
 
 ./data/plots/input_done:
 		mkdir -p data/
