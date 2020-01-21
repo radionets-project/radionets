@@ -351,7 +351,7 @@ def get_batch(bundles, bs, index):
     bundle = h5py.File(bundles[i], 'r')
     batch = bundle['gs_bundle'][start:stop]
     return batch
-    
+
 
 
 batch = get_batch(bundles, 64, 2568)
