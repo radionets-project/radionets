@@ -13,7 +13,7 @@
 #     name: python3
 # ---
 
-from sampling.source_simulations import simulate_gaussian_source
+from simulations.source_simulations import simulate_gaussian_source
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
@@ -227,19 +227,21 @@ for j in range(20):
     bundle = np.array([gaussian_source() for i in range(1024)])
     save_bundle(path, bundle, j)
 
-mean, std = running_stats('gaussian_sources/bundle_', 5)
+mean, std = running_stats('gaussian_sources/bundle_', 20)
 mean,std
 
 from pathlib import Path
 
-data_path = Path('gaussian_sources')
 
-bundles = np.array([x for x in data_path.iterdir()])
+def get_bundles(path):
+    data_path = Path(path)
+    bundles = np.array([x for x in data_path.iterdir()])
+    return bundles
+
+
+path = 'gaussian_sources'
+bundles = get_bundles(path)
 bundles
-
-for i in range(len(bundles)):
-    bundle = h5py.File(bundles[i], 'r')
-    data = bundle['gs_bundle']
 
 
 class DataBunch():
@@ -308,18 +310,20 @@ plt.imshow(val[0])
 
 data = DataBunch(*get_dls(train_ds, train_ds, bs))
 
-next(iter(data.train_dl))
-
 x, y = next(iter(data.train_dl))
 plt.imshow(x[0])
 
-loader = get_dls(train_ds, train_ds, bs)
+# +
+#loader = get_dls(train_ds, train_ds, bs)
 
-loader
+# +
+#loader
 
-x = next(iter(loader[0]))
-img = x[0][0]
-plt.imshow(img)
+# +
+#x = next(iter(loader[0]))
+#img = x[0][0]
+#plt.imshow(img)
+# -
 
 data.train_ds[125]
 
@@ -335,33 +339,11 @@ data.train_ds[125]
 
 
 
-bs = 64
-loader = DataLoader(d, batch_size=bs, shuffle=True)
-
-loader.
 
 
 
 
 
-def get_batch(bundles, bs, index):
-    i = index // 1024
-    start = index - i * 1024
-    stop = start + bs
-    bundle = h5py.File(bundles[i], 'r')
-    batch = bundle['gs_bundle'][start:stop]
-    return batch
-
-
-
-batch = get_batch(bundles, 64, 2568)
-
-batch.shape
-
-
-
-plt.imshow(batch[0], norm=LogNorm(vmax=10, vmin=1e-10))
-plt.colorbar()
 
 
 
