@@ -16,20 +16,19 @@ class FeatureLoss(nn.Module):
         self.loss_features = [self.m_feat[i] for i in layer_ids]
         self.hooks = hook_outputs(self.loss_features, detach=False)
         self.wgts = layer_wgts
-        self.metric_names = (
-            ["pixel", ]
-            + [f"feat_{i}" for i in range(len(layer_ids))]
-            + [f"gram_{i}" for i in range(len(layer_ids))]
-        )
+        # self.metric_names = (
+        #     ["pixel", ]
+        #     + [f"feat_{i}" for i in range(len(layer_ids))]
+        #     + [f"gram_{i}" for i in range(len(layer_ids))]
+        # )
 
     def make_features(self, x, clone=False):
         """"
-        Hier werden Kopien der gespeicherten Aktivierungsfunktionen
-        abgegriffen und Kopien davon gespeichert. Sowohl einmal für
+        Hier wird das Objekt x durch das vortrainierte Netz geschickt und somit die
+        Aktivierungsfunktionen berechnet. Dies geschieht sowohl einmal für
         die Wahrheit "target" und einmal für die Prediction "input"
-        aus dem Generator.
-
-        Wird als Liste gespeichert, damit
+        aus dem Generator. Dann werden die berechneten Aktivierungsfunktionen als Liste
+        gespeichert und zurückgegeben.
         """
         self.m_feat(x)
         return [(o.clone() if clone else o) for o in self.hooks.stored]
@@ -66,16 +65,25 @@ class FeatureLoss(nn.Module):
 
         # erstmal den Teil mit der gram_matrix auskommentiert, bis er
         # verstanden ist
-        # self.feat_losses += [self.base_loss(gram_matrix(f_in), gram_matrix(f_out))*w**2 * 5e3
-        #                      for f_in, f_out, w in zip(in_feat, out_feat,
-        #                                                self.wgts)]
+        self.feat_losses += [
+            self.base_loss(gram_matrix(f_in), gram_matrix(f_out)) * w ** 2 * 5e3
+            for f_in, f_out, w in zip(in_feat, out_feat, self.wgts)
+        ]
 
         # Wird als Liste gespeichert, um es in metrics abspeichern
         # zu können und printen zu können
-        self.metrics = dict(zip(self.metric_names, self.feat_losses))
+
+        # erstmal unnötig
+        # self.metrics = dict(zip(self.metric_names, self.feat_losses))
 
         # zum Schluss wird hier aufsummiert
         return sum(self.feat_losses)
 
     def __del__(self):
         self.hooks.remove()
+
+
+def gram_matrix(x):
+    n, c, h, w = x.size()
+    x = x.view(n, c, -1)
+    return (x @ x.transpose(1, 2)) / (c * h * w)
