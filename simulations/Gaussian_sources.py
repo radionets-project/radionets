@@ -171,14 +171,14 @@ def gauss_paramters():
     return comps, amp, x , y, sig_x, sig_y, rot, sides
 
 
-def gaussian_source():
-    grid = create_grid(128)
+def gaussian_source(pixel):
+    grid = create_grid(pixel)
     comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
     s = create_gaussian_source(comps, amp, x, y, sig_x, sig_y, rot, grid, sides, blur=True)
     return s
 
 
-s = gaussian_source()
+s = gaussian_source(128)
 plt.imshow(s, norm=LogNorm(vmin=1e-8, vmax=10))
 plt.colorbar()
 
