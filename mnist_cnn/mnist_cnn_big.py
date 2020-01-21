@@ -16,13 +16,12 @@
 # %reload_ext autoreload
 # %autoreload 2
 # %matplotlib inline
-import sys
-sys.path.append('..')
 
 # +
 import matplotlib.pyplot as plt
 
-from preprocessing import get_h5_data, prepare_dataset, get_dls, DataBunch
+from mnist_cnn.preprocessing import prepare_dataset, get_dls, DataBunch
+from mnist_cnn.utils import get_h5_data
 from torch import nn
 from dl_framework.learner import Learner
 from dl_framework.optimizer import sgd_opt
@@ -40,13 +39,24 @@ path_valid = 'data/mnist_samp_valid.h5'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 
 # Create train and valid datasets
-# train_ds, valid_ds = prepare_dataset(x_train[0:2048], y_train[0:2048], x_valid[0:2048], y_valid[0:2048], log=True)
-train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True)
+train_ds, valid_ds = prepare_dataset(x_train[0:2048], y_train[0:2048], x_valid[0:2048], y_valid[0:2048], log=True)
+# train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True)
 
 # Create databunch with definde batchsize
 bs = 2048
 data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
-# + {}
+# -
+loader = data.train_dl
+
+next(iter(loader))
+
+
+
+
+
+
+
+# +
 # import numpy as np
 # a = data.train_ds.x.reshape(10, 4096)
 # print(a.shape)
