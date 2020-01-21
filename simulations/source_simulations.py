@@ -48,46 +48,63 @@ def create_grid(pixel):
     return grid
 
 
-def gaussian_source(X, Y, blur=False):
-    ''' Creates a gaussian source consisting of different gaussian componentes
-        on a 2d grid
-
-    X: x coordinates of 2d grid
-    Y: y coordinates of 2d grid
-    blur: smear the components with a gaussian filter
+def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
     '''
-    source = np.zeros(X.shape)
-    cent = len(X)//2
+    Takes a grid and adds a Gaussian component relative to the center
 
-    center = np.array([[cent, cent], [cent+10, cent], [cent-10, cent],
-                       [cent+20, cent], [cent-20, cent]])
-    intens = np.array([5, 2, 2, 1, 1])
-    fwhm = np.array([2, 4, 4, 6, 6])
+    grid: 2d grid
+    amp: amplitude
+    x: x position, will be calculated rel. to center
+    y: y position, will be calculated rel. to center
+    sig_x: standard deviation in x
+    sig_y: standard deviation in y
+    '''
+    cent = np.array([len(grid[0])//2 + x, len(grid[0])//2 + y])
+    X = grid[1]
+    Y = grid[2]
+    gaussian = grid[0]
+    gaussian += gaussian_component(
+                                X,
+                                Y,
+                                amp,
+                                sig_x,
+                                sig_y,
+                                rot,
+                                center=cent,
+    )
 
-    for i in range(0, 5):
-        source += gaussian_component(X, Y, intens[i], fwhm[i], fwhm[i],
-                                     center=center[i])
-
-    if blur is True:
-        source = gaussian_filter(source, sigma=3)
-
-    return source
+    return gaussian
 
 
-def simulate_gaussian_source(pixel, blur=False):
-    ''' Creates a (extended) gaussian source on a 2d grid
-        using create_grid and gaussian_source
-
-    pixel: grid size in x and y
-    blur: smear the components with a gaussian filter
-
+def create_gaussian_source(comps, amp, x, y, sig_x, sig_y,
+                           rot, grid, sides=0, blur=True):
+    '''
+    takes grid
+    side: one-sided or two-sided
+    core dominated or lobe dominated
     number of components
-    list of components?
-    2 sided /  1 sided
-    list of fluxes?
-    fr1 and fr2
-    seperation depended on fwhm ?
+    angle of the jet
+
+    components should not have too big gaps between each other
     '''
-    X, Y = create_grid(pixel)
-    source = gaussian_source(X, Y, blur=blur)
+    if sides == 1:
+        comps += comps-1
+        amp = np.append(amp, amp[1:])
+        x = np.append(x, -x[1:])
+        y = np.append(y, -y[1:])
+        sig_x = np.append(sig_x, sig_x[1:])
+        sig_y = np.append(sig_y, sig_y[1:])
+
+    for i in range(comps):
+        source = add_gaussian(
+            grid=grid,
+            amp=amp[i],
+            x=x[i],
+            y=y[i],
+            sig_x=sig_x[i],
+            sig_y=sig_y[i],
+            rot=rot,
+        )
+    if blur is True:
+        source = gaussian_filter(source, sigma=1.5)
     return source
