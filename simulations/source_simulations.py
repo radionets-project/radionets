@@ -147,3 +147,11 @@ def gauss_paramters():
     sides = np.random.randint(0, 2)
 
     return comps, amp, x, y, sig_x, sig_y, rot, sides
+
+
+def gaussian_source(pixel):
+    grid = create_grid(pixel)
+    comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
+    s = create_gaussian_source(comps, amp, x, y, sig_x, sig_y,
+                               rot, grid, sides, blur=True)
+    return s
