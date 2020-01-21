@@ -230,6 +230,98 @@ for j in range(20):
 mean, std = running_stats('gaussian_sources/bundle_', 5)
 mean,std
 
+from pathlib import Path
+
+data_path = Path('gaussian_sources')
+
+bundles = np.array([x for x in data_path.iterdir()])
+bundles
+
+for i in range(len(bundles)):
+    bundle = h5py.File(bundles[i], 'r')
+    data = bundle['gs_bundle']
+
+
+class DataBunch():
+    def __init__(self, train_dl, valid_dl, c=None):
+        self.train_dl = train_dl
+        self.valid_dl = valid_dl
+        self.c = c
+
+    @property
+    def train_ds(self): return self.train_dl.dataset
+
+    @property
+    def valid_ds(self): return self.valid_dl.dataset
+
+
+def get_dls(train_ds, valid_ds, bs, **kwargs):
+    return (DataLoader(train_ds, batch_size=bs, shuffle=True, **kwargs),
+            DataLoader(valid_ds, batch_size=bs*2, **kwargs))
+
+
+from dl_framework.data import DataLoader
+from functools import partial
+
+
+class h5_dataset():
+    def __init__(self, bundles_x, bundles_y):
+        self.x = bundles_x
+        self.y = bundles_y
+
+    def __call__(self):
+        return print('This is the h5_dataset class.')
+        
+    def __len__(self):
+        return len(self.x) * len(self.open_bundle(self.x[0]))
+
+    def __getitem__(self, i):
+        x = self.open_image(self.x, i)
+        y = self.open_image(self.y, i)
+        return x, y
+
+    def open_bundle(self, bundle):
+        bundle = h5py.File(bundle, 'r')
+        data = bundle['gs_bundle']
+        return data
+    
+    def open_image(self, bundle, i):
+        bundle_i = i // 1024
+        image_i = i - bundle_i * 1024
+        bundle = h5py.File(bundle[bundle_i], 'r')
+        data = bundle['gs_bundle'][image_i]
+        return data
+
+
+train_ds = h5_dataset(bundles, bundles)
+
+len(train_ds)
+
+train_ds()
+
+bs = 64
+
+next(iter(train_ds.x))
+
+val = next(iter(train_ds))
+plt.imshow(val[0])
+
+data = DataBunch(*get_dls(train_ds, train_ds, bs))
+
+next(iter(data.train_dl))
+
+x, y = next(iter(data.train_dl))
+plt.imshow(x[0])
+
+loader = get_dls(train_ds, train_ds, bs)
+
+loader
+
+x = next(iter(loader[0]))
+img = x[0][0]
+plt.imshow(img)
+
+data.train_ds[125]
 
 
 
@@ -240,7 +332,35 @@ mean,std
 
 
 
-plt.imshow(bundle[1], norm=LogNorm(vmax=10, vmin=1e-10))
+
+
+
+bs = 64
+loader = DataLoader(d, batch_size=bs, shuffle=True)
+
+loader.
+
+
+
+
+
+def get_batch(bundles, bs, index):
+    i = index // 1024
+    start = index - i * 1024
+    stop = start + bs
+    bundle = h5py.File(bundles[i], 'r')
+    batch = bundle['gs_bundle'][start:stop]
+    return batch
+    
+
+
+batch = get_batch(bundles, 64, 2568)
+
+batch.shape
+
+
+
+plt.imshow(batch[0], norm=LogNorm(vmax=10, vmin=1e-10))
 plt.colorbar()
 
 
