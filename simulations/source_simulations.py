@@ -44,7 +44,8 @@ def create_grid(pixel):
     x = np.linspace(0, pixel-1, num=pixel)
     y = np.linspace(0, pixel-1, num=pixel)
     X, Y = np.meshgrid(x, y)
-    return X, Y
+    grid = np.array([np.zeros(X.shape), X, Y])
+    return grid
 
 
 def gaussian_source(X, Y, blur=False):
