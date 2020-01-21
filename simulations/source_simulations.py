@@ -108,3 +108,42 @@ def create_gaussian_source(comps, amp, x, y, sig_x, sig_y,
     if blur is True:
         source = gaussian_filter(source, sigma=1.5)
     return source
+
+
+def gauss_paramters():
+    '''
+    get random set of Gaussian parameters
+    '''
+    # random number of components between 4 and 9
+    comps = np.random.randint(4, 10)
+
+    # start amplitude between 10 and 1e-3
+    amp_start = (np.random.randint(0, 100) * np.random.random()) / 10
+    # if start amp is 0, draw a new number
+    while amp_start == 0:
+        amp_start = (np.random.randint(0, 100) * np.random.random()) / 10
+    # logarithmic decrease to outer components
+    amp = np.array([amp_start/np.exp(i) for i in range(comps)])
+
+    # linear distance bestween the components
+    x = np.arange(0, comps) * 5
+    y = np.zeros(comps)
+
+    # extension of components
+    # random start value between 1 - 0.375 and 1 - 0
+    # linear distance between components
+    # distances scaled by factor between 0.25 and 0.5
+    # randomnized for each sigma
+    off1 = (np.random.random() + 0.5) / 4
+    off2 = (np.random.random() + 0.5) / 4
+    fac1 = (np.random.random() + 1) / 4
+    fac2 = (np.random.random() + 1) / 4
+    sig_x = (np.arange(1, comps+1) - off1) * fac1
+    sig_y = (np.arange(1, comps+1) - off2) * fac2
+
+    # jet rotation
+    rot = np.random.randint(0, 360)
+    # jet one- or two-sided
+    sides = np.random.randint(0, 2)
+
+    return comps, amp, x, y, sig_x, sig_y, rot, sides
