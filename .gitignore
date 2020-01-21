@@ -4,7 +4,7 @@
 
 # data
 mnist_cnn/data
-sampling/gaussian_sources
+simulations/gaussian_sources
 *.uvf
 
 # cache
