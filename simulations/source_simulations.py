@@ -2,6 +2,18 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 
+def create_rot_mat(alpha):
+    '''
+    Create 2d rotation matrix for given alpha
+    alpha: rotation angle in rad
+    '''
+    rot_mat = np.array([
+        [np.cos(alpha), np.sin(alpha)],
+        [np.sin(alpha), np.cos(alpha)]
+    ])
+    return rot_mat
+
+
 def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot=0, center=None):
     ''' Create a gaussian component on a 2d grid
 
@@ -16,15 +28,11 @@ def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot=0, center=None):
     if center is None:
         x_0 = y_0 = len(x) // 2
     else:
-        x_0 = center[0]
-        y_0 = center[1]
+        rot_mat = create_rot_mat(np.deg2rad(rot))
+        x_0, y_0 = ((center - len(x) // 2) @ rot_mat) + len(x) // 2
 
-    rotation = np.deg2rad(rot)
-    x_rot = (np.cos(rotation) * x - np.sin(rotation) * y)
-    y_rot = (np.sin(rotation) * x + np.cos(rotation) * y)
-
-    gauss = flux * np.exp(- ((x_rot - x_0)**2/(2*(x_fwhm)**2) +
-                          (y_rot - y_0)**2 / (2*(y_fwhm)**2)))
+    gauss = flux * np.exp(-((x_0 - x)**2/(2*(x_fwhm)**2) +
+                          (y_0 - y)**2 / (2*(y_fwhm)**2)))
     return gauss
 
 
