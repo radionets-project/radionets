@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
+from dl_framework.data import save_bundle
 
 
 def create_rot_mat(alpha):
@@ -149,9 +150,20 @@ def gauss_paramters():
     return comps, amp, x, y, sig_x, sig_y, rot, sides
 
 
-def gaussian_source(pixel):
-    grid = create_grid(pixel)
+def gaussian_source(img_size):
+    grid = create_grid(img_size)
     comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
     s = create_gaussian_source(comps, amp, x, y, sig_x, sig_y,
                                rot, grid, sides, blur=True)
     return s
+
+
+def create_bundle(img_size, bundle_size):
+    bundle = np.array([gaussian_source(img_size) for i in range(bundle_size)])
+    return bundle
+
+
+def create_n_bundles(num_bundles, bundle_size, img_size, out_path):
+    for j in range(num_bundles):
+        bundle = create_bundle(img_size, bundle_size)
+        save_bundle(out_path, bundle, j)
