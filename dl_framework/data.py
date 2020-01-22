@@ -2,6 +2,7 @@ from torch.utils.data import DataLoader
 import torch
 import h5py
 import numpy as np
+from pathlib import Path
 
 
 def normalize(x, m, s):
@@ -63,3 +64,9 @@ def open_bundle(path):
     f = h5py.File(path, 'r')
     bundle = np.array(f['gs_bundle'])
     return bundle
+
+
+def get_bundles(path):
+    data_path = Path(path)
+    bundles = np.array([x for x in data_path.iterdir()])
+    return bundles
