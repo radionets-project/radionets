@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
 from dl_framework.data import save_bundle
+from tqdm import tqdm
 
 
 def create_rot_mat(alpha):
@@ -159,11 +160,11 @@ def gaussian_source(img_size):
 
 
 def create_bundle(img_size, bundle_size):
-    bundle = np.array([gaussian_source(img_size) for i in range(bundle_size)])
+    bundle = np.array([gaussian_source(img_size) for i in tqdm(range(bundle_size))])
     return bundle
 
 
 def create_n_bundles(num_bundles, bundle_size, img_size, out_path):
-    for j in range(num_bundles):
+    for j in tqdm(range(num_bundles)):
         bundle = create_bundle(img_size, bundle_size)
         save_bundle(out_path, bundle, j)
