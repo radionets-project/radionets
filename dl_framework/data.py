@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader
 import torch
+import h5py
 
 
 def normalize(x, m, s):
@@ -49,3 +50,9 @@ class DataBunch():
 
     @property
     def valid_ds(self): return self.valid_dl.dataset
+
+
+def save_bundle(path, bundle, counter, name='gs_bundle'):
+    with h5py.File(path + str(counter) + '.h5', 'w') as hf:
+        hf.create_dataset(name,  data=bundle)
+        hf.close()
