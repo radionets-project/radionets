@@ -6,7 +6,6 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
-import numpy as np
 
 
 class CancelTrainException(Exception):
