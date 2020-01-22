@@ -58,7 +58,7 @@ for i in range(1024):
     s = gaussian_source(128)
 
 # %%time
-bundle = np.array([gaussian_source() for i in range(1024)])
+bundle = np.array([gaussian_source(128) for i in range(1024)])
 print(bundle.shape)
 
 # %%time
@@ -66,6 +66,10 @@ path = 'gaussian_sources/bundle_'
 for j in range(20):
     bundle = np.array([gaussian_source() for i in range(1024)])
     save_bundle(path, bundle, j)
+
+bundle.shape
+
+
 
 mean, std = running_stats('gaussian_sources/bundle_', 20)
 mean,std
