@@ -1,6 +1,9 @@
 import torch
 from torch import nn
 from dl_framework.test_hook import hook_outputs
+from torchvision.models import vgg16_bn
+from dl_framework.utils import children
+import torch.nn.functional as F
 
 
 class FeatureLoss(nn.Module):
@@ -87,3 +90,25 @@ def gram_matrix(x):
     n, c, h, w = x.size()
     x = x.view(n, c, -1)
     return (x @ x.transpose(1, 2)) / (c * h * w)
+
+
+def init_feature_loss(
+    pre_net=vgg16_bn,
+    pixel_loss=F.l1_loss,
+    begin_block=2,
+    end_block=5,
+    layer_weights=[5, 15, 2],
+):
+    """
+    method to initialise  the pretrained net, which will be used for the feature loss.
+    """
+    vgg_m = pre_net(True).features.cuda().eval()
+    for param in vgg_m.parameters():
+        param.requires_grad = False
+    blocks = [
+        i - 1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)
+    ]
+    feat_loss = FeatureLoss(
+        vgg_m, pixel_loss, blocks[begin_block:end_block], layer_weights
+    )
+    return feat_loss

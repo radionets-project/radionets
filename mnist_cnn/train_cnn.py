@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import dl_framework.architectures as architecture
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
@@ -19,7 +18,7 @@ from dl_framework.callbacks import (
     view_tfm,
 )
 from dl_framework.learner import get_learner
-from dl_framework.loss_functions import FeatureLoss
+from dl_framework.loss_functions import init_feature_loss
 from dl_framework.model import load_pre_model
 from dl_framework.optimizer import (
     AverageGrad,
@@ -30,11 +29,9 @@ from dl_framework.optimizer import (
     weight_decay,
 )
 from dl_framework.param_scheduling import sched_no
-from dl_framework.utils import children
 from inspection import evaluate_model, plot_loss
 from mnist_cnn.utils import get_h5_data
 from preprocessing import DataBunch, get_dls, prepare_dataset
-from torchvision.models import vgg16_bn
 
 
 @click.command()
@@ -123,18 +120,7 @@ def main(
         stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
     )
     if loss_func == "feature_loss":
-        # feature_loss
-        ###########################################################################
-        vgg_m = vgg16_bn(True).features.cuda().eval()
-        for param in vgg_m.parameters():
-            param.requires_grad = False
-        # requires_grad(vgg_m, False)
-        blocks = [
-            i - 1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)
-        ]
-        feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
-        ###########################################################################
-        loss_func = feat_loss
+        loss_func = init_feature_loss()
     elif loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
