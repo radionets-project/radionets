@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
 import torch
 import h5py
+import numpy as np
 
 
 def normalize(x, m, s):
@@ -56,3 +57,9 @@ def save_bundle(path, bundle, counter, name='gs_bundle'):
     with h5py.File(path + str(counter) + '.h5', 'w') as hf:
         hf.create_dataset(name,  data=bundle)
         hf.close()
+
+
+def open_bundle(path):
+    f = h5py.File(path, 'r')
+    bundle = np.array(f['gs_bundle'])
+    return bundle
