@@ -172,6 +172,12 @@ def sample_freqs(img, ant_config_path, size=64, lon=None, lat=None,
     # img = img.reshape(64, 64)
     img[~mask] = 0
     # img = img.reshape(4096)
+    '''
+    if mnist:
+        img = img.reshape(64, 64)
+        img[~mask] = 0
+        img = img.reshape(4096)
+    '''
     if plot is True:
         return img, mask
     else:
