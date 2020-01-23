@@ -13,6 +13,11 @@ class Lambda(nn.Module):
         return self.func(x)
 
 
+def print_shape(x):
+    print(x.shape)
+    return x
+
+
 def flatten(x):
     a = x.view(x.shape[0], -1)
     return a
