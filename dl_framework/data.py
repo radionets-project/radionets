@@ -79,17 +79,8 @@ def save_fft_pair(path, x, y, name_x='x', name_y='y'):
         hf.close()
 
 
-def split_real_imag(array):
-    """
-    takes a complex array and returns the real and the imaginary part
-    """
-    return array.real, array.imag
-
-
-def split_amp_phase(array):
-    """
-    takes a complex array and returns the amplitude and the phase
-    """
-    amp = np.abs(array)
-    phase = np.angle(array)
-    return amp, phase
+def open_fft_pair(path):
+    f = h5py.File(path, 'r')
+    bundle_x = np.array(f['x'])
+    bundle_y = np.array(f['y'])
+    return bundle_x, bundle_y
