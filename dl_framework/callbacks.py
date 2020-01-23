@@ -6,7 +6,6 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
-import numpy as np
 
 
 class CancelTrainException(Exception):
@@ -85,7 +84,7 @@ class AvgStatsCallback(Callback):
 
 
 class ParamScheduler(Callback):
-    _order = 1
+    _order = 3
 
     def __init__(self, pname, sched_funcs):
         self.pname = pname
@@ -128,6 +127,7 @@ class Recorder(Callback):
         plt.xlabel(r'learning rate')
         plt.ylabel(r'loss')
         plt.plot(self.lrs[:n], losses[:n])
+        plt.show()
 
 
 class Recorder_lr_find(Callback):
@@ -173,7 +173,7 @@ class LR_Find(Callback):
     def begin_batch(self):
         if not self.in_train:
             return
-        pos = self.n_iter/self.max_iter
+        pos = self.run.n_iter/self.max_iter
         lr = self.min_lr * (self.max_lr/self.min_lr) ** pos
         for pg in self.opt.hypers:
             pg['lr'] = lr

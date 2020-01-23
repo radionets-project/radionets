@@ -4,7 +4,7 @@ all: visualize_preprocessing \
 visualize_preprocessing: build/visualize_preprocessing_done
 visualize_predictions: build/visualize_predictions_done
 
-model=../models/test_pred.model
+model=../models/feature_loss_lr.model
 norm=../data/normalization_factors.csv
 
 build/visualize_preprocessing_done:
@@ -15,12 +15,12 @@ build/visualize_preprocessing_done:
 build/visualize_predictions_done:
 	mkdir -p build
 	python visualize_predictions.py \
-	cnn \
+	autoencoder \
 	$(model) \
 	../data/mnist_samp_valid.h5 \
 	$(norm) \
 	build/prediction.png \
-	-num 20
+	-index 42
 
 # ------------------------------------------------------
 new_shapes: new_shapes/visualize_gauss_done \

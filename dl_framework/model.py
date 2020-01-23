@@ -94,6 +94,14 @@ def conv(ni, nc, ks, stride, padding):
     return layers
 
 
+def deconv(ni, nc, ks, stride, padding, out_padding):
+    conv = nn.ConvTranspose2d(ni, nc, ks, stride, padding, out_padding),
+    bn = nn.BatchNorm2d(nc),
+    act = GeneralRelu(leak=0.1, sub=0.4) # nn.ReLU()
+    layers = [*conv, *bn, act]
+    return layers
+
+
 def load_pre_model(model, pre_path):
     """
     :param model:       object of type learn.model

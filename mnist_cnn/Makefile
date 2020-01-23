@@ -74,7 +74,7 @@ find_lr: ./lr_find
 		python train_cnn.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5 ./models/test_pred/test_pred.model\
 		cnn ./data/normalization_factors.csv\
-		2 1e-3 -log False\
+		2 1e-3 mse -log False\
 		-pretrained False ./models/test.model\
 		-inspection True
 		touch ./training_done
@@ -82,9 +82,9 @@ find_lr: ./lr_find
 ./lr_find:
 		mkdir -p models/
 		python find_lr.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/test_pred.model\
-		cnn ./data/normalization_factors.csv -log False\
-		-pretrained False ./models/test.model\
+		./data/mnist_samp_valid.h5\
+		autoencoder feature_loss ./data/normalization_factors.csv -log False\
+		-pretrained False ./models/feature_loss_lr.model\
 		-save False
 
 ./data/plots/input_done:

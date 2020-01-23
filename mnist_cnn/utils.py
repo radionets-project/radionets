@@ -99,4 +99,10 @@ def mean_and_std(array):
 
 
 def combine_and_swap_axes(array1, array2):
+    """"
+    Pair with dstack each element of the arrays with the opposing one,
+    like element 1 of array1 with element 1 of array2 and so one.
+    Then swap the axis in this way, that one can axes the real part
+    with array[:, 0] and the imaginary part with array[:, 1]
+    """
     return np.swapaxes(np.dstack((array1, array2)), 1, 2)
