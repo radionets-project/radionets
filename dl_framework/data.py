@@ -70,3 +70,10 @@ def get_bundles(path):
     data_path = Path(path)
     bundles = np.array([x for x in data_path.iterdir()])
     return bundles
+
+
+def save_fft_pair(path, x, y, name_x='x', name_y='y'):
+    with h5py.File(path, 'w') as hf:
+        hf.create_dataset(name_x,  data=x)
+        hf.create_dataset(name_y,  data=y)
+        hf.close()
