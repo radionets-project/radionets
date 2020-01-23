@@ -3,6 +3,7 @@ dataset: simulate_bundles\
 
 simulate_bundles: ./data/bundles_done
 fft_samp: ./data/fft_done
+calc_normalization: ./data/normalization_factors.csv
 
 
 ./data/bundles_done:
@@ -22,6 +23,10 @@ fft_samp: ./data/fft_done
 		-steps 50
 		touch ./data/fft_done
 
+./data/normalization_factors.csv:
+		python calculate_normalization.py\
+		data/ \
+		data/normalization_factors.csv
 
 clean_data:
 	rm -r data/
