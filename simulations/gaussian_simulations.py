@@ -160,7 +160,7 @@ def gaussian_source(img_size):
 
 
 def create_bundle(img_size, bundle_size):
-    bundle = np.array([gaussian_source(img_size) for i in tqdm(range(bundle_size))])
+    bundle = np.array([gaussian_source(img_size) for i in range(bundle_size)])
     return bundle
 
 
