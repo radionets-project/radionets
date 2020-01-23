@@ -5,6 +5,12 @@ simulate_bundles: ./data/bundles_done
 fft_samp: ./data/fft_done
 calc_normalization: ./data/normalization_factors.csv
 
+#############################################
+
+norm=data/normalization_factors.csv
+
+#############################################
+
 
 ./data/bundles_done:
 		mkdir -p data/
@@ -26,7 +32,20 @@ calc_normalization: ./data/normalization_factors.csv
 ./data/normalization_factors.csv:
 		python calculate_normalization.py\
 		data/ \
-		data/normalization_factors.csv
+		$(norm)
+
+./training_done:
+		mkdir -p models/
+		python train_cnn.py ./data/fft_samp \
+		./data/fft_samp ./models/test.model \
+		cnn $(norm) \
+		10 1e-3 -log False \
+		-pretrained False \
+		-inspection True
+		# touch ./training_done
+
+clean_norm:
+	rm -r $(norm)
 
 clean_data:
 	rm -r data/
