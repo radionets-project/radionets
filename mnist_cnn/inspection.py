@@ -70,9 +70,10 @@ def plot_loss(learn, model_path):
     matplotlib.use("Agg")
     plt.ioff()
     name_model = model_path.split("/")[-1].split(".")[0]
+    save_path = model_path.split('.model')[0]
     print('\nPlotting Loss for: {}\n'.format(name_model))
     learn.recorder.plot_loss()
-    plt.savefig('./models/loss.pdf', bbox_inches='tight', pad_inches=0.01)
+    plt.savefig('{}_loss.pdf'.format(save_path), bbox_inches='tight', pad_inches=0.01)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
