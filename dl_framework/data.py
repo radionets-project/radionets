@@ -14,12 +14,12 @@ def do_normalisation(x, norm):
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
-    train_mean_real = torch.tensor(norm['train_mean_real'].values[0]).float()
-    train_std_real = torch.tensor(norm['train_std_real'].values[0]).float()
-    train_mean_imag = torch.tensor(norm['train_mean_imag'].values[0]).float()
-    train_std_imag = torch.tensor(norm['train_std_imag'].values[0]).float()
-    x[:, 0] = normalize(x[:, 0], train_mean_real, train_std_real)
-    x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
+    train_mean_amp = torch.tensor(norm['train_mean_amp'].values[0]).float()
+    train_std_amp = torch.tensor(norm['train_std_amp'].values[0]).float()
+    train_mean_phase = torch.tensor(norm['train_mean_phase'].values[0]).float()
+    train_std_phase = torch.tensor(norm['train_std_phase'].values[0]).float()
+    x[:, 0] = normalize(x[:, 0], train_mean_amp, train_std_amp)
+    x[:, 1] = normalize(x[:, 1], train_mean_phase, train_std_phase)
     assert not torch.isinf(x).any()
     return x
 
@@ -34,6 +34,35 @@ class Dataset():
 
     def __getitem__(self, i):
         return self.x[i], self.y[i]
+
+
+class h5_dataset():
+    def __init__(self, bundles_x, bundles_y):
+        self.x = bundles_x
+        self.y = bundles_y
+
+    def __call__(self):
+        return print('This is the h5_dataset class.')
+
+    def __len__(self):
+        return len(self.x) * len(self.open_bundle(self.x[0]))
+
+    def __getitem__(self, i):
+        x = self.open_image(self.x, i)
+        y = self.open_image(self.y, i)
+        return x, y
+
+    def open_bundle(self, bundle):
+        bundle = h5py.File(bundle, 'r')
+        data = bundle['gs_bundle']
+        return data
+
+    def open_image(self, bundle, i):
+        bundle_i = i // 1024
+        image_i = i - bundle_i * 1024
+        bundle = h5py.File(bundle[bundle_i], 'r')
+        data = bundle['gs_bundle'][image_i]
+        return data
 
 
 def get_dls(train_ds, valid_ds, bs, **kwargs):
