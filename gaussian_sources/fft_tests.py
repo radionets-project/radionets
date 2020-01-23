@@ -138,10 +138,10 @@ class h5_dataset():
         data = bundle[str(var)][image_i]
         if var == 'x':
             data_amp, data_phase = split_amp_phase(data)
-            data_channel = combine_and_swap_axes(data_amp, data_phase)
+            data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(-1,16384)
         else:
-            data_channel = data
-        return torch.tensor(data_channel).float().reshape(-1,16384)
+            data_channel = data.reshape(16384)
+        return torch.tensor(data_channel).float()
 
 
 
@@ -150,38 +150,16 @@ def combine_and_swap_axes(array1, array2):
 
 
 from gaussian_sources.preprocessing import split_amp_phase
-'''
-def prepare_dataset(x_train, y_train, x_valid, y_valid):
-    """ Preprocessing dataset:
-    split
-    log (optional)
-    create ArrayDataset
-    """
-
-    x_train_amp, x_train_phase = split_amp_phase(x_train)
-    x_valid_amp, x_valid_phase = split_amp_phase(x_valid)
-
-    x_train = combine_and_swap_axes(x_train_amp, x_train_phase)
-    x_valid = combine_and_swap_axes(x_valid_amp, x_valid_phase)
-
-    x_train, y_train, x_valid, y_valid = map(torch.tensor, (x_train, y_train,
-                                                            x_valid, y_valid))
-
-    train_ds = h5dataset(x_train, y_train)
-    valid_ds = h5dataset(x_valid, y_valid)
-
-    return train_ds, valid_ds
-'''
 
 train_ds = h5_dataset(bundle_paths)
 valid_ds = h5_dataset(bundle_paths)
 
-bs = 256
+bs = 64
 data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
 data.train_ds[0][1].shape
 
-next(iter(data.train_dl))[0].shape
+next(iter(data.train_dl))[1].shape
 
 # +
 import dl_framework.architectures as architecture
@@ -230,9 +208,9 @@ learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
 print(learn.model, '\n')
 
 # Train the model, make it possible to stop at any given time
-learn.fit(1)
+learn.fit(3)
 # -
-
+learn.recorder.plot_loss()
 
 
 
