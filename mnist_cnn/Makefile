@@ -70,11 +70,11 @@ find_lr: ./lr_find
 		data/normalization_factors.csv
 
 ./training_done:
-		mkdir -p models/
+		mkdir -p models/test_pred
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/test_pred.model\
+		./data/mnist_samp_valid.h5 ./models/test_pred/test_pred.model\
 		cnn ./data/normalization_factors.csv\
-		150 1e-3 -log False\
+		2 1e-3 -log False\
 		-pretrained False ./models/test.model\
 		-inspection True
 		touch ./training_done
