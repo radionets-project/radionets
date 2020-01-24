@@ -13,7 +13,7 @@ from tqdm import tqdm
 def main(data_path, out_path):
     bundle_paths = get_bundles(data_path)
     bundle_paths = [path for path in bundle_paths
-                    if re.findall('fft_samp', path.name)]
+                    if re.findall('fft_samp_train', path.name)]
 
     means_amp = np.array([])
     stds_amp = np.array([])
