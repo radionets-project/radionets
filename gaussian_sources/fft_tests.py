@@ -220,10 +220,6 @@ evaluate_model(data.valid_ds, learn.model, 'data/normalization_factors.csv')
 
 
 
-len(data.valid_ds)
-
-
-
 # +
 def get_eval_img(valid_ds, model, norm_path):
     rand = np.random.randint(0, len(valid_ds))
@@ -248,9 +244,7 @@ def evaluate_model(valid_ds, model, norm_path, nrows=3):
         axes[i][0].imshow(img[:, 0].view(h, h).cpu(), cmap='RdGy_r',
                           vmax=img.max(), vmin=-img.max())
         axes[i][1].set_title('y_pred')
-        im = axes[i][1].imshow(pred.view(h, h),
-                          vmin=valid_ds[rand][1].min(),
-                          vmax=valid_ds[rand][1].max())
+        im = axes[i][1].imshow(pred.view(h, h))
         axes[i][2].set_title('y_true')
         axes[i][2].imshow(valid_ds[rand][1].view(h, h),
                           vmin=valid_ds[rand][1].min(),
