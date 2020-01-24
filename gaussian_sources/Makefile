@@ -1,8 +1,10 @@
 dataset: simulate_bundles\
 		 fft_samp
 
-simulate_bundles: ./data/bundles_done
-fft_samp: ./data/fft_done
+simulate_bundles: ./data/bundles_train_done\
+				  ./data/bundles_valid_done
+fft_samp: ./data/fft_train_done\
+		  ./data/fft_valid_done
 calc_normalization: ./data/normalization_factors.csv
 
 #############################################
@@ -12,22 +14,41 @@ norm=data/normalization_factors.csv
 #############################################
 
 
-./data/bundles_done:
+./data/bundles_train_done:
 		mkdir -p data/
 		python simulate_bundles.py \
-		20 1024 128 data/gaussian_sources_ \
+		80 1024 128 data/gaussian_sources_train \
 		-noise False
-		touch ./data/bundles_done
+		touch ./data/bundles_train_done
 
-./data/fft_done:
+./data/fft_train_done:
 		python create_fft_pairs.py \
 		./data ./data/fft_samp_ ../simulations/layouts/vlba.txt \
+		-train True \
 		-samp True \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ./data/fft_done
+		touch ./data/fft_train_done
+
+./data/bundles_valid_done:
+		mkdir -p data/
+		python simulate_bundles.py \
+		20 1024 128 data/gaussian_sources_valid \
+		-noise False
+		touch ./data/bundles_valid_done
+
+./data/fft_valid_done:
+		python create_fft_pairs.py \
+		./data ./data/fft_samp_ ../simulations/layouts/vlba.txt \
+		-train False \
+		-samp True \
+		-specific_mask True \
+		-lon -80 \
+		-lat 50 \
+		-steps 50
+		touch ./data/fft_valid_done
 
 ./data/normalization_factors.csv:
 		python calculate_normalization.py\
