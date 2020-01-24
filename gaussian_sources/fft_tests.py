@@ -67,8 +67,10 @@ ax3.imshow(np.angle(bundle_fft[i]))
 # -
 data_path = 'data/'
 bundle_paths = get_bundles(data_path)
-bundle_paths = [path for path in bundle_paths if re.findall('fft_samp', path.name)]
-bundle_paths
+train = [path for path in bundle_paths if re.findall('fft_samp_train', path.name)]
+valid = [path for path in bundle_paths if re.findall('fft_samp_valid', path.name)]
+
+valid
 
 # +
 from gaussian_sources.preprocessing import split_amp_phase, mean_and_std
@@ -103,8 +105,6 @@ d = {'train_mean_amp': [mean_amp],
 # -
 
 d
-
-bundle_paths
 
 from dl_framework.data import DataBunch, get_dls, h5_dataset
 import h5py
@@ -151,13 +151,15 @@ def combine_and_swap_axes(array1, array2):
 
 from gaussian_sources.preprocessing import split_amp_phase
 
-train_ds = h5_dataset(bundle_paths)
-valid_ds = h5_dataset(bundle_paths)
+train_ds = h5_dataset(train)
+valid_ds = h5_dataset(valid)
 
-bs = 64
+bs = 256
 data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
-data.train_ds[0][1].shape
+plt.imshow(data.valid_ds[4][0][1].reshape(128,128))
+
+plt.imshow(data.valid_ds[0][1].reshape(128,128))
 
 next(iter(data.train_dl))[1].shape
 
@@ -208,10 +210,54 @@ learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
 print(learn.model, '\n')
 
 # Train the model, make it possible to stop at any given time
-learn.fit(3)
+learn.fit(20)
 # -
 learn.recorder.plot_loss()
 
+import pandas as pd
+from dl_framework.data import do_normalisation
+evaluate_model(data.valid_ds, learn.model, 'data/normalization_factors.csv')
+
+
+
+len(data.valid_ds)
+
+
+
+# +
+def get_eval_img(valid_ds, model, norm_path):
+    rand = np.random.randint(0, len(valid_ds))
+    img = valid_ds[rand][0].cuda()
+    norm = pd.read_csv(norm_path)
+    img = do_normalisation(img, norm)
+    h = int(np.sqrt(img.shape[1]))
+    img = img.view(-1, h, h).unsqueeze(0)
+    model.eval()
+    with torch.no_grad():
+        pred = model(img).cpu()
+    return img, pred, h, rand
+
+
+def evaluate_model(valid_ds, model, norm_path, nrows=3):
+    fig, axes = plt.subplots(nrows=nrows, ncols=4, figsize=(18, 6*nrows),
+                             gridspec_kw={"width_ratios": [1, 1, 1, 0.05]})
+
+    for i in range(nrows):
+        img, pred, h, rand = get_eval_img(valid_ds, model, norm_path)
+        axes[i][0].set_title('x')
+        axes[i][0].imshow(img[:, 0].view(h, h).cpu(), cmap='RdGy_r',
+                          vmax=img.max(), vmin=-img.max())
+        axes[i][1].set_title('y_pred')
+        im = axes[i][1].imshow(pred.view(h, h),
+                          vmin=valid_ds[rand][1].min(),
+                          vmax=valid_ds[rand][1].max())
+        axes[i][2].set_title('y_true')
+        axes[i][2].imshow(valid_ds[rand][1].view(h, h),
+                          vmin=valid_ds[rand][1].min(),
+                          vmax=valid_ds[rand][1].max())
+        fig.colorbar(im, cax=axes[i][3])
+    plt.tight_layout()
+# -
 
 
 
@@ -220,35 +266,3 @@ learn.recorder.plot_loss()
 
 
 
-
-
-
-
-
-
-class h5_dataset():
-    def __init__(self, bundle_paths):
-        self.bundles = bundle_paths
-
-    def __call__(self):
-        return print('This is the h5_dataset class.')
-
-    def __len__(self):
-        return len(self.bundles) * len(self.open_bundle(self.bundles[0], 'x'))
-
-    def __getitem__(self, i):
-        x = self.open_image('x', i)
-        y = self.open_image('y', i)
-        return x, y
-
-    def open_bundle(self, bundle_path, var):
-        bundle = h5py.File(bundle_path, 'r')
-        data = bundle[str(var)]
-        return data
-
-    def open_image(self, var, i):
-        bundle_i = i // 1024
-        image_i = i - bundle_i * 1024
-        bundle = h5py.File(self.bundles[bundle_i], 'r')
-        data = bundle[str(var)][image_i]
-        return data
