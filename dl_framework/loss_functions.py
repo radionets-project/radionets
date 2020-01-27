@@ -69,7 +69,7 @@ class FeatureLoss(nn.Module):
         # erstmal den Teil mit der gram_matrix auskommentiert, bis er
         # verstanden ist
         self.feat_losses += [
-            self.base_loss(gram_matrix(f_in), gram_matrix(f_out)) * w ** 2 * 5e3
+            self.base_loss(gram_matrix(f_in), gram_matrix(f_out))
             for f_in, f_out, w in zip(in_feat, out_feat, self.wgts)
         ]
 
