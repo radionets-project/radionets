@@ -17,7 +17,7 @@ def main(out_path, num_img, sources,spherical, test=False, noise=False):
     if test:
         num_img = 50
     # Create num_img pointsources images with targets sources
-    train_x, valid_x = create_gauss(num_img,sources,spherical), create_gauss(num_img//5, sources,spherical)
+    train_x, valid_x = create_gauss(num_img,sources,spherical), create_gauss(num_img//4, sources,spherical)
 
     # Check if its a test call
     # take only the first 50 pictures for a faster run
