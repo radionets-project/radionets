@@ -6,6 +6,7 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
+import numpy as np
 
 
 class CancelTrainException(Exception):
@@ -124,13 +125,46 @@ class Recorder(Callback):
         losses = [o.item() for o in self.losses]
         n = len(losses)-skip_last
         plt.xscale('log')
+        plt.xlabel(r'learning rate')
+        plt.ylabel(r'loss')
         plt.plot(self.lrs[:n], losses[:n])
+
+
+class Recorder_lr_find(Callback):
+    """
+    Recorder class for the lr_find. Main difference between the recorder
+    and this class is that the loss is appended after each batch and not
+    after each epoch.
+    """
+    def begin_fit(self):
+        self.lrs = []
+        self.losses = []
+
+    def after_batch(self):
+        if not self.in_train:
+            return
+        self.lrs.append(self.opt.hypers[-1]['lr'])
+        self.losses.append(self.loss.detach().cpu())
+
+    def plot(self, skip_last=0, save=False):
+        losses = [o.item() for o in self.losses]
+        n = len(losses)-skip_last
+        plt.plot(self.lrs[:n], losses[:n])
+        plt.xscale('log')
+        plt.xlabel(r'learning rate')
+        plt.ylabel(r'loss')
+        if save is False:
+            plt.show()
 
 
 class LR_Find(Callback):
     _order = 1
 
     def __init__(self, max_iter=100, min_lr=1e-6, max_lr=10):
+        """
+        max_iter should be slightly bigger than the number of batches.
+        Only this way maximum and minimum learning rate are set.
+        """
         self.max_iter = max_iter
         self.min_lr = min_lr
         self.max_lr = max_lr

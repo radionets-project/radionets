@@ -7,7 +7,7 @@ all:	gauss_fft\
 		gauss_samp\
 		calc_normalization\
 		clean_training\
-		cnn_training\
+		cnn_training
 
 quick_data_and_training: gauss_fft_quick\
 						 clean_samp\
@@ -20,6 +20,9 @@ training: calc_normalization\
                                                  clean_training\
                                                  cnn_training
 
+data:   gauss_fft\
+                clean_samp\
+                gauss_samp
 
 #--------------------------------------------------------
 
@@ -35,6 +38,7 @@ gauss_samp_valid: ./data/gauss_samp_valid.h5
 calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
 input_plot: ./data/plots/input_done
+find_lr: ./lr_find
 
 #########################################################
 #	Tasks
@@ -43,7 +47,7 @@ input_plot: ./data/plots/input_done
 ./data/gauss_fft_done:
 		mkdir -p data/
 		python create_gauss_fft.py ./data\
-		50000 15 True\
+		20000 15 True\
 		-test False -noise False
 		touch ./data/gauss_fft_done
 
@@ -83,7 +87,7 @@ input_plot: ./data/plots/input_done
 		python train_cnn.py ./data/gauss_samp_train.h5\
 		./data/gauss_samp_valid.h5 ./models/unet_gauss.model\
 		UNet ./data/normalization_factors.csv\
-		1000 1e-3 -log False\
+		50 5e-5 mse -log False\
 		-pretrained False ./models/unet_gauss.model \
 		-inspection False
 		touch ./training_done
@@ -93,6 +97,15 @@ input_plot: ./data/plots/input_done
 		mkdir -p data/plots
 		python create_input_plot.py ./../resources/mnist.pkl.gz
 		touch ./data/plots/input_done
+
+./lr_find:
+		mkdir -p models/
+		python find_lr.py ./data/gauss_samp_train.h5\
+                ./data/gauss_samp_valid.h5 ./models/unet_gauss.model\
+                UNet ./data/normalization_factors.csv -log False\
+                -pretrained False ./models/unet_gauss.model\
+                -save True
+
 
 clean:
 	rm -rf ./data

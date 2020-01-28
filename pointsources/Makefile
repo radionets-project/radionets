@@ -7,7 +7,7 @@ all:	pointsources_fft\
 		pointsources_samp\
 		calc_normalization\
 		clean_training\
-		cnn_training\
+		cnn_training
 
 quick_data_and_training: pointsources_fft_quick\
 						 clean_samp\
@@ -19,6 +19,10 @@ quick_data_and_training: pointsources_fft_quick\
 training: calc_normalization\
                                                  clean_training\
                                                  cnn_training
+
+data:   pointsources_fft\
+                clean_samp\
+                pointsources_samp
 
 
 #--------------------------------------------------------
@@ -35,6 +39,7 @@ pointsources_samp_valid: ./data/pointsources_samp_valid.h5
 calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
 input_plot: ./data/plots/input_done
+find_lr: ./lr_find
 
 #########################################################
 #	Tasks
@@ -43,7 +48,7 @@ input_plot: ./data/plots/input_done
 ./data/pointsources_fft_done:
 		mkdir -p data/
 		python create_pointsources_fft.py ./data\
-		20000 784 15\
+		50000 784 20\
 		-test False -noise False
 		touch ./data/pointsources_fft_done
 
@@ -83,8 +88,8 @@ input_plot: ./data/plots/input_done
 		python train_cnn.py ./data/pointsources_samp_train.h5\
 		./data/pointsources_samp_valid.h5 ./models/unet_pointsources.model\
 		UNet ./data/normalization_factors.csv\
-		50 1e-3 -log False\
-		-pretrained True ./models/unet_gauss.model \
+		1000 2e-4 feature_loss -log False\
+		-pretrained False ./models/unet_gauss.model \
 		-inspection False
 		touch ./training_done
 
@@ -93,6 +98,15 @@ input_plot: ./data/plots/input_done
 		mkdir -p data/plots
 		python create_input_plot.py ./../resources/mnist.pkl.gz
 		touch ./data/plots/input_done
+
+./lr_find:
+		mkdir -p models/
+		python find_lr.py ./data/pointsources_samp_train.h5\
+                ./data/pointsources_samp_valid.h5 ./models/unet_pointsources.model\
+                UNet ./data/normalization_factors.csv -log False\
+                -pretrained False ./models/unet_pointsources.model\
+                -save True
+
 
 clean:
 	rm -rf ./data
