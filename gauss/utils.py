@@ -134,7 +134,8 @@ def create_gauss(N,sources,spherical):
         theta = np.random.randint(0,360,size=(N,sources))
     
     for i in range(N):
-        for j in range(sources):
+        targets = np.random.randint(2,sources+1)
+        for j in range(targets):
             g = gauss(mx[i,j],my[i,j],sx[i,j],sy[i,j])
             if spherical:
                 img[i] += g

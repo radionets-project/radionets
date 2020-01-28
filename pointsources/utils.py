@@ -154,7 +154,8 @@ def gauss_pointsources(num_img, sources):
     my = np.random.randint(0,64,size=(num_img,sources))
     sigma = 0.1
     for i in range(num_img):
-        for j in range(sources):
+        targets = np.random.randint(2,sources+1)
+        for j in range(targets):
             g = gauss(mx[i,j],my[i,j],sigma,sigma)
             img[i] += g
     return img
