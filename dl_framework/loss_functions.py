@@ -62,7 +62,7 @@ class FeatureLoss(nn.Module):
 
         # hier wird das gleiche nochmal für alle Features gemacht
         self.feat_losses += [
-            self.base_loss(f_in, f_out) * w
+            self.base_loss(f_in, f_out)
             for f_in, f_out, w in zip(in_feat, out_feat, self.wgts)
         ]
 

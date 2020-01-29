@@ -4,7 +4,7 @@ all: visualize_preprocessing \
 visualize_preprocessing: build/visualize_preprocessing_done
 visualize_predictions: build/visualize_predictions_done
 
-model=../models/gram_300/gram_300.model
+model=../models/without_gram_cnn/without_gram_cnn.model
 norm=../data/normalization_factors.csv
 
 build/visualize_preprocessing_done:
@@ -15,7 +15,7 @@ build/visualize_preprocessing_done:
 build/visualize_predictions_done:
 	mkdir -p build
 	python visualize_predictions.py \
-	autoencoder \
+	cnn \
 	$(model) \
 	../data/mnist_samp_valid.h5 \
 	$(norm) \

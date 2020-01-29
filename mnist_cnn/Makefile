@@ -70,12 +70,12 @@ find_lr: ./lr_find
 		data/normalization_factors.csv
 
 ./training_done:
-		mkdir -p models/gram_300
+		mkdir -p models/with_gram_cnn_300
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/gram_300/gram_300.model\
-		autoencoder ./data/normalization_factors.csv\
-		100 1e-3 feature_loss -log False\
-		-pretrained True ./models/gram_200/gram_200.model\
+		./data/mnist_samp_valid.h5 ./models/with_gram_cnn_300/with_gram_cnn_300.model\
+		cnn ./data/normalization_factors.csv\
+		100 3e-4 feature_loss -log False\
+		-pretrained True ./models/with_gram_cnn_200/with_gram_cnn_200.model\
 		-inspection False
 		touch ./training_done
 
@@ -83,8 +83,8 @@ find_lr: ./lr_find
 		mkdir -p models/
 		python find_lr.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5\
-		autoencoder feature_loss ./data/normalization_factors.csv -log False\
-		-pretrained True ./models/gram_300/gram_300.model\
+		cnn feature_loss ./data/normalization_factors.csv -log False\
+		-pretrained True ./models/with_gram_cnn_200/with_gram_cnn_200.model\
 		-save False
 
 ./data/plots/input_done:
