@@ -102,11 +102,33 @@ def deconv(ni, nc, ks, stride, padding, out_padding):
     return layers
 
 
-def load_pre_model(model, pre_path):
+def load_pre_model(learn, pre_path):
     """
-    :param model:       object of type learn.model
+    :param learn:       object of type learner
     :param pre_path:    string wich contains the path of the model
     """
     name_pretrained = pre_path.split("/")[-1].split(".")[0]
     print('\nLoad pretrained model: {}\n'.format(name_pretrained))
-    model.load_state_dict(torch.load(pre_path))
+
+    checkpoint = torch.load(pre_path)
+    learn.model.load_state_dict(checkpoint['model_state_dict'])
+    # learn.opt_func.load_state_dict(checkpoint['optimizer_state_dict'])
+    learn.epoch = checkpoint['epoch']
+    learn.loss = checkpoint['loss']
+    learn.recorder.losses = checkpoint['recorder_loss']
+    learn.recorder.lrs = checkpoint['recorder_lrs']
+
+
+def save_model(learn, model_path):
+    state = learn.model.state_dict()
+    torch.save(
+        {
+            "epoch": learn.epoch,
+            "model_state_dict": state,
+            # "optimizer_state_dict": learn.opt_func.state_dict(),
+            "loss": learn.loss,
+            "recorder_loss": learn.recorder.losses,
+            "recorder_lrs": learn.recorder.lrs,
+        },
+        model_path,
+    )

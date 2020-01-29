@@ -103,8 +103,10 @@ class ParamScheduler(Callback):
 
 class Recorder(Callback):
     def begin_fit(self):
-        self.lrs = []
-        self.losses = []
+        if not hasattr(self, 'lrs'):
+            self.lrs = []
+        if not hasattr(self, 'losses'):
+            self.losses = []
 
     def after_batch(self):
         if not self.in_train:

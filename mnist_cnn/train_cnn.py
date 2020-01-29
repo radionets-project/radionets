@@ -19,7 +19,7 @@ from dl_framework.callbacks import (
 )
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
-from dl_framework.model import load_pre_model
+from dl_framework.model import load_pre_model, save_model
 from dl_framework.optimizer import (
     AverageGrad,
     AverageSqrGrad,
@@ -136,7 +136,7 @@ def main(
     # use pre-trained model if asked
     if pretrained is True:
         # Load model
-        load_pre_model(learn.model, pretrained_model)
+        load_pre_model(learn, pretrained_model)
 
     # Print model architecture
     print(learn.model, "\n")
@@ -149,9 +149,10 @@ def main(
         print("\nKeyboardInterrupt, do you wanna save the model: yes-(y), no-(n)")
         save = str(input())
         if save == "y":
+            # saving the model if asked
             print("Saving the model after epoch {}".format(learn.epoch))
-            state = learn.model.state_dict()
-            torch.save(state, model_path)
+            save_model(learn, model_path)
+
             # Plot loss
             plot_loss(learn, model_path)
 
@@ -166,8 +167,7 @@ def main(
         sys.exit(1)
 
     # Save model
-    state = learn.model.state_dict()
-    torch.save(state, model_path)
+    save_model(learn, model_path)
 
     # Plot loss
     plot_loss(learn, model_path)
