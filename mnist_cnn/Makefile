@@ -74,10 +74,10 @@ find_lr: ./lr_find
 		python train_cnn.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5 ./models/test_pred/test_pred.model\
 		cnn ./data/normalization_factors.csv\
-		2 1e-3 mse -log False\
-		-pretrained False ./models/test.model\
-		-inspection True
-		touch ./training_done
+		10 1e-3 mse -log False\
+		-pretrained True ./models/test_pred/test_pred.model\
+		-inspection False
+		# touch ./training_done
 
 ./lr_find:
 		mkdir -p models/
