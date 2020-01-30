@@ -117,7 +117,7 @@ def gauss_paramters():
     get random set of Gaussian parameters
     '''
     # random number of components between 4 and 9
-    comps = np.random.randint(4, 10)
+    comps = np.random.randint(4, 7)  # decrease for smaller images
 
     # start amplitude between 10 and 1e-3
     amp_start = (np.random.randint(0, 100) * np.random.random()) / 10

@@ -17,7 +17,7 @@ norm=data/normalization_factors.csv
 ./data/bundles_train_done:
 		mkdir -p data/
 		python simulate_bundles.py \
-		80 1024 128 data/gaussian_sources_train \
+		30 1024 64 data/gaussian_sources_train \
 		-noise False
 		touch ./data/bundles_train_done
 
@@ -35,7 +35,7 @@ norm=data/normalization_factors.csv
 ./data/bundles_valid_done:
 		mkdir -p data/
 		python simulate_bundles.py \
-		20 1024 128 data/gaussian_sources_valid \
+		5 1024 64 data/gaussian_sources_valid \
 		-noise False
 		touch ./data/bundles_valid_done
 

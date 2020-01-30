@@ -43,11 +43,11 @@ def main(in_path, out_path, antenna_config_path, train=True, samp=True,
         if samp is True:
             if specific_mask is True:
                 bundle_fft = np.array([sample_freqs(img, antenna_config_path,
-                                       128, lon, lat, steps) for img
+                                       64, lon, lat, steps) for img
                                        in bundle_fft])
             else:
                 bundle_fft = np.array([sample_freqs(img, antenna_config_path,
-                                       size=128) for img
+                                       size=64) for img
                                        in bundle_fft])
         out = out_path + path.name.split('_')[-1]
         save_fft_pair(out, bundle_fft, bundle)
