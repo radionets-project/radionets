@@ -112,7 +112,7 @@ def load_pre_model(learn, pre_path):
 
     checkpoint = torch.load(pre_path)
     learn.model.load_state_dict(checkpoint['model_state_dict'])
-    # learn.opt_func.load_state_dict(checkpoint['optimizer_state_dict'])
+    learn.opt_func.load_state_dict(checkpoint['optimizer_state_dict'])
     learn.epoch = checkpoint['epoch']
     learn.loss = checkpoint['loss']
     learn.recorder.losses = checkpoint['recorder_loss']
@@ -125,7 +125,7 @@ def save_model(learn, model_path):
         {
             "epoch": learn.epoch,
             "model_state_dict": state,
-            # "optimizer_state_dict": learn.opt_func.state_dict(),
+            "optimizer_state_dict": learn.opt.state_dict(),
             "loss": learn.loss,
             "recorder_loss": learn.recorder.losses,
             "recorder_lrs": learn.recorder.lrs,
