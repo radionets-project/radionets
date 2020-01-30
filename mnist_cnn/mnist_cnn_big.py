@@ -17,6 +17,7 @@
 # %autoreload 2
 # %matplotlib inline
 import sys
+import torch
 sys.path.append('..')
 
 # +
@@ -44,7 +45,7 @@ x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 train_ds, valid_ds = prepare_dataset(x_train[0:2048], y_train[0:2048], x_valid[0:2048], y_valid[0:2048], log=False)
 
 # Create databunch with definde batchsize
-bs = 2048
+bs = 64
 data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 # + {}
 # import numpy as np
@@ -111,17 +112,6 @@ from dl_framework.learner import get_learner
 # Combine model and data in learner
 import dl_framework.architectures as architecture
 
-
-from dl_framework.optimizer import StatefulOptimizer, momentum_step, weight_decay, AverageGrad
-
-sgd_mom_opt = partial(StatefulOptimizer, steppers=[momentum_step, weight_decay],
-                     stats=AverageGrad(), wd=0.01)
-
-from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
-from dl_framework.utils import listify
-
-xtra_step=None
-
 # Define model
 arch = getattr(architecture, 'cnn')()
 
@@ -130,9 +120,6 @@ mnist_view = view_tfm(2, 64, 64)
 
 # make normalisation
 norm = normalize_tfm('data/normalization_factors.csv')
-
-adam_opt = partial(StatefulOptimizer, steppers=[adam_step,weight_decay],
-                   stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()])
 
 from dl_framework.param_scheduling import sched_cos, combine_scheds, sched_lin
 from dl_framework.callbacks import MixUp
@@ -156,15 +143,17 @@ cbfs = [
     SaveCallback,
 ]
 
+adam = torch.optim.Adam
+
 learn = get_learner(data, arch, 1e-2, opt_func=adam, cb_funcs=cbfs)
 # -
 
 
-import torch
+learn.fit(5)
 
-learn.fit(250)
+learn.recorder.plot_loss()
 
-adam = torch.optim.Adam
+learn.recorder.train_losses
 
 adam.state_dict()['param_groups'][0]['lr']
 
