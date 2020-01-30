@@ -6,6 +6,7 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
+from dl_framework.logger import make_notifier
 
 
 class CancelTrainException(Exception):
@@ -79,8 +80,8 @@ class AvgStatsCallback(Callback):
     def after_epoch(self):
         # We use the logger function of the `Learner` here, it can be
         # customized to write in a file or in a progress bar
-        self.logger(self.train_stats)
-        self.logger(self.valid_stats)
+        self.log(self.train_stats)
+        self.log(self.valid_stats)
 
 
 class ParamScheduler(Callback):
@@ -183,6 +184,21 @@ class LR_Find(Callback):
             return CancelTrainException
         if self.loss < self.best_loss:
             self.best_loss = self.loss
+
+
+class LoggerCallback(Callback):
+    def begin_fit(self):
+        logger = make_notifier()
+        logger.info('Start des Trainings')
+
+    def after_epoch(self):
+        if (self.epoch + 1) % 10 == 0:
+            logger = make_notifier()
+            logger.info('Epoche {} zu Ende mit Loss {}'.format(self.epoch+1, self.loss))
+
+    def after_fit(self):
+        logger = make_notifier()
+        logger.info('Ende des Trainings nach {} Epochen mit Loss {}'.format(self.epoch+1, self.loss))
 
 
 class CudaCallback(Callback):
