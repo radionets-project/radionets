@@ -210,13 +210,13 @@ adam_opt = partial(StatefulOptimizer, steppers=[adam_step, weight_decay],
                    StepCount()])
 
 # Combine model and data in learner
-learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
+learn = get_learner(data, arch, 1e-2, opt_func=adam_opt,  cb_funcs=cbfs)
 
 # Print model architecture
 print(learn.model, '\n')
 
 # Train the model, make it possible to stop at any given time
-learn.fit(50)
+learn.fit(150)
 # -
 learn.recorder.plot_loss()
 
