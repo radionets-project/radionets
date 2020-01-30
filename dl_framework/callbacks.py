@@ -111,7 +111,7 @@ class Recorder(Callback):
     def after_batch(self):
         if not self.in_train:
             return
-        self.lrs.append(self.opt.hypers[-1]['lr'])
+        self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
 
     def after_epoch(self):
         self.losses.append(self.loss.detach().cpu())
