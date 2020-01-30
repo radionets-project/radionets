@@ -71,12 +71,12 @@ input_plot: ./data/plots/input_done
 ./training_done:
 		mkdir -p models/
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/test_pred.model\
+		./data/mnist_samp_valid.h5 ./models/outsourc_fft500.model\
 		cnn ./data/normalization_factors.csv\
-		150 1e-3 -log False\
-		-pretrained False ./models/test.model\
+		500 1e-3 -log False\
+		-pretrained False ./models/outsourc_fft40.model \
 		-inspection True
-		touch ./training_done
+		# touch ./training_done
 
 ./data/plots/input_done:
 		mkdir -p data/

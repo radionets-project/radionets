@@ -4,7 +4,7 @@ all: visualize_preprocessing \
 visualize_preprocessing: build/visualize_preprocessing_done
 visualize_predictions: build/visualize_predictions_done
 
-model=../models/test_pred.model
+model=../models/outsourc_fft.model
 norm=../data/normalization_factors.csv
 
 build/visualize_preprocessing_done:
