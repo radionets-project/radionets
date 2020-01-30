@@ -205,9 +205,7 @@ cbfs = [
 ]
 
 # Define optimiser function
-adam_opt = partial(StatefulOptimizer, steppers=[adam_step, weight_decay],
-                   stats=[AverageGrad(dampening=True), AverageSqrGrad(),
-                   StepCount()])
+adam_opt = torch.optim.Adam
 
 # Combine model and data in learner
 learn = get_learner(data, arch, 1e-2, opt_func=adam_opt,  cb_funcs=cbfs)
@@ -216,9 +214,11 @@ learn = get_learner(data, arch, 1e-2, opt_func=adam_opt,  cb_funcs=cbfs)
 print(learn.model, '\n')
 
 # Train the model, make it possible to stop at any given time
-learn.fit(200)
+learn.fit(2)
 # -
 learn.recorder.plot_loss()
+
+learn
 
 import pandas as pd
 from dl_framework.data import do_normalisation
