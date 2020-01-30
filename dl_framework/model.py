@@ -112,7 +112,7 @@ def load_pre_model(learn, pre_path):
 
     checkpoint = torch.load(pre_path)
     learn.model.load_state_dict(checkpoint['model_state_dict'])
-    learn.opt_func.load_state_dict(checkpoint['optimizer_state_dict'])
+    learn.opt = learn.opt_func(learn.model.parameters(), learn.lr).load_state_dict(checkpoint['optimizer_state_dict'])
     learn.epoch = checkpoint['epoch']
     learn.loss = checkpoint['loss']
     learn.recorder.losses = checkpoint['recorder_loss']
