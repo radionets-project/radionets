@@ -3,6 +3,7 @@ import torch
 import h5py
 import numpy as np
 from pathlib import Path
+from gaussian_sources.preprocessing import split_real_imag
 
 
 def normalize(x, m, s):
@@ -37,32 +38,40 @@ class Dataset():
 
 
 class h5_dataset():
-    def __init__(self, bundles_x, bundles_y):
-        self.x = bundles_x
-        self.y = bundles_y
+    def __init__(self, bundle_paths):
+        self.bundles = bundle_paths
 
     def __call__(self):
         return print('This is the h5_dataset class.')
 
     def __len__(self):
-        return len(self.x) * len(self.open_bundle(self.x[0]))
+        return len(self.bundles) * len(self.open_bundle(self.bundles[0], 'x'))
 
     def __getitem__(self, i):
-        x = self.open_image(self.x, i)
-        y = self.open_image(self.y, i)
+        x = self.open_image('x', i)
+        y = self.open_image('y', i)
         return x, y
 
-    def open_bundle(self, bundle):
-        bundle = h5py.File(bundle, 'r')
-        data = bundle['gs_bundle']
+    def open_bundle(self, bundle_path, var):
+        bundle = h5py.File(bundle_path, 'r')
+        data = bundle[str(var)]
         return data
 
-    def open_image(self, bundle, i):
+    def open_image(self, var, i):
         bundle_i = i // 1024
         image_i = i - bundle_i * 1024
-        bundle = h5py.File(bundle[bundle_i], 'r')
-        data = bundle['gs_bundle'][image_i]
-        return data
+        bundle = h5py.File(self.bundles[bundle_i], 'r')
+        data = bundle[str(var)][image_i]
+        if var == 'x':
+            data_amp, data_phase = split_real_imag(data)
+            data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(-1,4096)
+        else:
+            data_channel = data.reshape(4096)
+        return torch.tensor(data_channel).float()
+
+
+def combine_and_swap_axes(array1, array2):
+    return np.swapaxes(np.dstack((array1, array2)), 2, 0)
 
 
 def get_dls(train_ds, valid_ds, bs, **kwargs):
