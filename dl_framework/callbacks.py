@@ -81,6 +81,8 @@ class AvgStatsCallback(Callback):
         # customized to write in a file or in a progress bar
         self.logger(self.train_stats)
         self.logger(self.valid_stats)
+        print(self.avg_stats('AvgStatsCallback'))
+        # self.recorder.train_losses.append(self.train_stats['Loss'])
 
 
 class ParamScheduler(Callback):
@@ -105,8 +107,10 @@ class Recorder(Callback):
     def begin_fit(self):
         if not hasattr(self, 'lrs'):
             self.lrs = []
-        if not hasattr(self, 'losses'):
-            self.losses = []
+        if not hasattr(self, 'train_losses'):
+            self.train_losses = []
+        if not hasattr(self, 'valid_losses'):
+            self.valid_losses = []
 
     def after_batch(self):
         if not self.in_train:
@@ -114,13 +118,19 @@ class Recorder(Callback):
         self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
 
     def after_epoch(self):
-        self.losses.append(self.loss.detach().cpu())
+        if self.in_train:
+            print('train')
+            self.train_losses.append(self.loss.detach().cpu())
+        else:
+            print('Nicht in train')
+            self.valid_losses.append(self.loss.detach().cpu())
 
     def plot_lr(self):
         plt.plot(self.lrs)
 
     def plot_loss(self):
-        plt.plot(self.losses)
+        plt.plot(self.train_losses)
+        plt.plot(self.valid_losses)
 
     def plot(self, skip_last=0):
         losses = [o.item() for o in self.losses]
