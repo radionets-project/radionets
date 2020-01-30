@@ -34,3 +34,5 @@ mnist_cnn/old
 *.egg-info
 
 /mnist_cnn/visualize/test_data
+
+.flake8

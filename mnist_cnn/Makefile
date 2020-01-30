@@ -27,6 +27,7 @@ mnist_samp_valid: ./data/mnist_samp_valid.h5
 calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
 input_plot: ./data/plots/input_done
+find_lr: ./lr_find
 
 #########################################################
 #	Tasks
@@ -69,14 +70,22 @@ input_plot: ./data/plots/input_done
 		data/normalization_factors.csv
 
 ./training_done:
-		mkdir -p models/
+		mkdir -p models/test_pred
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/outsourc_fft500.model\
+		./data/mnist_samp_valid.h5 ./models/test_pred/test_pred.model\
 		cnn ./data/normalization_factors.csv\
-		500 1e-3 -log False\
-		-pretrained False ./models/outsourc_fft40.model \
-		-inspection True
+		50 1e-3 mse -log False\
+		-pretrained False ./models/test_pred/test_pred.model\
+		-inspection False
 		# touch ./training_done
+
+./lr_find:
+		mkdir -p models/
+		python find_lr.py ./data/mnist_samp_train.h5\
+		./data/mnist_samp_valid.h5\
+		autoencoder feature_loss ./data/normalization_factors.csv -log False\
+		-pretrained False ./models/feature_loss_lr.model\
+		-save False
 
 ./data/plots/input_done:
 		mkdir -p data/

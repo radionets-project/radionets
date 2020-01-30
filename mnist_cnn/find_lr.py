@@ -1,38 +1,44 @@
-import sys
 from functools import partial
-
+import sys
 import click
-import matplotlib.pyplot as plt
+import torch.nn as nn
+import torch.nn.functional as F
+
 
 import dl_framework.architectures as architecture
-import torch
-import torch.nn as nn
 from dl_framework.callbacks import (
-    AvgStatsCallback,
     BatchTransformXCallback,
     CudaCallback,
-    Recorder,
+    Recorder_lr_find,
     SaveCallback,
     normalize_tfm,
     view_tfm,
+    LR_Find,
 )
 from dl_framework.learner import get_learner
-from dl_framework.loss_functions import init_feature_loss
-from dl_framework.model import load_pre_model, save_model
-from inspection import evaluate_model, plot_loss
+from dl_framework.model import load_pre_model
+from dl_framework.optimizer import (
+    AverageGrad,
+    AverageSqrGrad,
+    StatefulOptimizer,
+    StepCount,
+    adam_step,
+    weight_decay,
+)
 from mnist_cnn.utils import get_h5_data
 from preprocessing import DataBunch, get_dls, prepare_dataset
+from inspection import plot_lr_loss
+from dl_framework.utils import children
+from torchvision.models import vgg16_bn
+from dl_framework.loss_functions import FeatureLoss
 
 
 @click.command()
 @click.argument("train_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("valid_path", type=click.Path(exists=True, dir_okay=True))
-@click.argument("model_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("arch", type=str)
-@click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
-@click.argument("num_epochs", type=int)
-@click.argument("lr", type=float)
 @click.argument("loss_func", type=str)
+@click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
@@ -40,31 +46,24 @@ from preprocessing import DataBunch, get_dls, prepare_dataset
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
-@click.option("-inspection", type=bool, required=False, help="make an inspection plot")
+@click.option("-save", type=bool, required=False, help="save the lr vs loss plot")
 def main(
     train_path,
     valid_path,
-    model_path,
     arch,
     norm_path,
-    num_epochs,
-    lr,
     loss_func,
     log=True,
     pretrained=False,
     pretrained_model=None,
-    inspection=False,
+    save=False,
 ):
     """
     Train the neural network with existing training and validation data.
-
     TRAIN_PATH is the path to the training data\n
     VALID_PATH ist the path to the validation data\n
-    MODEL_PATH is the Path to which the model is saved\n
     ARCH is the name of the architecture which is used\n
     NORM_PATH is the path to the normalisation factors\n
-    NUM_EPOCHS is the number of epochs\n
-    LR is the learning rate\n
     PRETRAINED_MODEL is the path to a pretrained model, which is
                      loaded at the beginning of the training\n
     """
@@ -76,10 +75,14 @@ def main(
     train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=log)
 
     # Create databunch with defined batchsize
-    bs = 128
+    bs = 256
     data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 
+    # First guess for max_iter
+    print("\nTotal number of batches ~ ", data.train_ds.x.size(0) * 2 // bs)
+
     # Define model
+    arch_name = arch
     arch = getattr(architecture, arch)()
 
     # Define resize for mnist data
@@ -88,15 +91,10 @@ def main(
     # make normalisation
     norm = normalize_tfm(norm_path)
 
-    # Define scheduled learning rate
-    # sched = sched_no(lr, lr)
-
     # Define callback functions
     cbfs = [
-        Recorder,
-        # test for use of multiple Metrics or Loss functions
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        # partial(ParamScheduler, "lr", sched),
+        partial(LR_Find, max_iter=400, max_lr=1),
+        Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
@@ -104,14 +102,24 @@ def main(
     ]
 
     # Define optimiser function
-    # adam_opt = partial(
-    #     StatefulOptimizer,
-    #     steppers=[adam_step, weight_decay],
-    #     stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
-    # )
-
+    adam_opt = partial(
+        StatefulOptimizer,
+        steppers=[adam_step, weight_decay],
+        stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
+    )
     if loss_func == "feature_loss":
-        loss_func = init_feature_loss()
+        # feature_loss
+        ###########################################################################
+        vgg_m = vgg16_bn(True).features.cuda().eval()
+        for param in vgg_m.parameters():
+            param.requires_grad = False
+        # requires_grad(vgg_m, False)
+        blocks = [
+            i - 1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)
+        ]
+        feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
+        ###########################################################################
+        loss_func = feat_loss
     elif loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
@@ -121,54 +129,19 @@ def main(
         sys.exit(1)
     # Combine model and data in learner
     learn = get_learner(
-        data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
+        data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs, loss_func=loss_func
     )
 
     # use pre-trained model if asked
     if pretrained is True:
         # Load model
-        load_pre_model(learn, pretrained_model)
+        load_pre_model(learn.model, pretrained_model)
 
-    # Print model architecture
-    print(learn.model, "\n")
-
-    # Train the model, make it possible to stop at any given time
-    try:
-        learn.fit(num_epochs)
-
-    except KeyboardInterrupt:
-        print("\nKeyboardInterrupt, do you wanna save the model: yes-(y), no-(n)")
-        save = str(input())
-        if save == "y":
-            # saving the model if asked
-            print("Saving the model after epoch {}".format(learn.epoch))
-            save_model(learn, model_path)
-
-            # Plot loss
-            plot_loss(learn, model_path)
-
-            # Plot input, prediction and true image if asked
-            if inspection is True:
-                evaluate_model(valid_ds, learn.model, norm_path)
-                plt.savefig(
-                    "inspection_plot.pdf", dpi=300, bbox_inches="tight", pad_inches=0.01
-                )
-        else:
-            print("Stopping after epoch {}".format(learn.epoch))
-        sys.exit(1)
-
-    # Save model
-    save_model(learn, model_path)
-
-    # Plot loss
-    plot_loss(learn, model_path)
-
-    # Plot input, prediction and true image if asked
-    if inspection is True:
-        evaluate_model(valid_ds, learn.model, norm_path, nrows=10)
-        plt.savefig(
-            "inspection_plot.pdf", dpi=300, bbox_inches="tight", pad_inches=0.01
-        )
+    learn.fit(2)
+    if save:
+        plot_lr_loss(learn, arch_name, skip_last=5)
+    else:
+        learn.recorder_lr_find.plot(skip_last=5)
 
 
 if __name__ == "__main__":

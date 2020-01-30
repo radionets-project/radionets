@@ -42,6 +42,8 @@ class Callback():
 
 
 class TrainEvalCallback(Callback):
+    _order = 0
+
     def begin_fit(self):
         self.run.n_epochs = 0.
         self.run.n_iter = 0
@@ -84,7 +86,7 @@ class AvgStatsCallback(Callback):
 
 
 class ParamScheduler(Callback):
-    _order = 1
+    _order = 3
 
     def __init__(self, pname, sched_funcs):
         self.pname = pname
@@ -102,6 +104,57 @@ class ParamScheduler(Callback):
 
 
 class Recorder(Callback):
+    _order = 5
+
+    def begin_fit(self):
+        if not hasattr(self, 'lrs'):
+            self.lrs = []
+        if not hasattr(self, 'train_losses'):
+            self.train_losses = []
+        if not hasattr(self, 'valid_losses'):
+            self.valid_losses = []
+        self.train_losses_batch = []
+        self.valid_losses_batch = []
+
+    def after_batch(self):
+        if not self.in_train:
+            return
+        self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
+
+    def after_loss(self):
+        if self.in_train:
+            #  jetzt wird für jedes batch der loss gespeichert
+            self.train_losses_batch.append(self.loss.detach().cpu())
+        else:
+            self.valid_losses_batch.append(self.loss.detach().cpu())
+
+    def after_epoch(self):
+        self.train_losses.append(torch.tensor(self.train_losses_batch).sum()/self.n_iter)
+        self.valid_losses.append(torch.tensor(self.valid_losses_batch).sum()*2/self.n_iter)
+
+    def plot_lr(self):
+        plt.plot(self.lrs)
+
+    def plot_loss(self):
+        plt.plot(self.train_losses)
+        plt.plot(self.valid_losses)
+
+    def plot(self, skip_last=0):
+        losses = [o.item() for o in self.losses]
+        n = len(losses)-skip_last
+        plt.xscale('log')
+        plt.xlabel(r'learning rate')
+        plt.ylabel(r'loss')
+        plt.plot(self.lrs[:n], losses[:n])
+        plt.show()
+
+
+class Recorder_lr_find(Callback):
+    """
+    Recorder class for the lr_find. Main difference between the recorder
+    and this class is that the loss is appended after each batch and not
+    after each epoch.
+    """
     def begin_fit(self):
         self.lrs = []
         self.losses = []
@@ -110,27 +163,27 @@ class Recorder(Callback):
         if not self.in_train:
             return
         self.lrs.append(self.opt.hypers[-1]['lr'])
-
-    def after_epoch(self):
         self.losses.append(self.loss.detach().cpu())
 
-    def plot_lr(self):
-        plt.plot(self.lrs)
-
-    def plot_loss(self):
-        plt.plot(self.losses)
-
-    def plot(self, skip_last=0):
+    def plot(self, skip_last=0, save=False):
         losses = [o.item() for o in self.losses]
         n = len(losses)-skip_last
-        plt.xscale('log')
         plt.plot(self.lrs[:n], losses[:n])
+        plt.xscale('log')
+        plt.xlabel(r'learning rate')
+        plt.ylabel(r'loss')
+        if save is False:
+            plt.show()
 
 
 class LR_Find(Callback):
     _order = 1
 
     def __init__(self, max_iter=100, min_lr=1e-6, max_lr=10):
+        """
+        max_iter should be slightly bigger than the number of batches.
+        Only this way maximum and minimum learning rate are set.
+        """
         self.max_iter = max_iter
         self.min_lr = min_lr
         self.max_lr = max_lr
@@ -139,7 +192,7 @@ class LR_Find(Callback):
     def begin_batch(self):
         if not self.in_train:
             return
-        pos = self.n_iter/self.max_iter
+        pos = self.run.n_iter/self.max_iter
         lr = self.min_lr * (self.max_lr/self.min_lr) ** pos
         for pg in self.opt.hypers:
             pg['lr'] = lr
