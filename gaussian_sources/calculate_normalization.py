@@ -1,5 +1,5 @@
 import click
-from gaussian_sources.preprocessing import split_amp_phase, mean_and_std
+from gaussian_sources.preprocessing import split_amp_phase, mean_and_std, split_real_imag
 from dl_framework.data import open_fft_pair, get_bundles
 import pandas as pd
 import numpy as np
@@ -23,7 +23,7 @@ def main(data_path, out_path):
     for path in tqdm(bundle_paths):
         x, _ = open_fft_pair(path)
         # split in amp and phase
-        x_amp, x_phase = split_amp_phase(x)
+        x_amp, x_phase = split_real_imag(x)
         mean_amp, std_amp = mean_and_std(x_amp)
         mean_phase, std_phase = mean_and_std(x_phase)
         means_amp = np.append(mean_amp, means_amp)

@@ -25,6 +25,12 @@ bundles = get_bundles(data_path)
 bundles = [path for path in bundles if re.findall('gaussian_sources', path.name)]
 bundles
 
+from matplotlib.colors import LogNorm
+test = open_bundle(bundles[0])
+img = test[55]
+plt.imshow(img)#, norm=LogNorm(vmin=1e-5))
+plt.colorbar()
+
 # +
 # %%time
 samp = True
@@ -70,10 +76,10 @@ bundle_paths = get_bundles(data_path)
 train = [path for path in bundle_paths if re.findall('fft_samp_train', path.name)]
 valid = [path for path in bundle_paths if re.findall('fft_samp_valid', path.name)]
 
-valid
+train
 
 # +
-from gaussian_sources.preprocessing import split_amp_phase, mean_and_std
+from gaussian_sources.preprocessing import split_amp_phase, mean_and_std, split_real_imag
 from dl_framework.data import open_fft_pair
 
 means_amp = np.array([])
@@ -137,10 +143,10 @@ class h5_dataset():
         bundle = h5py.File(self.bundles[bundle_i], 'r')
         data = bundle[str(var)][image_i]
         if var == 'x':
-            data_amp, data_phase = split_amp_phase(data)
-            data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(-1,16384)
+            data_amp, data_phase = split_real_imag(data)
+            data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(-1,4096)
         else:
-            data_channel = data.reshape(16384)
+            data_channel = data.reshape(4096)
         return torch.tensor(data_channel).float()
 
 
@@ -157,9 +163,9 @@ valid_ds = h5_dataset(valid)
 bs = 256
 data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
-plt.imshow(data.valid_ds[4][0][1].reshape(128,128))
+plt.imshow(data.valid_ds[4][0][1].reshape(64,64))
 
-plt.imshow(data.valid_ds[0][1].reshape(128,128))
+plt.imshow(data.valid_ds[0][1].reshape(64,64))
 
 next(iter(data.train_dl))[1].shape
 
@@ -181,7 +187,7 @@ import torch.nn as nn
 arch = getattr(architecture, 'cnn')()
 
 # Define resize for mnist data
-mnist_view = view_tfm(2, 128, 128)
+mnist_view = view_tfm(2, 64, 64)
 
 # make normalisation
 norm = normalize_tfm('./data/normalization_factors.csv')
@@ -210,17 +216,19 @@ learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
 print(learn.model, '\n')
 
 # Train the model, make it possible to stop at any given time
-learn.fit(20)
+learn.fit(50)
 # -
 learn.recorder.plot_loss()
 
 import pandas as pd
 from dl_framework.data import do_normalisation
-evaluate_model(data.valid_ds, learn.model, 'data/normalization_factors.csv')
+evaluate_model(data.valid_ds, learn.model, 'data/normalization_factors.csv', nrows=10)
+plt.savefig('gauss_test.pdf')
 
 
 
 # +
+from matplotlib.colors import LogNorm
 def get_eval_img(valid_ds, model, norm_path):
     rand = np.random.randint(0, len(valid_ds))
     img = valid_ds[rand][0].cuda()
@@ -244,7 +252,11 @@ def evaluate_model(valid_ds, model, norm_path, nrows=3):
         axes[i][0].imshow(img[:, 0].view(h, h).cpu(), cmap='RdGy_r',
                           vmax=img.max(), vmin=-img.max())
         axes[i][1].set_title('y_pred')
-        im = axes[i][1].imshow(pred.view(h, h))
+        im = axes[i][1].imshow(pred.view(h, h),
+                               #norm=LogNorm(vmin=1e-6),
+                               #vmin=valid_ds[rand][1].min(),
+                               #vmax=valid_ds[rand][1].max()
+                              )
         axes[i][2].set_title('y_true')
         axes[i][2].imshow(valid_ds[rand][1].view(h, h),
                           vmin=valid_ds[rand][1].min(),
