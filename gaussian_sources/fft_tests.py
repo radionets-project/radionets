@@ -160,7 +160,7 @@ from gaussian_sources.preprocessing import split_amp_phase
 train_ds = h5_dataset(train)
 valid_ds = h5_dataset(valid)
 
-bs = 256
+bs = 512
 data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
 plt.imshow(data.valid_ds[4][0][1].reshape(64,64))
@@ -216,7 +216,7 @@ learn = get_learner(data, arch, 1e-2, opt_func=adam_opt,  cb_funcs=cbfs)
 print(learn.model, '\n')
 
 # Train the model, make it possible to stop at any given time
-learn.fit(150)
+learn.fit(200)
 # -
 learn.recorder.plot_loss()
 
@@ -253,7 +253,7 @@ def evaluate_model(valid_ds, model, norm_path, nrows=3):
                           vmax=img.max(), vmin=-img.max())
         axes[i][1].set_title('y_pred')
         im = axes[i][1].imshow(pred.view(h, h),
-                               #norm=LogNorm(vmin=1e-6),
+                               norm=LogNorm(vmin=1e-6),
                                #vmin=valid_ds[rand][1].min(),
                                #vmax=valid_ds[rand][1].max()
                               )
