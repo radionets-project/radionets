@@ -42,6 +42,8 @@ class Callback():
 
 
 class TrainEvalCallback(Callback):
+    _order = 0
+
     def begin_fit(self):
         self.run.n_epochs = 0.
         self.run.n_iter = 0
@@ -81,8 +83,6 @@ class AvgStatsCallback(Callback):
         # customized to write in a file or in a progress bar
         self.logger(self.train_stats)
         self.logger(self.valid_stats)
-        print(self.avg_stats('AvgStatsCallback'))
-        # self.recorder.train_losses.append(self.train_stats['Loss'])
 
 
 class ParamScheduler(Callback):
@@ -104,6 +104,8 @@ class ParamScheduler(Callback):
 
 
 class Recorder(Callback):
+    _order = 5
+
     def begin_fit(self):
         if not hasattr(self, 'lrs'):
             self.lrs = []
@@ -111,19 +113,24 @@ class Recorder(Callback):
             self.train_losses = []
         if not hasattr(self, 'valid_losses'):
             self.valid_losses = []
+        self.train_losses_batch = []
+        self.valid_losses_batch = []
 
     def after_batch(self):
         if not self.in_train:
             return
         self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
 
-    def after_epoch(self):
+    def after_loss(self):
         if self.in_train:
-            print('train')
-            self.train_losses.append(self.loss.detach().cpu())
+            #  jetzt wird für jedes batch der loss gespeichert
+            self.train_losses_batch.append(self.loss.detach().cpu())
         else:
-            print('Nicht in train')
-            self.valid_losses.append(self.loss.detach().cpu())
+            self.valid_losses_batch.append(self.loss.detach().cpu())
+
+    def after_epoch(self):
+        self.train_losses.append(torch.tensor(self.train_losses_batch).sum()/self.n_iter)
+        self.valid_losses.append(torch.tensor(self.valid_losses_batch).sum()*2/self.n_iter)
 
     def plot_lr(self):
         plt.plot(self.lrs)
