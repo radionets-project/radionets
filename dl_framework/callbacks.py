@@ -81,8 +81,8 @@ class AvgStatsCallback(Callback):
     def after_epoch(self):
         # We use the logger function of the `Learner` here, it can be
         # customized to write in a file or in a progress bar
-        self.logger(self.train_stats)
-        self.logger(self.valid_stats)
+        self.logger(self.train_stats.avg_print())
+        self.logger(self.valid_stats.avg_print())
 
 
 class ParamScheduler(Callback):
@@ -113,31 +113,25 @@ class Recorder(Callback):
             self.train_losses = []
         if not hasattr(self, 'valid_losses'):
             self.valid_losses = []
-        self.train_losses_batch = []
-        self.valid_losses_batch = []
 
     def after_batch(self):
         if not self.in_train:
             return
         self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
 
-    def after_loss(self):
-        if self.in_train:
-            #  jetzt wird für jedes batch der loss gespeichert
-            self.train_losses_batch.append(self.loss.detach().cpu())
-        else:
-            self.valid_losses_batch.append(self.loss.detach().cpu())
-
     def after_epoch(self):
-        self.train_losses.append(torch.tensor(self.train_losses_batch).sum()/self.n_iter)
-        self.valid_losses.append(torch.tensor(self.valid_losses_batch).sum()*2/self.n_iter)
+        self.train_losses.append(self.avg_stats.train_stats.avg_stats[1])
+        self.valid_losses.append(self.avg_stats.valid_stats.avg_stats[1])
 
     def plot_lr(self):
         plt.plot(self.lrs)
 
     def plot_loss(self):
-        plt.plot(self.train_losses)
-        plt.plot(self.valid_losses)
+        plt.plot(self.train_losses, label='train loss')
+        plt.plot(self.valid_losses, label='valid loss')
+        plt.yscale('log')
+        plt.legend()
+        plt.tight_layout()
 
     def plot(self, skip_last=0):
         losses = [o.item() for o in self.losses]
