@@ -115,7 +115,8 @@ def load_pre_model(learn, pre_path):
     learn.opt = learn.opt_func(learn.model.parameters(), learn.lr).load_state_dict(checkpoint['optimizer_state_dict'])
     learn.epoch = checkpoint['epoch']
     learn.loss = checkpoint['loss']
-    learn.recorder.losses = checkpoint['recorder_loss']
+    learn.recorder.train_losses = checkpoint['recorder_train_loss']
+    learn.recorder.valid_losses = checkpoint['recorder_valid_loss']
     learn.recorder.lrs = checkpoint['recorder_lrs']
 
 
@@ -127,7 +128,8 @@ def save_model(learn, model_path):
             "model_state_dict": state,
             "optimizer_state_dict": learn.opt.state_dict(),
             "loss": learn.loss,
-            "recorder_loss": learn.recorder.losses,
+            "recorder_train_loss": learn.recorder.train_losses,
+            "recorder_valid_loss": learn.recorder.valid_losses,
             "recorder_lrs": learn.recorder.lrs,
         },
         model_path,
