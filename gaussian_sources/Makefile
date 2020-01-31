@@ -58,9 +58,9 @@ norm=data/normalization_factors.csv
 
 ./training_done:
 		python train_cnn.py ./data/\
-		./models/test_gs.model\
+		./models/test_gs_400.model\
 		cnn $(norm)\
-		2 1e-2 mse -log False\
+		200 1e-3 mse -log False\
 		-pretrained True ./models/test_gs.model\
 		-inspection True
 		# touch ./training_done
