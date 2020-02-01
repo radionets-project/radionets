@@ -1,7 +1,7 @@
 #########################################################
 # Analysis steps
 #
-
+-include .makerc
 all:	mnist_fft\
 		mnist_samp\
 		calc_normalization
@@ -70,22 +70,22 @@ find_lr: ./lr_find
 		data/normalization_factors.csv
 
 ./training_done:
-		mkdir -p models/test_pred
-		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/test_pred/test_pred.model\
-		cnn ./data/normalization_factors.csv\
-		5 1e-3 mse -log False\
-		-pretrained True ./models/test_pred/test_pred.model\
-		-inspection False
+		mkdir -p ${path}
+		python train_cnn.py ${samp_train}\
+		${samp_valid} ${path_model}\
+		${arch} ${norm_path}\
+		${epochs} ${lr} ${lr_type} -log ${log}\
+		-pretrained ${pretrained} ${pre_path}\
+		-inspection ${inspection}
 		# touch ./training_done
 
 ./lr_find:
 		mkdir -p models/
-		python find_lr.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5\
-		autoencoder feature_loss ./data/normalization_factors.csv -log False\
-		-pretrained False ./models/feature_loss_lr.model\
-		-save False
+		python find_lr.py ${samp_train}\
+		${samp_valid}\
+		${arch} ${lr_type} ${norm_path} -log ${log}\
+		-pretrained ${pretrained} ${pre_path}\
+		-save ${save}
 
 ./data/plots/input_done:
 		mkdir -p data/
