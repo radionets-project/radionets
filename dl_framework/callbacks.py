@@ -113,6 +113,8 @@ class Recorder(Callback):
             self.train_losses = []
         if not hasattr(self, 'valid_losses'):
             self.valid_losses = []
+        if not hasattr(self, 'losses'):
+            self.losses = []
 
     def after_batch(self):
         if not self.in_train:
@@ -122,6 +124,7 @@ class Recorder(Callback):
     def after_epoch(self):
         self.train_losses.append(self.avg_stats.train_stats.avg_stats[1])
         self.valid_losses.append(self.avg_stats.valid_stats.avg_stats[1])
+        self.losses.append(self.loss.detach().cpu())
 
     def plot_lr(self):
         plt.plot(self.lrs)

@@ -102,10 +102,11 @@ def deconv(ni, nc, ks, stride, padding, out_padding):
     return layers
 
 
-def load_pre_model(learn, pre_path, visualize=False):
+def load_pre_model(learn, pre_path, visualize=False, lr_find=False):
     """
     :param learn:       object of type learner
     :param pre_path:    string wich contains the path of the model
+    :param lr_find:     bool which is True if lr_find is used
     """
     name_pretrained = pre_path.split("/")[-1].split(".")[0]
     print('\nLoad pretrained model: {}\n'.format(name_pretrained))
@@ -120,9 +121,13 @@ def load_pre_model(learn, pre_path, visualize=False):
         learn.opt = learn.opt_func(learn.model.parameters(), learn.lr).load_state_dict(checkpoint['optimizer_state_dict'])
         learn.epoch = checkpoint['epoch']
         learn.loss = checkpoint['loss']
-        learn.recorder.train_losses = checkpoint['recorder_train_loss']
-        learn.recorder.valid_losses = checkpoint['recorder_valid_loss']
-        learn.recorder.lrs = checkpoint['recorder_lrs']
+        if not lr_find:
+            learn.recorder.train_losses = checkpoint['recorder_train_loss']
+            learn.recorder.valid_losses = checkpoint['recorder_valid_loss']
+            learn.recorder.lrs = checkpoint['recorder_lrs']
+        else:
+            learn.recorder_lr_find.losses = checkpoint['recorder_losses']
+            learn.recorder_lr_find.lrs = checkpoint['recorder_lrs']
 
 
 def save_model(learn, model_path):
@@ -135,6 +140,7 @@ def save_model(learn, model_path):
             "loss": learn.loss,
             "recorder_train_loss": learn.recorder.train_losses,
             "recorder_valid_loss": learn.recorder.valid_losses,
+            "recorder_losses": learn.recorder.losses,
             "recorder_lrs": learn.recorder.lrs,
         },
         model_path,
