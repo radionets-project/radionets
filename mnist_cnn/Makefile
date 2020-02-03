@@ -64,19 +64,18 @@ find_lr: ./lr_find
 		-steps 50
 
 ./data/normalization_factors.csv:
-		python calculate_normalization.py\
-		-log False -use_mask True\
-		data/mnist_samp_train.h5 data/mnist_samp_valid.h5\
+		python calculate_normalization.py \
+		data/mnist_samp_train.h5 \
 		data/normalization_factors.csv
 
 ./training_done:
-		mkdir -p models/test_pred
+		mkdir -p models/unet_fft
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/test_pred/test_pred.model\
-		cnn ./data/normalization_factors.csv\
-		5 1e-3 mse -log False\
-		-pretrained True ./models/test_pred/test_pred.model\
-		-inspection False
+		./data/mnist_samp_valid.h5 ./models/unet_fft/test.model\
+		UNet_fft ./data/normalization_factors.csv\
+		25 1e-3 mse -log False\
+		-pretrained False ./models/unet_fft/test.model\
+		-inspection True
 		# touch ./training_done
 
 ./lr_find:
