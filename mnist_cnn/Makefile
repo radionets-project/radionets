@@ -79,6 +79,14 @@ find_lr: ./lr_find
 		-inspection ${inspection}
 		# touch ./training_done
 
+./plot_loss:
+		mkdir -p ${path}
+		python plot_loss.py\
+		${path_model}\
+		${arch}\
+		${lr} ${lr_type}\
+		${pre_path}\
+
 ./lr_find:
 		mkdir -p models/
 		python find_lr.py ${samp_train}\
