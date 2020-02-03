@@ -23,7 +23,6 @@ def fft(x):
 
 
 def shape(x):
-    print(x.reshape(-1, 64, 64))
     print(x.shape)
     return x
 
@@ -118,10 +117,21 @@ def conv(ni, nc, ks, stride, padding):
     return layers
 
 
+def double_conv(ni, nc, ks, stride, padding):
+    conv = nn.Conv2d(ni, nc, ks, stride, padding),
+    bn = nn.BatchNorm2d(nc),
+    act = nn.ReLU(inplace=True),
+    conv2 = nn.Conv2d(nc, nc, ks, stride, padding),
+    bn2 = nn.BatchNorm2d(nc),
+    act2 = nn.ReLU(inplace=True)
+    layers = [*conv, *bn, *act, *conv2, *bn2, act2]
+    return layers
+
+
 def deconv(ni, nc, ks, stride, padding, out_padding):
     conv = nn.ConvTranspose2d(ni, nc, ks, stride, padding, out_padding),
     bn = nn.BatchNorm2d(nc),
-    act = GeneralRelu(leak=0.1, sub=0.4) # nn.ReLU()
+    act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
     layers = [*conv, *bn, act]
     return layers
 
