@@ -102,7 +102,7 @@ def deconv(ni, nc, ks, stride, padding, out_padding):
     return layers
 
 
-def load_pre_model(learn, pre_path):
+def load_pre_model(learn, pre_path, visualize=False):
     """
     :param learn:       object of type learner
     :param pre_path:    string wich contains the path of the model
@@ -110,14 +110,19 @@ def load_pre_model(learn, pre_path):
     name_pretrained = pre_path.split("/")[-1].split(".")[0]
     print('\nLoad pretrained model: {}\n'.format(name_pretrained))
 
-    checkpoint = torch.load(pre_path)
-    learn.model.load_state_dict(checkpoint['model_state_dict'])
-    learn.opt = learn.opt_func(learn.model.parameters(), learn.lr).load_state_dict(checkpoint['optimizer_state_dict'])
-    learn.epoch = checkpoint['epoch']
-    learn.loss = checkpoint['loss']
-    learn.recorder.train_losses = checkpoint['recorder_train_loss']
-    learn.recorder.valid_losses = checkpoint['recorder_valid_loss']
-    learn.recorder.lrs = checkpoint['recorder_lrs']
+    if visualize:
+        checkpoint = torch.load(pre_path)
+        learn.load_state_dict(checkpoint['model_state_dict'])
+
+    else:
+        checkpoint = torch.load(pre_path)
+        learn.model.load_state_dict(checkpoint['model_state_dict'])
+        learn.opt = learn.opt_func(learn.model.parameters(), learn.lr).load_state_dict(checkpoint['optimizer_state_dict'])
+        learn.epoch = checkpoint['epoch']
+        learn.loss = checkpoint['loss']
+        learn.recorder.train_losses = checkpoint['recorder_train_loss']
+        learn.recorder.valid_losses = checkpoint['recorder_valid_loss']
+        learn.recorder.lrs = checkpoint['recorder_lrs']
 
 
 def save_model(learn, model_path):
