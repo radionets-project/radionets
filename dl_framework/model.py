@@ -124,6 +124,7 @@ def load_pre_model(learn, pre_path, visualize=False, lr_find=False):
         if not lr_find:
             learn.recorder.train_losses = checkpoint['recorder_train_loss']
             learn.recorder.valid_losses = checkpoint['recorder_valid_loss']
+            learn.recorder.losses = checkpoint['recorder_losses']
             learn.recorder.lrs = checkpoint['recorder_lrs']
         else:
             learn.recorder_lr_find.losses = checkpoint['recorder_losses']

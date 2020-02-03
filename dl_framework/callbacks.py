@@ -132,6 +132,7 @@ class Recorder(Callback):
     def plot_loss(self):
         plt.plot(self.train_losses, label='train loss')
         plt.plot(self.valid_losses, label='valid loss')
+        plt.plot(self.losses, label='loss')
         plt.yscale('log')
         plt.legend()
         plt.tight_layout()
