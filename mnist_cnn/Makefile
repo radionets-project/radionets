@@ -71,10 +71,10 @@ find_lr: ./lr_find
 ./training_done:
 		mkdir -p models/unet_fft
 		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/unet_fft/test.model\
+		./data/mnist_samp_valid.h5 ./models/unet_fft/test100.model\
 		UNet_fft ./data/normalization_factors.csv\
-		25 1e-3 mse -log False\
-		-pretrained False ./models/unet_fft/test.model\
+		50 1e-3 mse -log False\
+		-pretrained True ./models/unet_fft/test50.model\
 		-inspection True
 		# touch ./training_done
 
