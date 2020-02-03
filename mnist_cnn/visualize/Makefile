@@ -1,11 +1,9 @@
+-include .makerc
 all: visualize_preprocessing \
 	visualize_predictions
 
 visualize_preprocessing: build/visualize_preprocessing_done
 visualize_predictions: build/visualize_predictions_done
-
-model=../models/feature_loss_lr.model
-norm=../data/normalization_factors.csv
 
 build/visualize_preprocessing_done:
 	mkdir -p build
@@ -15,12 +13,12 @@ build/visualize_preprocessing_done:
 build/visualize_predictions_done:
 	mkdir -p build
 	python visualize_predictions.py \
-	autoencoder \
-	$(model) \
-	../data/mnist_samp_valid.h5 \
-	$(norm) \
-	build/prediction.png \
-	-index 42
+	${arch} \
+	${path_model} \
+	${samp_valid} \
+	${norm_path} \
+	${out_path} \
+	${mode}
 
 # ------------------------------------------------------
 new_shapes: new_shapes/visualize_gauss_done \
