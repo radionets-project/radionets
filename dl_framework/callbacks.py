@@ -156,7 +156,7 @@ class Recorder_lr_find(Callback):
     def after_batch(self):
         if not self.in_train:
             return
-        self.lrs.append(self.opt.hypers[-1]['lr'])
+        self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
         self.losses.append(self.loss.detach().cpu())
 
     def plot(self, skip_last=0, save=False):
@@ -188,8 +188,8 @@ class LR_Find(Callback):
             return
         pos = self.run.n_iter/self.max_iter
         lr = self.min_lr * (self.max_lr/self.min_lr) ** pos
-        for pg in self.opt.hypers:
-            pg['lr'] = lr
+        for param_group in self.opt.param_groups:
+            param_group['lr'] = lr
 
     def after_step(self):
         if self.n_iter >= self.max_iter or self.loss > self.best_loss*10:
