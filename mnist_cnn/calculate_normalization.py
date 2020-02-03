@@ -6,9 +6,8 @@ import pandas as pd
 
 @click.command()
 @click.argument('train_path', type=click.Path(exists=True, dir_okay=True))
-@click.argument('valid_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
-def main(train_path, valid_path, out_path):
+def main(train_path, out_path):
     x_train, _ = get_h5_data(train_path, columns=['x_train', 'y_train'])
 
     # split in real and imaginary part
