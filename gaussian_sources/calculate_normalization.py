@@ -39,10 +39,10 @@ def main(data_path, out_path):
     mean_phase = means_phase.mean()
     std_phase = stds_phase.mean()
 
-    d = {'train_mean_amp': [mean_amp],
-         'train_std_amp': [std_amp],
-         'train_mean_phase': [mean_phase],
-         'train_std_phase': [std_phase]
+    d = {'train_mean_real': [mean_amp],
+         'train_std_real': [std_amp],
+         'train_mean_imag': [mean_phase],
+         'train_std_imag': [std_phase]
          }
 
     df = pd.DataFrame(data=d)
