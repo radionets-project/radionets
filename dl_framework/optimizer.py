@@ -1,10 +1,6 @@
 from dl_framework.utils import listify, compose
 from functools import partial
 import torch
-from copy import deepcopy
-from itertools import chain
-from collections import defaultdict
-from torch._six import container_abcs
 
 
 def sgd_step(p, lr, **kwargs):
