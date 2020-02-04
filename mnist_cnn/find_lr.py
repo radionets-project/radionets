@@ -18,14 +18,6 @@ from dl_framework.callbacks import (
 )
 from dl_framework.learner import get_learner
 from dl_framework.model import load_pre_model
-from dl_framework.optimizer import (
-    AverageGrad,
-    AverageSqrGrad,
-    StatefulOptimizer,
-    StepCount,
-    adam_step,
-    weight_decay,
-)
 from mnist_cnn.utils import get_h5_data
 from preprocessing import DataBunch, get_dls, prepare_dataset
 from inspection import plot_lr_loss
