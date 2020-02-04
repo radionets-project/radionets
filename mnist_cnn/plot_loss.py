@@ -11,13 +11,11 @@ from inspection import plot_loss
 @click.command()
 @click.argument("model_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("arch", type=str)
-@click.argument("lr", type=float)
-@click.argument("loss_func", type=str)
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
 def main(
-    model_path, arch, lr, loss_func, pretrained_model=None,
+    model_path, arch, pretrained_model=None,
 ):
     data = []
     # Define model
@@ -26,7 +24,7 @@ def main(
         Recorder,
     ]
     learn = get_learner(
-        data, arch, lr=lr, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
+        data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs
     )
 
     load_pre_model(learn, pretrained_model)

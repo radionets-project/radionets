@@ -84,7 +84,6 @@ find_lr: ./lr_find
 		python plot_loss.py\
 		${path_model}\
 		${arch}\
-		${lr} ${lr_type}\
 		${pre_path}\
 
 ./lr_find:
