@@ -18,7 +18,7 @@ from dl_framework.callbacks import (
 )
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
-from dl_framework.model import load_pre_model, save_model, init_cnn
+from dl_framework.model import load_pre_model, save_model
 from inspection import evaluate_model, plot_loss
 from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
 import re
@@ -118,7 +118,7 @@ def main(
     learn = get_learner(
         data,
         arch,
-        1e-3,
+        lr=lr,
         opt_func=torch.optim.Adam,
         cb_funcs=cbfs,
         loss_func=loss_func,
