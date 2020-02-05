@@ -35,3 +35,4 @@ mnist_cnn/old
 
 .flake8
 *.yaml
+.makerc

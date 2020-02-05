@@ -17,12 +17,14 @@
 # %autoreload 2
 # %matplotlib inline
 import sys
+import torch
 sys.path.append('..')
 
 # +
 import matplotlib.pyplot as plt
 
-from preprocessing import get_h5_data, prepare_dataset, get_dls, DataBunch
+from preprocessing import prepare_dataset, get_dls, DataBunch
+from utils import get_h5_data
 from torch import nn
 from dl_framework.learner import Learner
 from dl_framework.optimizer import sgd_opt
@@ -40,11 +42,10 @@ path_valid = 'data/mnist_samp_valid.h5'
 x_valid, y_valid = get_h5_data(path_valid, columns=['x_valid', 'y_valid'])
 
 # Create train and valid datasets
-# train_ds, valid_ds = prepare_dataset(x_train[0:2048], y_train[0:2048], x_valid[0:2048], y_valid[0:2048], log=True)
-train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=True)
+train_ds, valid_ds = prepare_dataset(x_train[0:2048], y_train[0:2048], x_valid[0:2048], y_valid[0:2048], log=False)
 
 # Create databunch with definde batchsize
-bs = 2048
+bs = 64
 data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
 # + {}
 # import numpy as np
@@ -82,12 +83,7 @@ def get_model(data):
     )
     return model
 
-def get_learner(data, lr, loss_func=nn.MSELoss(),
-                cb_funcs=None, opt_func=sgd_opt, **kwargs):
-    model = get_model(data, **kwargs)
-    init_cnn(model)
-    return Learner(model, data, loss_func, lr=lr, cb_funcs=cb_funcs, opt_func=opt_func)
-
+from dl_framework.learner import get_learner
 
 # +
 # from dl_framework.callbacks import LR_Find
@@ -114,18 +110,16 @@ def get_learner(data, lr, loss_func=nn.MSELoss(),
 
 # +
 # Combine model and data in learner
-from dl_framework.optimizer import StatefulOptimizer, momentum_step, weight_decay, AverageGrad
+import dl_framework.architectures as architecture
 
-sgd_mom_opt = partial(StatefulOptimizer, steppers=[momentum_step, weight_decay],
-                     stats=AverageGrad(), wd=0.01)
+# Define model
+arch = getattr(architecture, 'cnn')()
 
-from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
-from dl_framework.utils import listify
+# Define resize for mnist data
+mnist_view = view_tfm(2, 64, 64)
 
-xtra_step=None
-
-adam_opt = partial(StatefulOptimizer, steppers=[adam_step,weight_decay],
-                   stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()])
+# make normalisation
+norm = normalize_tfm('data/normalization_factors.csv')
 
 from dl_framework.param_scheduling import sched_cos, combine_scheds, sched_lin
 from dl_framework.callbacks import MixUp
@@ -135,13 +129,13 @@ from dl_framework.callbacks import MixUp
 # sched = combine_scheds([0.7, 0.3], [sched, sched_lin(4e-2, 4e-2)])
 sched = sched_lin(9e-2, 9e-2)
 
-mnist_view = view_tfm(1, 64, 64)
+mnist_view = view_tfm(2, 64, 64)
 normalize = normalize_tfm('./data/normalization_factors.csv')
 
 cbfs = [
     Recorder,
     partial(AvgStatsCallback, nn.MSELoss()),
-    partial(ParamScheduler, 'lr', sched),
+#     partial(ParamScheduler, 'lr', sched),
     CudaCallback,
     partial(BatchTransformXCallback, normalize),
     partial(BatchTransformXCallback, mnist_view),
@@ -149,11 +143,19 @@ cbfs = [
     SaveCallback,
 ]
 
-learn = get_learner(data, 1e-1, opt_func=adam_opt, cb_funcs=cbfs)
+adam = torch.optim.Adam
+
+learn = get_learner(data, arch, 1e-2, opt_func=adam, cb_funcs=cbfs)
 # -
 
 
-learn.fit(50)
+learn.fit(5)
+
+learn.recorder.plot_loss()
+
+learn.recorder.train_losses
+
+adam.state_dict()['param_groups'][0]['lr']
 
 # +
 # Evaluate model
