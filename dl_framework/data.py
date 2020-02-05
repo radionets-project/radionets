@@ -105,20 +105,31 @@ def save_bundle(path, bundle, counter, name='gs_bundle'):
         hf.create_dataset(name,  data=bundle)
         hf.close()
 
+# open and save functions should be generalized in future versions
+
 
 def open_bundle(path):
+    '''
+    open radio galaxy bundles created in first analysis step
+    '''
     f = h5py.File(path, 'r')
     bundle = np.array(f['gs_bundle'])
     return bundle
 
 
 def get_bundles(path):
+    '''
+    returns list of bundle paths located in a directory
+    '''
     data_path = Path(path)
     bundles = np.array([x for x in data_path.iterdir()])
     return bundles
 
 
 def save_fft_pair(path, x, y, name_x='x', name_y='y'):
+    '''
+    write fft_pairs created in second analysis step to h5 file
+    '''
     with h5py.File(path, 'w') as hf:
         hf.create_dataset(name_x,  data=x)
         hf.create_dataset(name_y,  data=y)
@@ -126,6 +137,9 @@ def save_fft_pair(path, x, y, name_x='x', name_y='y'):
 
 
 def open_fft_pair(path):
+    '''
+    open fft_pairs which were created in second analysis step
+    '''
     f = h5py.File(path, 'r')
     bundle_x = np.array(f['x'])
     bundle_y = np.array(f['y'])
