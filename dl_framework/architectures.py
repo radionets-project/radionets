@@ -19,7 +19,8 @@ def cnn():
         Lambda(flatten),
         nn.Linear(64, 8192),
         Lambda(fft),
-        # Lambda(shape),
+        Lambda(flatten),
+        nn.Linear(8192, 4096),
     )
     return arch
 

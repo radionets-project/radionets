@@ -105,17 +105,12 @@ def main(
         SaveCallback,
     ]
 
-    def mse_log(x, y):
-        loss = ((torch.log10(x) - torch.log10(y))**2).mean()
-        # print(loss)
-        return torch.abs(loss)
-
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
     elif loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
-        loss_func = mse_log  # nn.MSELoss()
+        loss_func = nn.MSELoss()
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)

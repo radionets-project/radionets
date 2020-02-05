@@ -18,8 +18,7 @@ def fft(x):
     arr_imag = x[:, 4096:8192].reshape(-1, 64, 64)
     arr = torch.stack((arr_real, arr_imag), dim=-1)
     arr_fft = torch.ifft(arr, 2)
-    arr_fft_abs = torch.sqrt(arr_fft[:, :, :, 0]**2 + arr_fft[:, :, :, 1]**2)
-    return arr_fft_abs.reshape(-1, 4096)
+    return arr_fft.permute(0, 3, 1, 2)
 
 
 def shape(x):
@@ -28,7 +27,7 @@ def shape(x):
 
 
 def flatten(x):
-    a = x.view(x.shape[0], -1)
+    a = x.reshape(x.shape[0], -1)
     return a
 
 

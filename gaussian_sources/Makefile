@@ -70,7 +70,7 @@ norm=data/normalization_factors.csv
 		mkdir -p models/unet_log
 		python train_cnn.py ./data2/ \
 		./models/unet_log/unet_fft_log100.model \
-		UNet_fft data2/normalization_factors.csv \
+		cnn data2/normalization_factors.csv \
 		100 1e-3 mse \
 		-pretrained False models/unet_log/unet_fft_log.model\
 		-inspection True
