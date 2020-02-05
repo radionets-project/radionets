@@ -76,7 +76,7 @@ bundle_paths = get_bundles(data_path)
 train = [path for path in bundle_paths if re.findall('fft_samp_train', path.name)]
 valid = [path for path in bundle_paths if re.findall('fft_samp_valid', path.name)]
 
-train
+train, valid
 
 # +
 from gaussian_sources.preprocessing import split_amp_phase, mean_and_std, split_real_imag
@@ -163,19 +163,36 @@ valid_ds = h5_dataset(valid)
 bs = 512
 data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
-plt.imshow(data.valid_ds[4][0][1].reshape(64,64))
+plt.imshow(data.valid_ds[60][1].reshape(64,64))
+plt.colorbar()
+
+data.valid_ds[60][1].min()
 
 plt.imshow(data.valid_ds[0][1].reshape(64,64))
 
 next(iter(data.train_dl))[1].shape
 
+np.mean([10**2, 20**2, 70**2])
+
+# +
+test = torch.tensor([1e-1]).float()
+target = torch.tensor([1e-2]).float()
+
+mse_log(test, target), mse(test, target)
+
+
+# +
+def mse(x, y):
+    return ((x - y)**2).mean()
+
+def mse_log(x, y):
+    y[y <=0] = 1e-8
+    return ((torch.log10(x) - torch.log10(y))**2).mean()
+
+
 # +
 import dl_framework.architectures as architecture
 from dl_framework.learner import get_learner
-from dl_framework.optimizer import StatefulOptimizer, weight_decay,\
-                                   AverageGrad
-from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
-from dl_framework.param_scheduling import sched_no
 from dl_framework.callbacks import Recorder, AvgStatsCallback,\
                                    BatchTransformXCallback, CudaCallback,\
                                    SaveCallback, view_tfm, ParamScheduler,\
@@ -183,8 +200,11 @@ from dl_framework.callbacks import Recorder, AvgStatsCallback,\
 from functools import partial
 import torch.nn as nn
 
+from dl_framework.model import init_cnn
+
 # Define architecture
-arch = getattr(architecture, 'cnn')()
+arch = getattr(architecture, 'UNet_fft')()
+init_cnn(arch)
 
 # Define resize for mnist data
 mnist_view = view_tfm(2, 64, 64)
@@ -208,22 +228,22 @@ cbfs = [
 adam_opt = torch.optim.Adam
 
 # Combine model and data in learner
-learn = get_learner(data, arch, 1e-2, opt_func=adam_opt,  cb_funcs=cbfs)
+learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
 
 # Print model architecture
 print(learn.model, '\n')
 
 # Train the model, make it possible to stop at any given time
-learn.fit(2)
+learn.fit(10)
 # -
 learn.recorder.plot_loss()
-
-learn
 
 import pandas as pd
 from dl_framework.data import do_normalisation
 evaluate_model(data.valid_ds, learn.model, 'data/normalization_factors.csv', nrows=10)
 plt.savefig('gauss_test.pdf')
+
+learn.fit(5)
 
 
 
@@ -253,21 +273,22 @@ def evaluate_model(valid_ds, model, norm_path, nrows=3):
                           vmax=img.max(), vmin=-img.max())
         axes[i][1].set_title('y_pred')
         im = axes[i][1].imshow(pred.view(h, h),
-                               norm=LogNorm(vmin=1e-6),
+                               #norm=LogNorm(vmin=1e-8),
                                #vmin=valid_ds[rand][1].min(),
                                #vmax=valid_ds[rand][1].max()
                               )
         axes[i][2].set_title('y_true')
         axes[i][2].imshow(valid_ds[rand][1].view(h, h),
-                          vmin=valid_ds[rand][1].min(),
-                          vmax=valid_ds[rand][1].max())
+                          #norm=LogNorm(
+                          #    vmin=1e-8,
+                          #    vmax=valid_ds[rand][1].max()
+                          #),
+                          #vmin=valid_ds[rand][1].min(),
+                          #vmax=valid_ds[rand][1].max()
+                         )
         fig.colorbar(im, cax=axes[i][3])
     plt.tight_layout()
 # -
-
-
-
-
 
 
 
