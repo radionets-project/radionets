@@ -87,7 +87,6 @@ def main(
 
     # Define model
     arch = getattr(architecture, arch)()
-    init_cnn(arch)
 
     # Define resize for mnist data
     mnist_view = view_tfm(2, 64, 64)
