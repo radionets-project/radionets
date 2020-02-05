@@ -213,11 +213,13 @@ class LoggerCallback(Callback):
     def after_epoch(self):
         if (self.epoch + 1) % 10 == 0:
             logger = make_notifier()
-            logger.info('Epoche {} zu Ende mit Loss {}'.format(self.epoch+1, self.loss))
+            logger.info('Epoche {} zu Ende mit Loss {}'.format(
+                self.epoch+1, self.avg_stats.valid_stats.avg_stats[1]))
 
     def after_fit(self):
         logger = make_notifier()
-        logger.info('Ende des Trainings nach {} Epochen mit Loss {}'.format(self.epoch+1, self.loss))
+        logger.info('Ende des Trainings nach {} Epochen mit Loss {}'.format(
+            self.epoch+1, self.avg_stats.valid_stats.avg_stats[1]))
 
 
 class CudaCallback(Callback):
