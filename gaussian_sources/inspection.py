@@ -32,7 +32,7 @@ def evaluate_model(valid_ds, model, norm_path, nrows=3):
                           vmax=img.max(), vmin=-img.max())
         axes[i][1].set_title('y_pred')
         im = axes[i][1].imshow(pred.view(h, h),
-                               norm=LogNorm(vmin=1e-6),
+                               #norm=LogNorm(vmin=1e-6),
                                #vmin=valid_ds[rand][1].min(),
                                #vmax=valid_ds[rand][1].max()
                               )
