@@ -82,8 +82,8 @@ find_lr: ./lr_find
 		mkdir -p models/
 		python find_lr.py ./data/mnist_samp_train.h5\
 		./data/mnist_samp_valid.h5\
-		autoencoder feature_loss ./data/normalization_factors.csv -log False\
-		-pretrained False ./models/feature_loss_lr.model\
+		cnn feature_loss ./data/normalization_factors.csv -log False\
+		-pretrained True ./models/with_gram_cnn_200/with_gram_cnn_200.model\
 		-save False
 
 ./data/plots/input_done:

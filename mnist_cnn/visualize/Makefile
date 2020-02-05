@@ -15,12 +15,12 @@ build/visualize_preprocessing_done:
 build/visualize_predictions_done:
 	mkdir -p build
 	python visualize_predictions.py \
-	autoencoder \
+	cnn \
 	$(model) \
 	../data/mnist_samp_valid.h5 \
 	$(norm) \
 	build/prediction.png \
-	-index 42
+	-num 20
 
 # ------------------------------------------------------
 new_shapes: new_shapes/visualize_gauss_done \

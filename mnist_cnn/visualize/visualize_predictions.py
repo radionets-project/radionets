@@ -1,4 +1,5 @@
 import click
+import matplotlib
 import pandas as pd
 import numpy as np
 from mnist_cnn.visualize.utils import eval_model
@@ -24,6 +25,11 @@ from tqdm import tqdm
 @click.option('-num', type=int, required=False)
 def main(arch, pretrained_path, in_path, norm_path,
          out_path, index=None, log=False, num=None):
+    # to prevent the localhost error from happening
+    # first change the backende and second turn off
+    # the interactive mode
+    matplotlib.use("Agg")
+    plt.ioff()
     x_valid, y_valid = get_h5_data(in_path, columns=['x_valid', 'y_valid'])
 
     x_valid_real, x_valid_imag = split_real_imag(x_valid)
@@ -92,6 +98,8 @@ def main(arch, pretrained_path, in_path, norm_path,
             outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
             plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
             plt.clf()
+            matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
     else:
         print('\nPlotting a single index.\n')
         img_reshaped = img.view(1, 2, 64, 64)
@@ -135,6 +143,7 @@ def main(arch, pretrained_path, in_path, norm_path,
         fig.colorbar(im4, cax=cax, orientation='vertical')
         plt.savefig(str(out_path), bbox_inches='tight', pad_inches=0.01)
         plt.clf()
+        matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
 if __name__ == '__main__':

@@ -15,6 +15,7 @@ from dl_framework.callbacks import (
     SaveCallback,
     normalize_tfm,
     view_tfm,
+    LoggerCallback,
 )
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
@@ -101,6 +102,7 @@ def main(
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         SaveCallback,
+        LoggerCallback,
     ]
 
     # Define optimiser function
