@@ -46,7 +46,7 @@ def create_grid(pixel):
     x = np.linspace(0, pixel-1, num=pixel)
     y = np.linspace(0, pixel-1, num=pixel)
     X, Y = np.meshgrid(x, y)
-    grid = np.array([np.zeros(X.shape), X, Y])
+    grid = np.array([np.zeros(X.shape) + 1e-10, X, Y])
     return grid
 
 
