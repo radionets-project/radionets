@@ -10,7 +10,7 @@ from dateutil import tz
 stream = open("../dl_framework/values.yaml", 'r')
 values = yaml.load(stream, Loader=yaml.FullLoader)
 
-TELEGRAM_TOKEN = 
+TELEGRAM_TOKEN = values['TELEGRAM_TOKEN']
 TELEGRAM_CHAT_ID = values['CHAT_ID']
 
 
