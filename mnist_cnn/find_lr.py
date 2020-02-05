@@ -1,6 +1,7 @@
 from functools import partial
 import sys
 import click
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -17,14 +18,6 @@ from dl_framework.callbacks import (
 )
 from dl_framework.learner import get_learner
 from dl_framework.model import load_pre_model
-from dl_framework.optimizer import (
-    AverageGrad,
-    AverageSqrGrad,
-    StatefulOptimizer,
-    StepCount,
-    adam_step,
-    weight_decay,
-)
 from mnist_cnn.utils import get_h5_data
 from preprocessing import DataBunch, get_dls, prepare_dataset
 from inspection import plot_lr_loss
@@ -93,7 +86,7 @@ def main(
 
     # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=400, max_lr=1),
+        partial(LR_Find, max_iter=400, max_lr=1e-1, min_lr=1e-4),
         Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),
@@ -101,12 +94,6 @@ def main(
         SaveCallback,
     ]
 
-    # Define optimiser function
-    adam_opt = partial(
-        StatefulOptimizer,
-        steppers=[adam_step, weight_decay],
-        stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
-    )
     if loss_func == "feature_loss":
         # feature_loss
         ###########################################################################
@@ -129,13 +116,13 @@ def main(
         sys.exit(1)
     # Combine model and data in learner
     learn = get_learner(
-        data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs, loss_func=loss_func
+        data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
     )
 
     # use pre-trained model if asked
     if pretrained is True:
         # Load model
-        load_pre_model(learn.model, pretrained_model)
+        load_pre_model(learn, pretrained_model, lr_find=True)
 
     learn.fit(2)
     if save:

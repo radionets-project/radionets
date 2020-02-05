@@ -1,0 +1,20 @@
+# to be filled in and renamed
+# paths
+path=
+samp_train= 
+samp_valid=
+path_model=
+norm_path=
+pre_path=
+
+# hyperparameters
+arch=
+epochs=
+lr=
+lr_type=
+log=
+pretrained=
+inspection=
+
+# lr find
+save=

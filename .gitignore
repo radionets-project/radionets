@@ -36,3 +36,4 @@ mnist_cnn/old
 /mnist_cnn/visualize/test_data
 
 .flake8
+.makerc

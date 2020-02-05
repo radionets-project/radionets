@@ -123,7 +123,7 @@ def main(
         sys.exit(1)
     # Combine model and data in learner
     learn = get_learner(
-        data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
+        data, arch, lr=lr, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
     )
 
     # use pre-trained model if asked

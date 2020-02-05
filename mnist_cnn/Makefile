@@ -1,7 +1,7 @@
 #########################################################
 # Analysis steps
 #
-
+-include .makerc
 all:	mnist_fft\
 		mnist_samp\
 		calc_normalization
@@ -69,22 +69,28 @@ find_lr: ./lr_find
 		data/normalization_factors.csv
 
 ./training_done:
-		mkdir -p models/unet_fft
-		python train_cnn.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5 ./models/unet_fft/test100.model\
-		UNet_fft ./data/normalization_factors.csv\
-		50 1e-3 mse -log False\
-		-pretrained True ./models/unet_fft/test50.model\
-		-inspection True
+		mkdir -p ${path}
+		python train_cnn.py ${samp_train}\
+		${samp_valid} ${path_model}\
+		${arch} ${norm_path}\
+		${epochs} ${lr} ${lr_type} -log ${log}\
+		-pretrained ${pretrained} ${pre_path}\
+		-inspection ${inspection}
 		# touch ./training_done
+
+./plot_loss:
+		mkdir -p ${path}
+		python plot_loss.py\
+		${path_model}\
+		${arch}\
 
 ./lr_find:
 		mkdir -p models/
-		python find_lr.py ./data/mnist_samp_train.h5\
-		./data/mnist_samp_valid.h5\
-		cnn feature_loss ./data/normalization_factors.csv -log False\
-		-pretrained True ./models/with_gram_cnn_200/with_gram_cnn_200.model\
-		-save False
+		python find_lr.py ${samp_train}\
+		${samp_valid}\
+		${arch} ${lr_type} ${norm_path} -log ${log}\
+		-pretrained ${pretrained} ${pre_path}\
+		-save ${save}
 
 ./data/plots/input_done:
 		mkdir -p data/
