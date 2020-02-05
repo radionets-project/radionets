@@ -3,7 +3,6 @@ import torch
 import h5py
 import numpy as np
 from pathlib import Path
-from gaussian_sources.preprocessing import split_real_imag
 
 
 def normalize(x, m, s):
@@ -58,6 +57,8 @@ class h5_dataset():
         return data
 
     def open_image(self, var, i):
+        # at the moment all bundles contain 1024 images
+        # should be variable in the future
         bundle_i = i // 1024
         image_i = i - bundle_i * 1024
         bundle = h5py.File(self.bundles[bundle_i], 'r')
@@ -72,6 +73,13 @@ class h5_dataset():
 
 def combine_and_swap_axes(array1, array2):
     return np.swapaxes(np.dstack((array1, array2)), 2, 0)
+
+
+def split_real_imag(array):
+    """
+    takes a complex array and returns the real and the imaginary part
+    """
+    return array.real, array.imag
 
 
 def get_dls(train_ds, valid_ds, bs, **kwargs):
