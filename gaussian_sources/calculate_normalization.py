@@ -1,8 +1,7 @@
 import click
-from gaussian_sources.preprocessing import (split_amp_phase,
-                                            mean_and_std,
-                                            split_real_imag
-                                            )
+from dl_framework.data import (mean_and_std,
+                               split_real_imag
+                               )
 from dl_framework.data import open_fft_pair, get_bundles
 import pandas as pd
 import numpy as np

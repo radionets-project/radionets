@@ -82,6 +82,15 @@ def split_real_imag(array):
     return array.real, array.imag
 
 
+def split_amp_phase(array):
+    """
+    takes a complex array and returns the amplitude and the phase
+    """
+    amp = np.abs(array)
+    phase = np.angle(array)
+    return amp, phase
+
+
 def get_dls(train_ds, valid_ds, bs, **kwargs):
     return (DataLoader(train_ds, batch_size=bs, shuffle=True, **kwargs),
             DataLoader(valid_ds, batch_size=bs*2, **kwargs))
@@ -144,3 +153,7 @@ def open_fft_pair(path):
     bundle_x = np.array(f['x'])
     bundle_y = np.array(f['y'])
     return bundle_x, bundle_y
+
+
+def mean_and_std(array):
+    return array.mean(), array.std()
