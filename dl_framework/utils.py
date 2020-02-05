@@ -70,7 +70,7 @@ class AvgStats():
             i += 1
         return stats_list
 
-    def __repr__(self):
+    def avg_print(self):
         if not self.count:
             return ""
         return f'{"train" if self.in_train else "valid"}: {self.avg_stats}'
