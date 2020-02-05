@@ -142,24 +142,24 @@ def get_uv_coverage(source, antenna, iterate=False):
     return u, v, steps
 
 
-def create_mask(u, v):
-    uv_hist, _, _ = np.histogram2d(u, v, bins=64)
+def create_mask(u, v, size=64):
+    ''' Create 2d mask from a given (uv)-coverage
+
+    u: array of u coordinates
+    v: array of v coordinates
+    size: number of bins
+    '''
+    uv_hist, _, _ = np.histogram2d(u, v, bins=size)
     # exclude center
-    uv_hist[31, 31] = 0
-    uv_hist[31, 32] = 0
-    uv_hist[31, 33] = 0
-    uv_hist[32, 31] = 0
-    uv_hist[32, 32] = 0
-    uv_hist[32, 33] = 0
-    uv_hist[33, 31] = 0
-    uv_hist[33, 32] = 0
-    uv_hist[33, 33] = 0
+    ex_l = size // 2 - 5
+    ex_h = size // 2 + 5
+    uv_hist[ex_l:ex_h, ex_l:ex_h] = 0
     mask = uv_hist > 0
     return np.rot90(mask)
 
 
-def sample_freqs(img, ant_config_path, lon=None, lat=None, num_steps=None,
-                 plot=False):
+def sample_freqs(img, ant_config_path, size=64, lon=None, lat=None,
+                 num_steps=None, plot=False):
     ant = antenna(*get_antenna_config(ant_config_path))
     if lon is None:
         lon = np.random.randint(-90, -70)
@@ -168,10 +168,16 @@ def sample_freqs(img, ant_config_path, lon=None, lat=None, num_steps=None,
     s = source(lon, lat)
     s.propagate(num_steps=num_steps, multi_pointing=True)
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
-    mask = create_mask(u, v)
-    img = img.reshape(64, 64)
+    mask = create_mask(u, v, size)
+    # img = img.reshape(64, 64)
     img[~mask] = 0
-    img = img.reshape(4096)
+    # img = img.reshape(4096)
+    '''
+    if mnist:
+        img = img.reshape(64, 64)
+        img[~mask] = 0
+        img = img.reshape(4096)
+    '''
     if plot is True:
         return img, mask
     else:

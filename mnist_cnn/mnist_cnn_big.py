@@ -16,15 +16,12 @@
 # %reload_ext autoreload
 # %autoreload 2
 # %matplotlib inline
-import sys
-import torch
-sys.path.append('..')
 
 # +
 import matplotlib.pyplot as plt
 
-from preprocessing import prepare_dataset, get_dls, DataBunch
-from utils import get_h5_data
+from mnist_cnn.preprocessing import prepare_dataset, get_dls, DataBunch
+from mnist_cnn.utils import get_h5_data
 from torch import nn
 from dl_framework.learner import Learner
 from dl_framework.optimizer import sgd_opt
@@ -47,7 +44,18 @@ train_ds, valid_ds = prepare_dataset(x_train[0:2048], y_train[0:2048], x_valid[0
 # Create databunch with definde batchsize
 bs = 64
 data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
-# + {}
+# -
+loader = data.train_dl
+
+next(iter(loader))
+
+
+
+
+
+
+
+# +
 # import numpy as np
 # a = data.train_ds.x.reshape(10, 4096)
 # print(a.shape)

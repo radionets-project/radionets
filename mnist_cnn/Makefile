@@ -64,9 +64,8 @@ find_lr: ./lr_find
 		-steps 50
 
 ./data/normalization_factors.csv:
-		python calculate_normalization.py\
-		-log False -use_mask True\
-		data/mnist_samp_train.h5 data/mnist_samp_valid.h5\
+		python calculate_normalization.py \
+		data/mnist_samp_train.h5 \
 		data/normalization_factors.csv
 
 ./training_done:
