@@ -61,7 +61,7 @@ class h5_dataset():
         bundle_i = i // 1024
         image_i = i - bundle_i * 1024
         bundle = h5py.File(self.bundles[bundle_i], 'r')
-        data = bundle[str(var)][image_i]
+        data = bundle[var][image_i]
         if var == 'x':
             data_amp, data_phase = split_real_imag(data)
             data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(-1,4096)
