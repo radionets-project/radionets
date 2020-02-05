@@ -8,6 +8,7 @@ fft_samp: ./data/fft_train_done\
 		  ./data/fft_valid_done
 calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
+find_lr: ./lr_find
 
 ######################################################################
 
@@ -61,6 +62,13 @@ cnn_training: ./training_done
 		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
 		# touch ./training_done
+
+./lr_find:
+		mkdir -p models/
+		python find_lr.py ${data}\
+		${arch} ${lr_type} ${norm_path} -log ${log}\
+		-pretrained ${pretrained} ${pre_path}\
+		-save ${save}
 
 clean_norm:
 	rm -r ${norm_path}
