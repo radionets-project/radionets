@@ -1,12 +1,17 @@
 import datetime
 import logging
+import yaml
 from logging import Formatter, Handler
 
 import requests
 from dateutil import tz
 
-TELEGRAM_TOKEN = 
-TELEGRAM_CHAT_ID = "562197485"
+
+stream = open("../dl_framework/values.yaml", 'r')
+values = yaml.load(stream, Loader=yaml.FullLoader)
+
+TELEGRAM_TOKEN = values['TELEGRAM_TOKEN']
+TELEGRAM_CHAT_ID = values['CHAT_ID']
 
 
 class RequestsHandler(Handler):
