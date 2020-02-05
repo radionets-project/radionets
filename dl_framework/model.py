@@ -32,6 +32,12 @@ def flatten(x):
     return a
 
 
+def cut_off(x):
+    a = x.clone()
+    a[a <= 1e-10] = 1e-10
+    return a
+
+
 class GeneralRelu(nn.Module):
     def __init__(self, leak=None, sub=None, maxv=None):
         super().__init__()
