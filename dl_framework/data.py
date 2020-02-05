@@ -54,7 +54,7 @@ class h5_dataset():
 
     def open_bundle(self, bundle_path, var):
         bundle = h5py.File(bundle_path, 'r')
-        data = bundle[str(var)]
+        data = bundle[var]
         return data
 
     def open_image(self, var, i):
