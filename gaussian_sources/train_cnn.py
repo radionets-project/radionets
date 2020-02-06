@@ -95,6 +95,9 @@ def main(
     # make normalisation
     norm = normalize_tfm(norm_path)
 
+    # get model name for recording in LoggerCallback
+    model_name = model_path.split('models/')[-1].split('/')[0]
+
     # Define callback functions
     cbfs = [
         Recorder,
@@ -103,7 +106,7 @@ def main(
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         SaveCallback,
-        LoggerCallback,
+        partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
