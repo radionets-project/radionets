@@ -91,7 +91,7 @@ def main(
 
     # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=650, max_lr=1),
+        partial(LR_Find, max_iter=650, max_lr=1e-3),
         Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),

@@ -66,5 +66,6 @@ def plot_lr_loss(learn, arch_name, skip_last):
     plt.ioff()
     print('\nPlotting Lr vs Loss for architecture: {}\n'.format(arch_name))
     learn.recorder_lr_find.plot(skip_last, save=True)
+    plt.yscale('log')
     plt.savefig('./models/lr_loss.pdf', bbox_inches='tight', pad_inches=0.01)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
