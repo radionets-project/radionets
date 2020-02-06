@@ -71,7 +71,7 @@ class UNet_fft(nn.Module):
 
         self.conv_last = nn.Conv2d(4, 2, 1)
         self.flatten = Lambda(flatten)
-        self.linear = nn.Linear(8192, 8192)
+        self.linear1 = nn.Linear(8192, 4096)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
 
@@ -101,10 +101,9 @@ class UNet_fft(nn.Module):
         x = self.conv_last(x)
 
         x = self.flatten(x)
-        x = self.linear(x)
-        x = self.linear(x)
-        out = self.fft(x)
-        # out = self.cut(x)
+        x = self.fft(x)
+        x = self.flatten(x)
+        out = self.linear1(x)
 
         return out
 
