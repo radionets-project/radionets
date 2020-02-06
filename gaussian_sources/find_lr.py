@@ -77,7 +77,7 @@ def main(
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # First guess for max_iter
-    print("\nTotal number of batches ~ ", len(data.train_ds)//bs)
+    print("\nTotal number of batches ~ ", len(data.train_ds)*2//bs)
 
     # Define model
     arch_name = arch
@@ -91,7 +91,7 @@ def main(
 
     # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=330, max_lr=1),
+        partial(LR_Find, max_iter=650, max_lr=1),
         Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),
