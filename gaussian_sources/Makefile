@@ -66,7 +66,8 @@ find_lr: ./lr_find
 ./lr_find:
 		mkdir -p models/
 		python find_lr.py ${data}\
-		${arch} ${lr_type} ${norm_path} -log ${log}\
+		${arch} ${lr_type} ${norm_path} -min_lr ${min_lr}\
+		-max_lr ${max_lr} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
