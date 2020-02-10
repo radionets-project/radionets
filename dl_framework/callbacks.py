@@ -6,7 +6,7 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
-import numpy as np
+#from dl_framework.logger import make_notifier
 
 
 class CancelTrainException(Exception):
@@ -43,6 +43,8 @@ class Callback():
 
 
 class TrainEvalCallback(Callback):
+    _order = 0
+
     def begin_fit(self):
         self.run.n_epochs = 0.
         self.run.n_iter = 0
@@ -80,12 +82,12 @@ class AvgStatsCallback(Callback):
     def after_epoch(self):
         # We use the logger function of the `Learner` here, it can be
         # customized to write in a file or in a progress bar
-        self.logger(self.train_stats)
-        self.logger(self.valid_stats)
+        self.log(self.train_stats.avg_print())
+        self.log(self.valid_stats.avg_print())
 
 
 class ParamScheduler(Callback):
-    _order = 1
+    _order = 3
 
     def __init__(self, pname, sched_funcs):
         self.pname = pname
@@ -103,23 +105,40 @@ class ParamScheduler(Callback):
 
 
 class Recorder(Callback):
+    _order = 5
+
     def begin_fit(self):
-        self.lrs = []
-        self.losses = []
+        if not hasattr(self, 'lrs'):
+            self.lrs = []
+        if not hasattr(self, 'train_losses'):
+            self.train_losses = []
+        if not hasattr(self, 'valid_losses'):
+            self.valid_losses = []
+        if not hasattr(self, 'losses'):
+            self.losses = []
 
     def after_batch(self):
         if not self.in_train:
             return
-        self.lrs.append(self.opt.hypers[-1]['lr'])
+        self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
 
     def after_epoch(self):
+        self.train_losses.append(self.avg_stats.train_stats.avg_stats[1])
+        self.valid_losses.append(self.avg_stats.valid_stats.avg_stats[1])
         self.losses.append(self.loss.detach().cpu())
 
     def plot_lr(self):
         plt.plot(self.lrs)
 
     def plot_loss(self):
-        plt.plot(self.losses)
+        plt.plot(self.train_losses, label='train loss')
+        plt.plot(self.valid_losses, label='valid loss')
+        plt.plot(self.losses, label='loss')
+        plt.yscale('log')
+        plt.xlabel(r"Number of Epochs")
+        plt.ylabel(r"Loss")
+        plt.legend()
+        plt.tight_layout()
 
     def plot(self, skip_last=0):
         losses = [o.item() for o in self.losses]
@@ -128,6 +147,7 @@ class Recorder(Callback):
         plt.xlabel(r'learning rate')
         plt.ylabel(r'loss')
         plt.plot(self.lrs[:n], losses[:n])
+        plt.show()
 
 
 class Recorder_lr_find(Callback):
@@ -143,7 +163,7 @@ class Recorder_lr_find(Callback):
     def after_batch(self):
         if not self.in_train:
             return
-        self.lrs.append(self.opt.hypers[-1]['lr'])
+        self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
         self.losses.append(self.loss.detach().cpu())
 
     def plot(self, skip_last=0, save=False):
@@ -173,16 +193,31 @@ class LR_Find(Callback):
     def begin_batch(self):
         if not self.in_train:
             return
-        pos = self.n_iter/self.max_iter
+        pos = self.run.n_iter/self.max_iter
         lr = self.min_lr * (self.max_lr/self.min_lr) ** pos
-        for pg in self.opt.hypers:
-            pg['lr'] = lr
+        for param_group in self.opt.param_groups:
+            param_group['lr'] = lr
 
     def after_step(self):
         if self.n_iter >= self.max_iter or self.loss > self.best_loss*10:
             return CancelTrainException
         if self.loss < self.best_loss:
             self.best_loss = self.loss
+
+
+class LoggerCallback(Callback):
+    def begin_fit(self):
+        logger = make_notifier()
+        logger.info('Start des Trainings')
+
+    def after_epoch(self):
+        if (self.epoch + 1) % 10 == 0:
+            logger = make_notifier()
+            logger.info('Epoche {} zu Ende mit Loss {}'.format(self.epoch+1, self.loss))
+
+    def after_fit(self):
+        logger = make_notifier()
+        logger.info('Ende des Trainings nach {} Epochen mit Loss {}'.format(self.epoch+1, self.loss))
 
 
 class CudaCallback(Callback):

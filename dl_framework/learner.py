@@ -22,7 +22,7 @@ class Learner():
     def __init__(self, model, data, loss_func, opt_func=sgd_opt, lr=1e-2, splitter=param_getter,
                  cbs=None, cb_funcs=None):
         self.model,self.data,self.loss_func,self.opt_func,self.lr,self.splitter = model,data,loss_func,opt_func,lr,splitter
-        self.in_train,self.logger,self.opt = False,print,None
+        self.in_train,self.log,self.opt = False,print,None
 
         # NB: Things marked "NEW" are covered in lesson 12
         # NEW: avoid need for set_runner
@@ -73,7 +73,7 @@ class Learner():
         # NEW: pass callbacks to fit() and have them removed when done
         self.add_cbs(cbs)
         # NEW: create optimizer on fit(), optionally replacing existing
-        if reset_opt or not self.opt: self.opt = self.opt_func(self.splitter(self.model), lr=self.lr)
+        if reset_opt or not self.opt: self.opt = self.opt_func(self.splitter(self.model), lr=self.lr)# weight_decay=0.1)
 
         try:
             self.do_begin_fit(epochs)
