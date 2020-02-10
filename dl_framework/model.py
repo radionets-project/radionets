@@ -14,10 +14,13 @@ class Lambda(nn.Module):
 
 
 def fft(x):
-    arr_real = x[:, 0:4096].reshape(-1, 64, 64)
-    arr_imag = x[:, 4096:8192].reshape(-1, 64, 64)
+    img_size = x.size(1) // 2
+    # print(int(sqrt(img_size)))
+    arr_real = x[:, 0:img_size].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
+    arr_imag = x[:, img_size:].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
     arr = torch.stack((arr_real, arr_imag), dim=-1)
     arr_fft = torch.ifft(arr, 2)
+    # print('FFt fertig')
     return arr_fft.permute(0, 3, 1, 2)
 
 
