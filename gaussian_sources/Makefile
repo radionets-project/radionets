@@ -71,6 +71,12 @@ find_lr: ./lr_find
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
+./plot_loss:
+		mkdir -p ${path}
+		python plot_loss.py\
+		${path_model}\
+		${arch}\
+
 clean_norm:
 	rm -r ${norm_path}
 
