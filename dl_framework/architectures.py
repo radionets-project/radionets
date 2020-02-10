@@ -17,10 +17,15 @@ def cnn():
         *conv(32, 64, (2, 2), 2, 1),
         nn.MaxPool2d((2, 2)),
         Lambda(flatten),
-        nn.Linear(64, 8192),
-        Lambda(fft),
-        Lambda(flatten),
-        nn.Linear(8192, 4096),
+        # Lambda(shape),
+        nn.Linear(64, 32768),
+        # Lambda(shape),
+        # Lambda(fft),
+        # Lambda(shape),
+        # Lambda(flatten),
+        # Lambda(shape),
+        nn.Linear(32768, 16384),
+        # Lambda(shape),
     )
     return arch
 
@@ -71,8 +76,8 @@ class UNet_fft(nn.Module):
 
         self.conv_last = nn.Conv2d(4, 2, 1)
         self.flatten = Lambda(flatten)
-        self.linear1 = nn.Linear(8192, 4096)
-        self.linear2 = nn.Linear(8192, 8192)
+        self.linear1 = nn.Linear(32768, 16384)
+        self.linear2 = nn.Linear(32768, 32768)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
         self.dropout = nn.Dropout2d(p=0.5)
