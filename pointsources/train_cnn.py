@@ -16,7 +16,7 @@ from dl_framework.optimizer import StatefulOptimizer, weight_decay,\
                                    AverageGrad
 from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 import dl_framework.architectures as architecture
-from dl_framework.model import load_pre_model
+from dl_framework.model import load_pre_model,save_model
 from dl_framework.loss_functions import init_feature_loss
 from mnist_cnn.utils import get_h5_data
 
@@ -82,17 +82,18 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
         Recorder,
         # test for use of multiple Metrics or Loss functions
         partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        partial(ParamScheduler, 'lr', sched),
+        #partial(ParamScheduler, 'lr', sched),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         SaveCallback,
     ]
-
+    '''
     # Define optimiser function
     adam_opt = partial(StatefulOptimizer, steppers=[adam_step, weight_decay],
                        stats=[AverageGrad(dampening=True), AverageSqrGrad(),
                        StepCount()])
+    '''
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
     elif loss_func == "l1":
@@ -104,12 +105,12 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
         sys.exit(1)
     
     # Combine model and data in learner
-    learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs, loss_func=loss_func)
+    learn = get_learner(data, arch, 1e-3, opt_func=torch.optim.Adam,  cb_funcs=cbfs, loss_func=loss_func)
 
     # use pre-trained model if asked
     if pretrained is True:
         # Load model
-        load_pre_model(learn.model, pretrained_model)
+        load_pre_model(learn, pretrained_model)
 
     # Print model architecture
     print(learn.model, '\n')
@@ -118,8 +119,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     learn.fit(num_epochs)
 
     # Save model
-    state = learn.model.state_dict()
-    torch.save(state, model_path)
+    save_model(learn, model_path)
 
     # Plot loss
     plot_loss(learn, model_path)

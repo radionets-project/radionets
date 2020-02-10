@@ -107,7 +107,7 @@ def main(
     # use pre-trained model if asked
     if pretrained is True:
         # Load model
-        load_pre_model(learn.model, pretrained_model)
+        load_pre_model(learn, pretrained_model)
 
     learn.fit(2)
     if save:

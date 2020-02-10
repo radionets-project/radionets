@@ -1,5 +1,5 @@
 from functools import partial
-
+import torch
 import click
 
 import dl_framework.architectures as architecture
@@ -96,18 +96,20 @@ def main(
     ]
 
     # Define optimiser function
+    '''
     adam_opt = partial(
         StatefulOptimizer,
         steppers=[adam_step, weight_decay],
         stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
     )
+    '''
     # Combine model and data in learner
-    learn = get_learner(data, arch, 1e-3, opt_func=adam_opt, cb_funcs=cbfs,)
+    learn = get_learner(data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs,)
 
     # use pre-trained model if asked
     if pretrained is True:
         # Load model
-        load_pre_model(learn.model, pretrained_model)
+        load_pre_model(learn, pretrained_model, find_lr=True)
 
     learn.fit(2)
     if save:
