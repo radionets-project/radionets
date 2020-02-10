@@ -8,7 +8,8 @@ import torch
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.offsetbox import AnchoredText
 from skimage.feature import blob_log
-from utils import num_blobs
+from utils import num_blobs, msssim
+from skimage.metrics import structural_similarity as ss
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
 from dl_framework.data import do_normalisation
@@ -28,7 +29,7 @@ def main(arch, pretrained_path, in_path, norm_path,
          out_path, index=None, log=False, num=None):
     
     x_valid, y_valid = get_h5_data(in_path, columns=['x_valid', 'y_valid'])
-    x_valid, y_valid = torch.tensor(x_valid).view(-1,1,64,64), torch.tensor(y_valid).view(-1,1,64,64)
+    x_valid, y_valid = torch.Tensor(x_valid).view(-1,1,64,64), torch.Tensor(y_valid).view(-1,1,64,64)
     
     total = len(x_valid)
 
@@ -36,7 +37,7 @@ def main(arch, pretrained_path, in_path, norm_path,
     arch = getattr(architecture, arch)()
 
     # load pretrained model
-    load_pre_model(arch, pretrained_path) 
+    load_pre_model(arch, pretrained_path, visualize=True) 
     
     # load the normalisation factors
     norm = pd.read_csv(norm_path)
@@ -77,8 +78,13 @@ def main(arch, pretrained_path, in_path, norm_path,
                           loc='upper left',
                           )
         at.patch.set_boxstyle("round,pad=0.,rounding_size=0.2")
+        
         ax1.add_artist(at)
-
+        info = AnchoredText('ssim: {:0.4f} \nmsssim: {:0.4f}'.format(ss(np.array(prediction.reshape(64,64)), np.array(y_valid[index].view(64,64))),
+                                                    msssim(torch.Tensor(prediction).view(1,1,64,64),y_valid[index].view(1,1,64,64), normalize=True)),
+                                                    prop=dict(size=15), frameon=True, loc='lower left')        
+        info.patch.set_boxstyle('round,pad=0.,rounding_size=0.2')
+        ax1.add_artist(info)
         img2 = ax2.imshow(y_valid[index].reshape(64,64))
         ax2.set_title('ground truth')
         for blob in blobs_ground_truth:

@@ -32,7 +32,7 @@ def main(arch, pretrained_path, in_path, norm_path,
         arch = getattr(architecture, arch)()
 
         #load trained model
-        load_pre_model(arch, pretrained_path)
+        load_pre_model(arch, pretrained_path, visualize=True)
 
         #norm x_valid
         norm = pd.read_csv(norm_path)
@@ -60,7 +60,7 @@ def main(arch, pretrained_path, in_path, norm_path,
         print('Number of false constructed images:', false, false/len(x_valid), "%")
 
 
-        d = {'total': [len(x_valid)], 'correct': [correct], 'false': [false]}
+        d = {'correct': [correct,correct/total], 'false': [false,false/total],'total' : [total,total/total]}
         df = pd.DataFrame(data=d)
         df.to_csv(out_path, index=False)
 

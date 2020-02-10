@@ -10,8 +10,7 @@ from dl_framework.model import load_pre_model
 from dl_framework.data import do_normalisation
 from utils import num_blobs
 from tqdm import tqdm
-import warnings
-warnings.filterwarnings("ignore", category=RuntimeWarning) 
+from skimage.metrics import structural_similarity as ssim
 
 @click.command()
 @click.argument('arch', type=str)
@@ -19,14 +18,14 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 @click.argument('in_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('norm_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
-@click.option('-index', type=int, required=False)
+@click.option('-threshold', type=float, required=False)
 @click.option('-log', type=bool, required=False)
 @click.option('-num', type=int, required=False)
 def main(arch, pretrained_path, in_path, norm_path,
-         out_path, index=None, log=False, num=None):
+         out_path, threshold=None, log=False, num=None):
     
     x_valid, y_valid = get_h5_data(in_path, columns=['x_valid', 'y_valid'])
-    x_valid, y_valid = torch.tensor(x_valid).view(-1,1,64,64), torch.tensor(y_valid).view(-1,1,64,64)
+    x_valid, y_valid = torch.Tensor(x_valid).view(-1,1,64,64), torch.Tensor(y_valid).view(-1,1,64,64)
     
     total = len(x_valid)
     correct = 0
@@ -44,12 +43,13 @@ def main(arch, pretrained_path, in_path, norm_path,
     for i in tqdm(range(total)):
         img_reshaped = x_valid[i].view(1,1,64,64)
         img_normed = do_normalisation(img_reshaped, norm)
-        
         #predict image
         prediction = eval_model(img_normed, arch)
-        
+        prediction = np.array(prediction.view(64,64))
+        ground_truth = np.array(y_valid[i].view(64,64))
+
         #compare detected blobs
-        if num_blobs(prediction) == num_blobs(y_valid[i]):
+        if ssim(ground_truth, prediction)>=threshold:
             correct += 1
         else:
             false += 1
