@@ -71,11 +71,11 @@ def main(
     bundle_paths = get_bundles(data_path)
     train = [
         path for path in bundle_paths
-        if re.findall('fft_samp_train', path.name)
+        if re.findall('fft_samp_test', path.name)
         ]
     valid = [
         path for path in bundle_paths
-        if re.findall('fft_samp_valid', path.name)
+        if re.findall('fft_samp_test', path.name)
         ]
 
     # Create train and valid datasets
@@ -90,7 +90,7 @@ def main(
     arch = getattr(architecture, arch)()
 
     # Define resize for mnist data
-    mnist_view = view_tfm(2, 64, 64)
+    mnist_view = view_tfm(2, 128, 128)
 
     # make normalisation
     norm = normalize_tfm(norm_path)
@@ -106,7 +106,7 @@ def main(
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         SaveCallback,
-        partial(LoggerCallback, model_name=model_name),
+        # partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
