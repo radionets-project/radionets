@@ -53,7 +53,7 @@ find_lr: ./lr_find
 ./data/bundles_test_done:
 		mkdir -p data/
 		python simulate_bundles.py \
-		20 1024 64 data/gaussian_sources_test \
+		20 1024 128 data/gaussian_sources_test \
 		-noise False
 		touch ./data/bundles_test_done
 
@@ -62,6 +62,7 @@ find_lr: ./lr_find
 		./data ./data/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode test \
 		-samp True \
+		-size 128 \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \

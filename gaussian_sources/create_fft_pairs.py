@@ -13,11 +13,12 @@ import re
                                                        dir_okay=False))
 @click.option('-mode', type=str, required=True)
 @click.option('-samp', type=bool, required=False)
+@click.option('-size', type=int, required=True)
 @click.option('-specific_mask', type=bool)
 @click.option('-lon', type=float, required=False)
 @click.option('-lat', type=float, required=False)
 @click.option('-steps', type=float, required=False)
-def main(in_path, out_path, antenna_config_path, mode, samp=True,
+def main(in_path, out_path, antenna_config_path, mode, size, samp=True,
          specific_mask=False, lon=None, lat=None, steps=None):
     '''
     get list of bundles
@@ -39,11 +40,11 @@ def main(in_path, out_path, antenna_config_path, mode, samp=True,
         if samp is True:
             if specific_mask is True:
                 bundle_fft = np.array([sample_freqs(img, antenna_config_path,
-                                       64, lon, lat, steps) for img
+                                       size, lon, lat, steps) for img
                                        in bundle_fft])
             else:
                 bundle_fft = np.array([sample_freqs(img, antenna_config_path,
-                                       size=64) for img
+                                       size=size) for img
                                        in bundle_fft])
         out = out_path + path.name.split('_')[-1]
         save_fft_pair(out, bundle_fft, bundle)
