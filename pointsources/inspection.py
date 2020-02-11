@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
@@ -63,7 +64,26 @@ def test_initialization(dl, model, layer):
 
 
 def plot_loss(learn, model_path):
+    # to prevent the localhost error from happening
+    # first change the backende and second turn off
+    # the interactive mode
+    matplotlib.use("Agg")
+    plt.ioff()
     name_model = model_path.split("/")[-1].split(".")[0]
+    save_path = model_path.split('.model')[0]
     print('\nPlotting Loss for: {}\n'.format(name_model))
     learn.recorder.plot_loss()
-    plt.savefig('./models/loss.pdf', bbox_inches='tight', pad_inches=0.01)
+    plt.savefig('{}_loss.pdf'.format(save_path), bbox_inches='tight', pad_inches=0.01)
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
+
+def plot_lr_loss(learn, arch_name, skip_last):
+    # to prevent the localhost error from happening
+    # first change the backende and second turn off
+    # the interactive mode
+    matplotlib.use("Agg")
+    plt.ioff()
+    print('\nPlotting Lr vs Loss for architecture: {}\n'.format(arch_name))
+    learn.recorder_lr_find.plot(skip_last, save=True)
+    plt.savefig('./models/lr_loss.pdf', bbox_inches='tight', pad_inches=0.01)
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
