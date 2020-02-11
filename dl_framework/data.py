@@ -59,8 +59,8 @@ class h5_dataset:
     def open_image(self, var, i):
         # at the moment all bundles contain 1024 images
         # should be variable in the future
-        bundle_i = i // 1024
-        image_i = i - bundle_i * 1024
+        bundle_i = i // 512
+        image_i = i - bundle_i * 512
         bundle = h5py.File(self.bundles[bundle_i], "r")
         data = bundle[var][image_i]
         if var == "x":
