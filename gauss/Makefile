@@ -47,7 +47,7 @@ find_lr: ./lr_find
 ./data/gauss_fft_done:
 		mkdir -p data/
 		python create_gauss_fft.py ./data\
-		20000 15 True\
+		50000 10 True\
 		-test False -noise False
 		touch ./data/gauss_fft_done
 
@@ -78,8 +78,7 @@ find_lr: ./lr_find
 
 ./data/normalization_factors.csv:
 		python calculate_normalization.py\
-		-log False -use_mask True\
-		data/gauss_samp_train.h5 data/gauss_samp_valid.h5\
+		data/gauss_samp_train.h5 \
 		data/normalization_factors.csv
 
 ./training_done:
@@ -87,7 +86,7 @@ find_lr: ./lr_find
 		python train_cnn.py ./data/gauss_samp_train.h5\
 		./data/gauss_samp_valid.h5 ./models/unet_gauss.model\
 		UNet ./data/normalization_factors.csv\
-		50 5e-5 mse -log False\
+		100 2e-5 feature_loss -log False\
 		-pretrained False ./models/unet_gauss.model \
 		-inspection False
 		touch ./training_done

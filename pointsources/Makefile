@@ -79,8 +79,7 @@ find_lr: ./lr_find
 
 ./data/normalization_factors.csv:
 		python calculate_normalization.py\
-		-log False -use_mask True\
-		data/pointsources_samp_train.h5 data/pointsources_samp_valid.h5\
+		data/pointsources_samp_train.h5 \
 		data/normalization_factors.csv
 
 ./training_done:
@@ -88,7 +87,7 @@ find_lr: ./lr_find
 		python train_cnn.py ./data/pointsources_samp_train.h5\
 		./data/pointsources_samp_valid.h5 ./models/unet_pointsources.model\
 		UNet ./data/normalization_factors.csv\
-		1000 2e-4 feature_loss -log False\
+		100 1e-4 feature_loss -log False\
 		-pretrained False ./models/unet_gauss.model \
 		-inspection False
 		touch ./training_done
