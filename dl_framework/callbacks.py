@@ -206,18 +206,23 @@ class LR_Find(Callback):
 
 
 class LoggerCallback(Callback):
+    def __init__(self, model_name):
+        self.model_name = model_name
+
     def begin_fit(self):
         logger = make_notifier()
-        logger.info('Start des Trainings')
+        logger.info('Start des Trainings von Modell {}'.format(self.model_name))
 
     def after_epoch(self):
         if (self.epoch + 1) % 10 == 0:
             logger = make_notifier()
-            logger.info('Epoche {} zu Ende mit Loss {}'.format(self.epoch+1, self.loss))
+            logger.info('{}: Epoche {} zu Ende mit Loss {}'.format(
+                self.model_name, self.epoch+1, self.avg_stats.valid_stats.avg_stats[1]))
 
     def after_fit(self):
         logger = make_notifier()
-        logger.info('Ende des Trainings nach {} Epochen mit Loss {}'.format(self.epoch+1, self.loss))
+        logger.info('{}: Ende des Trainings nach {} Epochen mit Loss {}'.format(
+            self.model_name, self.epoch+1, self.avg_stats.valid_stats.avg_stats[1]))
 
 
 class CudaCallback(Callback):
