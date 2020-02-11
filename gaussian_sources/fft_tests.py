@@ -31,6 +31,44 @@ img = test[55]
 plt.imshow(img)#, norm=LogNorm(vmin=1e-5))
 plt.colorbar()
 
+from dl_framework.model import fft
+
+import numpy as np
+img_fft = np.fft.fft2(img)
+
+plt.imshow(np.fft.fftshift(img_fft.real))
+plt.colorbar()
+
+import torch
+arr_real = torch.tensor(img).float()
+arr_imag = torch.zeros(img.shape).float()
+
+arr = torch.stack((arr_real, arr_imag), dim=-1).expand(1, -1, -1, -1)
+arr.shape
+
+torch.transpose()
+
+arr_fft = torch.ifft(arr, 2).permute(0, 3, 2, 1).transpose(2, 3)
+arr_fft.shape
+
+axes = tuple(range(arr_fft.ndim))
+shift = [-(dim // 2) for dim in arr_fft.shape]
+arr_shift = torch.roll(arr_fft, shift, axes)
+arr_shift.shape
+
+plt.imshow(arr_shift[0][1])
+plt.colorbar()
+
+
+
+plt.imshow(shift[0][0].reshape(128,128))
+
+
+
+
+
+
+
 # +
 # %%time
 samp = True
@@ -112,7 +150,7 @@ d = {'train_mean_amp': [mean_amp],
 
 d
 
-from dl_framework.data import DataBunch, get_dls, h5_dataset
+from dl_framework.data import DataBunch, get_dls, h5_dataset, split_real_imag
 import h5py
 import torch
 
@@ -150,12 +188,33 @@ class h5_dataset():
         return torch.tensor(data_channel).float()
 
 
+from dl_framework.model import Lambda, fft
+
+import numpy as np
+img_fft = np.fft.fft2(img)
+
+plt.imshow(np.fft.fftshift(img_fft.real))
+
+arr_real = torch.tensor(img).float()
+arr_imag = torch.zeros(img.shape).float()
+
+arr = torch.stack((arr_real, arr_imag), dim=-1).flatten().expand(1, -1)
+arr.shape
+
+shift = fft(arr)
+shift.shape
+
+plt.imshow(shift[0][0].reshape(128,128))
+
+plt.imshow(shift[0][0])
+
+
+
+
 
 def combine_and_swap_axes(array1, array2):
     return np.swapaxes(np.dstack((array1, array2)), 2, 0)
 
-
-from gaussian_sources.preprocessing import split_amp_phase
 
 train_ds = h5_dataset(train)
 valid_ds = h5_dataset(valid)
@@ -163,7 +222,7 @@ valid_ds = h5_dataset(valid)
 bs = 512
 data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
-plt.imshow(data.valid_ds[60][1].reshape(64,64))
+plt.imshow(data.valid_ds[60][0].reshape(64,64))
 plt.colorbar()
 
 data.valid_ds[60][1].min()
