@@ -38,7 +38,7 @@ def main(arch, pretrained_path, in_path, norm_path,
     arch = getattr(architecture, arch)()
 
     # load pretrained model
-    load_pre_model(arch, pretrained_path) 
+    load_pre_model(arch, pretrained_path, visualize=True) 
     
     if index is None:
         print('\nPlotting {} pictures.\n'.format(num))
