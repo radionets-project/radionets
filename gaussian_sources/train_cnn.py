@@ -135,7 +135,7 @@ def main(
         load_pre_model(learn, pretrained_model)
 
     # Print model architecture
-    print(learn.model, "\n")
+    # print(learn.model, "\n")
 
     # Train the model, make it possible to stop at any given time
     try:

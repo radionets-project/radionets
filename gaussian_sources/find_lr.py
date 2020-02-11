@@ -34,6 +34,12 @@ from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
+@click.option(
+    "-min_lr", type=float, required=True, help="minimal learning rate for lr_find"
+)
+@click.option(
+    "-max_lr", type=float, required=True, help="maximal learning rate for lr_find"
+)
 @click.option("-log", type=bool, required=False, help="use of logarith")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
@@ -44,6 +50,8 @@ def main(
     arch,
     norm_path,
     loss_func,
+    min_lr,
+    max_lr,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -59,14 +67,8 @@ def main(
                      loaded at the beginning of the training\n
     """
     bundle_paths = get_bundles(data_path)
-    train = [
-        path for path in bundle_paths
-        if re.findall('fft_samp_train', path.name)
-        ]
-    valid = [
-        path for path in bundle_paths
-        if re.findall('fft_samp_valid', path.name)
-        ]
+    train = [path for path in bundle_paths if re.findall("fft_samp_train", path.name)]
+    valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
 
     # Create train and valid datasets
     train_ds = h5_dataset(train)
@@ -77,7 +79,7 @@ def main(
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # First guess for max_iter
-    print("\nTotal number of batches ~ ", len(data.train_ds)*2//bs)
+    print("\nTotal number of batches ~ ", len(data.train_ds) * 2 // bs)
 
     # Define model
     arch_name = arch
@@ -91,7 +93,7 @@ def main(
 
     # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=650, max_lr=1e-3),
+        partial(LR_Find, max_iter=650, max_lr=max_lr, min_lr=min_lr),
         Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),
