@@ -6,7 +6,7 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
-from dl_framework.logger import make_notifier
+# from dl_framework.logger import make_notifier
 
 
 class CancelTrainException(Exception):
