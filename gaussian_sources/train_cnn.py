@@ -15,7 +15,7 @@ from dl_framework.callbacks import (
     SaveCallback,
     normalize_tfm,
     view_tfm,
-    LoggerCallback,
+    # LoggerCallback,
 )
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
@@ -71,11 +71,11 @@ def main(
     bundle_paths = get_bundles(data_path)
     train = [
         path for path in bundle_paths
-        if re.findall('fft_samp_test', path.name)
+        if re.findall('fft_samp_train', path.name)
         ]
     valid = [
         path for path in bundle_paths
-        if re.findall('fft_samp_test', path.name)
+        if re.findall('fft_samp_valid', path.name)
         ]
 
     # Create train and valid datasets
