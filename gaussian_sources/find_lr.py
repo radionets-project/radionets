@@ -86,7 +86,7 @@ def main(
     arch = getattr(architecture, arch)()
 
     # Define resize for mnist data
-    mnist_view = view_tfm(2, 64, 64)
+    mnist_view = view_tfm(2, 128, 128)
 
     # make normalisation
     norm = normalize_tfm(norm_path)
