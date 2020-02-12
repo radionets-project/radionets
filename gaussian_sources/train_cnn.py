@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 from functools import partial
 
 import click
@@ -89,8 +90,9 @@ def main(
     # Define model
     arch = getattr(architecture, arch)()
 
-    # Define resize for mnist data
-    mnist_view = view_tfm(2, 128, 128)
+    # Define resize based on the length of a target image
+    img = train_ds[0][1]
+    mnist_view = view_tfm(2, int(np.sqrt(img.shape[0])), int(np.sqrt(img.shape[0])))
 
     # make normalisation
     norm = normalize_tfm(norm_path)
@@ -105,7 +107,7 @@ def main(
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
+        partial(SaveCallback, model_path=model_path),
         # partial(LoggerCallback, model_name=model_name),
     ]
 
