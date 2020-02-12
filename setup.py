@@ -23,7 +23,6 @@ setup(
         'ipython==7.9.0',
         'jupyter==1.0.0',
         'jupytext==1.2.4',
-        'obspy==1.1.1',
         'h5py==2.9.0',
         'scikit-image==0.16.2',
         'pandas==0.25.3'
