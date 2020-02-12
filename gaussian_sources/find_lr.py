@@ -3,6 +3,7 @@ import re
 import sys
 import click
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -85,8 +86,9 @@ def main(
     arch_name = arch
     arch = getattr(architecture, arch)()
 
-    # Define resize for mnist data
-    mnist_view = view_tfm(2, 64, 64)
+    # Define resize based on the length of a target image
+    img = train_ds[0][1]
+    mnist_view = view_tfm(2, int(np.sqrt(img.shape[0])), int(np.sqrt(img.shape[0])))
 
     # make normalisation
     norm = normalize_tfm(norm_path)

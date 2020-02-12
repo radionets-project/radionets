@@ -17,10 +17,15 @@ def cnn():
         *conv(32, 64, (2, 2), 2, 1),
         nn.MaxPool2d((2, 2)),
         Lambda(flatten),
-        nn.Linear(64, 8192),
+        # Lambda(shape),
+        nn.Linear(64, 32768),
+        # Lambda(shape),
         Lambda(fft),
+        # Lambda(shape),
+        # Lambda(flatten),
+        # Lambda(shape),
+        *conv(2, 1, 1, 1, 0),
         Lambda(flatten),
-        nn.Linear(8192, 4096),
     )
     return arch
 
@@ -70,9 +75,10 @@ class UNet_fft(nn.Module):
         self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
 
         self.conv_last = nn.Conv2d(4, 2, 1)
+        self.conv_shape = nn.Conv2d(2, 1, 1)
         self.flatten = Lambda(flatten)
-        self.linear1 = nn.Linear(8192, 4096)
-        self.linear2 = nn.Linear(8192, 8192)
+        self.linear1 = nn.Linear(16384, 16384)
+        # self.linear2 = nn.Linear(32768, 32768)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
         self.dropout = nn.Dropout2d(p=0.5)
@@ -105,10 +111,12 @@ class UNet_fft(nn.Module):
 
         x = self.flatten(x)
         x = self.fft(x)
-        x = self.flatten(x)
-        x = self.linear2(x)
-        x = self.dropout2(x)
-        out = self.linear1(x)
+        x = self.conv_shape(x)
+        out = self.flatten(x)
+        # out = self.linear1(x)
+        # x = self.linear2(x)
+        # x = self.dropout2(x)
+        # out = self.linear1(x)
 
         return out
 
@@ -132,7 +140,7 @@ class UNet_denoise(nn.Module):
         self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
         self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
 
-        self.conv_last = nn.Conv2d(4, 2, 1)
+        self.conv_last = nn.Conv2d(4, 1, 1)
         self.flatten = Lambda(flatten)
         self.linear = nn.Linear(8192, 4096)
         self.fft = Lambda(fft)
@@ -167,7 +175,7 @@ class UNet_denoise(nn.Module):
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         x = self.conv_last(x)
-        x = self.flatten(x)
-        out = self.linear(x)
+        out = self.flatten(x)
+        # out = self.linear(x)
 
         return out

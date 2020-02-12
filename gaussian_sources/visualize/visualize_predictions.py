@@ -30,17 +30,17 @@ def main(arch, pretrained_path, data_path, norm_path,
     matplotlib.use("Agg")
     plt.ioff()
     bundle_paths = get_bundles(data_path)
-    valid = [
+    test = [
         path for path in bundle_paths
-        if re.findall('fft_samp_valid', path.name)
+        if re.findall('fft_samp_test', path.name)
         ]
-    valid_ds = h5_dataset(valid)
+    test_ds = h5_dataset(test)
 
     if index is None:
-        indices = np.random.randint(0, len(valid_ds), size=num)
-        img = [valid_ds[i][0] for i in indices]
+        indices = np.random.randint(0, len(test_ds), size=num)
+        img = [test_ds[i][0] for i in indices]
     else:
-        img = torch.tensor(valid_ds[index][0])
+        img = test_ds[index][0]
 
     if log is True:
         img = torch.log(img)
@@ -87,7 +87,7 @@ def main(arch, pretrained_path, data_path, norm_path,
             divider = make_axes_locatable(ax3)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             ax3.set_title(r'Prediction')
-            im4 = ax4.imshow(valid_ds[index][1].reshape(64, 64))
+            im4 = ax4.imshow(test_ds[index][1].reshape(64, 64))
             fig.colorbar(im4, cax=cax, orientation='vertical')
 
             # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
@@ -134,7 +134,7 @@ def main(arch, pretrained_path, data_path, norm_path,
         divider = make_axes_locatable(ax3)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         ax3.set_title(r'Prediction')
-        im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+        im4 = ax4.imshow(test_ds[index][1].reshape(64, 64))
         fig.colorbar(im4, cax=cax, orientation='vertical')
 
         # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
