@@ -17,7 +17,7 @@ find_lr: ./lr_find
 ./data3/bundles_train_done:
 		mkdir -p data3/
 		python simulate_bundles.py \
-		160 512 128 data3/gaussian_sources_train \
+		${num_bundles} ${num_img} ${size_img} data3/gaussian_sources_train \
 		-noise False
 		touch ./data3/bundles_train_done
 
@@ -26,7 +26,7 @@ find_lr: ./lr_find
 		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode train \
 		-samp True \
-		-size 128 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
@@ -36,7 +36,7 @@ find_lr: ./lr_find
 ./data3/bundles_valid_done:
 		mkdir -p data3/
 		python simulate_bundles.py \
-		40 512 128 data3/gaussian_sources_valid \
+		${num_bundles} ${num_img} ${size_img} data3/gaussian_sources_valid \
 		-noise False
 		touch ./data3/bundles_valid_done
 
@@ -45,7 +45,7 @@ find_lr: ./lr_find
 		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode valid \
 		-samp True \
-		-size 128 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
@@ -55,7 +55,7 @@ find_lr: ./lr_find
 ./data3/bundles_test_done:
 		mkdir -p data3/
 		python simulate_bundles.py \
-		40 512 128 data3/gaussian_sources_test \
+		${num_bundles} ${num_img} ${size_img} data3/gaussian_sources_test \
 		-noise False
 		touch ./data3/bundles_test_done
 
@@ -64,7 +64,7 @@ find_lr: ./lr_find
 		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode test \
 		-samp True \
-		-size 128 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
