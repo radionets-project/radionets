@@ -38,13 +38,20 @@ class Dataset:
 
 class h5_dataset:
     def __init__(self, bundle_paths):
+        """
+        Save the bundle paths and the number of bundles in one file
+        """
         self.bundles = bundle_paths
+        self.num_img = len(self.open_bundle(self.bundles[0], "x"))
 
     def __call__(self):
         return print("This is the h5_dataset class.")
 
     def __len__(self):
-        return len(self.bundles) * len(self.open_bundle(self.bundles[0], "x"))
+        """
+        Return the total number of pictures in this dataset
+        """
+        return len(self.bundles) * self.num_img
 
     def __getitem__(self, i):
         x = self.open_image("x", i)
@@ -59,8 +66,8 @@ class h5_dataset:
     def open_image(self, var, i):
         # at the moment all bundles contain 1024 images
         # should be variable in the future
-        bundle_i = i // 512
-        image_i = i - bundle_i * 512
+        bundle_i = i // self.num_img
+        image_i = i - bundle_i * self.num_img
         bundle = h5py.File(self.bundles[bundle_i], "r")
         data = bundle[var][image_i]
         if var == "x":
