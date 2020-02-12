@@ -140,7 +140,7 @@ class UNet_denoise(nn.Module):
         self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
         self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
 
-        self.conv_last = nn.Conv2d(4, 2, 1)
+        self.conv_last = nn.Conv2d(4, 1, 1)
         self.flatten = Lambda(flatten)
         self.linear = nn.Linear(8192, 4096)
         self.fft = Lambda(fft)
@@ -175,7 +175,7 @@ class UNet_denoise(nn.Module):
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         x = self.conv_last(x)
-        x = self.flatten(x)
-        out = self.linear(x)
+        out = self.flatten(x)
+        # out = self.linear(x)
 
         return out
