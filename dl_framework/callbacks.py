@@ -6,7 +6,8 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
-# from dl_framework.logger import make_notifier
+from dl_framework.logger import make_notifier
+from dl_framework.model import save_model
 
 
 class CancelTrainException(Exception):
@@ -331,8 +332,13 @@ class MixUp(Callback):
 class SaveCallback(Callback):
     _order = 95
 
+    def __init__(self, model_path):
+        self.model_path = "/".join(model_path.split('/', 2)[:2])
+
     def after_epoch(self):
         if round(self.n_epochs) % 10 == 0:
-            state = self.model.state_dict()
-            torch.save(state, './models/temp.model')
+            # state = self.model.state_dict()
+            # torch.save(state, './models/temp.model')
+
+            save_model(self, self.model_path + "/temp_{}.model".format(round(self.n_epochs)))
             print('\nFinished Epoch {}, model saved.\n'.format(round(self.n_epochs)))
