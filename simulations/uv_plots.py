@@ -4,7 +4,7 @@ import cartopy.crs as ccrs
 from matplotlib.animation import FuncAnimation
 from matplotlib.animation import PillowWriter
 from uv_simulations import get_uv_coverage
-from obspy.imaging.cm import viridis_white_r
+from matplotlib.colors import LogNorm
 
 
 def plot_uv_coverage(u, v):
@@ -112,7 +112,7 @@ def animate_uv_coverage(source, antenna, filename, fps):
     ani.save(str(filename)+'.gif', dpi=80, writer=PillowWriter(fps=fps))
 
 
-def plot_source(img, ft=False):
+def plot_source(img, ft=False, log=False):
     ''' Visualize a radio source
 
     img: 2d array of the image
@@ -126,13 +126,19 @@ def plot_source(img, ft=False):
         img = img
         ax.set_xlabel('l')
         ax.set_ylabel('m')
-        s = ax.imshow(img, cmap=viridis_white_r)  # drop special cmap?
+        if log is True:
+            s = ax.imshow(img, cmap='inferno', norm=LogNorm(vmin=1e-8, vmax=img.max()))
+        else:
+            s = ax.imshow(img, cmap='inferno')
         fig.colorbar(s, label='Intensity')
     else:
         img = FT(img)
         ax.set_xlabel('u')
         ax.set_ylabel('v')
-        s = ax.imshow(img, cmap=viridis_white_r)  # drop special cmap?
+        if log is True:
+            s = ax.imshow(img, cmap='inferno', norm=LogNorm())
+        else:
+            s = ax.imshow(img, cmap='inferno')
         fig.colorbar(s, label='Amplitude')
 
     ax.set_yticklabels([])
