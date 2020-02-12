@@ -1,29 +1,46 @@
-import sys
-sys.path.append('..')
-import numpy as np
-from source_simulations import simulate_gaussian_source
 import matplotlib.pyplot as plt
 
-from uv_plots import FT, plot_image, plot_frequencies, animate_baselines, animate_uv_coverage, plot_uv_coverage, apply_mask
-from uv_simulations import antenna, source, get_antenna_config, create_mask, get_uv_coverage
+from simulations.gaussian_simulations import gaussian_source
+from simulations.uv_plots import (
+    FT,
+    plot_source,
+    animate_baselines,
+    animate_uv_coverage,
+    plot_uv_coverage,
+    apply_mask,
+)
+from simulations.uv_simulations import (
+    antenna,
+    source,
+    get_antenna_config,
+    create_mask,
+    get_uv_coverage,
+)
 
-from obspy.imaging.cm import viridis_white_r
 
+sim_source = gaussian_source(64)
 
+plot_source(sim_source, ft=False, log=True)
+plt.savefig(
+    "gaussian_source.pdf",
+    dpi=100,
+    bbox_inches="tight",
+    pad_inches=0.01,
+)
 
-gaussian_source = simulate_gaussian_source(64, blur=True)
+plot_source(sim_source, ft=True, log=True)
+plt.savefig(
+    "fft_gaussian_source.pdf",
+    dpi=100,
+    bbox_inches="tight",
+    pad_inches=0.01,
+)
 
-plot_image(gaussian_source)
-plt.savefig("gaussian_source.pdf", dpi=100, bbox_inches='tight', pad_inches=0.01)
-
-plot_frequencies(gaussian_source)
-plt.savefig("fft_gaussian_source.pdf", dpi=100, bbox_inches='tight', pad_inches=0.01)
-
-ant = antenna(*get_antenna_config('../layouts/vlba.txt'))
+ant = antenna(*get_antenna_config("../layouts/vlba.txt"))
 s = source(-80, 40)
 s.propagate()
-animate_baselines(s, ant, 'baselines', 5)
-animate_uv_coverage(s, ant, 'uv_coverage', 5)
+animate_baselines(s, ant, "baselines", 5)
+animate_uv_coverage(s, ant, "uv_coverage", 5)
 
 u, v, steps = get_uv_coverage(s, ant, iterate=False)
 
@@ -31,22 +48,26 @@ fig = plt.figure(figsize=(6, 6), dpi=100)
 plot_uv_coverage(u, v)
 plt.ylim(-5e8, 5e8)
 plt.xlim(-5e8, 5e8)
-plt.savefig("uv_coverage.pdf", dpi=100, bbox_inches='tight', pad_inches=0.01)
+plt.savefig("uv_coverage.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
 
 fig = plt.figure(figsize=(6, 6), dpi=100)
 ax = fig.add_subplot(111)
 mask = create_mask(u, v)
-plt.imshow(mask, cmap=viridis_white_r)
+plt.imshow(mask, cmap='inferno')
 ax.set_yticklabels([])
 ax.set_xticklabels([])
-ax.xaxis.set_ticks_position('none') 
-ax.yaxis.set_ticks_position('none')
-plt.savefig("mask.pdf", dpi=100, bbox_inches='tight', pad_inches=0.01)
+ax.xaxis.set_ticks_position("none")
+ax.yaxis.set_ticks_position("none")
+plt.savefig("mask.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
 
-sampled_freqs = apply_mask(FT(gaussian_source), mask)
+sampled_freqs = apply_mask(FT(sim_source), mask)
 
-plot_frequencies(sampled_freqs, ft=False)
-plt.savefig("sampled_freqs.pdf", dpi=100, bbox_inches='tight', pad_inches=0.01)
+plot_source(sampled_freqs, ft=False, log=True)
+plt.xlabel('u')
+plt.ylabel('v')
+plt.savefig("sampled_freqs.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
 
-plot_image(sampled_freqs, ft=True)
-plt.savefig("recons_source.pdf", dpi=100, bbox_inches='tight', pad_inches=0.01)
+plot_source(sampled_freqs, ft=True, log=True)
+plt.xlabel('l')
+plt.ylabel('m')
+plt.savefig("recons_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
