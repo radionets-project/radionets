@@ -2,6 +2,8 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from dl_framework.data import save_bundle
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def create_rot_mat(alpha):
@@ -168,3 +170,36 @@ def create_n_bundles(num_bundles, bundle_size, img_size, out_path):
     for j in tqdm(range(num_bundles)):
         bundle = create_bundle(img_size, bundle_size)
         save_bundle(out_path, bundle, j)
+
+
+def get_noise(image, scale, mean=0, std=1):
+    return np.random.normal(mean, std, size=image.shape) * scale
+
+
+def add_noise(bundle, mean=0, std=1, index=0, preview=False):
+    """
+    Used for adding noise and plotting the original and noised picture,
+    if asked.
+    """
+    bundle_noised = np.array([img + get_noise(img, (img.max()*0.05)) for img in bundle])
+
+    if preview:
+        for i in range(10):
+            fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
+
+            ax1.set_title(r'Original')
+            im1 = ax1.imshow(bundle[i])
+            divider = make_axes_locatable(ax1)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im1, cax=cax, orientation='vertical')
+
+            ax2.set_title(r"Noised")
+            im2 = ax2.imshow(bundle_noised[i])
+            divider = make_axes_locatable(ax2)
+            cax = divider.append_axes('right', size='5%', pad=0.05)
+            fig.colorbar(im2, cax=cax, orientation='vertical')
+            plt.show()
+            # fig.savefig('data/plots/input_plot_{}.pdf'.format(index), pad_inches=0,
+            #             bbox_inches='tight')
+
+    return bundle_noised
