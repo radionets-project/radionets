@@ -15,7 +15,7 @@ from dl_framework.callbacks import (
     SaveCallback,
     normalize_tfm,
     view_tfm,
-    # LoggerCallback,
+    LoggerCallback,
 )
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
@@ -90,7 +90,7 @@ def main(
     arch = getattr(architecture, arch)()
 
     # Define resize for mnist data
-    mnist_view = view_tfm(2, 128, 128)
+    mnist_view = view_tfm(2, 64, 64)
 
     # make normalisation
     norm = normalize_tfm(norm_path)
@@ -106,7 +106,7 @@ def main(
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         SaveCallback,
-        # partial(LoggerCallback, model_name=model_name),
+        partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
