@@ -30,6 +30,20 @@ def cnn():
     return arch
 
 
+def small():
+    """
+    conv-layer: number of entry channels, number of exit channels,
+                kerner size, stride, padding
+    """
+    arch = nn.Sequential(
+        Lambda(flatten),
+        Lambda(fft),
+        Lambda(flatten),
+        nn.Linear(8192, 4096),
+    )
+    return arch
+
+
 def autoencoder():
     arch = nn.Sequential(
         *conv(2, 4, (3, 3), 2, 1),
@@ -140,9 +154,9 @@ class UNet_denoise(nn.Module):
         self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
         self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
 
-        self.conv_last = nn.Conv2d(4, 2, 1)
+        self.conv_last = nn.Conv2d(4, 1, 1)
         self.flatten = Lambda(flatten)
-        self.linear = nn.Linear(8192, 4096)
+        # self.linear = nn.Linear(8192, 4096)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
         self.shape = Lambda(shape)
@@ -175,7 +189,7 @@ class UNet_denoise(nn.Module):
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         x = self.conv_last(x)
-        x = self.flatten(x)
-        out = self.linear(x)
+        out = self.flatten(x)
+        # out = self.linear(x)
 
         return out
