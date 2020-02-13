@@ -2,78 +2,84 @@
 dataset: simulate_bundles\
 		 fft_samp
 
-simulate_bundles: ./data3/bundles_train_done\
-				  ./data3/bundles_valid_done\
-				  ./data3/bundles_test_done
-fft_samp: ./data3/fft_train_done\
-		  ./data3/fft_valid_done\
-		  ./data3/fft_test_done
-calc_normalization: ./data3/normalization_factors.csv
+test: ${data}bundles_train_done \
+	  ${data}fft_train_done
+
+simulate_bundles: ${data}bundles_train_done\
+				  ${data}bundles_valid_done\
+				  ${data}bundles_test_done
+fft_samp: ${data}fft_train_done\
+		  ${data}fft_valid_done\
+		  ${data}fft_test_done
+calc_normalization: ${data}normalization_factors.csv
 cnn_training: ./training_done
 find_lr: ./lr_find
 
 ######################################################################
 
-./data3/bundles_train_done:
-		mkdir -p data3/
+${data}bundles_train_done:
+		mkdir -p ${data}
 		python simulate_bundles.py \
-		160 512 128 data3/gaussian_sources_train \
-		-noise False
-		touch ./data3/bundles_train_done
+		80 1024 64 ${data}gaussian_sources_train
+		touch ${data}bundles_train_done
 
-./data3/fft_train_done:
+${data}fft_train_done:
 		python create_fft_pairs.py \
-		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode train \
 		-samp True \
-		-size 128 \
+		-noise True \
+		-preview False \
+		-size 64 \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ./data3/fft_train_done
+		touch ${data}fft_train_done
 
-./data3/bundles_valid_done:
-		mkdir -p data3/
+${data}bundles_valid_done:
+		mkdir -p ${data}
 		python simulate_bundles.py \
-		40 512 128 data3/gaussian_sources_valid \
-		-noise False
-		touch ./data3/bundles_valid_done
+		20 1024 64 ${data}gaussian_sources_valid 
+		touch ${data}bundles_valid_done
 
-./data3/fft_valid_done:
+${data}fft_valid_done:
 		python create_fft_pairs.py \
-		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode valid \
 		-samp True \
-		-size 128 \
+		-noise True \
+		-preview False \
+		-size 64 \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ./data3/fft_valid_done
+		touch ${data}fft_valid_done
 
-./data3/bundles_test_done:
-		mkdir -p data3/
+${data}bundles_test_done:
+		mkdir -p ${data}
 		python simulate_bundles.py \
-		40 512 128 data3/gaussian_sources_test \
-		-noise False
-		touch ./data3/bundles_test_done
+		10 1024 64 ${data}gaussian_sources_test
+		touch ${data}bundles_test_done
 
-./data3/fft_test_done:
+${data}fft_test_done:
 		python create_fft_pairs.py \
-		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode test \
 		-samp True \
-		-size 128 \
+		-noise True \
+		-preview False \
+		-size 64 \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ./data3/fft_test_done
+		touch ${data}fft_test_done
 
-./data3/normalization_factors.csv:
+${data}normalization_factors.csv:
 		python calculate_normalization.py\
-		data3/ \
+		${data} \
 		${norm_path}
 
 ./training_done:
@@ -87,7 +93,7 @@ find_lr: ./lr_find
 		# touch ./training_done
 
 ./lr_find:
-		mkdir -p models/
+		mkdir -p ${path}
 		python find_lr.py ${data}\
 		${arch} ${lr_type} ${norm_path} -min_lr ${min_lr}\
 		-max_lr ${max_lr} -log ${log}\
