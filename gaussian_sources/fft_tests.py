@@ -109,7 +109,7 @@ ax2.imshow(np.abs(bundle_fft[i]))
 ax3 = plt.subplot(333)
 ax3.imshow(np.angle(bundle_fft[i]))
 # -
-data_path = 'data/'
+data_path = 'data4/'
 bundle_paths = get_bundles(data_path)
 train = [path for path in bundle_paths if re.findall('fft_samp_train', path.name)]
 valid = [path for path in bundle_paths if re.findall('fft_samp_valid', path.name)]
@@ -222,7 +222,7 @@ valid_ds = h5_dataset(valid)
 bs = 512
 data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
-plt.imshow(data.valid_ds[60][0].reshape(64,64))
+plt.imshow(data.valid_ds[60][1].reshape(64,64))
 plt.colorbar()
 
 data.valid_ds[60][1].min()
@@ -293,7 +293,7 @@ learn = get_learner(data, arch, 1e-3, opt_func=adam_opt,  cb_funcs=cbfs)
 print(learn.model, '\n')
 
 # Train the model, make it possible to stop at any given time
-learn.fit(10)
+# learn.fit(10)
 # -
 learn.recorder.plot_loss()
 
@@ -303,6 +303,12 @@ evaluate_model(data.valid_ds, learn.model, 'data/normalization_factors.csv', nro
 plt.savefig('gauss_test.pdf')
 
 learn.fit(5)
+
+from dl_framework.hooks import model_summary
+
+model_summary(learn, data, find_all=False)
+
+
 
 
 
