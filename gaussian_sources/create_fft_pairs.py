@@ -39,15 +39,15 @@ def main(in_path, out_path, antenna_config_path, mode, size, samp=True,
                                in bundle])
         if samp is True:
             if specific_mask is True:
-                bundle_fft = np.array([sample_freqs(img, antenna_config_path,
+                bundle_samp = np.array([sample_freqs(img, antenna_config_path,
                                        size, lon, lat, steps) for img
-                                       in bundle_fft])
+                                       in bundle_fft], copy=True)
             else:
-                bundle_fft = np.array([sample_freqs(img, antenna_config_path,
+                bundle_samp = np.array([sample_freqs(img, antenna_config_path,
                                        size=size) for img
-                                       in bundle_fft])
+                                       in bundle_fft], copy=True)
         out = out_path + path.name.split('_')[-1]
-        save_fft_pair(out, bundle_fft, bundle)
+        save_fft_pair(out, bundle_samp, bundle_fft)
 
 
 if __name__ == '__main__':

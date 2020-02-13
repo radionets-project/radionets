@@ -55,7 +55,7 @@ class h5_dataset:
 
     def __getitem__(self, i):
         x = self.open_image("x", i)
-        y = self.open_image("y", i)
+        y = self.open_image("x", i)
         return x, y
 
     def open_bundle(self, bundle_path, var):
