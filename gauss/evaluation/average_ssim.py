@@ -53,7 +53,7 @@ def main(arch, pretrained_path, in_path, norm_path,
         #store detected blobs
         values = np.append(values, ssim(ground_truth, prediction))
 
-    threshold = np.mean(values) - np.sqrt(np.var(values))
+    threshold = np.mean(values)
     
     for value in values:
         if value >= threshold:
@@ -70,6 +70,9 @@ def main(arch, pretrained_path, in_path, norm_path,
     d = {'correct': [correct,correct/total], 'false': [false,false/total],'total' : [total,total/total]}
     df = pd.DataFrame(data=d)
     df.to_csv(out_path, index=False)
+
+    plt.hist(values)
+    plt.savefig('results/hist_ssim.png')
 
 
 if __name__ == '__main__':
