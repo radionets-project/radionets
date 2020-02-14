@@ -40,6 +40,10 @@ def flatten(x):
     return x.reshape(x.shape[0], -1)
 
 
+def flatten_with_channel(x):
+    return x.reshape(x.shape[0], x.shape[1], -1)
+
+
 def cut_off(x):
     a = x.clone()
     a[a <= 1e-10] = 1e-10
