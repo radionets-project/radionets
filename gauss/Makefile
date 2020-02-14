@@ -24,10 +24,13 @@ data:   gauss_fft\
                 clean_samp\
                 gauss_samp
 
+testdata: gauss_test
 #--------------------------------------------------------
 
 gauss_samp:	gauss_samp_train\
 				gauss_samp_valid
+gauss_test:     gauss_testset\
+                                test__normalization
 
 #--------------------------------------------------------
 
@@ -105,6 +108,23 @@ find_lr: ./lr_find
                 -pretrained False ./models/unet_gauss.model\
                 -save True
 
+./test_data/gauss_testset:
+		mkdir -p test_data/
+		python create_gauss_testset.py ./test_data/gauss_samp_test.h5\
+                12500 15 True -noise False\
+                ../sampling/layouts/vlba.txt\
+                -lon -80\
+                -lat 50\
+                -steps 50
+
+./test_data/normalization_factors.csv:
+		python test_normalization.py\
+                test_data/gauss_samp_test.h5 \
+                test_data/normalization_factors.csv
+
+
+
+###########################################################################
 
 clean:
 	rm -rf ./data
@@ -117,3 +137,6 @@ clean_input_plot:
 	rm -rf ./data/plots
 clean_samp:
 	rm -f ./data/*_samp_*.h5
+
+clean_test:
+	rm -rf ./test_data

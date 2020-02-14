@@ -24,11 +24,13 @@ data:   pointsources_fft\
                 clean_samp\
                 pointsources_samp
 
-
+testdata: pointsources_test
 #--------------------------------------------------------
 
 pointsources_samp:	pointsources_samp_train\
 				pointsources_samp_valid
+pointsources_test:     pointsources_testset\
+                                test__normalization
 
 #--------------------------------------------------------
 
@@ -40,7 +42,8 @@ calc_normalization: ./data/normalization_factors.csv
 cnn_training: ./training_done
 input_plot: ./data/plots/input_done
 find_lr: ./lr_find
-
+pointsources_testset: ./test_data/pointsources_testset
+test_normalization: ./test_data/normalization_factors.csv
 #########################################################
 #	Tasks
 #
@@ -106,6 +109,24 @@ find_lr: ./lr_find
                 -pretrained False ./models/unet_pointsources.model\
                 -save True
 
+./test_data/pointsources_testset:
+		mkdir -p test_data/
+		python create_pointsources_testset.py ./test_data/pointsources_samp_test.h5\
+                12500 15 -noise False\
+                ../sampling/layouts/vlba.txt\
+                -lon -80\
+                -lat 50\
+                -steps 50
+
+./test_data/normalization_factors.csv:
+		python test_normalization.py\
+                test_data/pointsources_samp_test.h5 \
+                test_data/normalization_factors.csv
+
+
+
+###########################################################################
+
 
 clean:
 	rm -rf ./data
@@ -118,3 +139,6 @@ clean_input_plot:
 	rm -rf ./data/plots
 clean_samp:
 	rm -f ./data/*_samp_*.h5
+
+clean_test:
+	rm -rf ./test_data
