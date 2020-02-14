@@ -27,8 +27,8 @@ def shape(x):
 
 
 def flatten(x):
-    a = x.reshape(x.shape[0], -1)
-    return a
+    return x.reshape(x.shape[0], -1)
+    
 
 
 def cut_off(x):
@@ -139,6 +139,16 @@ def deconv(ni, nc, ks, stride, padding, out_padding):
     act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
     layers = [*conv, *bn, act]
     return layers
+
+def double_conv(in_channels, out_channels):
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, 3, padding=1),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(out_channels, out_channels, 3, padding=1),
+        nn.BatchNorm2d(out_channels),
+        nn.ReLU(inplace=True)
+    )
 
 
 def load_pre_model(learn, pre_path, visualize=False, lr_find=False):

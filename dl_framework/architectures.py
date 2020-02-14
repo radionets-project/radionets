@@ -1,5 +1,5 @@
 from torch import nn
-from dl_framework.model import conv, Lambda, flatten, GeneralRelu
+from dl_framework.model import conv, Lambda, flatten, GeneralRelu, double_conv
 import torch
 from collections import OrderedDict
 
@@ -21,21 +21,6 @@ def cnn():
     )
     return arch
 
-def double_conv(in_channels, out_channels):
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, 3, padding=1),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(out_channels, out_channels, 3, padding=1),
-        nn.BatchNorm2d(out_channels),
-        nn.ReLU(inplace=True)
-    )   
-
-class Flatten(nn.Module):
-    def forward(self, x):
-        x = x.view(x.size()[0], -1)
-        return x
-
 class UNet(nn.Module):
 
     def __init__(self):
@@ -56,7 +41,7 @@ class UNet(nn.Module):
         self.dconv_up1 = double_conv(4 + 8, 4)
         
         self.conv_last = nn.Conv2d(4, 1, 1)
-        self.flatten = Flatten()
+        self.flatten = Lambda(flatten)
         
         
     def forward(self, x):
