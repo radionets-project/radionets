@@ -1,92 +1,113 @@
 all: blob_detection\
-              ssim\
-              msssim\
               average_ssim\
               average_msssim\
+              iqr_ssim\
+              iqr_msssim\
               visualize_blobs 
 
-average_loss: build/average_loss
-blob_detection: build/blob_detection
-visualize_blobs: build/visualize_blobs
-ssim: build/ssim
-msssim: build/msssim
-average_ssim: build/average_ssim
-average_msssim: build/average_msssim
+average_loss: results/average_loss
+blob_detection: results/blob_detection
+visualize_blobs: results/visualize_blobs
+ssim: results/ssim
+msssim: results/msssim
+average_ssim: results/average_ssim
+average_msssim: results/average_msssim
+iqr_ssim: results/iqr_ssim
+iqr_msssim: results/iqr_msssim
 
 model=../models/unet_gauss.model
+data=../data/gauss_samp_valid.h5
 norm=../data/normalization_factors.csv
 
 
 ###########################################################
 # Tasks
 
-build/average_loss:
+results/average_loss:
 	mkdir -p results/
 	python average_loss.py \
 	UNet \
 	$(model) \
-	../data/gauss_samp_valid.h5 \
+	$(data) \
 	$(norm) \
 	results/average_loss.csv \
 
-build/blob_detection:
+results/blob_detection:
 	mkdir -p results/
 	python blob_detection.py \
 	UNet \
 	$(model) \
-	../data/gauss_samp_valid.h5 \
+	$(data) \
 	$(norm) \
 	results/blob_detection.csv \
 
-build/visualize_blobs:
+results/visualize_blobs:
 	mkdir -p results/
 	python visualize_blobs.py \
 	UNet \
 	$(model) \
-	../data/gauss_samp_valid.h5 \
+	$(data) \
 	$(norm) \
 	results/blob_detection.png \
 	-num 20
 
-build/ssim:
+results/ssim:
 	mkdir -p results/
 	python ssim.py \
 	UNet \
 	$(model) \
-	../data/gauss_samp_valid.h5 \
+	$(data) \
 	$(norm) \
 	results/ssim.csv \
 	-threshold 0.95
 
 
-build/msssim:
+results/msssim:
 	mkdir -p results/
 	python msssim.py \
 	UNet \
 	$(model) \
-	../data/gauss_samp_valid.h5 \
+	$(data) \
 	$(norm) \
 	results/msssim.csv \
 	-threshold 0.975
 
-build/average_ssim:
+results/average_ssim:
 	mkdir -p results/
 	python average_ssim.py \
 	UNet \
 	$(model) \
-	../data/gauss_samp_valid.h5 \
+	$(data) \
 	$(norm) \
 	results/average_ssim.csv \
 	
-build/average_msssim:
+results/average_msssim:
 	mkdir -p results/
 	python average_msssim.py \
 	UNet \
 	$(model) \
-	../data/gauss_samp_valid.h5 \
+	$(data) \
 	$(norm) \
 	results/average_msssim.csv \
 	
+results/iqr_ssim:
+	mkdir -p results/
+	python iqr_ssim.py \
+        UNet \
+        $(model) \
+        $(data) \
+        $(norm) \
+        results/iqr_ssim.csv \
+        
+results/iqr_msssim:
+	mkdir -p results/
+	python iqr_msssim.py \
+        UNet \
+        $(model) \
+        $(data) \
+        $(norm) \
+        results/iqr_msssim.csv \
+
 
 #-----------------------------------------
 
