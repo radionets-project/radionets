@@ -92,8 +92,8 @@ def main(
     arch = getattr(architecture, arch)()
 
     # Define resize based on the length of a target image
-    img = train_ds[0][1]
-    mnist_view = view_tfm(2, int(np.sqrt(img.shape[0])), int(np.sqrt(img.shape[0])))
+    img = train_ds[0][0]
+    mnist_view = view_tfm(2, int(np.sqrt(img.shape[1])), int(np.sqrt(img.shape[1])))
 
     # make normalisation
     norm = normalize_tfm(norm_path)
