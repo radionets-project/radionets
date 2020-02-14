@@ -1,6 +1,6 @@
 from torch import nn
 import torch
-from dl_framework.model import conv, Lambda, flatten, shape, fft, deconv, double_conv, cut_off
+from dl_framework.model import conv, Lambda, flatten, shape, fft, deconv, double_conv, cut_off, flatten_with_channel
 
 
 def cnn():
@@ -140,8 +140,9 @@ class UNet_denoise(nn.Module):
         self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
         self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
 
-        self.conv_last = nn.Conv2d(4, 1, 1)
+        self.conv_last = nn.Conv2d(4, 2, 1)
         self.flatten = Lambda(flatten)
+        self.flatten_with_channel = Lambda(flatten_with_channel)
         self.linear = nn.Linear(8192, 4096)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
@@ -149,8 +150,8 @@ class UNet_denoise(nn.Module):
         self.dropout = nn.Dropout2d(p=0.5)
 
     def forward(self, x):
-        x = self.flatten(x)
-        x = self.fft(x)
+        # x = self.flatten(x)
+        # x = self.fft(x)
         conv1 = self.dconv_down1(x)
         x = self.maxpool(conv1)
         conv2 = self.dconv_down2(x)
@@ -174,8 +175,8 @@ class UNet_denoise(nn.Module):
         x = self.upsample(x)
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
-        x = self.conv_last(x)
-        out = self.flatten(x)
+        out = self.conv_last(x)
+        out = self.flatten_with_channel(out)
         # out = self.linear(x)
 
         return out
