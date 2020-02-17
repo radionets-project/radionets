@@ -91,7 +91,7 @@ def main(
     # Define model
     arch = getattr(architecture, arch)()
 
-    # Define resize based on the length of a target image
+    # Define resize based on the length of an input image
     img = train_ds[0][0]
     mnist_view = view_tfm(2, int(np.sqrt(img.shape[1])), int(np.sqrt(img.shape[1])))
 
