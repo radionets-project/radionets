@@ -201,6 +201,7 @@ class UNet_fourier(nn.Module):
         self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
 
         self.conv_last = nn.Conv2d(4, 2, 1)
+        self.linear = nn.Linear(8192, 4096)
         self.flatten = Lambda(flatten)
         self.flatten_with_channel = Lambda(flatten_with_channel)
         self.cut = Lambda(cut_off)
