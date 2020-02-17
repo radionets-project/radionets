@@ -142,7 +142,6 @@ class UNet_denoise(nn.Module):
 
         self.conv_last = nn.Conv2d(4, 1, 1)
         self.flatten = Lambda(flatten)
-        self.flatten_with_channel = Lambda(flatten_with_channel)
         self.linear = nn.Linear(8192, 4096)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
