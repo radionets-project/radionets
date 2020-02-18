@@ -1,6 +1,6 @@
 from torch import nn
 import torch
-from dl_framework.model import conv, Lambda, flatten, shape, fft, deconv, double_conv, cut_off
+from dl_framework.model import conv, Lambda, flatten, shape, fft, deconv, double_conv, cut_off, test
 
 
 def cnn():
@@ -91,7 +91,7 @@ class UNet_fft(nn.Module):
         self.conv_last = nn.Conv2d(4, 2, 1)
         self.conv_shape = nn.Conv2d(2, 1, 1)
         self.flatten = Lambda(flatten)
-        self.linear1 = nn.Linear(16384, 16384)
+        self.linear1 = nn.Linear(8192, 4096)
         # self.linear2 = nn.Linear(32768, 32768)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
@@ -125,9 +125,9 @@ class UNet_fft(nn.Module):
 
         x = self.flatten(x)
         x = self.fft(x)
-        x = self.conv_shape(x)
-        out = self.flatten(x)
-        # out = self.linear1(x)
+        #x = self.conv_shape(x)
+        x = self.flatten(x)
+        out = self.linear1(x)
         # x = self.linear2(x)
         # x = self.dropout2(x)
         # out = self.linear1(x)
@@ -193,3 +193,24 @@ class UNet_denoise(nn.Module):
         # out = self.linear(x)
 
         return out
+
+
+def convs():
+    arch = nn.Sequential(
+        Lambda(flatten),
+        Lambda(fft),
+        *conv(2, 4, (3, 3), 2, 1),
+        *conv(4, 8, (3, 3), 2, 1),
+        *conv(8, 16, (3, 3), 2, 1),
+        Lambda(flatten),
+        nn.Linear(1024, 1024),
+        Lambda(test),
+        nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+        *conv(16, 8, (3, 3), 1, 1),
+        nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+        *conv(8, 4, (3, 3), 1, 1),
+        nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+        *conv(4, 1, (3, 3), 1, 1),
+        Lambda(flatten),
+    )
+    return arch
