@@ -8,31 +8,38 @@ from dl_framework.model import load_pre_model
 from dl_framework.data import get_bundles, h5_dataset
 from tqdm import tqdm
 import re
-from gaussian_sources.inspection import visualize_without_fourier
+from gaussian_sources.inspection import (
+    visualize_without_fourier,
+    visualize_with_fourier,
+)
 
 
 @click.command()
-@click.argument('arch', type=str)
-@click.argument('pretrained_path', type=click.Path(exists=True, dir_okay=True))
-@click.argument('data_path', type=click.Path(exists=False, dir_okay=True))
-@click.argument('norm_path', type=click.Path(exists=False, dir_okay=True))
-@click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
-@click.option('-fourier', type=bool, required=True)
-@click.option('-log', type=bool, required=False)
-@click.option('-index', type=int, required=False)
-@click.option('-num', type=int, required=False)
-def main(arch, pretrained_path, data_path, norm_path,
-         out_path, fourier, index=None, log=False, num=None):
+@click.argument("arch", type=str)
+@click.argument("pretrained_path", type=click.Path(exists=True, dir_okay=True))
+@click.argument("data_path", type=click.Path(exists=False, dir_okay=True))
+@click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
+@click.option("-fourier", type=bool, required=True)
+@click.option("-log", type=bool, required=False)
+@click.option("-index", type=int, required=False)
+@click.option("-num", type=int, required=False)
+def main(
+    arch,
+    pretrained_path,
+    data_path,
+    out_path,
+    fourier,
+    index=None,
+    log=False,
+    num=None,
+):
     # to prevent the localhost error from happening
     # first change the backende and second turn off
     # the interactive mode
     matplotlib.use("Agg")
     plt.ioff()
     bundle_paths = get_bundles(data_path)
-    test = [
-        path for path in bundle_paths
-        if re.findall('fft_samp_test', path.name)
-        ]
+    test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
     test_ds = h5_dataset(test, tar_fourier=fourier)
 
     if index is None:
@@ -53,16 +60,22 @@ def main(arch, pretrained_path, data_path, norm_path,
     load_pre_model(arch, pretrained_path, visualize=True)
 
     if index is None:
-        print('\nPlotting {} pictures.\n'.format(num))
+        print("\nPlotting {} pictures.\n".format(num))
         for i in tqdm(range(len(indices))):
             index = indices[i]
-            visualize_without_fourier(i, index, img, img_y, arch, out_path)
+            if fourier:
+                visualize_with_fourier(i, index, img, img_y, arch, out_path)
+            else:
+                visualize_without_fourier(i, index, img, img_y, arch, out_path)
 
     else:
-        print('\nPlotting a single index.\n')
+        print("\nPlotting a single index.\n")
         i, index = 0, 0
-        visualize_without_fourier(i, index, img, img_y, arch, out_path)
+        if fourier:
+            visualize_with_fourier(i, index, img, img_y, arch, out_path)
+        else:
+            visualize_without_fourier(i, index, img, img_y, arch, out_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
