@@ -11,6 +11,7 @@ import re
 from gaussian_sources.inspection import (
     visualize_without_fourier,
     visualize_with_fourier,
+    visualize_fft,
 )
 
 
@@ -38,6 +39,7 @@ def main(
     # the interactive mode
     matplotlib.use("Agg")
     plt.ioff()
+    plt.rcParams.update({"figure.max_open_warning": 0})
     bundle_paths = get_bundles(data_path)
     test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
     test_ds = h5_dataset(test, tar_fourier=fourier)
@@ -64,7 +66,13 @@ def main(
         for i in tqdm(range(len(indices))):
             index = indices[i]
             if fourier:
-                visualize_with_fourier(i, index, img, img_y, arch, out_path)
+                (
+                    real_pred,
+                    imag_pred,
+                    real_truth,
+                    imag_truth,
+                ) = visualize_with_fourier(i, img, img_y, arch, out_path,)
+                visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth)
             else:
                 visualize_without_fourier(i, index, img, img_y, arch, out_path)
 
@@ -72,9 +80,13 @@ def main(
         print("\nPlotting a single index.\n")
         i, index = 0, 0
         if fourier:
-            visualize_with_fourier(i, index, img, img_y, arch, out_path)
+            real_pred, imag_pred, real_truth, imag_truth = visualize_with_fourier(
+                i, img, img_y, arch, out_path
+            )
+            visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth)
         else:
             visualize_without_fourier(i, index, img, img_y, arch, out_path)
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
 if __name__ == "__main__":

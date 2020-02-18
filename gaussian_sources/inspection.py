@@ -119,7 +119,7 @@ def visualize_without_fourier(i, index, img, img_y, arch, out_path):
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_with_fourier(i, index, img, img_y, arch, out_path):
+def visualize_with_fourier(i, img, img_y, arch, out_path):
     img_reshaped = img[i].view(1, 2, 64, 64)
     img_y_reshaped = img_y[i].view(1, 2, 64, 64)
 
@@ -177,6 +177,32 @@ def visualize_with_fourier(i, index, img, img_y, arch, out_path):
     fig.colorbar(im6, cax=cax, orientation='vertical')
 
     outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
-    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
-    plt.clf()
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    fig.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+    return real_pred, imag_pred, real_truth, imag_truth
+
+
+def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth):
+    compl_pred = real_pred + imag_pred * 1j
+    compl_pred = compl_pred.reshape(64, 64)
+    ifft_pred = np.fft.ifft2(compl_pred)
+
+    compl_truth = real_truth + imag_truth * 1j
+    compl_truth = compl_truth.reshape(64, 64)
+    ifft_truth = np.fft.ifft2(compl_truth)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
+
+    im1 = ax1.imshow(np.abs(ifft_pred), cmap='RdBu')
+    im2 = ax2.imshow(np.abs(ifft_truth), cmap='RdBu')
+    ax1.set_title(r'FFT Prediction')
+    ax2.set_title(r'FFT Truth')
+
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im2, cax=cax, orientation='vertical')
+
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im2, cax=cax, orientation='vertical')
+
+    plt.savefig('build/fft_pred_{}.pdf'.format(i), bbox_inches='tight', pad_inches=0.01)
