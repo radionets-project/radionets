@@ -117,3 +117,66 @@ def visualize_without_fourier(i, index, img, img_y, arch, out_path):
     plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
     plt.clf()
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
+
+def visualize_with_fourier(i, index, img, img_y, arch, out_path):
+    img_reshaped = img[i].view(1, 2, 64, 64)
+    img_y_reshaped = img_y[i].view(1, 2, 64, 64)
+
+    # predict image
+    prediction = eval_model(img_reshaped, arch)
+
+    real_pred = prediction[0, 0, :].numpy()
+    imag_pred = prediction[0, 1, :].numpy()
+
+    inp = img_reshaped.numpy()
+    inp_real = inp[0, 0, :]
+    inp_imag = inp[0, 1, :]
+
+    inp_y = img_y_reshaped.numpy()
+
+    real_truth = inp_y[0, 0, :]
+    imag_truth = inp_y[0, 1, :]
+
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
+
+    im1 = ax1.imshow(inp_real, cmap='RdBu')
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax1.set_title(r'Real Input')
+    fig.colorbar(im1, cax=cax, orientation='vertical')
+
+    im2 = ax2.imshow(real_pred.reshape(64, 64), cmap='RdBu')
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax2.set_title(r'Real Prediction')
+    fig.colorbar(im2, cax=cax, orientation='vertical')
+
+    im3 = ax3.imshow(real_truth, cmap='RdBu')
+    divider = make_axes_locatable(ax3)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax3.set_title(r'Real Truth')
+    fig.colorbar(im3, cax=cax, orientation='vertical')
+
+    im4 = ax4.imshow(inp_imag, cmap='RdBu')
+    divider = make_axes_locatable(ax4)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax4.set_title(r'Imaginary Input')
+    fig.colorbar(im4, cax=cax, orientation='vertical')
+
+    im5 = ax5.imshow(imag_pred.reshape(64, 64), cmap='RdBu')
+    divider = make_axes_locatable(ax5)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax5.set_title(r'Imaginary Prediction')
+    fig.colorbar(im5, cax=cax, orientation='vertical')
+
+    im6 = ax6.imshow(imag_truth, cmap='RdBu')
+    divider = make_axes_locatable(ax6)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax6.set_title(r'Imaginray Truth')
+    fig.colorbar(im6, cax=cax, orientation='vertical')
+
+    outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
+    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+    plt.clf()
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
