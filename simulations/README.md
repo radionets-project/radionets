@@ -3,7 +3,21 @@
 
 ### gaussian_simulations
 
-Functions to simulate radio galaxies consisting of Gaussian components, by adding 2d Gaussians to a two dimensional grid.
+Functions to simulate radio galaxies consisting of Gaussian components, by adding 2d Gaussians to a two dimensional grid. Simulations are implemented for all pixel sizes of squared images.
+
+Varied parameters:
+* Number of components
+* Jet rotation
+* Flux: peak, logarithmic decrease for jet components
+* Extension of components
+* One- and two-sided jets 
+
+ToDo:
+* Different power law indices for jet components flux decrease
+* Lorentz factor for counter jet
+* Flexible (more random) distance between components
+* More varied extension of jet components (simulate FRI and FRII)
+* Scale sources to image size
 
 ### uv_simulations
 
