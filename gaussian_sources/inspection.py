@@ -185,7 +185,7 @@ def visualize_with_fourier(i, img, img_y, arch, out_path):
     im6 = ax6.imshow(imag_truth, cmap='RdBu')
     divider = make_axes_locatable(ax6)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    ax6.set_title(r'Imaginray Truth')
+    ax6.set_title(r'Imaginary Truth')
     fig.colorbar(im6, cax=cax, orientation='vertical')
 
     outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
