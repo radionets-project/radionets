@@ -19,10 +19,10 @@ def fft(x):
     arr_imag = x[:, img_size:].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
     arr = torch.stack((arr_real, arr_imag), dim=-1)
     arr_fft = torch.ifft(arr, 2).permute(0, 3, 2, 1).transpose(2, 3)
-    axes = tuple(range(arr_fft.ndim))
-    shift = [-(dim // 2) for dim in arr_fft.shape]
-    arr_shift = torch.roll(arr_fft, shift, axes)
-    return arr_shift
+    # axes = tuple(range(arr_fft.ndim))
+    # shift = [-(dim // 2) for dim in arr_fft.shape]
+    # arr_shift = torch.roll(arr_fft, shift, axes)
+    return arr_fft
 
 
 def shape(x):
@@ -32,6 +32,10 @@ def shape(x):
 
 def flatten(x):
     return x.reshape(x.shape[0], -1)
+
+
+def test(x):
+    return x.reshape(x.shape[0], 16, 8, 8)
 
 
 def cut_off(x):
