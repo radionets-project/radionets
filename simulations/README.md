@@ -15,7 +15,7 @@ A directory with examples is created by running `make examples`.
 
 
 ### visualize_sampling
-Creates visualization plots, which can be found in the examples directory.
+Creates visualization plots, which can be found in the examples directory. Run `make examples`.
 
 Explanations:
 * ***gaussian_source.pdf***: A source consisting of Gaussian components. Can be one or two sided.
