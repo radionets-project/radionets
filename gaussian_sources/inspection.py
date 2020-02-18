@@ -3,9 +3,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
-from dl_framework.callbacks import view_tfm
 from dl_framework.data import do_normalisation
-from matplotlib.colors import LogNorm
+from mnist_cnn.visualize.utils import eval_model
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def get_eval_img(valid_ds, model, norm_path):
@@ -68,4 +68,52 @@ def plot_lr_loss(learn, arch_name, skip_last):
     learn.recorder_lr_find.plot(skip_last, save=True)
     # plt.yscale('log')
     plt.savefig('./models/lr_loss.pdf', bbox_inches='tight', pad_inches=0.01)
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
+
+def visualize_without_fourier(i, index, img, img_y, arch, out_path):
+    print(index)
+    img_reshaped = img[i].view(1, 2, 64, 64)
+
+    # predict image
+    prediction = eval_model(img_reshaped, arch)
+
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
+
+    inp = img_reshaped.numpy()
+
+    inp_real = inp[0, 0, :]
+    inp_imag = inp[0, 1, :]
+
+    im1 = ax1.imshow(inp_real, cmap='RdBu', vmin=-inp_real.max(),
+                     vmax=inp_real.max())
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax1.set_title(r'Real Input')
+    fig.colorbar(im1, cax=cax, orientation='vertical')
+
+    im2 = ax2.imshow(inp_imag, cmap='RdBu', vmin=-inp_imag.max(),
+                     vmax=inp_imag.max())
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax2.set_title(r'Imaginary Input')
+    fig.colorbar(im2, cax=cax, orientation='vertical')
+
+    pred_img = prediction.reshape(64, 64).numpy()
+    im3 = ax3.imshow(pred_img)
+    divider = make_axes_locatable(ax3)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax3.set_title(r'Prediction')
+    im4 = ax4.imshow(img_y[index].reshape(64, 64))
+    fig.colorbar(im4, cax=cax, orientation='vertical')
+
+    # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+    divider = make_axes_locatable(ax4)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax4.set_title(r'Truth')
+    fig.colorbar(im4, cax=cax, orientation='vertical')
+
+    outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
+    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+    plt.clf()
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
