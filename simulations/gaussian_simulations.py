@@ -10,7 +10,15 @@ def create_rot_mat(alpha):
     """
     Create 2d rotation matrix for given alpha
 
-    alpha: rotation angle in rad
+    Parameters
+    ----------
+    alpha: float
+        rotation angle in rad
+
+    Returns
+    -------
+    rot_mat: 2darray
+        2d rotation matrix
     """
     rot_mat = np.array([[np.cos(alpha), np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
     return rot_mat
@@ -108,7 +116,30 @@ def create_gaussian_source(
 
 def gauss_paramters():
     """
-    get random set of Gaussian parameters
+    Generate a random set of Gaussian parameters.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    comps: int
+        Number of components
+    amp: float
+        Amplitude of the core component
+    x: array
+        x positions of components
+    y: array
+        y positions of components
+    sig_x:
+        standard deviation in x
+    sig_y:
+        standard deviation in y
+    rot: int
+        rotation in degree
+    sides: int
+        0 for one-sided and 1 for two-sided jets
     """
     # random number of components between 4 and 9
     comps = np.random.randint(4, 7)  # decrease for smaller images
@@ -146,6 +177,20 @@ def gauss_paramters():
 
 
 def gaussian_source(img_size):
+    """
+    Creates grid, random Gaussian source parameters and returns an image
+    of a Gaussian source.
+
+    Parameters
+    ----------
+    img_size: int
+       number of pixel in x and y
+
+    Returns
+    -------
+    s: 2darray
+       Image containing a simulated Gaussian source.
+    """
     grid = create_grid(img_size)
     comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
     s = create_gaussian_source(

@@ -1,4 +1,4 @@
-## Tools to simulate Gaussian sources
+## Tools to simulate radio interferometric observations and Gaussian sources
 
 A directory with examples is created by running `make examples`.
 
