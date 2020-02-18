@@ -8,10 +8,19 @@ from matplotlib.colors import LogNorm
 
 
 def plot_uv_coverage(u, v):
-    """ Visualize (uv)-coverage
+    """
+    Visualize (uv)-coverage
 
-    u: array of u coordinates
-    v: array of v coordinates
+    Parameters
+    ----------
+    u: 1darray
+        array of u coordinates
+    v: 1darray
+        array of v coordinates
+
+    Returns
+    -------
+    None
     """
     plt.plot(u, v, marker="o", linestyle="none", markersize=2, color="#1f77b4")
     plt.xlabel(r"u / $\lambda$", fontsize=16)
@@ -20,9 +29,17 @@ def plot_uv_coverage(u, v):
 
 
 def plot_baselines(antenna):
-    """ Visualize baselines of an antenna layout
+    """
+    Visualize baselines of an antenna layout
 
+    Parameters
+    ----------
     antenna: antenna class object
+        class object with antenna positions and baselines between telescopes
+
+    Returns
+    -------
+    None
     """
     x_base, y_base = antenna.get_baselines()
     plt.plot(
@@ -37,13 +54,25 @@ def plot_baselines(antenna):
 
 
 def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines=False):
-    """ Visualize antenna distribution seen from a specific source position
+    """
+    Visualize antenna distribution seen from a specific source position
 
-    source_lon: longitude of the source
-    source_lat: latitude of the source
+    Parameters
+    ----------
+    source_lon: float
+        longitude of the source
+    source_lat: float
+        latitude of the source
     source: source class object
+        class object containing source position
     antenna: antenna class object
-    baselines: enable baseline plotting
+        class object with antenna positions and baselines between telescopes
+    baselines: bool
+        enable baseline plotting
+
+    Returns
+    -------
+    None
     """
     x, y, z = source.to_ecef(val=[source_lon, source_lat])  # only use source ?
     x_enu_ant, y_enu_ant = antenna.to_enu(x, y, z)
@@ -81,12 +110,23 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
 
 
 def animate_baselines(source, antenna, filename, fps):
-    """ Create gif to animate change of baselines during an observation
+    """
+    Create gif to animate change of baselines during an observation
 
+    Parameters
+    ----------
     source: source class object
+        class object containing source position
     antenna: antenna class object
-    filename: name of the created gif
-    fps: frames per seconds of the gif
+        class object with antenna positions and baselines between telescopes
+    filename: str
+        name of the created gif
+    fps: int
+        frames per seconds of the gif
+
+    Returns
+    -------
+    None
     """
     s_lon = source.lon_prop
     s_lat = source.lat_prop
@@ -109,12 +149,23 @@ def animate_baselines(source, antenna, filename, fps):
 
 
 def animate_uv_coverage(source, antenna, filename, fps):
-    """ Create gif to animate improvement of (uv)-coverage during an observation
+    """
+    Create gif to animate improvement of (uv)-coverage during an observation
 
+    Parameters
+    ----------
     source: source class object
+        class object containing source position
     antenna: antenna class object
-    filename: name of the created gif
-    fps: frames per seconds of the gif
+        class object with antenna positions and baselines between telescopes
+    filename: str
+        name of the created gif
+    fps: int
+        frames per seconds of the gif
+
+    Returns
+    -------
+    None
     """
     u, v, steps = get_uv_coverage(source, antenna, iterate=True)
 
@@ -136,11 +187,19 @@ def animate_uv_coverage(source, antenna, filename, fps):
 
 
 def plot_source(img, ft=False, log=False):
-    """ Visualize a radio source
+    """
+    Visualize a radio source
 
-    img: 2d array of the image
-    ft: if True, the Fourier transformation (frequency space) of the image
-        is plotted
+    Parameters
+    ----------
+    img: 2darray
+        values of Gaussian source
+    ft: bool
+        if True, the Fourier transformation (frequency space) of the image is plotted
+
+    Returns
+    -------
+    None
     """
     plt.rcParams.update({"font.size": 18})
     fig = plt.figure(figsize=(8, 6))
@@ -172,18 +231,37 @@ def plot_source(img, ft=False, log=False):
 
 
 def FT(img):
-    """ Computes the 2d Fourier trafo of an image
+    """
+    Computes the 2d Fourier trafo of an image
 
-    img: 2d array of the image
+    Parameters
+    ----------
+    img: 2darray
+        values of Gaussian source
+
+    Returns
+    -------
+    out: 2darray
+        Fourier transform of input array
     """
     return np.abs(np.fft.fftshift(np.fft.fft2(img)))
 
 
 def apply_mask(img, mask):
-    """ Applies a boolean mask to a 2d image
+    """
+    Applies a boolean mask to a 2d image
 
-    img: 2d array of the image
-    mask: boolean mask
+    Parameters
+    ----------
+    img: 2darray
+        values of Gaussian source
+    mask: bool
+        mask for sampling frequencies
+
+    Returns
+    -------
+    out: 2darray
+        array with sampled frequencies
     """
     img[~mask] = 0
     return img
