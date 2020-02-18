@@ -120,12 +120,23 @@ def visualize_without_fourier(i, index, img, img_y, arch, out_path):
 
 
 def visualize_with_fourier(i, img, img_y, arch, out_path):
+    """
+    Visualizing, if the target variables are displayed in fourier space.
+
+    i: Current index given form the loop
+    img: list of input images
+    img_y: list of target images
+    arch: learn.model object with the used architecture
+    out_path: string which contains the output path
+    """
+    # reshaping of target and input
     img_reshaped = img[i].view(1, 2, 64, 64)
     img_y_reshaped = img_y[i].view(1, 2, 64, 64)
 
     # predict image
     prediction = eval_model(img_reshaped, arch)
 
+    # splitting in real and imaginary part
     real_pred = prediction[0, 0, :].numpy()
     imag_pred = prediction[0, 1, :].numpy()
 
@@ -138,6 +149,7 @@ def visualize_with_fourier(i, img, img_y, arch, out_path):
     real_truth = inp_y[0, 0, :]
     imag_truth = inp_y[0, 1, :]
 
+    # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
 
     im1 = ax1.imshow(inp_real, cmap='RdBu')
@@ -182,12 +194,26 @@ def visualize_with_fourier(i, img, img_y, arch, out_path):
 
 
 def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth):
+    """
+    function for visualizing the output of a inverse fourier transform. For now, it is
+    necessary to take the absolute of the result of the inverse fourier transform,
+    because the output is complex.
+    i: current index of the loop, just used for saving
+    real_pred: real part of the prediction computed in visualize with fourier
+    imag_pred: imaginary part of the prediction computed in visualize with fourier
+    real_truth: real part of the truth computed in visualize with fourier
+    imag_truth: imaginary part of the truth computed in visualize with fourier
+    """
+    # create (complex) input for inverse fourier transformation for prediction
     compl_pred = real_pred + imag_pred * 1j
     compl_pred = compl_pred.reshape(64, 64)
+    # inverse fourier transformation
     ifft_pred = np.fft.ifft2(compl_pred)
 
+    # create (complex) input for inverse fourier transformation for prediction
     compl_truth = real_truth + imag_truth * 1j
     compl_truth = compl_truth.reshape(64, 64)
+    # inverse fourier transform
     ifft_truth = np.fft.ifft2(compl_truth)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
