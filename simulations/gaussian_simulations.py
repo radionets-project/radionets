@@ -302,7 +302,7 @@ def create_n_bundles(num_bundles, bundle_size, img_size, out_path):
         number of sources in one bundle
     img_size: int
         pixel size of the image
-    out_path: path
+    out_path: str
         path to save bundle
 
     Returns
