@@ -25,15 +25,30 @@ def create_rot_mat(alpha):
 
 
 def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot=0, center=None):
-    """ Create a gaussian component on a 2d grid
+    """
+    Adds a gaussian component to a 2d grid.
 
-    x: x coordinates of 2d grid
-    y: y coordinates of 2d grid
-    flux: peak amplitude of component
-    x_fwhm: full-width-half-maximum in x direction
-    y_fwhm: full-width-half-maximum in y direction
-    rot: rotation of component
-    center: center of component
+    Parameters
+    ----------
+    x: 2darray
+        x coordinates of 2d meshgrid
+    y: 2darray
+        y coordinates of 2d meshgrid
+    flux: float
+        peak amplitude of component
+    x_fwhm: float
+        full-width-half-maximum in x direction
+    y_fwhm: float
+        full-width-half-maximum in y direction
+    rot: int
+        rotation of component in degree
+    center: 2darray
+        enter of component
+
+    Returns
+    -------
+    gauss: 2darray
+        2d grid with gaussian component
     """
     if center is None:
         x_0 = y_0 = len(x) // 2
@@ -48,9 +63,18 @@ def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot=0, center=None):
 
 
 def create_grid(pixel):
-    """ Create a square 2d grid
+    """
+    Creates a square 2d grid.
 
-    pixel: number of pixel in x and y
+    Parameters
+    ----------
+    pixel: int
+        number of pixel in x and y
+
+    Returns
+    -------
+    grid: ndarray
+        2d grid with 1e-10 pixels, X meshgrid, Y meshgrid
     """
     x = np.linspace(0, pixel - 1, num=pixel)
     y = np.linspace(0, pixel - 1, num=pixel)
@@ -61,14 +85,29 @@ def create_grid(pixel):
 
 def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
     """
-    Takes a grid and adds a Gaussian component relative to the center
+    Takes a grid and adds n Gaussian component relative to the center.
 
-    grid: 2d grid
-    amp: amplitude
-    x: x position, will be calculated rel. to center
-    y: y position, will be calculated rel. to center
-    sig_x: standard deviation in x
-    sig_y: standard deviation in y
+    Parameters
+    ----------
+    grid: 2darray
+        2d grid
+    amp: float
+        amplitude of gaussian component
+    x: float
+        x position, will be calculated rel. to center
+    y: float
+        y position, will be calculated rel. to center
+    sig_x: float
+        standard deviation in x
+    sig_y: float
+        standard deviation in y
+    rot: int
+        rotation in degree
+
+    Returns
+    -------
+    gaussian: 2darray
+        grid with gaussian component
     """
     cent = np.array([len(grid[0]) // 2 + x, len(grid[0]) // 2 + y])
     X = grid[1]
@@ -83,12 +122,44 @@ def create_gaussian_source(
     comps, amp, x, y, sig_x, sig_y, rot, grid, sides=0, blur=True
 ):
     """
+    Combines Gaussian components on a 2d grid to create a Gaussian source
+
     takes grid
     side: one-sided or two-sided
     core dominated or lobe dominated
     number of components
     angle of the jet
 
+    Parameters
+    ----------
+    comps: int
+        number of components
+    amp: 1darray
+        amplitudes of components
+    x: 1darray
+        x positions of components
+    y: 1darray
+        y positions of components
+    sig_x: 1darray
+        standard deviations of components in x
+    sig_y: 1darray
+        standard deviations of components in y
+    rot: int
+        rotation of the jet in degree
+    grid: ndarray
+        2dgrid + X and Y meshgrid
+    sides: int
+        0 one-sided, 1 two-sided jet
+    blur: bool
+        use Gaussian filter to blur image
+
+    Returns
+    -------
+    source: 2darray
+        2d grid containing Gaussian source
+
+    Comments
+    --------
     components should not have too big gaps between each other
     """
     if sides == 1:
@@ -200,24 +271,88 @@ def gaussian_source(img_size):
 
 
 def create_bundle(img_size, bundle_size):
+    """
+    Creates a bundle of Gaussian sources.
+
+    Parameters
+    ----------
+    img_size: int
+        pixel size of the image
+    bundle_size: int
+        number of images in the bundle
+
+    Returns
+    -------
+    bundle ndarray
+        bundle of Gaussian sources
+    """
     bundle = np.array([gaussian_source(img_size) for i in range(bundle_size)])
     return bundle
 
 
 def create_n_bundles(num_bundles, bundle_size, img_size, out_path):
+    """
+    Creates n bundles of Gaussian sources and saves each to hdf5 file.
+
+    Parameters
+    ----------
+    num_bundles: int
+        number of bundles to be created
+    bundle_size: int
+        number of sources in one bundle
+    img_size: int
+        pixel size of the image
+    out_path: path
+        path to save bundle
+
+    Returns
+    -------
+    None
+    """
     for j in tqdm(range(num_bundles)):
         bundle = create_bundle(img_size, bundle_size)
         save_bundle(out_path, bundle, j)
 
 
 def get_noise(image, scale, mean=0, std=1):
+    """
+    Calculate random noise values for all image pixels.
+
+    Parameters
+    ----------
+    image: 2darray
+        2d image
+    scale: float
+        scaling factor to increase noise
+    mean: float
+        mean of noise values
+    std: float
+        standard deviation of noise values
+
+    Returns
+    -------
+    out: ndarray
+        array with noise values in image shape
+    """
     return np.random.normal(mean, std, size=image.shape) * scale
 
 
-def add_noise(bundle, mean=0, std=1, index=0, preview=False):
+def add_noise(bundle, preview=False):
     """
     Used for adding noise and plotting the original and noised picture,
-    if asked.
+    if asked. Using 0.05 * max(image) as scaling factor.
+
+    Parameters
+    ----------
+    bundle: path
+        path to hdf5 bundle file
+    preview: bool
+        enable/disable showing 10 preview images
+
+    Returns
+    -------
+    bundle_noised hdf5_file
+        bundle with noised images
     """
     bundle_noised = np.array(
         [img + get_noise(img, (img.max() * 0.05)) for img in bundle]
