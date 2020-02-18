@@ -3,7 +3,7 @@
 
 ### gaussian_simulations
 
-
+Functions to simulate radio galaxies consisting of Gaussian components, by adding 2d Gaussians to a two dimensional grid.
 
 ### uv_simulations
 
