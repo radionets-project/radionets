@@ -2,15 +2,14 @@ import numpy as np
 import astropy.coordinates as ac
 
 
-class source():
+class source:
     def __init__(self, lon, lat):
         self.lon = lon
         self.lat = lat
 
     def to_ecef(self, val=None, prop=False):
         if prop is True:
-            quant = ac.EarthLocation(self.lon_prop,
-                                     self.lat_prop).to_geocentric()
+            quant = ac.EarthLocation(self.lon_prop, self.lat_prop).to_geocentric()
         else:
             quant = ac.EarthLocation([self.lon], [self.lat]).to_geocentric()
         if val is not None:
@@ -31,7 +30,7 @@ class source():
 
         lat_start = self.lat
         direction = np.sign(np.random.randint(0, 1) - 0.5)
-        lat_stop = round((lat_start + direction * num_steps/50) + 0.005, 3)
+        lat_stop = round((lat_start + direction * num_steps / 50) + 0.005, 3)
         lat_step = 0.01
         if lat_start > lat_stop:
             lat = np.arange(lat_stop, lat_start, lat_step)
@@ -40,7 +39,7 @@ class source():
             lat = np.arange(lat_start, lat_stop, lat_step)
 
         if len(lon) != len(lat):
-            raise ValueError('Length of lon and lat are different!')
+            raise ValueError("Length of lon and lat are different!")
 
         if multi_pointing is True:
             lon = self.mod_delete(lon, 5, 20)
@@ -54,7 +53,7 @@ class source():
         return a[np.mod(np.arange(a.size), n + m) < n]
 
 
-class antenna():
+class antenna:
     def __init__(self, X, Y, Z):
         self.all = np.array(list(zip(X, Y, Z)))
         self.len = len(self.all)
@@ -66,6 +65,7 @@ class antenna():
 
     def to_geodetic(self, x_ref, y_ref, z_ref, enu=False):
         import astropy.units as u
+
         quant = ac.EarthLocation(x_ref, y_ref, z_ref, u.meter).to_geodetic()
         if enu is True:
             return quant.lon.deg, quant.lat.deg
@@ -74,8 +74,8 @@ class antenna():
             self.lat = quant.lat.deg
 
     def get_baselines(self):
-        x_base = ([])
-        y_base = ([])
+        x_base = []
+        y_base = []
         for i in range(self.len):
             ref = np.ones((self.len, 2)) * ([self.x_enu[i], self.y_enu[i]])
             pairs = np.array([self.x_enu, self.y_enu])
@@ -93,15 +93,25 @@ class antenna():
         def rot(lon, lat):
             lon = np.deg2rad(lon)
             lat = np.deg2rad(lat)
-            return np.array([[-np.sin(lon), np.cos(lon), 0],
-                             [-np.sin(lat)*np.cos(lon),
-                             -np.sin(lat)*np.sin(lon), np.cos(lat)],
-                             [np.cos(lat)*np.cos(lon),
-                             np.cos(lat)*np.sin(lon), np.sin(lat)]
-                             ])
+            return np.array(
+                [
+                    [-np.sin(lon), np.cos(lon), 0],
+                    [
+                        -np.sin(lat) * np.cos(lon),
+                        -np.sin(lat) * np.sin(lon),
+                        np.cos(lat),
+                    ],
+                    [np.cos(lat) * np.cos(lon), np.cos(lat) * np.sin(lon), np.sin(lat)],
+                ]
+            )
 
-        enu = np.array([rot(lon_ref[j], lat_ref[j]) @ (self.all[i] - ref[j])
-                        for i in range(self.len) for j in range(len(lon_ref))])
+        enu = np.array(
+            [
+                rot(lon_ref[j], lat_ref[j]) @ (self.all[i] - ref[j])
+                for i in range(self.len)
+                for j in range(len(lon_ref))
+            ]
+        )
         self.ant_enu = enu
         self.x_enu = enu.ravel()[0::3]
         self.y_enu = enu.ravel()[1::3]
@@ -109,8 +119,8 @@ class antenna():
         return self.x_enu, self.y_enu
 
     def get_uv(self):
-        u = ([])
-        v = ([])
+        u = []
+        v = []
         steps = int(len(self.x_enu) / self.len)
         for j in range(steps):
             for i in range(self.len):
@@ -126,7 +136,7 @@ class antenna():
                 v = np.append(v, y_base)
 
         if len(u) != len(v):
-            raise ValueError('Length of u and v are different!')
+            raise ValueError("Length of u and v are different!")
         return u, v, steps
 
 
@@ -143,12 +153,12 @@ def get_uv_coverage(source, antenna, iterate=False):
 
 
 def create_mask(u, v, size=64):
-    ''' Create 2d mask from a given (uv)-coverage
+    """ Create 2d mask from a given (uv)-coverage
 
     u: array of u coordinates
     v: array of v coordinates
     size: number of bins
-    '''
+    """
     uv_hist, _, _ = np.histogram2d(u, v, bins=size)
     # exclude center
     ex_l = size // 2 - 5
@@ -158,8 +168,9 @@ def create_mask(u, v, size=64):
     return np.rot90(mask)
 
 
-def sample_freqs(img, ant_config_path, size=64, lon=None, lat=None,
-                 num_steps=None, plot=False):
+def sample_freqs(
+    img, ant_config_path, size=64, lon=None, lat=None, num_steps=None, plot=False
+):
     ant = antenna(*get_antenna_config(ant_config_path))
     if lon is None:
         lon = np.random.randint(-90, -70)
@@ -171,12 +182,12 @@ def sample_freqs(img, ant_config_path, size=64, lon=None, lat=None,
     # print(size)
     mask = create_mask(u, v, size)
     img[~mask] = 0
-    '''
+    """
     if mnist:
         img = img.reshape(64, 64)
         img[~mask] = 0
         img = img.reshape(4096)
-    '''
+    """
     if plot is True:
         return img, mask
     else:
