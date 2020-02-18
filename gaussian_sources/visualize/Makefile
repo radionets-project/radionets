@@ -9,7 +9,6 @@ build/visualize_predictions_done:
 	${arch} \
 	${path_model} \
 	${data} \
-	${norm_path} \
 	${out_path} \
 	-fourier ${fourier} \
 	${mode}
