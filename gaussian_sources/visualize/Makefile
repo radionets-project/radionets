@@ -11,6 +11,7 @@ build/visualize_predictions_done:
 	${data} \
 	${norm_path} \
 	${out_path} \
+	-fourier ${fourier} \
 	${mode}
 
 clean:
