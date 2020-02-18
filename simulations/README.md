@@ -1,6 +1,5 @@
 ## Tools to simulate radio interferometric observations and Gaussian sources
 
-A directory with examples is created by running `make examples`.
 
 ### gaussian_simulations
 
@@ -14,7 +13,7 @@ A directory with examples is created by running `make examples`.
 
 
 
-### visualize_sampling
+### Examples: visualize_sampling 
 Creates visualization plots, which can be found in the examples directory. Run `make examples`.
 
 Explanations:
