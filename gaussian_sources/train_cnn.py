@@ -16,7 +16,7 @@ from dl_framework.callbacks import (
     SaveCallback,
     normalize_tfm,
     view_tfm,
-    # LoggerCallback,
+    LoggerCallback,
 )
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
@@ -109,7 +109,7 @@ def main(
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         partial(SaveCallback, model_path=model_path),
-        # partial(LoggerCallback, model_name=model_name),
+        partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
