@@ -13,7 +13,6 @@ from dl_framework.callbacks import (
     BatchTransformXCallback,
     CudaCallback,
     Recorder_lr_find,
-    SaveCallback,
     normalize_tfm,
     view_tfm,
     LR_Find,
@@ -100,7 +99,6 @@ def main(
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
     ]
 
     if loss_func == "feature_loss":
