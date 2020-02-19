@@ -1,6 +1,7 @@
 import click
 import matplotlib
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 import dl_framework.architectures as architecture
@@ -40,17 +41,29 @@ def main(
     matplotlib.use("Agg")
     plt.ioff()
     plt.rcParams.update({"figure.max_open_warning": 0})
-    bundle_paths = get_bundles(data_path)
-    test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
-    test_ds = h5_dataset(test, tar_fourier=fourier)
+
+    pred_path = str(out_path) + "predictions.csv"
+    predictions_df = pd.read_csv(pred_path, index_col=0)
+    predictions = predictions_df.to_numpy()
+
+    truth_path = str(out_path) + "truth.csv"
+    truth_df = pd.read_csv(truth_path, index_col=0)
+    truth = truth_df.to_numpy()
+
+    # bundle_paths = get_bundles(data_path)
+    # test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
+    # test_ds = h5_dataset(test, tar_fourier=fourier)
 
     if index is None:
-        indices = np.random.randint(0, len(test_ds), size=num)
-        img = [test_ds[i][0] for i in indices]
-        img_y = [test_ds[i][1] for i in indices]
+        indices = predictions_df.index.to_numpy()
+        img = predictions
+        img_y = truth
+        # indices = np.random.randint(0, len(test_ds), size=num)
+        # img = [test_ds[i][0] for i in indices]
+        # img_y = [test_ds[i][1] for i in indices]
     else:
-        img = [test_ds[index][0]]
-        img_y = [test_ds[index][1]]
+        img = predictions[index]
+        img_y = truth[index]
 
     if log is True:
         img = torch.log(img)
