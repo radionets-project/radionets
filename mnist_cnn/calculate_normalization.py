@@ -1,23 +1,14 @@
 import click
-import warnings
-import numpy as np
 from mnist_cnn.utils import get_h5_data
-from mnist_cnn.utils import create_mask, split_real_imag, mean_and_std
+from mnist_cnn.utils import split_real_imag, mean_and_std
 import pandas as pd
 
 
 @click.command()
 @click.argument('train_path', type=click.Path(exists=True, dir_okay=True))
-@click.argument('valid_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
-@click.option('-log', type=bool, required=False)
-@click.option('-use_mask', type=bool, required=False)
-def main(train_path, valid_path, out_path, log=False, use_mask=False):
+def main(train_path, out_path):
     x_train, _ = get_h5_data(train_path, columns=['x_train', 'y_train'])
-    
-    # log option disabled, improve or drop in future versions
-    
-    # x_valid, _ = get_h5_data(valid_path, columns=['x_valid', 'y_valid'])
 
     # split in real and imaginary part
     #x_train_real, x_train_imag = split_real_imag(x_train)

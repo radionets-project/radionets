@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 from functools import partial
 
 import click
@@ -15,19 +16,18 @@ from dl_framework.callbacks import (
     SaveCallback,
     normalize_tfm,
     view_tfm,
-    LoggerCallback,
+    # LoggerCallback,
 )
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
 from dl_framework.model import load_pre_model, save_model
 from inspection import evaluate_model, plot_loss
-from mnist_cnn.utils import get_h5_data
-from preprocessing import DataBunch, get_dls, prepare_dataset
+from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
+import re
 
 
 @click.command()
-@click.argument("train_path", type=click.Path(exists=True, dir_okay=True))
-@click.argument("valid_path", type=click.Path(exists=True, dir_okay=True))
+@click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("model_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("arch", type=str)
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
@@ -43,8 +43,7 @@ from preprocessing import DataBunch, get_dls, prepare_dataset
 )
 @click.option("-inspection", type=bool, required=False, help="make an inspection plot")
 def main(
-    train_path,
-    valid_path,
+    data_path,
     model_path,
     arch,
     norm_path,
@@ -70,47 +69,47 @@ def main(
                      loaded at the beginning of the training\n
     """
     # Load data
-    x_train, y_train = get_h5_data(train_path, columns=["x_train", "y_train"])
-    x_valid, y_valid = get_h5_data(valid_path, columns=["x_valid", "y_valid"])
+    bundle_paths = get_bundles(data_path)
+    train = [
+        path for path in bundle_paths
+        if re.findall('fft_samp_train', path.name)
+        ]
+    valid = [
+        path for path in bundle_paths
+        if re.findall('fft_samp_valid', path.name)
+        ]
 
     # Create train and valid datasets
-    train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=log)
+    train_ds = h5_dataset(train)
+    valid_ds = h5_dataset(valid)
 
     # Create databunch with defined batchsize
-    bs = 128
-    data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
+    bs = 256
+    data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # Define model
     arch = getattr(architecture, arch)()
 
-    # Define resize for mnist data
-    mnist_view = view_tfm(1, 64, 64)
+    # Define resize based on the length of a target image
+    img = train_ds[0][1]
+    mnist_view = view_tfm(2, int(np.sqrt(img.shape[0])), int(np.sqrt(img.shape[0])))
 
     # make normalisation
     norm = normalize_tfm(norm_path)
 
-    # Define scheduled learning rate
-    # sched = sched_no(lr, lr)
+    # get model name for recording in LoggerCallback
+    model_name = model_path.split('models/')[-1].split('/')[0]
 
     # Define callback functions
     cbfs = [
         Recorder,
-        # test for use of multiple Metrics or Loss functions
         partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        # partial(ParamScheduler, "lr", sched),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
-        LoggerCallback,
+        partial(SaveCallback, model_path=model_path),
+        # partial(LoggerCallback, model_name=model_name),
     ]
-
-    # Define optimiser function
-    # adam_opt = partial(
-    #     StatefulOptimizer,
-    #     steppers=[adam_step, weight_decay],
-    #     stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
-    # )
 
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
@@ -121,9 +120,15 @@ def main(
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)
+
     # Combine model and data in learner
     learn = get_learner(
-        data, arch, lr=lr, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
+        data,
+        arch,
+        lr=lr,
+        opt_func=torch.optim.Adam,
+        cb_funcs=cbfs,
+        loss_func=loss_func,
     )
 
     # use pre-trained model if asked
@@ -132,7 +137,7 @@ def main(
         load_pre_model(learn, pretrained_model)
 
     # Print model architecture
-    print(learn.model, "\n")
+    # print(learn.model, "\n")
 
     # Train the model, make it possible to stop at any given time
     try:

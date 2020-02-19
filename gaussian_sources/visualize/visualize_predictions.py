@@ -1,43 +1,49 @@
 import click
 import matplotlib
 import pandas as pd
+import numpy as np
 from mnist_cnn.visualize.utils import eval_model
-from mnist_cnn.utils import get_h5_data
 import matplotlib.pyplot as plt
 import torch
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
-from dl_framework.data import do_normalisation
-from mnist_cnn.utils import split_real_imag, combine_and_swap_axes
+from dl_framework.data import do_normalisation, get_bundles, h5_dataset
+from tqdm import tqdm
+import re
 
 
 @click.command()
 @click.argument('arch', type=str)
 @click.argument('pretrained_path', type=click.Path(exists=True, dir_okay=True))
-@click.argument('in_path', type=click.Path(exists=False, dir_okay=True))
+@click.argument('data_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('norm_path', type=click.Path(exists=False, dir_okay=True))
 @click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
-@click.option('-index', type=int, required=False)
 @click.option('-log', type=bool, required=False)
-def main(arch, pretrained_path, in_path, norm_path,
+@click.option('-index', type=int, required=False)
+@click.option('-num', type=int, required=False)
+def main(arch, pretrained_path, data_path, norm_path,
          out_path, index=None, log=False, num=None):
     # to prevent the localhost error from happening
     # first change the backende and second turn off
     # the interactive mode
     matplotlib.use("Agg")
     plt.ioff()
-    x_valid, y_valid = get_h5_data(in_path, columns=['x_valid', 'y_valid'])
+    bundle_paths = get_bundles(data_path)
+    test = [
+        path for path in bundle_paths
+        if re.findall('fft_samp_test', path.name)
+        ]
+    test_ds = h5_dataset(test)
 
-    x_valid_real, x_valid_imag = split_real_imag(x_valid)
-    x_valid = combine_and_swap_axes(x_valid_real, x_valid_imag)
+    if index is None:
+        indices = np.random.randint(0, len(test_ds), size=num)
+        img = [test_ds[i][0] for i in indices]
+    else:
+        img = test_ds[index][0]
 
-    img = torch.tensor(x_valid[i])
     if log is True:
         img = torch.log(img)
-    img_reshaped = img.view(1, 2, 64, 64)
-    norm = pd.read_csv(norm_path)
-    img_normed = do_normalisation(img_reshaped, norm)
 
     # get arch
     arch = getattr(architecture, arch)()
@@ -81,7 +87,7 @@ def main(arch, pretrained_path, in_path, norm_path,
             divider = make_axes_locatable(ax3)
             cax = divider.append_axes('right', size='5%', pad=0.05)
             ax3.set_title(r'Prediction')
-            im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+            im4 = ax4.imshow(test_ds[index][1].reshape(64, 64))
             fig.colorbar(im4, cax=cax, orientation='vertical')
 
             # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
@@ -128,7 +134,7 @@ def main(arch, pretrained_path, in_path, norm_path,
         divider = make_axes_locatable(ax3)
         cax = divider.append_axes('right', size='5%', pad=0.05)
         ax3.set_title(r'Prediction')
-        im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+        im4 = ax4.imshow(test_ds[index][1].reshape(64, 64))
         fig.colorbar(im4, cax=cax, orientation='vertical')
 
         # im4 = ax4.imshow(y_valid[index].reshape(64, 64))

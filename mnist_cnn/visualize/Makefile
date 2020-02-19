@@ -1,11 +1,9 @@
-all: visualize_prediction \
+-include .makerc
+all: visualize_preprocessing \
+	visualize_predictions
 
 visualize_preprocessing: build/visualize_preprocessing_done
 visualize_predictions: build/visualize_predictions_done
-predictions: build/predictions_done
-model=../models/unet_mnist.model
-norm=../data/normalization_factors.csv
-
 build/visualize_preprocessing_done:
 	mkdir -p build
 	python visualize_preprocessing.py
@@ -13,23 +11,13 @@ build/visualize_preprocessing_done:
 
 build/visualize_predictions_done:
 	mkdir -p build
-	python visualize_prediction.py \
-	UNet \
-	$(model) \
-	../data/mnist_samp_valid.h5 \
-	$(norm) \
-	build/prediction1.pdf \
-	-index 42
-
-build/predictions_done:
-	mkdir -p build
-	python predictions.py \
-	UNet \
-	$(model) \
-	../data/mnist_samp_valid.h5 \
-	$(norm) \
-	build/prediction.png \
-	-num 20
+	python visualize_predictions.py \
+	${arch} \
+	${path_model} \
+	${samp_valid} \
+	${norm_path} \
+	${out_path} \
+	${mode}
 
 
 # ------------------------------------------------------

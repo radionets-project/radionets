@@ -5,21 +5,12 @@ import torch
 import pandas as pd
 from dl_framework.callbacks import view_tfm
 from dl_framework.data import do_normalisation
-
-
-def training_stats(run):
-    plt.figure(figsize=(12, 4))
-    plt.subplot(131)
-    run.recorder.plot_lr()
-    plt.subplot(132)
-    run.recorder.plot_loss()
-    plt.tight_layout()
+from matplotlib.colors import LogNorm
 
 
 def get_eval_img(valid_ds, model, norm_path):
-    x_t = valid_ds.x.float()
-    rand = np.random.randint(0, len(x_t))
-    img = x_t[rand].cuda()
+    rand = np.random.randint(0, len(valid_ds))
+    img = valid_ds[rand][0].cuda()
     norm = pd.read_csv(norm_path)
     img = do_normalisation(img, norm)
     h = int(np.sqrt(img.shape[1]))
@@ -40,27 +31,17 @@ def evaluate_model(valid_ds, model, norm_path, nrows=3):
         axes[i][0].imshow(img[:, 0].view(h, h).cpu(), cmap='RdGy_r',
                           vmax=img.max(), vmin=-img.max())
         axes[i][1].set_title('y_pred')
-        im = axes[i][1].imshow(pred.view(h, h), vmin=pred.min(),
-                               vmax=pred.max())
+        im = axes[i][1].imshow(pred.view(h, h),
+                               #norm=LogNorm(vmin=1e-6),
+                               #vmin=valid_ds[rand][1].min(),
+                               #vmax=valid_ds[rand][1].max()
+                              )
         axes[i][2].set_title('y_true')
-        axes[i][2].imshow(valid_ds.y[rand].view(h, h),
-                          vmin=valid_ds.y[rand].min(),
-                          vmax=valid_ds.y[rand].max())
+        axes[i][2].imshow(valid_ds[rand][1].view(h, h),
+                          vmin=valid_ds[rand][1].min(),
+                          vmax=valid_ds[rand][1].max())
         fig.colorbar(im, cax=axes[i][3])
     plt.tight_layout()
-
-
-def test_initialization(dl, model, layer):
-    x, _ = next(iter(dl))
-    mnist_view = view_tfm(1, 64, 64)
-    x = mnist_view(x).cuda()
-    print('mean:', x.mean())
-    print('std:', x.std())
-    p = model[layer](x)
-    print('')
-    print('after layer ' + str(layer))
-    print('mean:', p.mean())
-    print('std:', p.std())
 
 
 def plot_loss(learn, model_path):
@@ -85,5 +66,6 @@ def plot_lr_loss(learn, arch_name, skip_last):
     plt.ioff()
     print('\nPlotting Lr vs Loss for architecture: {}\n'.format(arch_name))
     learn.recorder_lr_find.plot(skip_last, save=True)
+    # plt.yscale('log')
     plt.savefig('./models/lr_loss.pdf', bbox_inches='tight', pad_inches=0.01)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)

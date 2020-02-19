@@ -1,7 +1,9 @@
 from functools import partial
+import re
 import sys
 import click
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -18,22 +20,26 @@ from dl_framework.callbacks import (
 )
 from dl_framework.learner import get_learner
 from dl_framework.model import load_pre_model
-from mnist_cnn.utils import get_h5_data
-from preprocessing import DataBunch, get_dls, prepare_dataset
 from inspection import plot_lr_loss
 from dl_framework.utils import children
 from torchvision.models import vgg16_bn
 from dl_framework.loss_functions import FeatureLoss
+from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
 
 
 @click.command()
-@click.argument("train_path", type=click.Path(exists=True, dir_okay=True))
-@click.argument("valid_path", type=click.Path(exists=True, dir_okay=True))
+@click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("arch", type=str)
 @click.argument("loss_func", type=str)
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
+)
+@click.option(
+    "-min_lr", type=float, required=True, help="minimal learning rate for lr_find"
+)
+@click.option(
+    "-max_lr", type=float, required=True, help="maximal learning rate for lr_find"
 )
 @click.option("-log", type=bool, required=False, help="use of logarith")
 @click.option(
@@ -41,11 +47,12 @@ from dl_framework.loss_functions import FeatureLoss
 )
 @click.option("-save", type=bool, required=False, help="save the lr vs loss plot")
 def main(
-    train_path,
-    valid_path,
+    data_path,
     arch,
     norm_path,
     loss_func,
+    min_lr,
+    max_lr,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -60,33 +67,35 @@ def main(
     PRETRAINED_MODEL is the path to a pretrained model, which is
                      loaded at the beginning of the training\n
     """
-    # Load data
-    x_train, y_train = get_h5_data(train_path, columns=["x_train", "y_train"])
-    x_valid, y_valid = get_h5_data(valid_path, columns=["x_valid", "y_valid"])
+    bundle_paths = get_bundles(data_path)
+    train = [path for path in bundle_paths if re.findall("fft_samp_train", path.name)]
+    valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
 
     # Create train and valid datasets
-    train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=log)
+    train_ds = h5_dataset(train)
+    valid_ds = h5_dataset(valid)
 
     # Create databunch with defined batchsize
     bs = 256
-    data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
+    data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # First guess for max_iter
-    print("\nTotal number of batches ~ ", data.train_ds.x.size(0) * 2 // bs)
+    print("\nTotal number of batches ~ ", len(data.train_ds) * 2 // bs)
 
     # Define model
     arch_name = arch
     arch = getattr(architecture, arch)()
 
-    # Define resize for mnist data
-    mnist_view = view_tfm(2, 64, 64)
+    # Define resize based on the length of a target image
+    img = train_ds[0][1]
+    mnist_view = view_tfm(2, int(np.sqrt(img.shape[0])), int(np.sqrt(img.shape[0])))
 
     # make normalisation
     norm = normalize_tfm(norm_path)
 
     # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=400, max_lr=1e-1, min_lr=1e-4),
+        partial(LR_Find, max_iter=650, max_lr=max_lr, min_lr=min_lr),
         Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),

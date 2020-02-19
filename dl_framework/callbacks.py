@@ -6,7 +6,8 @@ from functools import partial
 from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
-#from dl_framework.logger import make_notifier
+# from dl_framework.logger import make_notifier
+from dl_framework.model import save_model
 
 
 class CancelTrainException(Exception):
@@ -206,18 +207,23 @@ class LR_Find(Callback):
 
 
 class LoggerCallback(Callback):
+    def __init__(self, model_name):
+        self.model_name = model_name
+
     def begin_fit(self):
         logger = make_notifier()
-        logger.info('Start des Trainings')
+        logger.info('Start des Trainings von Modell {}'.format(self.model_name))
 
     def after_epoch(self):
         if (self.epoch + 1) % 10 == 0:
             logger = make_notifier()
-            logger.info('Epoche {} zu Ende mit Loss {}'.format(self.epoch+1, self.loss))
+            logger.info('{}: Epoche {} zu Ende mit Loss {}'.format(
+                self.model_name, self.epoch+1, self.avg_stats.valid_stats.avg_stats[1]))
 
     def after_fit(self):
         logger = make_notifier()
-        logger.info('Ende des Trainings nach {} Epochen mit Loss {}'.format(self.epoch+1, self.loss))
+        logger.info('{}: Ende des Trainings nach {} Epochen mit Loss {}'.format(
+            self.model_name, self.epoch+1, self.avg_stats.valid_stats.avg_stats[1]))
 
 
 class CudaCallback(Callback):
@@ -326,8 +332,10 @@ class MixUp(Callback):
 class SaveCallback(Callback):
     _order = 95
 
+    def __init__(self, model_path):
+        self.model_path = "/".join(model_path.split('/', 2)[:2])
+
     def after_epoch(self):
         if round(self.n_epochs) % 10 == 0:
-            state = self.model.state_dict()
-            torch.save(state, './models/temp.model')
+            save_model(self, self.model_path + "/temp_{}.model".format(round(self.n_epochs)))
             print('\nFinished Epoch {}, model saved.\n'.format(round(self.n_epochs)))
