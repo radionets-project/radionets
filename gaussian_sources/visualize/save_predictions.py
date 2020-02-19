@@ -7,38 +7,40 @@ import dl_framework.architectures as architecture
 from mnist_cnn.visualize.utils import eval_model
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from dl_framework.model import load_pre_model
 
 
 @click.command()
 @click.argument('data_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('arch', type=str)
+@click.argument('pretrained_path', type=click.Path(exists=True, dir_okay=True))
 @click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
 @click.option('-num', type=int, required=False)
-def main(data_path, arch, out_path, num=100):
-    print(data_path)
+@click.option('-fourier', type=bool, required=True)
+def main(data_path, arch, pretrained_path, out_path, fourier, num=100):
     bundle_paths = get_bundles(data_path)
     test = [
         path for path in bundle_paths
         if re.findall('fft_samp_test', path.name)
         ]
-    test_ds = h5_dataset(test)
+    test_ds = h5_dataset(test, tar_fourier=fourier)
     indices = np.random.randint(0, len(test_ds), size=num)
-    images = [test_ds[i][0].view(1, 2, 64, 64) for i in indices]
+
+    img_size = int(np.sqrt(test_ds[0][0].shape[1]))
+    images = [test_ds[i][0].view(1, 2, img_size, img_size) for i in indices]
+
     arch = getattr(architecture, arch)()
+    load_pre_model(arch, pretrained_path, visualize=True)
 
-    prediction = [eval_model(img, arch).view(4096).numpy() for img in tqdm(images)]
+    prediction = [eval_model(img, arch).numpy().reshape(-1) for img in tqdm(images)]
 
-    print(prediction[1].shape)
-    plt.imshow(prediction[1].reshape(64, 64))
-    plt.show()
-    # d = {'train_mean_real': [mean_real],
-    #      'train_std_real': [std_real],
-    #      'train_mean_imag': [mean_imag],
-    #      'train_std_imag': [std_imag]
-    #      }
+    print(prediction[10].shape)
 
+    outpath = str(out_path) + "predictions.csv"
     df = pd.DataFrame(prediction)
-    df.to_csv('test.csv', index=False)
+    df.to_csv(outpath, index=False)
+    # plt.imshow(prediction[1].reshape(1, 2, 64, 64)[0, 1, :])
+    # plt.show()
 
 
 if __name__ == '__main__':
