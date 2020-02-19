@@ -2,7 +2,7 @@
 all: visualize_predictions
 
 visualize_predictions: build/visualize_predictions_done
-save_predictions: ./save_pred
+save_predictions: ./pred_save
 
 build/visualize_predictions_done:
 	mkdir -p ${out_path}
@@ -14,7 +14,7 @@ build/visualize_predictions_done:
 	-fourier ${fourier} \
 	${mode}
 
-./save_pred:
+./pred_save:
 	mkdir -p ${out_path}
 	python save_predictions.py ${data} \
 	${arch} ${path_model} ${out_path} -fourier ${fourier} ${mode}
