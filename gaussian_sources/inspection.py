@@ -130,8 +130,9 @@ def visualize_with_fourier(i, img, img_y, arch, out_path):
     out_path: string which contains the output path
     """
     # reshaping of target and input
-    img_reshaped = img[i].view(1, 2, 64, 64)
-    img_y_reshaped = img_y[i].view(1, 2, 64, 64)
+    img_size = int(np.sqrt(img[i].shape[1]))
+    img_reshaped = img[i].view(1, 2, img_size, img_size)
+    img_y_reshaped = img_y[i].view(1, 2, img_size, img_size)
 
     # predict image
     prediction = eval_model(img_reshaped, arch)
@@ -158,7 +159,7 @@ def visualize_with_fourier(i, img, img_y, arch, out_path):
     ax1.set_title(r'Real Input')
     fig.colorbar(im1, cax=cax, orientation='vertical')
 
-    im2 = ax2.imshow(real_pred.reshape(64, 64), cmap='RdBu')
+    im2 = ax2.imshow(real_pred.reshape(img_size, img_size), cmap='RdBu')
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax2.set_title(r'Real Prediction')
@@ -176,7 +177,7 @@ def visualize_with_fourier(i, img, img_y, arch, out_path):
     ax4.set_title(r'Imaginary Input')
     fig.colorbar(im4, cax=cax, orientation='vertical')
 
-    im5 = ax5.imshow(imag_pred.reshape(64, 64), cmap='RdBu')
+    im5 = ax5.imshow(imag_pred.reshape(img_size, img_size), cmap='RdBu')
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax5.set_title(r'Imaginary Prediction')
@@ -205,14 +206,15 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth):
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
     # create (complex) input for inverse fourier transformation for prediction
+    img_size = int(np.sqrt(real_pred.shape[0]))
     compl_pred = real_pred + imag_pred * 1j
-    compl_pred = compl_pred.reshape(64, 64)
+    compl_pred = compl_pred.reshape(img_size, img_size)
     # inverse fourier transformation
     ifft_pred = np.fft.ifft2(compl_pred)
 
     # create (complex) input for inverse fourier transformation for prediction
     compl_truth = real_truth + imag_truth * 1j
-    compl_truth = compl_truth.reshape(64, 64)
+    compl_truth = compl_truth.reshape(img_size, img_size)
     # inverse fourier transform
     ifft_truth = np.fft.ifft2(compl_truth)
 
