@@ -2,78 +2,95 @@
 dataset: simulate_bundles\
 		 fft_samp
 
-simulate_bundles: ./data3/bundles_train_done\
-				  ./data3/bundles_valid_done\
-				  ./data3/bundles_test_done
-fft_samp: ./data3/fft_train_done\
-		  ./data3/fft_valid_done\
-		  ./data3/fft_test_done
-calc_normalization: ./data3/normalization_factors.csv
+simulate_bundles: ${data}/gaussian_sources_train0.h5\
+				  ${data}/gaussian_sources_valid0.h5\
+				  ${data}/gaussian_sources_test0.h5
+
+fft_samp: ${data}/fft_samp_train0.h5\
+		  ${data}/fft_samp_valid0.h5\
+		  ${data}/fft_samp_test0.h5
+calc_normalization: ${data}/normalization_factors.csv
 cnn_training: ./training_done
 find_lr: ./lr_find
 
 ######################################################################
 
-./data3/bundles_train_done:
-		mkdir -p data3/
-		python simulate_bundles.py \
-		160 512 128 data3/gaussian_sources_train \
-		-noise False
-		touch ./data3/bundles_train_done
+# bundles_${bundles}_done:
+# 		mkdir -p ${data}
+# 		python simulate_bundles.py \
+# 		${num_bundles_train} ${num_img} ${size_img} ${data}/gaussian_sources_$@ \
+# 		-noise False
+# 		touch bundles_$@_done
 
-./data3/fft_train_done:
+# fft_samp_${samp}_done:
+# 		python create_fft_pairs.py \
+# 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
+# 		-mode $@ \
+# 		-samp True \
+# 		-size ${size_img} \
+# 		-specific_mask True \
+# 		-lon -80 \
+# 		-lat 50 \
+# 		-steps 50
+# 		touch fft_samp_$@_done
+
+${data}/gaussian_sources_train0.h5:
+		mkdir -p ${data}/
+		python simulate_bundles.py \
+		${num_bundles_train} ${num_img} ${size_img} ${data}/gaussian_sources_train \
+		-noise False
+
+${data}/fft_samp_train0.h5:
 		python create_fft_pairs.py \
-		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode train \
+		-fourier ${fourier} \
 		-samp True \
-		-size 128 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ./data3/fft_train_done
 
-./data3/bundles_valid_done:
-		mkdir -p data3/
+${data}/gaussian_sources_valid0.h5:
+		mkdir -p ${data}/
 		python simulate_bundles.py \
-		40 512 128 data3/gaussian_sources_valid \
+		${num_bundles_valid} ${num_img} ${size_img} ${data}/gaussian_sources_valid \
 		-noise False
-		touch ./data3/bundles_valid_done
 
-./data3/fft_valid_done:
+${data}/fft_samp_valid0.h5:
 		python create_fft_pairs.py \
-		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode valid \
+		-fourier ${fourier} \
 		-samp True \
-		-size 128 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ./data3/fft_valid_done
 
-./data3/bundles_test_done:
-		mkdir -p data3/
+${data}/gaussian_sources_test0.h5:
+		mkdir -p ${data}/
 		python simulate_bundles.py \
-		40 512 128 data3/gaussian_sources_test \
+		${num_bundles_test} ${num_img} ${size_img} ${data}/gaussian_sources_test \
 		-noise False
-		touch ./data3/bundles_test_done
 
-./data3/fft_test_done:
+${data}/fft_samp_test0.h5:
 		python create_fft_pairs.py \
-		./data3 ./data3/fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode test \
+		-fourier ${fourier} \
 		-samp True \
-		-size 128 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ./data3/fft_test_done
 
-./data3/normalization_factors.csv:
+${data}/normalization_factors.csv:
 		python calculate_normalization.py\
-		data3/ \
+		${data}/ \
 		${norm_path}
 
 ./training_done:
@@ -81,7 +98,7 @@ find_lr: ./lr_find
 		python train_cnn.py ${data}\
 		${path_model}\
 		${arch} ${norm_path}\
-		${epochs} ${lr} ${lr_type} -log ${log}\
+		${epochs} ${lr} ${lr_type} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
 		# touch ./training_done
@@ -90,7 +107,7 @@ find_lr: ./lr_find
 		mkdir -p models/
 		python find_lr.py ${data}\
 		${arch} ${lr_type} ${norm_path} -min_lr ${min_lr}\
-		-max_lr ${max_lr} -log ${log}\
+		-max_lr ${max_lr} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
@@ -104,4 +121,4 @@ clean_norm:
 	rm -r ${norm_path}
 
 clean_data:
-	rm -r data/
+	rm -r ${data}/
