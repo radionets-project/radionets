@@ -43,7 +43,7 @@ import re
     required=False,
     help="true, if target variables get fourier transformed",
 )
-@click.option("-log", type=bool, required=True, help="use of logarith")
+@click.option("-log", type=bool, required=True, help="use of logarithm")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
