@@ -189,12 +189,12 @@ def visualize_with_fourier(i, img, img_y, arch, out_path):
     ax6.set_title(r'Imaginary Truth')
     fig.colorbar(im6, cax=cax, orientation='vertical')
 
-    outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
+    outpath = str(out_path) + "prediction_{}.png".format(i)
     fig.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
     return real_pred, imag_pred, real_truth, imag_truth
 
 
-def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth):
+def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
     """
     function for visualizing the output of a inverse fourier transform. For now, it is
     necessary to take the absolute of the result of the inverse fourier transform,
@@ -233,4 +233,5 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth):
     cax = divider.append_axes('right', size='5%', pad=0.05)
     fig.colorbar(im2, cax=cax, orientation='vertical')
 
-    plt.savefig('build/fft_pred_{}.pdf'.format(i), bbox_inches='tight', pad_inches=0.01)
+    outpath = str(out_path) + "fft_pred_{}.png".format(i)
+    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)

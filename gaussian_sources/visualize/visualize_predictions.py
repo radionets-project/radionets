@@ -72,7 +72,7 @@ def main(
                     real_truth,
                     imag_truth,
                 ) = visualize_with_fourier(i, img, img_y, arch, out_path,)
-                visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth)
+                visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path)
             else:
                 visualize_without_fourier(i, index, img, img_y, arch, out_path)
 
@@ -83,7 +83,7 @@ def main(
             real_pred, imag_pred, real_truth, imag_truth = visualize_with_fourier(
                 i, img, img_y, arch, out_path
             )
-            visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth)
+            visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path)
         else:
             visualize_without_fourier(i, index, img, img_y, arch, out_path)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
