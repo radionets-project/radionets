@@ -44,6 +44,7 @@ ${data}/fft_samp_train0.h5:
 		python create_fft_pairs.py \
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode train \
+		-fourier ${fourier} \
 		-samp True \
 		-size ${size_img} \
 		-specific_mask True \
@@ -61,6 +62,7 @@ ${data}/fft_samp_valid0.h5:
 		python create_fft_pairs.py \
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode valid \
+		-fourier ${fourier} \
 		-samp True \
 		-size ${size_img} \
 		-specific_mask True \
@@ -78,6 +80,7 @@ ${data}/fft_samp_test0.h5:
 		python create_fft_pairs.py \
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode test \
+		-fourier ${fourier} \
 		-samp True \
 		-size ${size_img} \
 		-specific_mask True \
@@ -95,7 +98,7 @@ ${data}/normalization_factors.csv:
 		python train_cnn.py ${data}\
 		${path_model}\
 		${arch} ${norm_path}\
-		${epochs} ${lr} ${lr_type} -log ${log}\
+		${epochs} ${lr} ${lr_type} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
 		# touch ./training_done
@@ -104,7 +107,7 @@ ${data}/normalization_factors.csv:
 		mkdir -p models/
 		python find_lr.py ${data}\
 		${arch} ${lr_type} ${norm_path} -min_lr ${min_lr}\
-		-max_lr ${max_lr} -log ${log}\
+		-max_lr ${max_lr} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 

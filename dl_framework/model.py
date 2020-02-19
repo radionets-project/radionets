@@ -25,10 +25,10 @@ def fft(x):
     # perform fourier transformation and switch imaginary and real part
     arr_fft = torch.ifft(arr, 2).permute(0, 3, 2, 1).transpose(2, 3)
     # shift the lower frequencies in the middle
-    axes = tuple(range(arr_fft.ndim))
-    shift = [-(dim // 2) for dim in arr_fft.shape]
-    arr_shift = torch.roll(arr_fft, shift, axes)
-    return arr_shift
+    # axes = tuple(range(arr_fft.ndim))
+    # shift = [-(dim // 2) for dim in arr_fft.shape]
+    # arr_shift = torch.roll(arr_fft, shift, axes)
+    return arr_fft
 
 
 def shape(x):
@@ -38,6 +38,10 @@ def shape(x):
 
 def flatten(x):
     return x.reshape(x.shape[0], -1)
+
+
+def flatten_with_channel(x):
+    return x.reshape(x.shape[0], x.shape[1], -1)
 
 
 def cut_off(x):

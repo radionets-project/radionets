@@ -3,9 +3,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
-from dl_framework.callbacks import view_tfm
 from dl_framework.data import do_normalisation
-from matplotlib.colors import LogNorm
+from mnist_cnn.visualize.utils import eval_model
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def get_eval_img(valid_ds, model, norm_path):
@@ -69,3 +69,169 @@ def plot_lr_loss(learn, arch_name, skip_last):
     # plt.yscale('log')
     plt.savefig('./models/lr_loss.pdf', bbox_inches='tight', pad_inches=0.01)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
+
+def visualize_without_fourier(i, index, img, img_y, arch, out_path):
+    print(index)
+    img_reshaped = img[i].view(1, 2, 64, 64)
+
+    # predict image
+    prediction = eval_model(img_reshaped, arch)
+
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
+
+    inp = img_reshaped.numpy()
+
+    inp_real = inp[0, 0, :]
+    inp_imag = inp[0, 1, :]
+
+    im1 = ax1.imshow(inp_real, cmap='RdBu', vmin=-inp_real.max(),
+                     vmax=inp_real.max())
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax1.set_title(r'Real Input')
+    fig.colorbar(im1, cax=cax, orientation='vertical')
+
+    im2 = ax2.imshow(inp_imag, cmap='RdBu', vmin=-inp_imag.max(),
+                     vmax=inp_imag.max())
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax2.set_title(r'Imaginary Input')
+    fig.colorbar(im2, cax=cax, orientation='vertical')
+
+    pred_img = prediction.reshape(64, 64).numpy()
+    im3 = ax3.imshow(pred_img)
+    divider = make_axes_locatable(ax3)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax3.set_title(r'Prediction')
+    im4 = ax4.imshow(img_y[index].reshape(64, 64))
+    fig.colorbar(im4, cax=cax, orientation='vertical')
+
+    # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+    divider = make_axes_locatable(ax4)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax4.set_title(r'Truth')
+    fig.colorbar(im4, cax=cax, orientation='vertical')
+
+    outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
+    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+    plt.clf()
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
+
+def visualize_with_fourier(i, img, img_y, arch, out_path):
+    """
+    Visualizing, if the target variables are displayed in fourier space.
+
+    i: Current index given form the loop
+    img: list of input images
+    img_y: list of target images
+    arch: learn.model object with the used architecture
+    out_path: string which contains the output path
+    """
+    # reshaping of target and input
+    img_size = int(np.sqrt(img[i].shape[1]))
+    img_reshaped = img[i].view(1, 2, img_size, img_size)
+    img_y_reshaped = img_y[i].view(1, 2, img_size, img_size)
+
+    # predict image
+    prediction = eval_model(img_reshaped, arch)
+
+    # splitting in real and imaginary part
+    real_pred = prediction[0, 0, :].numpy()
+    imag_pred = prediction[0, 1, :].numpy()
+
+    inp = img_reshaped.numpy()
+    inp_real = inp[0, 0, :]
+    inp_imag = inp[0, 1, :]
+
+    inp_y = img_y_reshaped.numpy()
+
+    real_truth = inp_y[0, 0, :]
+    imag_truth = inp_y[0, 1, :]
+
+    # plotting
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
+
+    im1 = ax1.imshow(inp_real, cmap='RdBu')
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax1.set_title(r'Real Input')
+    fig.colorbar(im1, cax=cax, orientation='vertical')
+
+    im2 = ax2.imshow(real_pred.reshape(img_size, img_size), cmap='RdBu')
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax2.set_title(r'Real Prediction')
+    fig.colorbar(im2, cax=cax, orientation='vertical')
+
+    im3 = ax3.imshow(real_truth, cmap='RdBu')
+    divider = make_axes_locatable(ax3)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax3.set_title(r'Real Truth')
+    fig.colorbar(im3, cax=cax, orientation='vertical')
+
+    im4 = ax4.imshow(inp_imag, cmap='RdBu')
+    divider = make_axes_locatable(ax4)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax4.set_title(r'Imaginary Input')
+    fig.colorbar(im4, cax=cax, orientation='vertical')
+
+    im5 = ax5.imshow(imag_pred.reshape(img_size, img_size), cmap='RdBu')
+    divider = make_axes_locatable(ax5)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax5.set_title(r'Imaginary Prediction')
+    fig.colorbar(im5, cax=cax, orientation='vertical')
+
+    im6 = ax6.imshow(imag_truth, cmap='RdBu')
+    divider = make_axes_locatable(ax6)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax6.set_title(r'Imaginary Truth')
+    fig.colorbar(im6, cax=cax, orientation='vertical')
+
+    outpath = str(out_path) + "prediction_{}.png".format(i)
+    fig.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+    return real_pred, imag_pred, real_truth, imag_truth
+
+
+def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
+    """
+    function for visualizing the output of a inverse fourier transform. For now, it is
+    necessary to take the absolute of the result of the inverse fourier transform,
+    because the output is complex.
+    i: current index of the loop, just used for saving
+    real_pred: real part of the prediction computed in visualize with fourier
+    imag_pred: imaginary part of the prediction computed in visualize with fourier
+    real_truth: real part of the truth computed in visualize with fourier
+    imag_truth: imaginary part of the truth computed in visualize with fourier
+    """
+    # create (complex) input for inverse fourier transformation for prediction
+    img_size = int(np.sqrt(real_pred.shape[0]))
+    compl_pred = real_pred + imag_pred * 1j
+    compl_pred = compl_pred.reshape(img_size, img_size)
+    # inverse fourier transformation
+    ifft_pred = np.fft.ifft2(compl_pred)
+
+    # create (complex) input for inverse fourier transformation for prediction
+    compl_truth = real_truth + imag_truth * 1j
+    compl_truth = compl_truth.reshape(img_size, img_size)
+    # inverse fourier transform
+    ifft_truth = np.fft.ifft2(compl_truth)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
+
+    im1 = ax1.imshow(np.abs(ifft_pred), cmap='RdBu')
+    im2 = ax2.imshow(np.abs(ifft_truth), cmap='RdBu')
+    ax1.set_title(r'FFT Prediction')
+    ax2.set_title(r'FFT Truth')
+
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im2, cax=cax, orientation='vertical')
+
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im2, cax=cax, orientation='vertical')
+
+    outpath = str(out_path) + "fft_pred_{}.png".format(i)
+    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)

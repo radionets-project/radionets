@@ -12,13 +12,14 @@ import re
 @click.argument('antenna_config_path', type=click.Path(exists=True,
                                                        dir_okay=False))
 @click.option('-mode', type=str, required=True)
+@click.option('-fourier', type=bool, required=True)
 @click.option('-samp', type=bool, required=False)
 @click.option('-size', type=int, required=True)
 @click.option('-specific_mask', type=bool)
 @click.option('-lon', type=float, required=False)
 @click.option('-lat', type=float, required=False)
 @click.option('-steps', type=float, required=False)
-def main(in_path, out_path, antenna_config_path, mode, size, samp=True,
+def main(in_path, out_path, antenna_config_path, mode, fourier, size, samp=True,
          specific_mask=False, lon=None, lat=None, steps=None):
     '''
     get list of bundles
@@ -37,17 +38,21 @@ def main(in_path, out_path, antenna_config_path, mode, size, samp=True,
         bundle = open_bundle(path)
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img
                                in bundle])
+        copy = bundle_fft.copy()
         if samp is True:
             if specific_mask is True:
-                bundle_fft = np.array([sample_freqs(img, antenna_config_path,
+                bundle_samp = np.array([sample_freqs(img, antenna_config_path,
                                        size, lon, lat, steps) for img
-                                       in bundle_fft])
+                                       in copy])
             else:
-                bundle_fft = np.array([sample_freqs(img, antenna_config_path,
+                bundle_samp = np.array([sample_freqs(img, antenna_config_path,
                                        size=size) for img
-                                       in bundle_fft])
+                                       in copy])
         out = out_path + path.name.split('_')[-1]
-        save_fft_pair(out, bundle_fft, bundle)
+        if fourier:
+            save_fft_pair(out, bundle_samp, bundle_fft)
+        else:
+            save_fft_pair(out, bundle_samp, bundle)
 
 
 if __name__ == '__main__':
