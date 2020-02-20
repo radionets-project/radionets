@@ -4,8 +4,15 @@ import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 from dl_framework.data import do_normalisation
-from mnist_cnn.visualize.utils import eval_model
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+
+def open_csv(out_path, mode):
+    img_path = str(out_path) + "{}.csv".format(mode)
+    img_df = pd.read_csv(img_path, index_col=0)
+    indices = img_df.index.to_numpy()
+    imgs = img_df.to_numpy()
+    return imgs, indices
 
 
 def get_eval_img(valid_ds, model, norm_path):
