@@ -107,11 +107,13 @@ def main(
         i, index = 0, 0
         if fourier:
             real_pred, imag_pred, real_truth, imag_truth = visualize_with_fourier(
-                i, img, img_y, arch, out_path
+                i, img_input, img_pred, img_truth, arch, out_path,
             )
             visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path)
         else:
-            visualize_without_fourier(i, index, img, img_y, arch, out_path)
+            visualize_without_fourier(
+                i, img_input, img_pred, img_truth, arch, out_path,
+            )
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
