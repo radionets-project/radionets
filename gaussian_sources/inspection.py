@@ -15,6 +15,22 @@ def open_csv(out_path, mode):
     return imgs, indices
 
 
+def reshape_split(img):
+    if np.sqrt(img.shape[0]) % 1 == 0.0:
+        img_size = int(np.sqrt(img.shape[0]))
+        img_reshaped = img.reshape(img_size, img_size)
+
+        return img_reshaped
+
+    else:
+        img_size = int(np.sqrt(img.shape[0] / 2))
+        img_reshaped = img.reshape(1, 2, img_size, img_size)
+        img_real = img_reshaped[0, 0, :]
+        img_imag = img_reshaped[0, 1, :]
+
+        return img_real, img_imag
+
+
 def get_eval_img(valid_ds, model, norm_path):
     rand = np.random.randint(0, len(valid_ds))
     img = valid_ds[rand][0].cuda()
@@ -79,14 +95,9 @@ def plot_lr_loss(learn, arch_name, skip_last):
 
 
 def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path):
-    img_size = int(np.sqrt(img_input.shape[0]/2))
-
-    img_input_reshaped = img_input.reshape(1, 2, img_size, img_size)
-    img_pred_reshaped = img_pred.reshape(img_size, img_size)
-    img_truth_reshaped = img_truth.reshape(img_size, img_size)
-
-    inp_real = img_input_reshaped[0, 0, :]
-    inp_imag = img_input_reshaped[0, 1, :]
+    inp_real, inp_imag = reshape_split(img_input)
+    img_pred = reshape_split(img_pred)
+    img_truth = reshape_split(img_truth)
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
 
@@ -104,11 +115,11 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path)
     ax2.set_title(r'Imaginary Input')
     fig.colorbar(im2, cax=cax, orientation='vertical')
 
-    im3 = ax3.imshow(img_pred_reshaped)
+    im3 = ax3.imshow(img_pred)
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax3.set_title(r'Prediction')
-    im4 = ax4.imshow(img_truth_reshaped)
+    im4 = ax4.imshow(img_truth)
     fig.colorbar(im4, cax=cax, orientation='vertical')
 
     # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
@@ -134,24 +145,9 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, arch, out_path):
     out_path: string which contains the output path
     """
     # reshaping of target and input
-    img_size = int(np.sqrt(img_input.shape[0]/2))
-    img_input_reshaped = img_input.reshape(1, 2, img_size, img_size)
-    img_pred_reshaped = img_pred.reshape(1, 2, img_size, img_size)
-    img_truth_reshaped = img_truth.reshape(1, 2, img_size, img_size)
-
-    # predict image
-    # prediction = eval_model(img_reshaped, arch)
-    # prediction = img_reshaped.copy()
-
-    # splitting in real and imaginary part
-    real_pred = img_pred_reshaped[0, 0, :]
-    imag_pred = img_pred_reshaped[0, 1, :]
-
-    inp_real = img_input_reshaped[0, 0, :]
-    inp_imag = img_input_reshaped[0, 1, :]
-
-    real_truth = img_truth_reshaped[0, 0, :]
-    imag_truth = img_truth_reshaped[0, 1, :]
+    inp_real, inp_imag = reshape_split(img_input)
+    real_pred, imag_pred = reshape_split(img_pred)
+    real_truth, imag_truth = reshape_split(img_truth)
 
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
@@ -162,7 +158,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, arch, out_path):
     ax1.set_title(r'Real Input')
     fig.colorbar(im1, cax=cax, orientation='vertical')
 
-    im2 = ax2.imshow(real_pred.reshape(img_size, img_size), cmap='RdBu')
+    im2 = ax2.imshow(real_pred, cmap='RdBu')
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax2.set_title(r'Real Prediction')
@@ -180,7 +176,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, arch, out_path):
     ax4.set_title(r'Imaginary Input')
     fig.colorbar(im4, cax=cax, orientation='vertical')
 
-    im5 = ax5.imshow(imag_pred.reshape(img_size, img_size), cmap='RdBu')
+    im5 = ax5.imshow(imag_pred, cmap='RdBu')
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax5.set_title(r'Imaginary Prediction')
@@ -209,15 +205,14 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
     # create (complex) input for inverse fourier transformation for prediction
-    img_size = real_pred.shape[0]
     compl_pred = real_pred + imag_pred * 1j
-    compl_pred = compl_pred.reshape(img_size, img_size)
+
     # inverse fourier transformation
     ifft_pred = np.fft.ifft2(compl_pred)
 
     # create (complex) input for inverse fourier transformation for prediction
     compl_truth = real_truth + imag_truth * 1j
-    compl_truth = compl_truth.reshape(img_size, img_size)
+
     # inverse fourier transform
     ifft_truth = np.fft.ifft2(compl_truth)
 
