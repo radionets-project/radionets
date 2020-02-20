@@ -37,22 +37,17 @@ def main(
     plt.ioff()
     plt.rcParams.update({"figure.max_open_warning": 0})
 
-    input_img, indices = open_csv(out_path, 'input')
-    predictions, _ = open_csv(out_path, 'predictions')
-    truth, _ = open_csv(out_path, 'truth')
-
-    if index is None:
-        imgs_input = input_img
-        imgs_pred = predictions
-        imgs_truth = truth
-
-    else:
-        img_input = input_img[index]
-        img_pred = predictions[index]
-        img_truth = truth[index]
+    imgs_input, indices = open_csv(out_path, 'input')
+    imgs_pred, _ = open_csv(out_path, 'predictions')
+    imgs_truth, _ = open_csv(out_path, 'truth')
 
     if log is True:
-        input_img = torch.log(input_img)
+        imgs_input = torch.log(imgs_input)
+
+    if index is not None:
+        img_input = imgs_input[index]
+        img_pred = imgs_pred[index]
+        img_truth = imgs_truth[index]
 
     # get arch
     arch = getattr(architecture, arch)()
