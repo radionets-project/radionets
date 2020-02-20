@@ -9,7 +9,6 @@ build/visualize_predictions_done:
 	python visualize_predictions.py \
 	${arch} \
 	${path_model} \
-	${data} \
 	${out_path} \
 	-fourier ${fourier} \
 	${mode}
