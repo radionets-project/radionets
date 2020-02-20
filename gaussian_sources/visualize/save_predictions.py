@@ -28,6 +28,7 @@ def main(data_path, arch, pretrained_path, out_path, fourier, num=100):
 
     img_size = int(np.sqrt(test_ds[0][0].shape[1]))
     images = [test_ds[i][0].view(1, 2, img_size, img_size) for i in indices]
+    images_x = [test_ds[i][0].numpy().reshape(-1) for i in indices]
     if fourier:
         images_y = [test_ds[i][1].numpy().reshape(-1) for i in indices]
     else:
@@ -40,6 +41,10 @@ def main(data_path, arch, pretrained_path, out_path, fourier, num=100):
 
     print(prediction[10].shape)
 
+    outpath = str(out_path) + "input.csv"
+    df = pd.DataFrame(data=images_x, index=indices)
+    df.to_csv(outpath, index=True)
+
     outpath = str(out_path) + "predictions.csv"
     df = pd.DataFrame(data=prediction, index=indices)
     df.to_csv(outpath, index=True)
@@ -47,7 +52,7 @@ def main(data_path, arch, pretrained_path, out_path, fourier, num=100):
     outpath = str(out_path) + "truth.csv"
     df_targets = pd.DataFrame(data=images_y, index=indices)
     df_targets.to_csv(outpath, index=True)
-    # plt.imshow(images_y[3].reshape(1, 2, 64, 64)[0, 1, :])
+    # plt.imshow(images_x[3].reshape(1, 2, 64, 64)[0, 1, :])
     # plt.show()
 
 
