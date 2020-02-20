@@ -106,7 +106,7 @@ ${data}/normalization_factors.csv:
 ./lr_find:
 		mkdir -p models/
 		python find_lr.py ${data}\
-		${arch} ${lr_type} ${norm_path} -min_lr ${min_lr}\
+		${arch} ${lr_type} ${norm_path} -max_iter ${max_iter} -min_lr ${min_lr}\
 		-max_lr ${max_lr} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
