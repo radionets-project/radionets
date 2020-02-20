@@ -71,20 +71,17 @@ def plot_lr_loss(learn, arch_name, skip_last):
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_without_fourier(i, index, img, img_y, arch, out_path):
-    img_size = int(np.sqrt(img[i].shape[0]))
-    img_reshaped = img[i].reshape(img_size, img_size)
+def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path):
+    img_size = int(np.sqrt(img_input.shape[0]/2))
 
-    # predict image
-    # prediction = eval_model(img_reshaped, arch)
-    prediction = img_reshaped.copy()
+    img_input_reshaped = img_input.reshape(1, 2, img_size, img_size)
+    img_pred_reshaped = img_pred.reshape(img_size, img_size)
+    img_truth_reshaped = img_truth.reshape(img_size, img_size)
+
+    inp_real = img_input_reshaped[0, 0, :]
+    inp_imag = img_input_reshaped[0, 1, :]
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
-
-    inp = img_reshaped.numpy()
-
-    inp_real = inp[0, 0, :]
-    inp_imag = inp[0, 1, :]
 
     im1 = ax1.imshow(inp_real, cmap='RdBu', vmin=-inp_real.max(),
                      vmax=inp_real.max())
@@ -100,12 +97,11 @@ def visualize_without_fourier(i, index, img, img_y, arch, out_path):
     ax2.set_title(r'Imaginary Input')
     fig.colorbar(im2, cax=cax, orientation='vertical')
 
-    pred_img = prediction.reshape(img_size, img_size).numpy()
-    im3 = ax3.imshow(pred_img)
+    im3 = ax3.imshow(img_pred_reshaped)
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax3.set_title(r'Prediction')
-    im4 = ax4.imshow(img_y[index].reshape(img_size, img_size))
+    im4 = ax4.imshow(img_truth_reshaped)
     fig.colorbar(im4, cax=cax, orientation='vertical')
 
     # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
@@ -114,13 +110,13 @@ def visualize_without_fourier(i, index, img, img_y, arch, out_path):
     ax4.set_title(r'Truth')
     fig.colorbar(im4, cax=cax, orientation='vertical')
 
-    outpath = str(out_path).split('.')[0] + '_{}.{}'.format(i, str(out_path).split('.')[-1])
+    outpath = str(out_path) + "prediction_{}.png".format(i)
     plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
     plt.clf()
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_with_fourier(i, img, img_y, arch, out_path):
+def visualize_with_fourier(i, img_input, img_pred, img_truth, arch, out_path):
     """
     Visualizing, if the target variables are displayed in fourier space.
 
@@ -131,26 +127,24 @@ def visualize_with_fourier(i, img, img_y, arch, out_path):
     out_path: string which contains the output path
     """
     # reshaping of target and input
-    img_size = int(np.sqrt(img[i].shape[0]/2))
-    img_reshaped = img[i].reshape(1, 2, img_size, img_size)
-    img_y_reshaped = img_y[i].reshape(1, 2, img_size, img_size)
+    img_size = int(np.sqrt(img_input.shape[0]/2))
+    img_input_reshaped = img_input.reshape(1, 2, img_size, img_size)
+    img_pred_reshaped = img_pred.reshape(1, 2, img_size, img_size)
+    img_truth_reshaped = img_truth.reshape(1, 2, img_size, img_size)
 
     # predict image
     # prediction = eval_model(img_reshaped, arch)
-    prediction = img_reshaped.copy()
+    # prediction = img_reshaped.copy()
 
     # splitting in real and imaginary part
-    real_pred = prediction[0, 0, :]
-    imag_pred = prediction[0, 1, :]
+    real_pred = img_pred_reshaped[0, 0, :]
+    imag_pred = img_pred_reshaped[0, 1, :]
 
-    inp = img_reshaped
-    inp_real = inp[0, 0, :]
-    inp_imag = inp[0, 1, :]
+    inp_real = img_input_reshaped[0, 0, :]
+    inp_imag = img_input_reshaped[0, 1, :]
 
-    inp_y = img_y_reshaped
-
-    real_truth = inp_y[0, 0, :]
-    imag_truth = inp_y[0, 1, :]
+    real_truth = img_truth_reshaped[0, 0, :]
+    imag_truth = img_truth_reshaped[0, 1, :]
 
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))

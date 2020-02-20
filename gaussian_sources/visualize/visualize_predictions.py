@@ -42,6 +42,10 @@ def main(
     plt.ioff()
     plt.rcParams.update({"figure.max_open_warning": 0})
 
+    input_path = str(out_path) + "input.csv"
+    input_df = pd.read_csv(input_path, index_col=0)
+    input_img = input_df.to_numpy()
+
     pred_path = str(out_path) + "predictions.csv"
     predictions_df = pd.read_csv(pred_path, index_col=0)
     predictions = predictions_df.to_numpy()
@@ -56,17 +60,19 @@ def main(
 
     if index is None:
         indices = predictions_df.index.to_numpy()
-        img = predictions
-        img_y = truth
+        imgs_input = input_img
+        imgs_pred = predictions
+        imgs_truth = truth
         # indices = np.random.randint(0, len(test_ds), size=num)
         # img = [test_ds[i][0] for i in indices]
         # img_y = [test_ds[i][1] for i in indices]
     else:
-        img = predictions[index]
-        img_y = truth[index]
+        img_input = input_img[index]
+        img_pred = predictions[index]
+        img_truth = truth[index]
 
     if log is True:
-        img = torch.log(img)
+        input_img = torch.log(input_img)
 
     # get arch
     arch = getattr(architecture, arch)()
@@ -78,16 +84,23 @@ def main(
         print("\nPlotting {} pictures.\n".format(num))
         for i in tqdm(range(len(indices))):
             index = indices[i]
+            img_input = imgs_input[i]
+            img_pred = imgs_pred[i]
+            img_truth = imgs_truth[i]
             if fourier:
                 (
                     real_pred,
                     imag_pred,
                     real_truth,
                     imag_truth,
-                ) = visualize_with_fourier(i, img, img_y, arch, out_path,)
+                ) = visualize_with_fourier(
+                    i, img_input, img_pred, img_truth, arch, out_path,
+                )
                 visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path)
             else:
-                visualize_without_fourier(i, index, img, img_y, arch, out_path)
+                visualize_without_fourier(
+                    i, img_input, img_pred, img_truth, arch, out_path
+                )
 
     else:
         print("\nPlotting a single index.\n")
