@@ -3,7 +3,9 @@ all: blob_detection\
               average_msssim\
               iqr_ssim\
               iqr_msssim\
-              visualize_blobs 
+              visualize_blobs\
+              peak_detection\
+              visualize_peaks 
 
 average_loss: results/average_loss
 blob_detection: results/blob_detection
@@ -14,6 +16,8 @@ average_ssim: results/average_ssim
 average_msssim: results/average_msssim
 iqr_ssim: results/iqr_ssim
 iqr_msssim: results/iqr_msssim
+peak_detection: results/peak_detection
+visualize_peaks: results/visualize_peaks
 
 model=../models/unet_pointsources.model
 data=../test_data/pointsources_samp_test.h5
@@ -107,6 +111,26 @@ results/iqr_msssim:
         $(data) \
         $(norm) \
         results/iqr_msssim.csv \
+
+results/peak_detection:
+	mkdir -p results/
+	python peak_detection.py \
+	UNet \
+	$(model) \
+	$(data) \
+	$(norm) \
+	results/peak_detection.csv \
+
+results/visualize_peaks:
+	mkdir -p results/
+	python visualize_peaks.py \
+	UNet \
+	$(model) \
+	$(data) \
+	$(norm) \
+	results/peak_detection.png \
+	-num 20
+
 
 
 #-----------------------------------------
