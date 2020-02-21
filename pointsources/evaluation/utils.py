@@ -1,5 +1,5 @@
 import torch
-from skimage.feature import blob_log
+from skimage.feature import blob_log, peak_local_max
 import torch.nn.functional as F
 from math import exp
 import numpy as np
@@ -126,3 +126,55 @@ class SSIM(torch.nn.Module):
             self.channel = channel
 
         return ssim(img1, img2, window=window, window_size=self.window_size, size_average=self.size_average)
+
+def is_in(list1, list2):
+    bools = np.array([])
+    #bools = []
+    for val in list1:
+        
+        #  True if val in array
+        #  False if val not in array
+        #print((val == list2).all(axis=1).any()) 
+        bools  = np.append(bools,(val == list2).all(axis=1).any() )
+        #bools.append((val == list2).all(axis=1).any())
+    return len(bools[bools==0])
+
+def evaluate(prediction, ground_truth):
+    # zero padding the images
+    prediction = np.pad(prediction, (2,2), 'constant', constant_values=(0,0))
+    ground_truth = np.pad(ground_truth, (2,2), 'constant', constant_values=(0,0))
+        
+    pred = peak_local_max(prediction, min_distance=1, threshold_abs=0.1)
+    truth = peak_local_max(ground_truth, min_distance=1, threshold_abs=0.1)
+    
+    if len(pred) == len(truth):
+        x = np.sum(abs(pred-truth), axis=1)
+        count = np.unique(x)
+        #correct
+        if count[count>0].size == 0:
+            return np.array([0,0])
+        #almost correct
+        elif np.max(count[count>0]) <= 2:
+            return np.array([0,-1])
+        #false source
+        else:
+            return np.array([0,-2])
+    
+    else:
+        different = is_in(pred, truth) - is_in(truth, pred)
+        wrong = min(is_in(pred, truth), is_in(truth, pred))
+    
+        return np.array([different, wrong])
+    
+def flux_values(prediction, ground_truth, indices):
+    flux = np.array([])
+    for i in indices:
+        pred_img = np.pad(prediction[i],(2,2),'constant',constant_values=0)
+        truth_img = np.pad(ground_truth[i],(2,2),'constant',constant_values=0)
+        pred = peak_local_max(pred_img, min_distance=1, threshold_abs=0.1)
+        truth = peak_local_max(truth_img, min_distance=1, threshold_abs=0.1)
+        for j in range(len(truth)):
+            flux_pred = pred_img[pred[j,0],pred[j,1]]
+            flux_truth = truth_img[truth[j,0],truth[j,1]]
+            flux = np.append(flux, flux_pred/flux_truth)
+    return flux
