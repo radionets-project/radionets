@@ -1,28 +1,45 @@
-import click
 import re
-import pandas as pd
+
+import click
 import numpy as np
-from dl_framework.data import get_bundles, h5_dataset
-import dl_framework.architectures as architecture
-from mnist_cnn.visualize.utils import eval_model
+import pandas as pd
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+
+import dl_framework.architectures as architecture
+from dl_framework.data import get_bundles, h5_dataset
 from dl_framework.model import load_pre_model
+from mnist_cnn.visualize.utils import eval_model
 
 
 @click.command()
-@click.argument('data_path', type=click.Path(exists=True, dir_okay=True))
-@click.argument('arch', type=str)
-@click.argument('pretrained_path', type=click.Path(exists=True, dir_okay=True))
-@click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
-@click.option('-num', type=int, required=False)
-@click.option('-fourier', type=bool, required=True)
-def main(data_path, arch, pretrained_path, out_path, fourier, num=100):
+@click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
+@click.argument("arch", type=str)
+@click.argument("pretrained_path", type=click.Path(exists=True, dir_okay=True))
+@click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
+@click.option("-num", type=int, required=False)
+@click.option("-fourier", type=bool, required=True)
+def main(data_path, arch, pretrained_path, out_path, fourier, num=20):
+    """
+    Create input, predictions and truth csv files for further investigation,
+    such as visualize_predictions.
+
+    Parameters
+    ----------
+    data_path : click path object
+        path to the data files. Just the folder is necessary
+    arch : string
+        contains the name of the used architecture
+    pretrained_path : click path object
+        path to the pretrained model
+    out_path : click path object
+        path for the saving folder
+    fourier : bool
+        true, if the target images are fourier transformed
+    num : int, optional
+        number of images taken from the test dataset
+    """
     bundle_paths = get_bundles(data_path)
-    test = [
-        path for path in bundle_paths
-        if re.findall('fft_samp_test', path.name)
-        ]
+    test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
     test_ds = h5_dataset(test, tar_fourier=fourier)
     indices = np.random.randint(0, len(test_ds), size=num)
 
@@ -52,9 +69,7 @@ def main(data_path, arch, pretrained_path, out_path, fourier, num=100):
     outpath = str(out_path) + "truth.csv"
     df_targets = pd.DataFrame(data=images_y, index=indices)
     df_targets.to_csv(outpath, index=True)
-    # plt.imshow(images_x[3].reshape(1, 2, 64, 64)[0, 1, :])
-    # plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
