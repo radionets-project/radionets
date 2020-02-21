@@ -3,11 +3,38 @@ import astropy.coordinates as ac
 
 
 class source:
+    """
+    Source class that holds longitude and latitude information.
+    Can be converted to geocentric coordinates. Position of source
+    can be propagated to simulate an ongoing observation.
+
+    Paramters
+    ---------
+    lon: float
+        longitude of source
+    lat: float
+        latitude of source
+    """
     def __init__(self, lon, lat):
         self.lon = lon
         self.lat = lat
 
     def to_ecef(self, val=None, prop=False):
+        """
+        Converts from geodetic to geocentric coordinates
+
+        Parameters
+        ----------
+        val: list with [lon, lat]
+            A specific geodetic position
+        prop: bool
+            use True on lists of propagated source positions, default is False
+
+        Returns
+        -------
+        x, y, z: 1darrays
+            Positions in geocentric coordinates
+        """
         if prop is True:
             quant = ac.EarthLocation(self.lon_prop, self.lat_prop).to_geocentric()
         else:
@@ -20,6 +47,23 @@ class source:
         return x, y, z
 
     def propagate(self, num_steps=None, multi_pointing=False):
+        """
+        Propagates a source position with random parameters
+
+        Parameters
+        ----------
+        num_steps: int
+            number of propagation steps
+        multi_pointing: bool
+            when True observation blocks are simulated, default is False
+
+        Returns
+        -------
+        lon: 1darray
+            array with propagated lons
+        lat: 1darray
+            array with propagated lats
+        """
         if num_steps is None:
             num_steps = np.random.randint(30, 60)
         lon_start = self.lon
@@ -49,7 +93,24 @@ class source:
         self.lat_prop = lat
         return lon, lat
 
-    def mod_delete(self, a, n, m):
+    def mod_delete(a, n, m):
+        """
+        Deletes all m steps n coordinate points in a
+
+        Parameters
+        ----------
+        a: 1darray
+            array with coordinates
+        n: int
+            number of deleted points
+        m: int
+            range between two deletions
+
+        Returns
+        -------
+        a: 1darray
+            array with reduced coordinate points
+        """
         return a[np.mod(np.arange(a.size), n + m) < n]
 
 
@@ -141,6 +202,27 @@ class antenna:
 
 
 def get_uv_coverage(source, antenna, iterate=False):
+    """
+    Converts source position and antenna positions into an (u, v)-coverage.
+
+    Parameters
+    ----------
+    source: source class object
+        source class containing source positions
+    antenna: antenna clas object
+        antenna class containing antenna positions
+    iterate: bool
+        use True while creating (u, v)-coverage gif
+
+    Returns
+    -------
+    u: 1darray
+        u coordinates
+    v: 1darray
+        v coordinates
+    steps: 1darray
+        number of observation steps
+    """
     antenna.to_enu(*source.to_ecef(prop=True))
     u, v, steps = antenna.get_uv()
 
@@ -171,6 +253,32 @@ def create_mask(u, v, size=64):
 def sample_freqs(
     img, ant_config_path, size=64, lon=None, lat=None, num_steps=None, plot=False
 ):
+    """
+    Sample specific frequencies in 2d Fourier space. Using antenna and source class to
+    simulate a radio interferometric observation.
+
+    Parameters
+    ----------
+    img: 2darray
+        2d Fourier space
+    ant_config_path: str
+        path to antenna config file
+    size: int
+        pixel size of input image, default 64x64 pixel
+    lon: float
+        start lon of source, if None: random start value between -90 and -70 is used
+    lat: float
+        start lat of source, if None a random start value between 30 and 80 is used
+    num_steps: int
+        number of observation steps
+    plot: bool
+        if True: returns sampled Fourier spectrum and sampling mask
+
+    Returns
+    -------
+    img: 2darray
+        sampled Fourier Spectrum
+    """
     ant = antenna(*get_antenna_config(ant_config_path))
     if lon is None:
         lon = np.random.randint(-90, -70)
@@ -179,7 +287,6 @@ def sample_freqs(
     s = source(lon, lat)
     s.propagate(num_steps=num_steps, multi_pointing=True)
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
-    # print(size)
     mask = create_mask(u, v, size)
     img[~mask] = 0
     """
@@ -195,6 +302,19 @@ def sample_freqs(
 
 
 def get_antenna_config(config_path):
+    """
+    Loads antenna config file and returns antenna positions.
+
+    Parameters
+    ----------
+    config_path: str
+        path to antenna config file
+
+    Returns
+    -------
+    ant_pos: ndarray
+        array containing x, y, z positions
+    """
     config = config_path
     x, y, z, _, _ = np.genfromtxt(config, unpack=True)
     ant_pos = np.array([x, y, z])
