@@ -96,7 +96,7 @@ class source:
 
     def mod_delete(a, n, m):
         """
-        Deletes all m steps n coordinate points in a
+        Deletes all m steps n values in a
 
         Parameters
         ----------
