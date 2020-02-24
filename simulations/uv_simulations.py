@@ -2,15 +2,42 @@ import numpy as np
 import astropy.coordinates as ac
 
 
-class source():
+class source:
+    """
+    Source class that holds longitude and latitude information.
+    Can be converted to geocentric coordinates. Position of source
+    can be propagated to simulate an ongoing observation.
+    """
     def __init__(self, lon, lat):
+        """
+        Paramters
+        ---------
+        lon: float
+            longitude of source
+        lat: float
+            latitude of source
+        """
         self.lon = lon
         self.lat = lat
 
     def to_ecef(self, val=None, prop=False):
+        """
+        Converts from geodetic to geocentric coordinates
+
+        Parameters
+        ----------
+        val: list with [lon, lat]
+            A specific geodetic position
+        prop: bool
+            use True on lists of propagated source positions, default is False
+
+        Returns
+        -------
+        x, y, z: 1darrays
+            Positions in geocentric coordinates
+        """
         if prop is True:
-            quant = ac.EarthLocation(self.lon_prop,
-                                     self.lat_prop).to_geocentric()
+            quant = ac.EarthLocation(self.lon_prop, self.lat_prop).to_geocentric()
         else:
             quant = ac.EarthLocation([self.lon], [self.lat]).to_geocentric()
         if val is not None:
@@ -21,6 +48,23 @@ class source():
         return x, y, z
 
     def propagate(self, num_steps=None, multi_pointing=False):
+        """
+        Propagates a source position with random parameters
+
+        Parameters
+        ----------
+        num_steps: int
+            number of propagation steps
+        multi_pointing: bool
+            when True observation blocks are simulated, default is False
+
+        Returns
+        -------
+        lon: 1darray
+            array with propagated lons
+        lat: 1darray
+            array with propagated lats
+        """
         if num_steps is None:
             num_steps = np.random.randint(30, 60)
         lon_start = self.lon
@@ -31,7 +75,7 @@ class source():
 
         lat_start = self.lat
         direction = np.sign(np.random.randint(0, 1) - 0.5)
-        lat_stop = round((lat_start + direction * num_steps/50) + 0.005, 3)
+        lat_stop = round((lat_start + direction * num_steps / 50) + 0.005, 3)
         lat_step = 0.01
         if lat_start > lat_stop:
             lat = np.arange(lat_stop, lat_start, lat_step)
@@ -40,7 +84,7 @@ class source():
             lat = np.arange(lat_start, lat_stop, lat_step)
 
         if len(lon) != len(lat):
-            raise ValueError('Length of lon and lat are different!')
+            raise ValueError("Length of lon and lat are different!")
 
         if multi_pointing is True:
             lon = self.mod_delete(lon, 5, 20)
@@ -51,11 +95,40 @@ class source():
         return lon, lat
 
     def mod_delete(self, a, n, m):
+        """
+        Deletes all m steps n values in a
+
+        Parameters
+        ----------
+        a: 1darray
+            array with coordinates
+        n: int
+            number of deleted points
+        m: int
+            range between two deletions
+
+        Returns
+        -------
+        a: 1darray
+            array with reduced coordinate points
+        """
         return a[np.mod(np.arange(a.size), n + m) < n]
 
 
-class antenna():
+class antenna:
+    """
+    Antenna class that holds information about the geocentric coordinates of the
+    radio telescopes. Can be converted to geodetic. All baselines between the
+    the telescopes can be computed. Antenna positions can be shifted into a ENU frame
+    of a specific observation, for which the (u, v)-coverage can be computed.
+    """
     def __init__(self, X, Y, Z):
+        """
+        Parameters
+        ----------
+        X, Y, Z: array
+            X, Y, Z coordinates of antennas
+        """
         self.all = np.array(list(zip(X, Y, Z)))
         self.len = len(self.all)
         self.baselines = self.len * (self.len - 1)
@@ -65,7 +138,18 @@ class antenna():
         self.to_geodetic(self.X, self.Y, self.Z)
 
     def to_geodetic(self, x_ref, y_ref, z_ref, enu=False):
+        """
+        Converts geocentric coordinates to geodetic.
+
+        Parameters
+        ----------
+        x_ref, y_ref, z_ref: float
+            x, y, z reference positon
+        enu: bool
+            when True:
+        """
         import astropy.units as u
+
         quant = ac.EarthLocation(x_ref, y_ref, z_ref, u.meter).to_geodetic()
         if enu is True:
             return quant.lon.deg, quant.lat.deg
@@ -74,8 +158,16 @@ class antenna():
             self.lat = quant.lat.deg
 
     def get_baselines(self):
-        x_base = ([])
-        y_base = ([])
+        """
+        Calculates baselines between antenna pairs
+
+        Returns
+        -------
+        x_base, y_base: 1darrays
+            x, y values of the baselines
+        """
+        x_base = []
+        y_base = []
         for i in range(self.len):
             ref = np.ones((self.len, 2)) * ([self.x_enu[i], self.y_enu[i]])
             pairs = np.array([self.x_enu, self.y_enu])
@@ -87,21 +179,42 @@ class antenna():
         return x_base, y_base
 
     def to_enu(self, x_ref, y_ref, z_ref):
+        """
+        Converts from geodetic to geocentric coordinates projected onto 2d plane
+
+        Parameters
+        ----------
+        x_ref, y_ref, z_ref: 1darrays
+            x, y, z reference coordinates
+        """
         lon_ref, lat_ref = self.to_geodetic(x_ref, y_ref, z_ref, enu=True)
         ref = np.array(list(zip(x_ref, y_ref, z_ref)))
 
         def rot(lon, lat):
+            """
+            Calculates roytation matrix
+            """
             lon = np.deg2rad(lon)
             lat = np.deg2rad(lat)
-            return np.array([[-np.sin(lon), np.cos(lon), 0],
-                             [-np.sin(lat)*np.cos(lon),
-                             -np.sin(lat)*np.sin(lon), np.cos(lat)],
-                             [np.cos(lat)*np.cos(lon),
-                             np.cos(lat)*np.sin(lon), np.sin(lat)]
-                             ])
+            return np.array(
+                [
+                    [-np.sin(lon), np.cos(lon), 0],
+                    [
+                        -np.sin(lat) * np.cos(lon),
+                        -np.sin(lat) * np.sin(lon),
+                        np.cos(lat),
+                    ],
+                    [np.cos(lat) * np.cos(lon), np.cos(lat) * np.sin(lon), np.sin(lat)],
+                ]
+            )
 
-        enu = np.array([rot(lon_ref[j], lat_ref[j]) @ (self.all[i] - ref[j])
-                        for i in range(self.len) for j in range(len(lon_ref))])
+        enu = np.array(
+            [
+                rot(lon_ref[j], lat_ref[j]) @ (self.all[i] - ref[j])
+                for i in range(self.len)
+                for j in range(len(lon_ref))
+            ]
+        )
         self.ant_enu = enu
         self.x_enu = enu.ravel()[0::3]
         self.y_enu = enu.ravel()[1::3]
@@ -109,8 +222,18 @@ class antenna():
         return self.x_enu, self.y_enu
 
     def get_uv(self):
-        u = ([])
-        v = ([])
+        """
+        Calculates (u, v)-coordinates
+
+        Returns
+        -------
+        u, v: 1d arrays
+            u, v coordinates
+        steps: int
+            number of observation steps
+        """
+        u = []
+        v = []
         steps = int(len(self.x_enu) / self.len)
         for j in range(steps):
             for i in range(self.len):
@@ -126,11 +249,32 @@ class antenna():
                 v = np.append(v, y_base)
 
         if len(u) != len(v):
-            raise ValueError('Length of u and v are different!')
+            raise ValueError("Length of u and v are different!")
         return u, v, steps
 
 
 def get_uv_coverage(source, antenna, iterate=False):
+    """
+    Converts source position and antenna positions into an (u, v)-coverage.
+
+    Parameters
+    ----------
+    source: source class object
+        source class containing source positions
+    antenna: antenna clas object
+        antenna class containing antenna positions
+    iterate: bool
+        use True while creating (u, v)-coverage gif
+
+    Returns
+    -------
+    u: 1darray
+        u coordinates
+    v: 1darray
+        v coordinates
+    steps: 1darray
+        number of observation steps
+    """
     antenna.to_enu(*source.to_ecef(prop=True))
     u, v, steps = antenna.get_uv()
 
@@ -143,12 +287,12 @@ def get_uv_coverage(source, antenna, iterate=False):
 
 
 def create_mask(u, v, size=64):
-    ''' Create 2d mask from a given (uv)-coverage
+    """ Create 2d mask from a given (uv)-coverage
 
     u: array of u coordinates
     v: array of v coordinates
     size: number of bins
-    '''
+    """
     uv_hist, _, _ = np.histogram2d(u, v, bins=size)
     # exclude center
     ex_l = size // 2 - 5
@@ -158,8 +302,35 @@ def create_mask(u, v, size=64):
     return np.rot90(mask)
 
 
-def sample_freqs(img, ant_config_path, size=64, lon=None, lat=None,
-                 num_steps=None, plot=False):
+def sample_freqs(
+    img, ant_config_path, size=64, lon=None, lat=None, num_steps=None, plot=False
+):
+    """
+    Sample specific frequencies in 2d Fourier space. Using antenna and source class to
+    simulate a radio interferometric observation.
+
+    Parameters
+    ----------
+    img: 2darray
+        2d Fourier space
+    ant_config_path: str
+        path to antenna config file
+    size: int
+        pixel size of input image, default 64x64 pixel
+    lon: float
+        start lon of source, if None: random start value between -90 and -70 is used
+    lat: float
+        start lat of source, if None a random start value between 30 and 80 is used
+    num_steps: int
+        number of observation steps
+    plot: bool
+        if True: returns sampled Fourier spectrum and sampling mask
+
+    Returns
+    -------
+    img: 2darray
+        sampled Fourier Spectrum
+    """
     ant = antenna(*get_antenna_config(ant_config_path))
     if lon is None:
         lon = np.random.randint(-90, -70)
@@ -168,15 +339,14 @@ def sample_freqs(img, ant_config_path, size=64, lon=None, lat=None,
     s = source(lon, lat)
     s.propagate(num_steps=num_steps, multi_pointing=True)
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
-    # print(size)
     mask = create_mask(u, v, size)
     img[~mask] = 0
-    '''
+    """
     if mnist:
         img = img.reshape(64, 64)
         img[~mask] = 0
         img = img.reshape(4096)
-    '''
+    """
     if plot is True:
         return img, mask
     else:
@@ -184,6 +354,19 @@ def sample_freqs(img, ant_config_path, size=64, lon=None, lat=None,
 
 
 def get_antenna_config(config_path):
+    """
+    Loads antenna config file and returns antenna positions.
+
+    Parameters
+    ----------
+    config_path: str
+        path to antenna config file
+
+    Returns
+    -------
+    ant_pos: ndarray
+        array containing x, y, z positions
+    """
     config = config_path
     x, y, z, _, _ = np.genfromtxt(config, unpack=True)
     ant_pos = np.array([x, y, z])

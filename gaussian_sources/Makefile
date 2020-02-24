@@ -15,30 +15,10 @@ find_lr: ./lr_find
 
 ######################################################################
 
-# bundles_${bundles}_done:
-# 		mkdir -p ${data}
-# 		python simulate_bundles.py \
-# 		${num_bundles_train} ${num_img} ${size_img} ${data}/gaussian_sources_$@ \
-# 		-noise False
-# 		touch bundles_$@_done
-
-# fft_samp_${samp}_done:
-# 		python create_fft_pairs.py \
-# 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
-# 		-mode $@ \
-# 		-samp True \
-# 		-size ${size_img} \
-# 		-specific_mask True \
-# 		-lon -80 \
-# 		-lat 50 \
-# 		-steps 50
-# 		touch fft_samp_$@_done
-
 ${data}/gaussian_sources_train0.h5:
 		mkdir -p ${data}/
 		python simulate_bundles.py \
 		${num_bundles_train} ${num_img} ${size_img} ${data}/gaussian_sources_train \
-		-noise False
 
 ${data}/fft_samp_train0.h5:
 		python create_fft_pairs.py \
@@ -46,6 +26,8 @@ ${data}/fft_samp_train0.h5:
 		-mode train \
 		-fourier ${fourier} \
 		-samp True \
+		-noise ${noise} \
+		-preview ${preview} \
 		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
@@ -56,7 +38,6 @@ ${data}/gaussian_sources_valid0.h5:
 		mkdir -p ${data}/
 		python simulate_bundles.py \
 		${num_bundles_valid} ${num_img} ${size_img} ${data}/gaussian_sources_valid \
-		-noise False
 
 ${data}/fft_samp_valid0.h5:
 		python create_fft_pairs.py \
@@ -64,6 +45,8 @@ ${data}/fft_samp_valid0.h5:
 		-mode valid \
 		-fourier ${fourier} \
 		-samp True \
+		-noise ${noise} \
+		-preview ${preview} \
 		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
@@ -74,7 +57,6 @@ ${data}/gaussian_sources_test0.h5:
 		mkdir -p ${data}/
 		python simulate_bundles.py \
 		${num_bundles_test} ${num_img} ${size_img} ${data}/gaussian_sources_test \
-		-noise False
 
 ${data}/fft_samp_test0.h5:
 		python create_fft_pairs.py \
@@ -82,6 +64,8 @@ ${data}/fft_samp_test0.h5:
 		-mode test \
 		-fourier ${fourier} \
 		-samp True \
+		-noise ${noise} \
+		-preview ${preview} \
 		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
@@ -104,7 +88,7 @@ ${data}/normalization_factors.csv:
 		# touch ./training_done
 
 ./lr_find:
-		mkdir -p models/
+		mkdir -p ${path}
 		python find_lr.py ${data}\
 		${arch} ${lr_type} ${norm_path} -min_lr ${min_lr}\
 		-max_lr ${max_lr} -fourier ${fourier} -log ${log}\

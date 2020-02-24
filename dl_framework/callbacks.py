@@ -22,7 +22,7 @@ class CancelBatchException(Exception):
     pass
 
 
-class Callback():
+class Callback:
     _order = 0
 
     def set_runner(self, run):
@@ -33,8 +33,8 @@ class Callback():
 
     @property
     def name(self):
-        name = sub(r'Callback$', '', self.__class__.__name__)
-        return camel2snake(name or 'callback')
+        name = sub(r"Callback$", "", self.__class__.__name__)
+        return camel2snake(name or "callback")
 
     def __call__(self, cb_name):
         f = getattr(self, cb_name, None)
@@ -47,13 +47,13 @@ class TrainEvalCallback(Callback):
     _order = 0
 
     def begin_fit(self):
-        self.run.n_epochs = 0.
+        self.run.n_epochs = 0.0
         self.run.n_iter = 0
 
     def after_batch(self):
         if not self.in_train:
             return
-        self.run.n_epochs += 1./self.iters
+        self.run.n_epochs += 1.0 / self.iters
         self.run.n_iter += 1
 
     def begin_epoch(self):
@@ -99,8 +99,8 @@ class ParamScheduler(Callback):
             return
         fs = self.sched_funcs
         if len(fs) == 1:
-            fs = fs*len(self.opt.param_groups)
-        pos = self.n_epochs/self.epochs
+            fs = fs * len(self.opt.param_groups)
+        pos = self.n_epochs / self.epochs
         for f, h in zip(fs, self.opt.hypers):
             h[self.pname] = f(pos)
 
@@ -109,19 +109,19 @@ class Recorder(Callback):
     _order = 5
 
     def begin_fit(self):
-        if not hasattr(self, 'lrs'):
+        if not hasattr(self, "lrs"):
             self.lrs = []
-        if not hasattr(self, 'train_losses'):
+        if not hasattr(self, "train_losses"):
             self.train_losses = []
-        if not hasattr(self, 'valid_losses'):
+        if not hasattr(self, "valid_losses"):
             self.valid_losses = []
-        if not hasattr(self, 'losses'):
+        if not hasattr(self, "losses"):
             self.losses = []
 
     def after_batch(self):
         if not self.in_train:
             return
-        self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
+        self.lrs.append(self.opt.state_dict()["param_groups"][0]["lr"])
 
     def after_epoch(self):
         self.train_losses.append(self.avg_stats.train_stats.avg_stats[1])
@@ -132,10 +132,10 @@ class Recorder(Callback):
         plt.plot(self.lrs)
 
     def plot_loss(self):
-        plt.plot(self.train_losses, label='train loss')
-        plt.plot(self.valid_losses, label='valid loss')
-        plt.plot(self.losses, label='loss')
-        plt.yscale('log')
+        plt.plot(self.train_losses, label="train loss")
+        plt.plot(self.valid_losses, label="valid loss")
+        plt.plot(self.losses, label="loss")
+        plt.yscale("log")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
@@ -143,10 +143,10 @@ class Recorder(Callback):
 
     def plot(self, skip_last=0):
         losses = [o.item() for o in self.losses]
-        n = len(losses)-skip_last
-        plt.xscale('log')
-        plt.xlabel(r'learning rate')
-        plt.ylabel(r'loss')
+        n = len(losses) - skip_last
+        plt.xscale("log")
+        plt.xlabel(r"learning rate")
+        plt.ylabel(r"loss")
         plt.plot(self.lrs[:n], losses[:n])
         plt.show()
 
@@ -157,6 +157,7 @@ class Recorder_lr_find(Callback):
     and this class is that the loss is appended after each batch and not
     after each epoch.
     """
+
     def begin_fit(self):
         self.lrs = []
         self.losses = []
@@ -164,16 +165,16 @@ class Recorder_lr_find(Callback):
     def after_batch(self):
         if not self.in_train:
             return
-        self.lrs.append(self.opt.state_dict()['param_groups'][0]['lr'])
+        self.lrs.append(self.opt.state_dict()["param_groups"][0]["lr"])
         self.losses.append(self.loss.detach().cpu())
 
     def plot(self, skip_last=0, save=False):
         losses = [o.item() for o in self.losses]
-        n = len(losses)-skip_last
+        n = len(losses) - skip_last
         plt.plot(self.lrs[:n], losses[:n])
-        plt.xscale('log')
-        plt.xlabel(r'learning rate')
-        plt.ylabel(r'loss')
+        plt.xscale("log")
+        plt.xlabel(r"learning rate")
+        plt.ylabel(r"loss")
         if save is False:
             plt.show()
 
@@ -194,13 +195,13 @@ class LR_Find(Callback):
     def begin_batch(self):
         if not self.in_train:
             return
-        pos = self.run.n_iter/self.max_iter
-        lr = self.min_lr * (self.max_lr/self.min_lr) ** pos
+        pos = self.run.n_iter / self.max_iter
+        lr = self.min_lr * (self.max_lr / self.min_lr) ** pos
         for param_group in self.opt.param_groups:
-            param_group['lr'] = lr
+            param_group["lr"] = lr
 
     def after_step(self):
-        if self.n_iter >= self.max_iter or self.loss > self.best_loss*10:
+        if self.n_iter >= self.max_iter or self.loss > self.best_loss * 10:
             return CancelTrainException
         if self.loss < self.best_loss:
             self.best_loss = self.loss
@@ -212,22 +213,31 @@ class LoggerCallback(Callback):
 
     def begin_fit(self):
         logger = make_notifier()
-        logger.info('Start des Trainings von Modell {}'.format(self.model_name))
+        logger.info("Start des Trainings von Modell {}".format(self.model_name))
 
     def after_epoch(self):
         if (self.epoch + 1) % 10 == 0:
             logger = make_notifier()
-            logger.info('{}: Epoche {} zu Ende mit Loss {}'.format(
-                self.model_name, self.epoch+1, self.avg_stats.valid_stats.avg_stats[1]))
+            logger.info(
+                "{}: Epoche {} zu Ende mit Loss {}".format(
+                    self.model_name,
+                    self.epoch + 1,
+                    self.avg_stats.valid_stats.avg_stats[1],
+                )
+            )
 
     def after_fit(self):
         logger = make_notifier()
-        logger.info('{}: Ende des Trainings nach {} Epochen mit Loss {}'.format(
-            self.model_name, self.epoch+1, self.avg_stats.valid_stats.avg_stats[1]))
+        logger.info(
+            "{}: Ende des Trainings nach {} Epochen mit Loss {}".format(
+                self.model_name, self.epoch + 1, self.avg_stats.valid_stats.avg_stats[1]
+            )
+        )
 
 
 class CudaCallback(Callback):
-    def begin_fit(self): self.model.cuda()
+    def begin_fit(self):
+        self.model.cuda()
 
     def begin_batch(self):
         self.run.xb = self.run.xb.cuda()
@@ -236,8 +246,12 @@ class CudaCallback(Callback):
 
 class BatchTransformXCallback(Callback):
     _order = 2
-    def __init__(self, tfm): self.tfm = tfm
-    def begin_batch(self): self.run.xb = self.tfm(self.run.xb)
+
+    def __init__(self, tfm):
+        self.tfm = tfm
+
+    def begin_batch(self):
+        self.run.xb = self.tfm(self.run.xb)
 
 
 def view_tfm(*size):
@@ -245,8 +259,9 @@ def view_tfm(*size):
         """
         add correct shape (bs, #channels, shape of array)
         """
-        a = x.view(*((-1,)+size))
+        a = x.view(*((-1,) + size))
         return a
+
     return _inner
 
 
@@ -255,27 +270,29 @@ def normalize_tfm(norm_path):
         norm = pd.read_csv(norm_path)
         x = do_normalisation(x, norm)
         return x
+
     return _inner
 
 
 # mix-up
 
-class NoneReduce():
+
+class NoneReduce:
     def __init__(self, loss_func):
         self.loss_func = loss_func
         self.old_red = None
 
     def __enter__(self):
-        if hasattr(self.loss_func, 'reduction'):
-            self.old_red = getattr(self.loss_func, 'reduction')
-            setattr(self.loss_func, 'reduction', 'none')
+        if hasattr(self.loss_func, "reduction"):
+            self.old_red = getattr(self.loss_func, "reduction")
+            setattr(self.loss_func, "reduction", "none")
             return self.loss_func
         else:
-            return partial(self.loss_func, reduction='none')
+            return partial(self.loss_func, reduction="none")
 
     def __exit__(self, type, value, traceback):
         if self.old_red is not None:
-            setattr(self.loss_func, 'reduction', self.old_red)
+            setattr(self.loss_func, "reduction", self.old_red)
 
 
 def unsqueeze(input, dims):
@@ -284,18 +301,23 @@ def unsqueeze(input, dims):
     return input
 
 
-def reduce_loss(loss, reduction='mean'):
-    return loss.mean() if reduction == 'mean' else loss.sum() \
-        if reduction == 'sum' else loss
+def reduce_loss(loss, reduction="mean"):
+    return (
+        loss.mean()
+        if reduction == "mean"
+        else loss.sum()
+        if reduction == "sum"
+        else loss
+    )
 
 
 class MixUp(Callback):
     _order = 90  # Runs after normalization and cuda
 
     def __init__(self, α: float = 0.4):
-        self.distrib = Beta(torch.tensor([α],
-                            dtype=torch.float),
-                            torch.tensor([α], dtype=torch.float))
+        self.distrib = Beta(
+            torch.tensor([α], dtype=torch.float), torch.tensor([α], dtype=torch.float)
+        )
 
     def begin_fit(self):
         self.old_loss_func = self.run.loss_func
@@ -304,9 +326,8 @@ class MixUp(Callback):
     def begin_batch(self):
         if not self.in_train:
             return  # Only mixup things during training
-        λ = self.distrib.sample((self.yb.size(0),)
-                                ).squeeze().to(self.xb.device)
-        λ = torch.stack([λ, 1-λ], 1)
+        λ = self.distrib.sample((self.yb.size(0),)).squeeze().to(self.xb.device)
+        λ = torch.stack([λ, 1 - λ], 1)
         self.λ = unsqueeze(λ.max(1)[0], [1, 1, 1])
         self.λ2 = unsqueeze(λ.max(1)[0], [1])
         shuffle = torch.randperm(self.yb.size(0)).to(self.xb.device)
@@ -316,7 +337,8 @@ class MixUp(Callback):
         # img = self.run.xb[0].squeeze(0).cpu()
         # plt.imshow(img, cmap='RdBu', vmin=-img.max(), vmax=img.max())
 
-    def after_fit(self): self.run.loss_func = self.old_loss_func
+    def after_fit(self):
+        self.run.loss_func = self.old_loss_func
 
     def loss_func(self, pred, yb):
         if not self.in_train:
@@ -325,17 +347,18 @@ class MixUp(Callback):
             loss1 = loss_func(pred, yb)
             loss2 = loss_func(pred, self.yb1)
         loss = lin_comb(loss1, loss2, self.λ)
-        return reduce_loss(loss,
-                           getattr(self.old_loss_func, 'reduction', 'mean'))
+        return reduce_loss(loss, getattr(self.old_loss_func, "reduction", "mean"))
 
 
 class SaveCallback(Callback):
     _order = 95
 
     def __init__(self, model_path):
-        self.model_path = "/".join(model_path.split('/', 2)[:2])
+        self.model_path = "/".join(model_path.split("/", 2)[:2])
 
     def after_epoch(self):
         if round(self.n_epochs) % 10 == 0:
-            save_model(self, self.model_path + "/temp_{}.model".format(round(self.n_epochs)))
-            print('\nFinished Epoch {}, model saved.\n'.format(round(self.n_epochs)))
+            save_model(
+                self, self.model_path + "/temp_{}.model".format(round(self.n_epochs))
+            )
+            print("\nFinished Epoch {}, model saved.\n".format(round(self.n_epochs)))
