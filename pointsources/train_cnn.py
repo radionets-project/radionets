@@ -86,7 +86,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
+        partial(SaveCallback, model_path=model_path),
     ]
     '''
     # Define optimiser function
@@ -105,7 +105,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
         sys.exit(1)
     
     # Combine model and data in learner
-    learn = get_learner(data, arch, 1e-3, opt_func=torch.optim.Adam,  cb_funcs=cbfs, loss_func=loss_func)
+    learn = get_learner(data, arch, lr=lr, opt_func=torch.optim.Adam,  cb_funcs=cbfs, loss_func=loss_func)
 
     # use pre-trained model if asked
     if pretrained is True:
