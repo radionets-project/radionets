@@ -9,9 +9,21 @@ gaussian_sources/data*
 *.uvf
 *.h5
 
+gauss/data
+*.uvf
+*.h5
+
 pointsources/data
 *.uvf
 *.h5
+
+#test data
+*/test_data
+test_data
+
+#evaluation results
+*/results
+results/
 
 # cache
 __pycache__/
