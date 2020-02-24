@@ -94,7 +94,7 @@ class source:
         self.lat_prop = lat
         return lon, lat
 
-    def mod_delete(a, n, m):
+    def mod_delete(self, a, n, m):
         """
         Deletes all m steps n values in a
 
