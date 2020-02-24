@@ -4,7 +4,6 @@ from dl_framework.model import (
     conv,
     Lambda,
     flatten,
-    shape,
     fft,
     deconv,
     double_conv,
@@ -27,13 +26,8 @@ def cnn():
         *conv(32, 64, (2, 2), 2, 1),
         nn.MaxPool2d((2, 2)),
         Lambda(flatten),
-        # Lambda(shape),
         nn.Linear(64, 32768),
-        # Lambda(shape),
         Lambda(fft),
-        # Lambda(shape),
-        # Lambda(flatten),
-        # Lambda(shape),
         *conv(2, 1, 1, 1, 0),
         Lambda(flatten),
     )
@@ -93,14 +87,9 @@ class UNet_fft(nn.Module):
         self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
 
         self.conv_last = nn.Conv2d(4, 2, 1)
-        self.conv_shape = nn.Conv2d(2, 1, 1)
         self.flatten = Lambda(flatten)
         self.linear1 = nn.Linear(8192, 4096)
-        # self.linear2 = nn.Linear(32768, 32768)
         self.fft = Lambda(fft)
-        self.cut = Lambda(cut_off)
-        self.dropout = nn.Dropout2d(p=0.5)
-        self.dropout2 = nn.Dropout(p=0.5)
 
     def forward(self, x):
         conv1 = self.dconv_down1(x)
@@ -129,12 +118,8 @@ class UNet_fft(nn.Module):
 
         x = self.flatten(x)
         x = self.fft(x)
-        # x = self.conv_shape(x)
         x = self.flatten(x)
         out = self.linear1(x)
-        # x = self.linear2(x)
-        # x = self.dropout2(x)
-        # out = self.linear1(x)
 
         return out
 
@@ -157,13 +142,11 @@ class UNet_denoise(nn.Module):
         self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
         self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
 
-        self.conv_last = nn.Conv2d(4, 1, 1)
+        self.conv_last = nn.Conv2d(4, 2, 1)
         self.flatten = Lambda(flatten)
-        # self.linear = nn.Linear(8192, 4096)
+        self.linear = nn.Linear(8192, 4096)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
-        self.shape = Lambda(shape)
-        self.dropout = nn.Dropout2d(p=0.5)
 
     def forward(self, x):
         x = self.flatten(x)
@@ -171,7 +154,6 @@ class UNet_denoise(nn.Module):
         conv1 = self.dconv_down1(x)
         x = self.maxpool(conv1)
         conv2 = self.dconv_down2(x)
-        # x = self.dropout(conv2)
         x = self.maxpool(conv2)
         conv3 = self.dconv_down3(x)
         x = self.maxpool(conv3)
@@ -192,8 +174,8 @@ class UNet_denoise(nn.Module):
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         x = self.conv_last(x)
-        out = self.flatten(x)
-        # out = self.linear(x)
+        x = self.flatten(x)
+        out = self.linear(x)
 
         return out
 
@@ -220,9 +202,6 @@ class UNet_fourier(nn.Module):
         self.linear = nn.Linear(8192, 4096)
         self.flatten = Lambda(flatten)
         self.flatten_with_channel = Lambda(flatten_with_channel)
-        self.cut = Lambda(cut_off)
-        self.shape = Lambda(shape)
-        self.dropout = nn.Dropout2d(p=0.5)
 
     def forward(self, x):
         conv1 = self.dconv_down1(x)
