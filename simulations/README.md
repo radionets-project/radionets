@@ -21,11 +21,15 @@ ToDo:
 
 ### uv_simulations
 
+A antenna and a source class are used to simulate radio interferometric observations. Both classes hold information about the coordinates of the antennas/sources. It is possible to create masks to simulate (u, v)-sampling and apply these mask to 
+simulated (u, v)-spaces. In this way, toy monte carlo datasets are created.
 
 
 ### uv_plots
 
-
+Functions to visualize simulated sources and (u, v)-coverages. It is possible to create gifs of array layouts and 
+(u, v)-space sampling during an simulated observation. These functions are mainly used to create images for 
+presentations.
 
 ### Examples: visualize_sampling 
 Creates visualization plots, which can be found in the examples directory. Run `make examples`.
