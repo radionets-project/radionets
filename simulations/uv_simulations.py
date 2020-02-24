@@ -170,7 +170,9 @@ def sample_freqs(img, ant_config_path, size=64, lon=None, lat=None,
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
     # print(size)
     mask = create_mask(u, v, size)
+    img = img.reshape(64,64)
     img[~mask] = 0
+    img.reshape(4096)
     '''
     if mnist:
         img = img.reshape(64, 64)
