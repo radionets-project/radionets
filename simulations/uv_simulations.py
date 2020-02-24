@@ -7,16 +7,16 @@ class source:
     Source class that holds longitude and latitude information.
     Can be converted to geocentric coordinates. Position of source
     can be propagated to simulate an ongoing observation.
-
-    Paramters
-    ---------
-    lon: float
-        longitude of source
-    lat: float
-        latitude of source
     """
-
     def __init__(self, lon, lat):
+        """
+        Paramters
+        ---------
+        lon: float
+            longitude of source
+        lat: float
+            latitude of source
+        """
         self.lon = lon
         self.lat = lat
 
@@ -116,7 +116,19 @@ class source:
 
 
 class antenna:
+    """
+    Antenna class that holds information about the geocentric coordinates of the
+    radio telescopes. Can be converted to geodetic. All baselines between the
+    the telescopes can be computed. Antenna positions can be shifted into a ENU frame
+    of a specific observation, for which the (u, v)-coverage can be computed.
+    """
     def __init__(self, X, Y, Z):
+        """
+        Parameters
+        ----------
+        X, Y, Z: array
+            X, Y, Z coordinates of antennas
+        """
         self.all = np.array(list(zip(X, Y, Z)))
         self.len = len(self.all)
         self.baselines = self.len * (self.len - 1)
@@ -126,6 +138,16 @@ class antenna:
         self.to_geodetic(self.X, self.Y, self.Z)
 
     def to_geodetic(self, x_ref, y_ref, z_ref, enu=False):
+        """
+        Converts geocentric coordinates to geodetic.
+
+        Parameters
+        ----------
+        x_ref, y_ref, z_ref: float
+            x, y, z reference positon
+        enu: bool
+            when True:
+        """
         import astropy.units as u
 
         quant = ac.EarthLocation(x_ref, y_ref, z_ref, u.meter).to_geodetic()
@@ -136,6 +158,14 @@ class antenna:
             self.lat = quant.lat.deg
 
     def get_baselines(self):
+        """
+        Calculates baselines between antenna pairs
+
+        Returns
+        -------
+        x_base, y_base: 1darrays
+            x, y values of the baselines
+        """
         x_base = []
         y_base = []
         for i in range(self.len):
@@ -149,10 +179,21 @@ class antenna:
         return x_base, y_base
 
     def to_enu(self, x_ref, y_ref, z_ref):
+        """
+        Converts from geodetic to geocentric coordinates projected onto 2d plane
+
+        Parameters
+        ----------
+        x_ref, y_ref, z_ref: 1darrays
+            x, y, z reference coordinates
+        """
         lon_ref, lat_ref = self.to_geodetic(x_ref, y_ref, z_ref, enu=True)
         ref = np.array(list(zip(x_ref, y_ref, z_ref)))
 
         def rot(lon, lat):
+            """
+            Calculates roytation matrix
+            """
             lon = np.deg2rad(lon)
             lat = np.deg2rad(lat)
             return np.array(
@@ -181,6 +222,16 @@ class antenna:
         return self.x_enu, self.y_enu
 
     def get_uv(self):
+        """
+        Calculates (u, v)-coordinates
+
+        Returns
+        -------
+        u, v: 1d arrays
+            u, v coordinates
+        steps: int
+            number of observation steps
+        """
         u = []
         v = []
         steps = int(len(self.x_enu) / self.len)
