@@ -34,7 +34,7 @@ def main(out_path, num_img, sources, antenna_config_path, noise=False, specific_
                   for i in tqdm(x_test)]
     else:
         x_samp = [sample_freqs(i, antenna_config_path) for i in tqdm(x_test)]
-        y_samp = y_test
+    y_samp = y_test
         
     x_samp = np.array([abs(np.fft.ifft2(np.fft.ifftshift(x_samp[i].reshape(64,64)))) for i in range(len(x_samp))])
     x_samp = x_samp.reshape(-1,4096)
