@@ -10,6 +10,7 @@ predictions_mnist: build/predictions_mnist
 predictions_training: build/predictions_training
 
 model=../models/unet_gauss.model
+data=../test_data/gauss_samp_test.h5
 norm=../data/normalization_factors.csv
 
 build/visualize_preprocessing_done:
@@ -42,7 +43,7 @@ build/predictions_done:
 	python predictions.py \
 	UNet \
 	$(model) \
-	../data/gauss_samp_valid.h5 \
+	$(data) \
 	$(norm) \
 	build/prediction.png \
 	-num 20
