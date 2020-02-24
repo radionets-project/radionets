@@ -251,3 +251,23 @@ def convs():
         Lambda(flatten),
     )
     return arch
+
+
+class conv_filter(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.conv1 = nn.Sequential(*conv(2, 1, (5, 5), 1, 2))
+        self.conv2 = nn.Sequential(*conv(1, 128, (5, 5), 1, 2))
+        self.conv3 = nn.Sequential(*conv(128, 1, (5, 5), 1, 2))
+        self.flatten = Lambda(flatten)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        inp = x.clone()
+        x = self.conv2(x)
+        x = self.conv3(x)
+        out = x + inp
+        out = self.flatten(out)
+
+        return out
