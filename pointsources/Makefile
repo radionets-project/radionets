@@ -65,7 +65,7 @@ test_normalization: ./test_data/normalization_factors.csv
 ./data/pointsources_samp_train.h5:
 		python create_mnist_fft_sampled.py\
 		data/pointsources_train.h5 data/pointsources_samp_train.h5\
-		../sampling/layouts/vlba.txt -train True\
+		../simulations/layouts/vlba.txt -train True\
 		-specific_mask True\
 		-lon -80\
 		-lat 50\
@@ -74,7 +74,7 @@ test_normalization: ./test_data/normalization_factors.csv
 ./data/pointsources_samp_valid.h5:
 		python create_mnist_fft_sampled.py\
 		data/pointsources_valid.h5 data/pointsources_samp_valid.h5\
-		../sampling/layouts/vlba.txt -train False\
+		../simulations/layouts/vlba.txt -train False\
 		-specific_mask True\
 		-lon -80\
 		-lat 50\
@@ -90,7 +90,7 @@ test_normalization: ./test_data/normalization_factors.csv
 		python train_cnn.py ./data/pointsources_samp_train.h5\
 		./data/pointsources_samp_valid.h5 ./models/unet_pointsources.model\
 		UNet ./data/normalization_factors.csv\
-		100 1e-4 feature_loss -log False\
+		1000 1e-4 feature_loss -log False\
 		-pretrained False ./models/unet_gauss.model \
 		-inspection False
 		touch ./training_done
@@ -105,15 +105,16 @@ test_normalization: ./test_data/normalization_factors.csv
 		mkdir -p models/
 		python find_lr.py ./data/pointsources_samp_train.h5\
                 ./data/pointsources_samp_valid.h5 ./models/unet_pointsources.model\
-                UNet ./data/normalization_factors.csv -log False\
+                UNet feature_loss ./data/normalization_factors.csv -log False\
                 -pretrained False ./models/unet_pointsources.model\
                 -save True
 
 ./test_data/pointsources_testset:
 		mkdir -p test_data/
 		python create_pointsources_testset.py ./test_data/pointsources_samp_test.h5\
-                12500 15 -noise False\
-                ../sampling/layouts/vlba.txt\
+                12500 15 \
+                ../simulations/layouts/vlba.txt\
+		-noise False -specific_mask True \
                 -lon -80\
                 -lat 50\
                 -steps 50
@@ -130,6 +131,7 @@ test_normalization: ./test_data/normalization_factors.csv
 
 clean:
 	rm -rf ./data
+	rm -rf ./test_data
 	rm -f ./training_done
 
 clean_training:
