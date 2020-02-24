@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 from functools import partial
 
 import click
@@ -36,7 +37,13 @@ import re
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
-@click.option("-log", type=bool, required=False, help="use of logarith")
+@click.option(
+    "-fourier",
+    type=bool,
+    required=False,
+    help="true, if target variables get fourier transformed",
+)
+@click.option("-log", type=bool, required=True, help="use of logarithm")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
@@ -49,6 +56,7 @@ def main(
     num_epochs,
     lr,
     loss_func,
+    fourier,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -69,18 +77,12 @@ def main(
     """
     # Load data
     bundle_paths = get_bundles(data_path)
-    train = [
-        path for path in bundle_paths
-        if re.findall('fft_samp_train', path.name)
-        ]
-    valid = [
-        path for path in bundle_paths
-        if re.findall('fft_samp_valid', path.name)
-        ]
+    train = [path for path in bundle_paths if re.findall("fft_samp_train", path.name)]
+    valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
 
     # Create train and valid datasets
-    train_ds = h5_dataset(train)
-    valid_ds = h5_dataset(valid)
+    train_ds = h5_dataset(train, tar_fourier=fourier)
+    valid_ds = h5_dataset(valid, tar_fourier=fourier)
 
     # Create databunch with defined batchsize
     bs = 256
@@ -89,14 +91,15 @@ def main(
     # Define model
     arch = getattr(architecture, arch)()
 
-    # Define resize for mnist data
-    mnist_view = view_tfm(2, 64, 64)
+    # Define resize based on the length of an input image
+    img = train_ds[0][0]
+    mnist_view = view_tfm(2, int(np.sqrt(img.shape[1])), int(np.sqrt(img.shape[1])))
 
     # make normalisation
     norm = normalize_tfm(norm_path)
 
     # get model name for recording in LoggerCallback
-    model_name = model_path.split('models/')[-1].split('/')[0]
+    model_name = model_path.split("models/")[-1].split("/")[0]
 
     # Define callback functions
     cbfs = [
@@ -105,7 +108,7 @@ def main(
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
+        partial(SaveCallback, model_path=model_path),
         partial(LoggerCallback, model_name=model_name),
     ]
 

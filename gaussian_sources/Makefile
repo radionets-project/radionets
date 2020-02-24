@@ -2,84 +2,82 @@
 dataset: simulate_bundles\
 		 fft_samp
 
-test: ${data}bundles_train_done \
-	  ${data}fft_train_done
+simulate_bundles: ${data}/gaussian_sources_train0.h5\
+				  ${data}/gaussian_sources_valid0.h5\
+				  ${data}/gaussian_sources_test0.h5
 
-simulate_bundles: ${data}bundles_train_done\
-				  ${data}bundles_valid_done\
-				  ${data}bundles_test_done
-fft_samp: ${data}fft_train_done\
-		  ${data}fft_valid_done\
-		  ${data}fft_test_done
-calc_normalization: ${data}normalization_factors.csv
+fft_samp: ${data}/fft_samp_train0.h5\
+		  ${data}/fft_samp_valid0.h5\
+		  ${data}/fft_samp_test0.h5
+calc_normalization: ${data}/normalization_factors.csv
 cnn_training: ./training_done
 find_lr: ./lr_find
 
 ######################################################################
 
-${data}bundles_train_done:
-		mkdir -p ${data}
+${data}/gaussian_sources_train0.h5:
+		mkdir -p ${data}/
 		python simulate_bundles.py \
-		80 1024 64 ${data}gaussian_sources_train
-		touch ${data}bundles_train_done
+		${num_bundles_train} ${num_img} ${size_img} ${data}/gaussian_sources_train \
+		-noise False
 
-${data}fft_train_done:
+${data}/fft_samp_train0.h5:
 		python create_fft_pairs.py \
-		${data} ${data}fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode train \
+		-fourier ${fourier} \
 		-samp True \
 		-noise True \
 		-preview False \
-		-size 64 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ${data}fft_train_done
 
-${data}bundles_valid_done:
-		mkdir -p ${data}
+${data}/gaussian_sources_valid0.h5:
+		mkdir -p ${data}/
 		python simulate_bundles.py \
-		20 1024 64 ${data}gaussian_sources_valid 
-		touch ${data}bundles_valid_done
+		${num_bundles_valid} ${num_img} ${size_img} ${data}/gaussian_sources_valid \
+		-noise False
 
-${data}fft_valid_done:
+${data}/fft_samp_valid0.h5:
 		python create_fft_pairs.py \
-		${data} ${data}fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode valid \
+		-fourier ${fourier} \
 		-samp True \
 		-noise True \
 		-preview False \
-		-size 64 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ${data}fft_valid_done
 
-${data}bundles_test_done:
-		mkdir -p ${data}
+${data}/gaussian_sources_test0.h5:
+		mkdir -p ${data}/
 		python simulate_bundles.py \
-		10 1024 64 ${data}gaussian_sources_test
-		touch ${data}bundles_test_done
+		${num_bundles_test} ${num_img} ${size_img} ${data}/gaussian_sources_test \
+		-noise False
 
-${data}fft_test_done:
+${data}/fft_samp_test0.h5:
 		python create_fft_pairs.py \
-		${data} ${data}fft_samp_ ../simulations/layouts/vlba.txt \
+		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode test \
+		-fourier ${fourier} \
 		-samp True \
 		-noise True \
 		-preview False \
-		-size 64 \
+		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		touch ${data}fft_test_done
 
-${data}normalization_factors.csv:
+${data}/normalization_factors.csv:
 		python calculate_normalization.py\
-		${data} \
+		${data}/ \
 		${norm_path}
 
 ./training_done:
@@ -87,7 +85,7 @@ ${data}normalization_factors.csv:
 		python train_cnn.py ${data}\
 		${path_model}\
 		${arch} ${norm_path}\
-		${epochs} ${lr} ${lr_type} -log ${log}\
+		${epochs} ${lr} ${lr_type} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
 		# touch ./training_done
@@ -96,7 +94,7 @@ ${data}normalization_factors.csv:
 		mkdir -p ${path}
 		python find_lr.py ${data}\
 		${arch} ${lr_type} ${norm_path} -min_lr ${min_lr}\
-		-max_lr ${max_lr} -log ${log}\
+		-max_lr ${max_lr} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
@@ -110,4 +108,4 @@ clean_norm:
 	rm -r ${norm_path}
 
 clean_data:
-	rm -r data/
+	rm -r ${data}/

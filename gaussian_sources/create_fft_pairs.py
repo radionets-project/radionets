@@ -12,6 +12,7 @@ import re
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("antenna_config_path", type=click.Path(exists=True, dir_okay=False))
 @click.option("-mode", type=str, required=True)
+@click.option('-fourier', type=bool, required=True)
 @click.option("-samp", type=bool, required=False)
 @click.option("-size", type=int, required=True)
 @click.option("-specific_mask", type=bool)
@@ -25,6 +26,7 @@ def main(
     out_path,
     antenna_config_path,
     mode,
+    fourier,
     size,
     samp=True,
     specific_mask=False,
@@ -56,23 +58,27 @@ def main(
         if noise is True:
             images = add_noise(images, preview=preview)
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
+        copy = bundle_fft.copy()
         if samp is True:
             if specific_mask is True:
-                bundle_fft = np.array(
+                bundle_samp = np.array(
                     [
                         sample_freqs(img, antenna_config_path, size, lon, lat, steps)
-                        for img in bundle_fft
+                        for img in copy
                     ]
                 )
             else:
-                bundle_fft = np.array(
+                bundle_samp = np.array(
                     [
                         sample_freqs(img, antenna_config_path, size=size)
-                        for img in bundle_fft
+                        for img in copy
                     ]
                 )
-        out = out_path + path.name.split("_")[-1]
-        save_fft_pair(out, bundle_fft, bundle)
+        out = out_path + path.name.split('_')[-1]
+        if fourier:
+            save_fft_pair(out, bundle_samp, bundle_fft)
+        else:
+            save_fft_pair(out, bundle_samp, images)
 
 
 if __name__ == "__main__":

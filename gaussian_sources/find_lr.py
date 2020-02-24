@@ -1,29 +1,24 @@
-from functools import partial
 import re
 import sys
+from functools import partial
+
 import click
+import numpy as np
+
+import dl_framework.architectures as architecture
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-import dl_framework.architectures as architecture
-from dl_framework.callbacks import (
-    BatchTransformXCallback,
-    CudaCallback,
-    Recorder_lr_find,
-    SaveCallback,
-    normalize_tfm,
-    view_tfm,
-    LR_Find,
-)
+from dl_framework.callbacks import (BatchTransformXCallback, CudaCallback,
+                                    LR_Find, Recorder_lr_find, normalize_tfm,
+                                    view_tfm)
+from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
 from dl_framework.learner import get_learner
+from dl_framework.loss_functions import FeatureLoss, init_feature_loss
 from dl_framework.model import load_pre_model
-from inspection import plot_lr_loss
 from dl_framework.utils import children
+from inspection import plot_lr_loss
 from torchvision.models import vgg16_bn
-from dl_framework.loss_functions import FeatureLoss
-from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
 
 
 @click.command()
@@ -40,6 +35,12 @@ from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
 @click.option(
     "-max_lr", type=float, required=True, help="maximal learning rate for lr_find"
 )
+@click.option(
+    "-fourier",
+    type=bool,
+    required=True,
+    help="true, if target variables are fourier transformed",
+)
 @click.option("-log", type=bool, required=False, help="use of logarith")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
@@ -52,6 +53,7 @@ def main(
     loss_func,
     min_lr,
     max_lr,
+    fourier,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -71,8 +73,8 @@ def main(
     valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
 
     # Create train and valid datasets
-    train_ds = h5_dataset(train)
-    valid_ds = h5_dataset(valid)
+    train_ds = h5_dataset(train, tar_fourier=fourier)
+    valid_ds = h5_dataset(valid, tar_fourier=fourier)
 
     # Create databunch with defined batchsize
     bs = 256
@@ -85,8 +87,9 @@ def main(
     arch_name = arch
     arch = getattr(architecture, arch)()
 
-    # Define resize for mnist data
-    mnist_view = view_tfm(2, 64, 64)
+    # Define resize based on the length of an input image
+    img = train_ds[0][0]
+    mnist_view = view_tfm(2, int(np.sqrt(img.shape[1])), int(np.sqrt(img.shape[1])))
 
     # make normalisation
     norm = normalize_tfm(norm_path)
@@ -98,22 +101,10 @@ def main(
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
     ]
 
     if loss_func == "feature_loss":
-        # feature_loss
-        ###########################################################################
-        vgg_m = vgg16_bn(True).features.cuda().eval()
-        for param in vgg_m.parameters():
-            param.requires_grad = False
-        # requires_grad(vgg_m, False)
-        blocks = [
-            i - 1 for i, o in enumerate(children(vgg_m)) if isinstance(o, nn.MaxPool2d)
-        ]
-        feat_loss = FeatureLoss(vgg_m, F.l1_loss, blocks[2:5], [5, 15, 2])
-        ###########################################################################
-        loss_func = feat_loss
+        loss_func = init_feature_loss()
     elif loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
