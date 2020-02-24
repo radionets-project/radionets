@@ -21,7 +21,7 @@ visualize_peaks: results/visualize_peaks
 
 model=../models/unet_pointsources.model
 data=../test_data/pointsources_samp_test.h5
-norm=../test_data/normalization_factors.csv
+norm=../data/normalization_factors.csv
 
 
 ###########################################################
