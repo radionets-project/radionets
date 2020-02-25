@@ -24,6 +24,7 @@ from dl_framework.model import load_pre_model, save_model
 from inspection import evaluate_model, plot_loss
 from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
 import re
+from dl_framework.hooks import model_summary
 
 
 @click.command()
@@ -139,6 +140,7 @@ def main(
 
     # Print model architecture
     # print(learn.model, "\n")
+    model_summary(learn)
 
     # Train the model, make it possible to stop at any given time
     try:
