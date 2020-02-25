@@ -149,6 +149,14 @@ def conv(ni, nc, ks, stride, padding):
     return layers
 
 
+def depth_conv(ni, nc, ks, stride, padding):
+    conv = (nn.Conv2d(ni, nc, ks, stride, padding, groups=ni),)
+    bn = (nn.BatchNorm2d(nc),)
+    act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
+    layers = [*conv, *bn, act]
+    return layers
+
+
 def double_conv(ni, nc, ks, stride, padding):
     conv = (nn.Conv2d(ni, nc, ks, stride, padding),)
     bn = (nn.BatchNorm2d(nc),)
