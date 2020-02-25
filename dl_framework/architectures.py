@@ -9,6 +9,7 @@ from dl_framework.model import (
     double_conv,
     cut_off,
     flatten_with_channel,
+    depth_conv,
 )
 
 
@@ -269,5 +270,23 @@ class conv_filter(nn.Module):
         x = self.conv3(x)
         out = x + inp
         out = self.flatten(out)
+
+        return out
+
+
+class depthwise_seperable_conv(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.conv1 = nn.Sequential(*conv(2, 128, (5, 5), 1, 2))
+        self.depth = nn.Sequential(*depth_conv(2, 128, (5, 5), 1, 2))
+        self.point = nn.Sequential(*conv(128, 1, (1, 1), 1, 0))
+        self.flatten = Lambda(flatten)
+
+    def forward(self, x):
+        # x = self.conv1(x)
+        x = self.depth(x)
+        x = self.point(x)
+        out = self.flatten(x)
 
         return out
