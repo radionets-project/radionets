@@ -1,5 +1,5 @@
 -include .makerc
-all: visualize_predictions
+all: save_predictions visualize_predictions
 
 visualize_predictions: build/visualize_predictions_done
 save_predictions: ./pred_save
