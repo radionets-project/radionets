@@ -278,20 +278,23 @@ class depthwise_seperable_conv(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.conv1 = nn.Sequential(*conv(2, 128, (5, 5), 1, 2))
-        self.depth1 = nn.Sequential(*depth_conv(2, 64, (3, 3), 1, 1))
-        self.depth2 = nn.Sequential(*depth_conv(64, 128, (3, 3), 1, 1))
+        self.depth1 = nn.Sequential(
+            *depth_conv(2, 64, (3, 3), stride=1, padding=2, dilation=2)
+        )
+        self.depth2 = nn.Sequential(
+            *depth_conv(64, 128, (3, 3), stride=1, padding=2, dilation=2)
+        )
         self.point1 = nn.Sequential(*conv(128, 64, (1, 1), 1, 0))
         self.point2 = nn.Sequential(*conv(64, 2, (1, 1), 1, 0))
         self.flatten = Lambda(flatten_with_channel)
-        self.fft = Lambda(fft)
 
     def forward(self, x):
-        # x = self.conv1(x)
+        inp = x.clone()
         x = self.depth1(x)
         x = self.depth2(x)
         x = self.point1(x)
         x = self.point2(x)
+        x = x + inp
         out = self.flatten(x)
 
         return out
