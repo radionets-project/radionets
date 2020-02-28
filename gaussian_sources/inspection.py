@@ -117,6 +117,7 @@ def plot_loss(learn, model_path):
     save_path = model_path.split('.model')[0]
     print('\nPlotting Loss for: {}\n'.format(name_model))
     learn.recorder.plot_loss()
+    plt.title(r"{}".format(name_model))
     plt.savefig('{}_loss.pdf'.format(save_path), bbox_inches='tight', pad_inches=0.01)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
@@ -134,7 +135,7 @@ def plot_lr_loss(learn, arch_name, skip_last):
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path):
+def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     """
     Visualizing, if the target variables are displayed in spatial space.
 
@@ -142,7 +143,6 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path)
     img_input: current input image as a numpy array in shape (2*img_size^2)
     img_pred: current prediction image as a numpy array with shape (img_size^2)
     img_truth: current true image as a numpy array with shape (img_size^2)
-    arch: learn.model object with the used architecture
     out_path: string which contains the output path
     """
     # reshaping and splitting in real and imaginary part if necessary
@@ -186,7 +186,7 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_with_fourier(i, img_input, img_pred, img_truth, arch, out_path):
+def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
     """
     Visualizing, if the target variables are displayed in fourier space.
 
@@ -194,7 +194,6 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, arch, out_path):
     img_input: current input image as a numpy array in shape (2*img_size^2)
     img_pred: current prediction image as a numpy array with shape (2*img_size^2)
     img_truth: current true image as a numpy array with shape (2*img_size^2)
-    arch: learn.model object with the used architecture
     out_path: string which contains the output path
     """
     # reshaping and splitting in real and imaginary part if necessary
