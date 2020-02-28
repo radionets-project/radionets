@@ -7,8 +7,6 @@ save_predictions: ./pred_save
 build/visualize_predictions_done:
 	mkdir -p ${out_path}
 	python visualize_predictions.py \
-	${arch} \
-	${path_model} \
 	${out_path} \
 	-fourier ${fourier} \
 	${mode}
