@@ -279,22 +279,41 @@ class depthwise_seperable_conv(nn.Module):
         super().__init__()
 
         self.depth1 = nn.Sequential(
-            *depth_conv(2, 64, (3, 3), stride=1, padding=2, dilation=2)
+            *depth_conv(1, 64, (7, 7), stride=1, padding=6, dilation=2)
+        )
+        self.depth12 = nn.Sequential(
+            *depth_conv(1, 64, (7, 7), stride=1, padding=3, dilation=1)
         )
         self.depth2 = nn.Sequential(
-            *depth_conv(64, 128, (3, 3), stride=1, padding=2, dilation=2)
+            *depth_conv(1, 64, (7, 7), stride=1, padding=6, dilation=2)
         )
-        self.point1 = nn.Sequential(*conv(128, 64, (1, 1), 1, 0))
-        self.point2 = nn.Sequential(*conv(64, 2, (1, 1), 1, 0))
+        self.depth21 = nn.Sequential(
+            *depth_conv(1, 64, (7, 7), stride=1, padding=3, dilation=1)
+        )
+        self.point1 = nn.Sequential(*conv(128, 1, (1, 1), 1, 0))
+        self.point2 = nn.Sequential(*conv(128, 1, (1, 1), 1, 0))
         self.flatten = Lambda(flatten_with_channel)
 
     def forward(self, x):
         inp = x.clone()
-        x = self.depth1(x)
-        x = self.depth2(x)
-        x = self.point1(x)
-        x = self.point2(x)
-        x = x + inp
-        out = self.flatten(x)
+        inp_real = x[:, 0, :].view(x.shape[0], 1, x.shape[2], x.shape[3])
+        inp_imag = x[:, 1, :].view(x.shape[0], 1, x.shape[2], x.shape[3])
+
+        depth1 = self.depth1(inp_real)
+        depth12 = self.depth12(inp_real)
+
+        depth2 = self.depth2(inp_imag)
+        depth21 = self.depth21(inp_imag)
+
+        comb1 = torch.cat([depth1, depth12], dim=1)
+        comb2 = torch.cat([depth2, depth21], dim=1)
+
+        point1 = self.point1(comb1)
+        point2 = self.point2(comb2)
+
+        comb = torch.cat([point1, point2], dim=1)
+        # x = self.point2(x)
+        comb = comb + inp
+        out = self.flatten(comb)
 
         return out
