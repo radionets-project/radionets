@@ -100,6 +100,8 @@ def main(
     # make normalisation
     norm = normalize_tfm(norm_path)
 
+    zero = zero_imag()
+
     # get model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
 
@@ -109,7 +111,7 @@ def main(
         partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
-        partial(BatchTransformXCallback, zero_imag),
+        partial(BatchTransformXCallback, zero),
         partial(BatchTransformXCallback, mnist_view),
         # partial(SaveCallback, model_path=model_path),
         # partial(LoggerCallback, model_name=model_name),
@@ -142,7 +144,7 @@ def main(
 
     # Print model architecture
     # print(learn.model, "\n")
-    model_summary(learn)
+    # model_summary(learn)
 
     # Train the model, make it possible to stop at any given time
     try:

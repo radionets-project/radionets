@@ -274,15 +274,18 @@ def normalize_tfm(norm_path):
     return _inner
 
 
-def zero_imag(lol):
+def zero_imag():
     def _inner(x):
         a = x
         imag = a[:, 1, :]
+        num = 0
         for i in range(imag.shape[0]):
-            if imag[i].mean() < 1e-10:
+            if imag[i].mean().abs() < 1e-5:
+                # print(imag[i].mean().item())
+                num += 1
                 imag[i] = torch.zeros(imag.shape[1])
-        print(imag)
         a[:, 1, :] = imag
+        # print(num)
         return a
 
     return _inner
