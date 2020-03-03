@@ -281,7 +281,7 @@ def zero_imag():
         imag = a[:, 1, :]
         num = 0
         for i in range(imag.shape[0]):
-            if imag[i].mean().abs() < 1e-5:
+            if imag[i].max() < 1e-9:
                 # print(imag[i].mean().item())
                 num += 1
                 imag[i] = torch.zeros(imag.shape[1])
