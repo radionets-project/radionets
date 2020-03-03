@@ -219,9 +219,10 @@ class LoggerCallback(Callback):
         if (self.epoch + 1) % 10 == 0:
             logger = make_notifier()
             logger.info(
-                "{}: Epoche {} zu Ende mit Loss {}".format(
+                "{}: Epoche {}/{} mit Loss {}".format(
                     self.model_name,
                     self.epoch + 1,
+                    self.epochs,
                     self.avg_stats.valid_stats.avg_stats[1],
                 )
             )
