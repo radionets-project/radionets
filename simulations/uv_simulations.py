@@ -8,6 +8,7 @@ class source:
     Can be converted to geocentric coordinates. Position of source
     can be propagated to simulate an ongoing observation.
     """
+
     def __init__(self, lon, lat):
         """
         Paramters
@@ -122,6 +123,7 @@ class antenna:
     the telescopes can be computed. Antenna positions can be shifted into a ENU frame
     of a specific observation, for which the (u, v)-coverage can be computed.
     """
+
     def __init__(self, X, Y, Z):
         """
         Parameters
@@ -302,8 +304,31 @@ def create_mask(u, v, size=64):
     return np.rot90(mask)
 
 
+def test_mask():
+    """
+    Test mask for filter tests
+    """
+    mask = np.ones((63, 63))
+    mask[19, 31] = 0
+    mask[23, 23] = 0
+    mask[31, 19] = 0
+    mask[45, 32] = 0
+    mask[41, 41] = 0
+    mask[32, 45] = 0
+    # mask[33:35, 33:35] = 0
+    # mask[29:31, 29:31] = 0
+    return mask
+
+
 def sample_freqs(
-    img, ant_config_path, size=64, lon=None, lat=None, num_steps=None, plot=False
+    img,
+    ant_config_path,
+    size=64,
+    lon=None,
+    lat=None,
+    num_steps=None,
+    plot=False,
+    test_mask=False,
 ):
     """
     Sample specific frequencies in 2d Fourier space. Using antenna and source class to
@@ -325,21 +350,26 @@ def sample_freqs(
         number of observation steps
     plot: bool
         if True: returns sampled Fourier spectrum and sampling mask
+    test_mask: bool
+        if True: use same test mask for every image
 
     Returns
     -------
     img: 2darray
         sampled Fourier Spectrum
     """
-    ant = antenna(*get_antenna_config(ant_config_path))
-    if lon is None:
-        lon = np.random.randint(-90, -70)
-    if lat is None:
-        lat = np.random.randint(30, 80)
-    s = source(lon, lat)
-    s.propagate(num_steps=num_steps, multi_pointing=True)
-    u, v, _ = get_uv_coverage(s, ant, iterate=False)
-    mask = create_mask(u, v, size)
+    if test_mask:
+        mask = test_mask()
+    else:
+        ant = antenna(*get_antenna_config(ant_config_path))
+        if lon is None:
+            lon = np.random.randint(-90, -70)
+        if lat is None:
+            lat = np.random.randint(30, 80)
+        s = source(lon, lat)
+        s.propagate(num_steps=num_steps, multi_pointing=True)
+        u, v, _ = get_uv_coverage(s, ant, iterate=False)
+        mask = create_mask(u, v, size)
     img[~mask] = 0
     """
     if mnist:
