@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+from torch.nn.modules.utils import _pair
 from math import sqrt
 
 
@@ -50,26 +51,26 @@ def cut_off(x):
     return a
 
 
-def symmetry(x, mode='real'):
+def symmetry(x, mode="real"):
     center = x.shape[0] // 2
     u = torch.arange(center)
     v = torch.arange(center)
 
-    diag1 = torch.arange(center+1, x.shape[0])
-    diag2 = torch.arange(center+1, x.shape[0])
+    diag1 = torch.arange(center + 1, x.shape[0])
+    diag2 = torch.arange(center + 1, x.shape[0])
     diag_indices = torch.stack((diag1, diag2))
     grid = torch.tril_indices(x.shape[0], x.shape[0], -1)
 
     x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),)
     y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),)
     x = torch.rot90(x, 1)
-    i = (center + (center - x_sym))
-    j = (center + (center - y_sym))
-    u = (center - (center - x_sym))
-    v = (center - (center - y_sym))
-    if mode == 'real':
+    i = center + (center - x_sym)
+    j = center + (center - y_sym)
+    u = center - (center - x_sym)
+    v = center - (center - y_sym)
+    if mode == "real":
         x[i, j] = x[u, v]
-    if mode == 'imag':
+    if mode == "imag":
         x[i, j] = -x[u, v]
     return torch.rot90(x, 3)
 
@@ -226,3 +227,41 @@ def save_model(learn, model_path):
         },
         model_path,
     )
+
+
+class LocallyConnected2d(nn.Module):
+    def __init__(
+        self, in_channels, out_channels, output_size, kernel_size, stride, bias=False
+    ):
+        super(LocallyConnected2d, self).__init__()
+        output_size = _pair(output_size)
+        self.weight = nn.Parameter(
+            torch.randn(
+                1,
+                out_channels,
+                in_channels,
+                output_size[0],
+                output_size[1],
+                kernel_size ** 2,
+            )
+        )
+        if bias:
+            self.bias = nn.Parameter(
+                torch.randn(1, out_channels, output_size[0], output_size[1])
+            )
+        else:
+            self.register_parameter("bias", None)
+        self.kernel_size = _pair(kernel_size)
+        self.stride = _pair(stride)
+
+    def forward(self, x):
+        _, c, h, w = x.size()
+        kh, kw = self.kernel_size
+        dh, dw = self.stride
+        x = x.unfold(2, kh, dh).unfold(3, kw, dw)
+        x = x.contiguous().view(*x.size()[:-2], -1)
+        # Sum in in_channel and kernel_size dims
+        out = (x.unsqueeze(1) * self.weight).sum([2, -1])
+        if self.bias is not None:
+            out += self.bias
+        return out
