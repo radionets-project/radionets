@@ -9,6 +9,8 @@ from dl_framework.model import (
     double_conv,
     cut_off,
     flatten_with_channel,
+    LocallyConnected2d,
+    symmetry,
 )
 
 
@@ -251,3 +253,93 @@ def convs():
         Lambda(flatten),
     )
     return arch
+
+
+class filter(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=1024,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                dilation=1,
+                padding_mode="zeros",
+                bias=True,
+            ),
+            #             nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=(3, 3),
+            #             stride=1, padding=1, dilation=1, padding_mode='zeros', bias=True),
+            nn.BatchNorm2d(1024),
+            nn.ELU(),
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=1024,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=2,
+                dilation=2,
+                padding_mode="zeros",
+                bias=True,
+            ),
+            #             nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=(3, 3),
+            #               stride=1, padding=2, dilation=2, padding_mode='zeros', bias=True),
+            nn.BatchNorm2d(1024),
+            nn.ELU(),
+        )
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=1024,
+                kernel_size=(5, 5),
+                stride=1,
+                padding=2,
+                dilation=1,
+                padding_mode="zeros",
+                bias=True,
+            ),
+            nn.BatchNorm2d(1024),
+            nn.ELU(),
+        )
+        self.conv4 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=1024,
+                kernel_size=(5, 5),
+                stride=1,
+                padding=4,
+                dilation=2,
+                padding_mode="zeros",
+                bias=True,
+            ),
+            nn.BatchNorm2d(1024),
+            nn.ELU(),
+        )
+        self.conv_last = nn.Sequential(
+            LocallyConnected2d(4096, 2, 63, 1, stride=1, bias=True),
+            nn.BatchNorm2d(2),
+            nn.ELU(),
+        )
+        self.elu = nn.ELU()
+        self.symmetry = Lambda(symmetry)
+
+    def forward(self, x):
+        inp = x.clone()
+        conv1 = self.conv1(x)
+        conv2 = self.conv2(x)
+        conv3 = self.conv3(x)
+        conv4 = self.conv4(x)
+        comb = torch.cat([conv1, conv2, conv3, conv4], dim=1)
+        x = self.conv_last(comb)
+        x = x.clone() + 1
+        x[-1, 0][inp[-1, 0] != -1] = inp[-1, 0][inp[-1, 0] != -1]
+        x[-1, 1][inp[-1, 0] == -1] += 1e-3
+        x[-1, 1][inp[-1, 0] != -1] = 1e-8
+        x = self.elu(x)
+        x0 = self.symmetry(x[-1, 0]).reshape(1, 1, 63, 63)
+        x1 = self.symmetry(x[-1, 1]).reshape(1, 1, 63, 63)
+        out = torch.cat([x0, x1], dim=1)
+        return out
