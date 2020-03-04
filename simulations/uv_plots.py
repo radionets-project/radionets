@@ -244,7 +244,7 @@ def FT(img):
     out: 2darray
         Fourier transform of input array
     """
-    return np.abs(np.fft.fftshift(np.fft.fft2(img)))
+    return np.fft.fftshift(np.fft.fft2(img))
 
 
 def apply_mask(img, mask):
