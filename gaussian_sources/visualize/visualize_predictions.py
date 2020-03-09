@@ -9,7 +9,7 @@ from dl_framework.data import get_bundles, h5_dataset
 from tqdm import tqdm
 import re
 from gaussian_sources.inspection import (
-    visualize_without_fourier,
+    evaluate_model,
     visualize_with_fourier,
     visualize_fft,
 )
@@ -42,7 +42,8 @@ def main(
     plt.rcParams.update({"figure.max_open_warning": 0})
     bundle_paths = get_bundles(data_path)
     test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
-    test_ds = h5_dataset(test, tar_fourier=fourier)
+    print(test)
+    test_ds = h5_dataset(test, tar_fourier=True)
 
     if index is None:
         indices = np.random.randint(0, len(test_ds), size=num)
@@ -74,7 +75,8 @@ def main(
                 ) = visualize_with_fourier(i, img, img_y, arch, out_path,)
                 visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path)
             else:
-                visualize_without_fourier(i, index, img, img_y, arch, out_path)
+                evaluate_model(test_ds, arch, '../data5/normalization_factors.csv', nrows=2)
+                plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
     else:
         print("\nPlotting a single index.\n")
