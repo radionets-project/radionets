@@ -131,11 +131,12 @@ class Recorder(Callback):
     def plot_lr(self):
         plt.plot(self.lrs)
 
-    def plot_loss(self):
+    def plot_loss(self, log=True):
         plt.plot(self.train_losses, label="train loss")
         plt.plot(self.valid_losses, label="valid loss")
         plt.plot(self.losses, label="loss")
-        plt.yscale("log")
+        if log:
+            plt.yscale("log")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
