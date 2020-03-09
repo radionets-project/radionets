@@ -270,8 +270,6 @@ class filter(nn.Module):
                 padding_mode="zeros",
                 bias=False,
             ),
-            #  nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=(3, 3),
-            #  stride=1, padding=1, dilation=1, padding_mode='zeros', bias=False),
             nn.BatchNorm2d(32),
             nn.ELU(),
         )
@@ -286,8 +284,6 @@ class filter(nn.Module):
                 padding_mode="zeros",
                 bias=False,
             ),
-            #  nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=(3, 3),
-            #  stride=1, padding=2, dilation=2, padding_mode='zeros', bias=False),
             nn.BatchNorm2d(32),
             nn.ELU(),
         )
