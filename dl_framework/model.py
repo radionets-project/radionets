@@ -51,28 +51,28 @@ def cut_off(x):
     return a
 
 
-def symmetry(x, mode="real"):
-    center = x.shape[0] // 2
+def symmetry(x, mode='real'):
+    center = (x.shape[1]) // 2
     u = torch.arange(center)
     v = torch.arange(center)
 
-    diag1 = torch.arange(center + 1, x.shape[0])
-    diag2 = torch.arange(center + 1, x.shape[0])
+    diag1 = torch.arange(center, x.shape[1])
+    diag2 = torch.arange(center, x.shape[1])
     diag_indices = torch.stack((diag1, diag2))
-    grid = torch.tril_indices(x.shape[0], x.shape[0], -1)
+    grid = torch.tril_indices(x.shape[1], x.shape[1], -1)
 
     x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),)
     y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),)
-    x = torch.rot90(x, 1)
-    i = center + (center - x_sym)
-    j = center + (center - y_sym)
-    u = center - (center - x_sym)
-    v = center - (center - y_sym)
-    if mode == "real":
-        x[i, j] = x[u, v]
-    if mode == "imag":
-        x[i, j] = -x[u, v]
-    return torch.rot90(x, 3)
+    x = torch.rot90(x, 1, dims=(1, 2))
+    i = (center + (center - x_sym))
+    j = (center + (center - y_sym))
+    u = (center - (center - x_sym))
+    v = (center - (center - y_sym))
+    if mode == 'real':
+        x[:, i, j] = x[:, u, v]
+    if mode == 'imag':
+        x[:, i, j] = -x[:, u, v]
+    return torch.rot90(x, 3, dims=(1, 2))
 
 
 class GeneralRelu(nn.Module):
@@ -88,6 +88,18 @@ class GeneralRelu(nn.Module):
             x.sub_(self.sub)
         if self.maxv is not None:
             x.clamp_max_(self.maxv)
+        return x
+
+
+class GeneralELU(nn.Module):
+    def __init__(self, add=None,):
+        super().__init__()
+        self.add = add
+
+    def forward(self, x):
+        if self.add is not None:
+            x.add_(self.add)
+        x = F.elu(x)
         return x
 
 
