@@ -369,11 +369,8 @@ class filter(nn.Module):
         x[:, 0][inp[:, 0] != -1] = inp[:, 0][inp[:, 0] != -1]
         x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
         x[:, 1][inp[:, 0] == -1] += 1e-5
-        # print(inp[:, 0].shape)
-        # print(x[:, 1][inp[:, 0] == -1].shape)
         x[:, 1][inp[:, 0] != -1] = 1e-8
         x = self.elu(x)
         x1 = self.symmetry(x[:, 1]).reshape(-1, 1, 63, 63)
         out = torch.cat([x0, x1], dim=1)
-        # print(len(x1[x1 > 1e-8]))
         return out
