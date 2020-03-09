@@ -14,12 +14,12 @@ def do_normalisation(x, norm):
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
-    train_mean_real = torch.tensor(norm["train_mean_real"].values[0]).float()
-    train_std_real = torch.tensor(norm["train_std_real"].values[0]).float()
-    train_mean_imag = torch.tensor(norm["train_mean_imag"].values[0]).float()
-    train_std_imag = torch.tensor(norm["train_std_imag"].values[0]).float()
-    x[:, 0] = normalize(x[:, 0], train_mean_real, train_std_real)
-    x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
+    train_mean_amp = torch.tensor(norm["train_mean_amp"].values[0]).float()
+    train_std_amp = torch.tensor(norm["train_std_amp"].values[0]).float()
+    # train_mean_imag = torch.tensor(norm["train_mean_imag"].values[0]).float()
+    # train_std_imag = torch.tensor(norm["train_std_imag"].values[0]).float()
+    x[:, 0] = normalize(x[:, 0], train_mean_amp, train_std_amp)
+    # x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
     assert not torch.isinf(x).any()
     return x
 
@@ -39,7 +39,7 @@ class Dataset:
 class h5_dataset:
     def __init__(self, bundle_paths, tar_fourier):
         """
-        Save the bundle paths and the number of bundles in one file
+        Save the bundle paths and the number of bundles in one file.
         """
         self.bundles = bundle_paths
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
@@ -50,7 +50,7 @@ class h5_dataset:
 
     def __len__(self):
         """
-        Return the total number of pictures in this dataset
+        Returns the total number of pictures in this dataset
         """
         return len(self.bundles) * self.num_img
 
@@ -65,20 +65,19 @@ class h5_dataset:
         return data
 
     def open_image(self, var, i):
-        # at the moment all bundles contain 1024 images
-        # should be variable in the future
         bundle_i = i // self.num_img
         image_i = i - bundle_i * self.num_img
         bundle = h5py.File(self.bundles[bundle_i], "r")
         data = bundle[var][image_i]
-        if var == "x" or self.tar_fourier:
-            data_amp, data_phase = split_amp_phase(data)
-            data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(
-                -1, data.shape[0] ** 2
-            )[0]
+        if var == "x" or self.tar_fourier is True:
+            data_amp, data_phase = data[0], data[1]
+            # print(len(data_amp[data[0] == -10]))
+            data_amp[data[0] == -10] = -1
+            data_channel = data_amp
         else:
+            data_amp, data_phase = split_amp_phase(data)
             data_channel = data_amp.reshape(data.shape[0] ** 2)
-        return torch.tensor(data).float()
+        return torch.tensor(data_channel).float()
 
 
 def combine_and_swap_axes(array1, array2):
