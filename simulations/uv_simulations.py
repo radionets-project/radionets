@@ -309,14 +309,14 @@ def test_mask():
     Test mask for filter tests
     """
     mask = np.ones((63, 63))
-    mask[19, 31] = 0
+    mask[19, 30] = 0
     mask[23, 23] = 0
-    mask[31, 19] = 0
-    mask[45, 32] = 0
-    mask[41, 41] = 0
-    mask[32, 45] = 0
-    # mask[33:35, 33:35] = 0
-    # mask[29:31, 29:31] = 0
+    mask[30, 19] = 0
+    mask[43, 32] = 0
+    mask[39, 39] = 0
+    mask[32, 43] = 0
+    mask[33:35, 33:35] = 0
+    mask[28:30, 28:30] = 0
     return mask
 
 
@@ -328,7 +328,7 @@ def sample_freqs(
     lat=None,
     num_steps=None,
     plot=False,
-    test_mask=False,
+    test=False,
 ):
     """
     Sample specific frequencies in 2d Fourier space. Using antenna and source class to
@@ -370,7 +370,7 @@ def sample_freqs(
         s.propagate(num_steps=num_steps, multi_pointing=True)
         u, v, _ = get_uv_coverage(s, ant, iterate=False)
         mask = create_mask(u, v, size)
-    img[~mask] = 0
+    img[:, ~mask.astype(bool)] = -10
     """
     if mnist:
         img = img.reshape(64, 64)
