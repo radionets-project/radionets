@@ -27,7 +27,8 @@ ${data}/fft_samp_train0.h5:
 		-mode train \
 		-fourier ${fourier} \
 		-samp True \
-		-noise True \
+		-amp_phase True \
+		-noise False \
 		-preview False \
 		-size ${size_img} \
 		-specific_mask True \
@@ -47,7 +48,8 @@ ${data}/fft_samp_valid0.h5:
 		-mode valid \
 		-fourier ${fourier} \
 		-samp True \
-		-noise True \
+		-amp_phase True \
+		-noise False \
 		-preview False \
 		-size ${size_img} \
 		-specific_mask True \
@@ -67,7 +69,8 @@ ${data}/fft_samp_test0.h5:
 		-mode test \
 		-fourier ${fourier} \
 		-samp True \
-		-noise True \
+		-amp_phase True \
+		-noise False \
 		-preview False \
 		-size ${size_img} \
 		-specific_mask True \
