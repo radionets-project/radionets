@@ -80,8 +80,8 @@ ${data}/normalization_factors.csv:
 ./training_done:
 		mkdir -p ${path}
 		python train_cnn.py ${data}\
-		${path_model}\
-		${arch} ${norm_path}\
+		${path}/${path_model}\
+		${arch} ${data}/${norm_path}\
 		${epochs} ${lr} ${lr_type} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
@@ -90,7 +90,7 @@ ${data}/normalization_factors.csv:
 ./lr_find:
 		mkdir -p ${path}
 		python find_lr.py ${data}\
-		${arch} ${lr_type} ${norm_path} -max_iter ${max_iter} -min_lr ${min_lr}\
+		${arch} ${lr_type} ${data}/${norm_path} -max_iter ${max_iter} -min_lr ${min_lr}\
 		-max_lr ${max_lr} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
