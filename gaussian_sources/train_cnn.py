@@ -113,8 +113,8 @@ def main(
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, zero),
         partial(BatchTransformXCallback, mnist_view),
-        # partial(SaveCallback, model_path=model_path),
-        # partial(LoggerCallback, model_name=model_name),
+        partial(SaveCallback, model_path=model_path),
+        partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
