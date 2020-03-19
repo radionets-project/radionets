@@ -98,7 +98,7 @@ ${data}/normalization_factors.csv:
 ./plot_loss:
 		mkdir -p ${path}
 		python plot_loss.py\
-		${path_model}\
+		${path}/${path_model}\
 		${arch}\
 
 clean_norm:
