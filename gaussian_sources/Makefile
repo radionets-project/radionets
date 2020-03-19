@@ -75,7 +75,7 @@ ${data}/fft_samp_test0.h5:
 ${data}/normalization_factors.csv:
 		python calculate_normalization.py\
 		${data}/ \
-		${norm_path}
+		${data}/${norm_path}
 
 ./training_done:
 		mkdir -p ${path}
