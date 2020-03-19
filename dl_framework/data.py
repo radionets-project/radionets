@@ -104,7 +104,7 @@ def split_amp_phase(array):
 def get_dls(train_ds, valid_ds, bs, **kwargs):
     return (
         DataLoader(train_ds, batch_size=bs, shuffle=True, **kwargs),
-        DataLoader(valid_ds, batch_size=bs, **kwargs),
+        DataLoader(valid_ds, batch_size=bs, shuffle=True, **kwargs),
     )
 
 
