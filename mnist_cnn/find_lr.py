@@ -86,12 +86,12 @@ def main(
 
     # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=400, max_lr=1e-1, min_lr=1e-4),
+        partial(LR_Find, max_iter=400, max_lr=1e-2, min_lr=1e-6),
         Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
+        # SaveCallback,
     ]
 
     if loss_func == "feature_loss":
