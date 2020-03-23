@@ -27,10 +27,12 @@ def cnn():
         *conv(32, 64, (2, 2), 2, 1),
         nn.MaxPool2d((2, 2)),
         Lambda(flatten),
-        nn.Linear(64, 32768),
+        nn.Linear(64, 8192),
         Lambda(fft),
-        *conv(2, 1, 1, 1, 0),
         Lambda(flatten),
+        # *conv(2, 1, 1, 1, 0),
+        nn.Linear(8192, 4096),
+        # Lambda(flatten),
     )
     return arch
 
