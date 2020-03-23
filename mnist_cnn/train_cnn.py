@@ -101,8 +101,8 @@ def main(
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
-        LoggerCallback,
+        partial(SaveCallback, model_path=model_path),
+        # LoggerCallback,
     ]
 
     # Define optimiser function
