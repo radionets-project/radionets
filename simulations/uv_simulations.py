@@ -303,7 +303,7 @@ def create_mask(u, v, size=64):
 
 
 def sample_freqs(
-    img, ant_config_path, size=64, lon=None, lat=None, num_steps=None, plot=False
+    img, ant_config_path, size=63, lon=None, lat=None, num_steps=None, plot=False
 ):
     """
     Sample specific frequencies in 2d Fourier space. Using antenna and source class to
