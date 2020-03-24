@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from unittest.mock import patch
 
 
 def test_create_rot_mat():
@@ -78,7 +79,8 @@ def test_gaussians():
     os.rmdir('./tests/build')
 
 
-def test_noise():
+@patch("simulations.gaussian_simulations.plt.show")
+def test_noise(mock_show):
     from simulations.gaussian_simulations import add_noise, get_noise
 
     img = np.ones((63, 63))
@@ -91,3 +93,5 @@ def test_noise():
     noisy_bundle = add_noise(bundle)
 
     assert noisy_bundle.shape == bundle.shape
+
+    assert add_noise(bundle, preview=True).shape == bundle.shape
