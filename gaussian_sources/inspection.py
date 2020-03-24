@@ -58,7 +58,7 @@ def evaluate_model(valid_ds, model, norm_path, nrows=3):
     plt.tight_layout()
 
 
-def plot_loss(learn, model_path):
+def plot_loss(learn, model_path, log=True):
     # to prevent the localhost error from happening
     # first change the backende and second turn off
     # the interactive mode
@@ -67,7 +67,8 @@ def plot_loss(learn, model_path):
     name_model = model_path.split("/")[-1].split(".")[0]
     save_path = model_path.split(".model")[0]
     print("\nPlotting Loss for: {}\n".format(name_model))
-    learn.recorder.plot_loss()
+    learn.recorder.plot_loss(log=log)
+    plt.ylim(-10, 0)
     plt.savefig("{}_loss.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
