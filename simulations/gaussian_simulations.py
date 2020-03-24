@@ -119,7 +119,7 @@ def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
 
 
 def create_gaussian_source(
-    comps, amp, x, y, sig_x, sig_y, rot, grid, sides=0, blur=True
+    grid, comps, amp, x, y, sig_x, sig_y, rot, sides=0, blur=True
 ):
     """
     Combines Gaussian components on a 2d grid to create a Gaussian source
@@ -132,6 +132,8 @@ def create_gaussian_source(
 
     Parameters
     ----------
+    grid: ndarray
+        2dgrid + X and Y meshgrid
     comps: int
         number of components
     amp: 1darray
@@ -146,8 +148,6 @@ def create_gaussian_source(
         standard deviations of components in y
     rot: int
         rotation of the jet in degree
-    grid: ndarray
-        2dgrid + X and Y meshgrid
     sides: int
         0 one-sided, 1 two-sided jet
     blur: bool
@@ -163,6 +163,7 @@ def create_gaussian_source(
     components should not have too big gaps between each other
     """
     if sides == 1:
+        print(amp)
         comps += comps - 1
         amp = np.append(amp, amp[1:])
         x = np.append(x, -x[1:])
@@ -265,7 +266,7 @@ def gaussian_source(img_size):
     grid = create_grid(img_size)
     comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
     s = create_gaussian_source(
-        comps, amp, x, y, sig_x, sig_y, rot, grid, sides, blur=True
+        grid, comps, amp, x, y, sig_x, sig_y, rot, sides, blur=True
     )
     return s
 
