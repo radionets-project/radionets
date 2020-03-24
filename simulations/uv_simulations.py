@@ -95,7 +95,7 @@ class source:
         self.lat_prop = lat
         return lon, lat
 
-    def mod_delete(a, n, m):
+    def mod_delete(self, a, n, m):
         """
         Deletes all m steps n values in a
 
@@ -288,7 +288,7 @@ def get_uv_coverage(source, antenna, iterate=False):
     return u, v, steps
 
 
-def create_mask(u, v, size=64):
+def create_mask(u, v, size=63):
     """ Create 2d mask from a given (uv)-coverage
 
     u: array of u coordinates
@@ -297,8 +297,8 @@ def create_mask(u, v, size=64):
     """
     uv_hist, _, _ = np.histogram2d(u, v, bins=size)
     # exclude center
-    ex_l = size // 2 - 5
-    ex_h = size // 2 + 5
+    ex_l = size // 2 - 2
+    ex_h = size // 2 + 3
     uv_hist[ex_l:ex_h, ex_l:ex_h] = 0
     mask = uv_hist > 0
     return np.rot90(mask)
@@ -358,7 +358,7 @@ def sample_freqs(
     img: 2darray
         sampled Fourier Spectrum
     """
-    if test_mask:
+    if test:
         mask = test_mask()
     else:
         ant = antenna(*get_antenna_config(ant_config_path))
@@ -367,7 +367,7 @@ def sample_freqs(
         if lat is None:
             lat = np.random.randint(30, 80)
         s = source(lon, lat)
-        s.propagate(num_steps=num_steps, multi_pointing=True)
+        s.propagate(num_steps=num_steps, multi_pointing=False)
         u, v, _ = get_uv_coverage(s, ant, iterate=False)
         mask = create_mask(u, v, size)
     img[:, ~mask.astype(bool)] = -10
