@@ -6,11 +6,6 @@ antenna
 get uc coverage
 
 create mask
-
-sample freqs
-
-get antenna config
-
 '''
 
 
