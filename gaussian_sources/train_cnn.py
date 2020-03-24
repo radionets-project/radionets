@@ -109,7 +109,7 @@ def main(
         partial(BatchTransformXCallback, norm),
         partial(BatchTransformXCallback, mnist_view),
         partial(SaveCallback, model_path=model_path),
-        partial(LoggerCallback, model_name=model_name),
+        # partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
@@ -133,15 +133,17 @@ def main(
     )
 
     def loss(x, y, learn=learn):
-        xb = learn.xb[:, 0]
-        unc = x[:, 1][xb == -1]
-        y_pred = x[:, 0][xb == -1]
-        loss = (
-            (
-                2 * torch.log(unc)
-                + ((y[xb == -1] - y_pred) ** 2 / unc ** 2)
-            )
-        ).mean()
+        # xb = learn.xb[:, 0]
+        # unc = x[:, 1][xb == 0]
+        # y_pred = x[:, 0][xb == 0]
+        # loss = (
+        #     (
+        #         2 * torch.log(unc)
+        #         + ((y[xb == 0] - y_pred) ** 2 / unc ** 2)
+        #     )
+        # ).mean()
+        loss = ((x[0, 0, 1:62, 1:62] - y[0, 1:62, 1:62]).pow(2)).mean()
+        # loss = ((x - y).pow(2)).mean()
         return loss
 
     learn.loss_func = loss
