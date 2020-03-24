@@ -338,7 +338,7 @@ def get_noise(image, scale, mean=0, std=1):
     return np.random.normal(mean, std, size=image.shape) * scale
 
 
-def add_noise(bundle, preview=False):
+def add_noise(bundle, preview=False, num=1):
     """
     Used for adding noise and plotting the original and noised picture,
     if asked. Using 0.05 * max(image) as scaling factor.
@@ -360,7 +360,7 @@ def add_noise(bundle, preview=False):
     )
 
     if preview:
-        for i in range(10):
+        for i in range(num):
             fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
 
             ax1.set_title(r"Original")
