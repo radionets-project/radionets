@@ -67,7 +67,7 @@ def main(
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
         if amp_phase:
             amp, phase = split_amp_phase(bundle_fft)
-            amp = np.log10(amp + 1)
+            amp = (np.log10(amp + 1e-10)/10) + 1
             bundle_fft = np.stack((amp, phase), axis=1)
         copy = bundle_fft.copy()
         if samp is True:
@@ -75,7 +75,7 @@ def main(
                 bundle_samp = np.array(
                     [
                         sample_freqs(
-                            img, antenna_config_path, size, lon, lat, steps, test=True,
+                            img, antenna_config_path, size, lon, lat, steps, plot=False, test=False,
                         )
                         for img in copy
                     ]
@@ -85,6 +85,7 @@ def main(
                     [sample_freqs(img, antenna_config_path, size=size) for img in copy]
                 )
         out = out_path + path.name.split("_")[-1]
+        print(bundle_fft.min(), bundle_samp.min())
         if fourier:
             save_fft_pair(out, bundle_samp, bundle_fft)
         else:
