@@ -340,6 +340,7 @@ def sample_freqs(
     s.propagate(num_steps=num_steps, multi_pointing=True)
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
     mask = create_mask(u, v, size)
+    img = img.copy()
     img[~mask] = 0
     """
     if mnist:
