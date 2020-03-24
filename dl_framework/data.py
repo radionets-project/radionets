@@ -71,8 +71,7 @@ class h5_dataset:
         data = bundle[var][image_i]
         if var == "x" or self.tar_fourier is True:
             data_amp, data_phase = data[0], data[1]
-            # print(len(data_amp[data[0] == -10]))
-            data_amp[data[0] == -10] = -1
+            data_amp[data[0] == -10] = 0
             data_channel = data_amp
         else:
             data_amp, data_phase = split_amp_phase(data)
