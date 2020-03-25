@@ -286,7 +286,7 @@ def get_uv_coverage(source, antenna, iterate=False):
     return u, v, steps
 
 
-def create_mask(u, v, size=64):
+def create_mask(u, v, size=63):
     """ Create 2d mask from a given (uv)-coverage
 
     u: array of u coordinates
