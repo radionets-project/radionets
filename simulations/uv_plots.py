@@ -51,6 +51,7 @@ def plot_baselines(antenna):
         label="Baselines",
         alpha=0.35,
     )
+    plt.tight_layout()
 
 
 def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines=False):
