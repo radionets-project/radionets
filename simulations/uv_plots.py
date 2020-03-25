@@ -264,5 +264,5 @@ def apply_mask(img, mask):
     out: 2darray
         array with sampled frequencies
     """
-    img[~mask] = 0
+    img[~mask.astype(bool)] = 0
     return img
