@@ -81,6 +81,7 @@ def test_plot_source():
 
     assert plot_source(img) is None
     assert plot_source(img, ft=True) is None
+    assert plot_source(img, log=True) is None
     assert plot_source(img, ft=True, log=True) is None
 
 
