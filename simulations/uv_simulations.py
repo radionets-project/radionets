@@ -187,6 +187,9 @@ class antenna:
             x, y, z reference coordinates
         """
         lon_ref, lat_ref = self.to_geodetic(x_ref, y_ref, z_ref, enu=True)
+        if isinstance(x_ref, int):
+            x_ref, y_ref, z_ref = [x_ref], [y_ref], [z_ref]
+            lon_ref, lat_ref = [lon_ref], [lat_ref]
         ref = np.array(list(zip(x_ref, y_ref, z_ref)))
 
         def rot(lon, lat):
