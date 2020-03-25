@@ -3,6 +3,7 @@ import numpy as np
 
 def test_source():
     from simulations.uv_simulations import source
+
     s = source(120, 50)
 
     assert s.lat == 50
@@ -20,7 +21,7 @@ def test_antenna():
         get_antenna_config,
     )
 
-    ant = antenna(*get_antenna_config('simulations/layouts/vlba.txt'))
+    ant = antenna(*get_antenna_config("simulations/layouts/vlba.txt"))
 
     assert ant.all.shape == (10, 3)
     assert ant.baselines == 90
@@ -55,7 +56,7 @@ def test_uv_coverage():
         create_mask,
     )
 
-    ant_config_path = './simulations/layouts/vlba.txt'
+    ant_config_path = "./simulations/layouts/vlba.txt"
     s = source(120, 50)
     s.propagate(num_steps=20, multi_pointing=True)
     ant = antenna(*get_antenna_config(ant_config_path))
@@ -74,7 +75,7 @@ def test_uv_coverage():
 def test_sample_freqs():
     from simulations.uv_simulations import sample_freqs
 
-    ant_config_path = './simulations/layouts/vlba.txt'
+    ant_config_path = "./simulations/layouts/vlba.txt"
     img = np.ones((63, 63))
     img_samp = sample_freqs(img, ant_config_path)
 
@@ -90,7 +91,7 @@ def test_sample_freqs():
 def test_get_antenna_config():
     from simulations.uv_simulations import get_antenna_config
 
-    ant_config_path = './simulations/layouts/vlba.txt'
+    ant_config_path = "./simulations/layouts/vlba.txt"
     ant_pos = get_antenna_config(ant_config_path)
 
     assert ant_pos.shape == (3, 10)

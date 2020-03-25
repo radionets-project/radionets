@@ -52,13 +52,13 @@ def test_gaussians():
 
     assert img_gauss.shape == img[0].shape
     assert np.isclose(img_gauss.max(), 1)
-    assert np.where(np.isclose(img_gauss, 1)) == (img.shape[1]//2, img.shape[2]//2)
+    assert np.where(np.isclose(img_gauss, 1)) == (img.shape[1] // 2, img.shape[2] // 2)
 
     comp = gaussian_component(img[1], img[2], 1, 1, 1)
 
     assert comp.shape == img[0].shape
     assert np.isclose(comp.max(), 1)
-    assert np.where(np.isclose(comp, 1)) == (img.shape[1]//2, img.shape[2]//2)
+    assert np.where(np.isclose(comp, 1)) == (img.shape[1] // 2, img.shape[2] // 2)
 
     params = gauss_paramters()
     source = create_gaussian_source(img, *params)
@@ -69,14 +69,14 @@ def test_gaussians():
 
     assert bundle.shape == (10, 63, 63)
 
-    path = './tests/build/bundle_'
-    os.mkdir('./tests/build')
+    path = "./tests/build/bundle_"
+    os.mkdir("./tests/build")
     create_n_bundles(1, 10, 63, path)
 
-    assert os.path.exists(path + '0.h5')
+    assert os.path.exists(path + "0.h5")
 
-    os.remove(path + '0.h5')
-    os.rmdir('./tests/build')
+    os.remove(path + "0.h5")
+    os.rmdir("./tests/build")
 
 
 @patch("simulations.gaussian_simulations.plt.show")
