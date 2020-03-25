@@ -87,8 +87,8 @@ class source:
             raise ValueError("Length of lon and lat are different!")
 
         if multi_pointing is True:
-            lon = self.mod_delete(lon, 5, 20)
-            lat = self.mod_delete(lat, 5, 20)
+            lon = self.mod_delete(lon, 5, 10)
+            lat = self.mod_delete(lat, 5, 10)
 
         self.lon_prop = lon
         self.lat_prop = lat
@@ -135,7 +135,6 @@ class antenna:
         self.X = X
         self.Y = Y
         self.Z = Z
-        self.to_geodetic(self.X, self.Y, self.Z)
 
     def to_geodetic(self, x_ref, y_ref, z_ref, enu=False):
         """
