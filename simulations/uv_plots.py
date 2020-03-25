@@ -110,7 +110,7 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
     plt.tight_layout()
 
 
-def animate_baselines(source, antenna, filename, fps):
+def animate_baselines(source, antenna, filename, fps=5):
     """
     Create gif to animate change of baselines during an observation
 
@@ -149,7 +149,7 @@ def animate_baselines(source, antenna, filename, fps):
     ani.save(str(filename) + ".gif", writer=PillowWriter(fps=fps))
 
 
-def animate_uv_coverage(source, antenna, filename, fps):
+def animate_uv_coverage(source, antenna, filename, fps=5):
     """
     Create gif to animate improvement of (uv)-coverage during an observation
 
@@ -264,5 +264,6 @@ def apply_mask(img, mask):
     out: 2darray
         array with sampled frequencies
     """
+    img = img.copy()
     img[~mask.astype(bool)] = 0
     return img
