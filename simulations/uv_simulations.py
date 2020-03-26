@@ -171,8 +171,8 @@ class antenna:
             ref = np.ones((self.len, 2)) * ([self.x_enu[i], self.y_enu[i]])
             pairs = np.array([self.x_enu, self.y_enu])
             baselines = np.array(list(zip(ref, pairs.T))).ravel()
-            x = baselines[0::2]
-            y = baselines[1::2]
+            x = baselines[4::2]
+            y = baselines[5::2]
             x_base = np.append(x_base, x)
             y_base = np.append(y_base, y)
         return x_base, y_base
