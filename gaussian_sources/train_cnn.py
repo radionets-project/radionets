@@ -111,7 +111,7 @@ def main(
         partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
-        partial(BatchTransformXCallback, zero),
+        # partial(BatchTransformXCallback, zero),
         partial(BatchTransformXCallback, mnist_view),
         partial(SaveCallback, model_path=model_path),
         partial(LoggerCallback, model_name=model_name),
@@ -122,7 +122,7 @@ def main(
     elif loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
-        loss_func = splitted_mse
+        loss_func = nn.MSELoss()
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)
