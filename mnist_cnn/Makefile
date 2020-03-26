@@ -37,7 +37,7 @@ find_lr: ./lr_find
 		mkdir -p data/
 		python create_mnist_fft.py ./../resources/mnist.pkl.gz\
 		./data -test False -noise False
-		touch ./data/mnist_fft_done
+		# touch ./data/mnist_fft_done
 
 ./data/mnist_fft_done_quick:
 		mkdir -p data/
