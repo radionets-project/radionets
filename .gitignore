@@ -7,6 +7,7 @@ mnist_cnn/data
 simulations/gaussian_sources
 gaussian_sources/data*
 *.uvf
+simulations/test_data/
 
 # cache
 __pycache__/
@@ -38,3 +39,4 @@ mnist_cnn/old
 .flake8
 *.yaml
 .makerc
+.coverage
