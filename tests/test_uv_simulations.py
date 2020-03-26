@@ -37,9 +37,7 @@ def test_antenna():
 
     x_base, y_base = ant.get_baselines()
 
-    # There is a bug in the baseline calculation
-    # This test will fail!
-    # assert len(x_base) & len(y_base) == 180
+    assert len(x_base) & len(y_base) == 180
 
     u, v, steps = ant.get_uv()
 
