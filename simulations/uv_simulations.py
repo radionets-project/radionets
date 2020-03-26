@@ -171,10 +171,15 @@ class antenna:
             ref = np.ones((self.len, 2)) * ([self.x_enu[i], self.y_enu[i]])
             pairs = np.array([self.x_enu, self.y_enu])
             baselines = np.array(list(zip(ref, pairs.T))).ravel()
-            x = baselines[4::2]
-            y = baselines[5::2]
+            x = baselines[0::2]
+            y = baselines[1::2]
             x_base = np.append(x_base, x)
             y_base = np.append(y_base, y)
+            
+        drops = np.asarray([((i * 2 + np.array([1, 2])) - 1) + (i * self.len*2) for i in range(self.len)])
+        coords = np.delete(np.stack([x_base, y_base], axis=1), drops.ravel(), axis=0).T
+        x_base = coords[0]
+        y_base = coords[1]
         return x_base, y_base
 
     def to_enu(self, x_ref, y_ref, z_ref):
