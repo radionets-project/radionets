@@ -163,7 +163,6 @@ def create_gaussian_source(
     components should not have too big gaps between each other
     """
     if sides == 1:
-        print(amp)
         comps += comps - 1
         amp = np.append(amp, amp[1:])
         x = np.append(x, -x[1:])
