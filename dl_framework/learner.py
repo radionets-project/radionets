@@ -4,6 +4,7 @@ import torch
 from dl_framework.optimizer import sgd_opt
 import torch.nn as nn
 from dl_framework.model import init_cnn
+from tqdm import tqdm
 
 
 class CancelTrainException(Exception):
@@ -108,7 +109,7 @@ class Learner:
 
         try:
             self.do_begin_fit(epochs)
-            for epoch in range(epochs):
+            for epoch in tqdm(range(epochs)):
                 self.do_begin_epoch(epoch)
                 if not self("begin_epoch"):
                     self.all_batches()
