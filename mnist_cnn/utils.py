@@ -5,6 +5,9 @@ import h5py
 import matplotlib.pyplot as plt
 from skimage.transform import resize
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from simulations.gaussian_simulations import add_noise
+from dl_framework.data import save_fft_pair
+import os
 
 
 def open_mnist(path):
@@ -13,7 +16,15 @@ def open_mnist(path):
     return train_x, valid_x
 
 
-def prepare_mnist(image, noise=False, pixel=63):
+def adjust_outpath(path, option):
+    counter = 0
+    filename = path + "/fft_bundle_" + option + "{}.h5"
+    while os.path.isfile(filename.format(counter)):
+        counter += 1
+    return filename.format(counter)
+
+
+def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
     """
     Resize images to specific squared pixel size and calculate fft
 
@@ -31,41 +42,16 @@ def prepare_mnist(image, noise=False, pixel=63):
     y: 2d array
         rescaled input image
     """
-    img_reshaped = image.reshape(28, 28)
-    y = resize(img_reshaped, (pixel, pixel), anti_aliasing=True, mode="constant")
-    x = np.fft.fftshift(np.fft.fft2(y))
-    return x, y
-
-
-def add_noise(image, mean=0, std=1, index=0, preview=False, num=1):
-    """
-    Used for adding noise and plotting the original and noised picture,
-    if asked.
-    """
-    noise = np.random.normal(mean, std, size=image.shape) * 0.15
-    image_noised = image + noise
-    image = image.reshape(28, 28)
-    image_noised = image_noised.reshape(28, 28)
-
-    if preview:
-        for i in range(num):
-            fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
-
-            ax1.set_title(r"Original")
-            im1 = ax1.imshow(bundle[i])
-            divider = make_axes_locatable(ax1)
-            cax = divider.append_axes("right", size="5%", pad=0.05)
-            fig.colorbar(im1, cax=cax, orientation="vertical")
-
-            ax2.set_title(r"Noised")
-            im2 = ax2.imshow(bundle_noised[i])
-            divider = make_axes_locatable(ax2)
-            cax = divider.append_axes("right", size="5%", pad=0.05)
-            fig.colorbar(im2, cax=cax, orientation="vertical")
-            plt.show()
-
-    image_noised = image_noised.reshape(784,)
-    return image_noised
+    y = [
+        resize(bund, (pixel, pixel), anti_aliasing=True, mode="constant",)
+        for bund in bundle
+    ]
+    y_prep = y.copy()
+    if noise:
+        y_prep = add_noise(y_prep)
+    x = np.fft.fftshift(np.fft.fft2(y_prep))
+    path = adjust_outpath(path, option)
+    save_fft_pair(path, x, y)
 
 
 def reshape_img(img, size=64):
