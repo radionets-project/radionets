@@ -262,18 +262,13 @@ a
 import numpy as np
 import matplotlib.pyplot as plt
 
-a = np.ones((512, 28, 28))
+a = np.ones((2, 500, 63, 63))
 
-np.fft.fft2(a).shape
+a.shape[-1]
 
-from skimage.transform import resize
 
-plt.imshow(resize(a, (a.shape[-1], 63, 63), anti_aliasing=True, mode="constant")[0])
-plt.colorbar()
 
-60000 / 500
 
-12 * 100 / 60 
 
 
 
