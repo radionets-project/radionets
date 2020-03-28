@@ -9,17 +9,48 @@ import os
 
 
 def open_mnist(path):
+    """
+    Open MNIST data set pickle file.
+
+    Parameters
+    ----------
+    path: str
+        path to MNIST pickle file
+
+    Returns
+    -------
+    train_x: 2d array
+        50000 x 784 images
+    valid_x: 2d array
+        10000 x 784 images
+    """
     with gzip.open(path, "rb") as f:
         ((train_x, _), (valid_x, _), _) = pickle.load(f, encoding="latin-1")
     return train_x, valid_x
 
 
 def adjust_outpath(path, option):
+    """
+    Add number to out path when filename already exists.
+
+    Parameters
+    ----------
+    path: str
+        path to save directory
+    option: str
+        additional keyword to add to path
+
+    Returns
+    -------
+    out: str
+        adjusted path
+    """
     counter = 0
     filename = path + "/fft_bundle_" + option + "{}.h5"
     while os.path.isfile(filename.format(counter)):
         counter += 1
-    return filename.format(counter)
+    out = filename.format(counter)
+    return out
 
 
 def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
