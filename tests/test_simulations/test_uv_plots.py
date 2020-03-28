@@ -64,14 +64,11 @@ def test_animate():
     s.propagate()
     ant_config_path = "simulations/layouts/vlba.txt"
     ant = antenna(*get_antenna_config(ant_config_path))
-    os.mkdir(build)
+    if os.path.exists(build) is False:
+        os.mkdir(build)
 
     assert animate_baselines(s, ant, baseline) is None
     assert animate_uv_coverage(s, ant, uv_coverage) is None
-
-    os.remove(baseline + ".gif")
-    os.remove(uv_coverage + ".gif")
-    os.rmdir("./tests/build")
 
 
 def test_plot_source():

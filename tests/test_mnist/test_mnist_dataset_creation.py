@@ -27,12 +27,10 @@ def test_prepare_mnist_bundles():
 
     bundle = np.ones((10, 3, 3))
     build = "./tests/build"
-    os.mkdir("./tests/build")
+    if os.path.exists(build) is False:
+        os.mkdir(build)
 
     assert prepare_mnist_bundles(bundle, build, "test", noise=True, pixel=5) is None
-
-    os.remove(build + "/fft_bundle_test0.h5")
-    os.rmdir("./tests/build")
 
 
 def test_create_mnist_fft():
@@ -40,7 +38,9 @@ def test_create_mnist_fft():
 
     data_path = "./resources/mnist_test.pkl.gz"
     out_path = "./tests/build"
-    os.mkdir(out_path)
+
+    if os.path.exists(out_path) is False:
+        os.mkdir(out_path)
 
     runner = CliRunner()
     options = [data_path, out_path, "-size", 63, "-bundle_size", 2]
