@@ -2,16 +2,10 @@
 # Analysis steps
 #
 -include .makerc
-all:	mnist_fft\
-		mnist_samp\
-		calc_normalization
 
-quick_data_and_training: mnist_fft_quick\
-						 clean_samp\
-						 mnist_samp\
-						 calc_normalization\
-						 clean_training\
-						 cnn_training
+dataset:	mnist_fft\
+			mnist_samp\
+			calc_normalization
 
 #--------------------------------------------------------
 
@@ -43,12 +37,10 @@ find_lr: ./lr_find
 		-steps 50
 		# touch ./data/mnist_samp_done
 
-
-
 ./data/normalization_factors.csv:
 		python calculate_normalization.py \
-		data/mnist_samp_train.h5 \
-		data/normalization_factors.csv
+		./data \
+		./data/normalization_factors.csv
 
 ./training_done:
 		mkdir -p ${path}
