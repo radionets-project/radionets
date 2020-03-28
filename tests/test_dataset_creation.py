@@ -1,7 +1,3 @@
-import sys
-sys.path.append('.')
-
-
 def test_open_mnist():
     """
     Test the open_mnist function from utils and check if the shapes
