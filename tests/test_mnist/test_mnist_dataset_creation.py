@@ -1,6 +1,5 @@
 import numpy as np
 import os
-from unittest.mock import patch
 from click.testing import CliRunner
 
 
