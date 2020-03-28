@@ -2,9 +2,7 @@ import gzip
 import pickle
 import numpy as np
 import h5py
-import matplotlib.pyplot as plt
 from skimage.transform import resize
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from simulations.gaussian_simulations import add_noise
 from dl_framework.data import save_fft_pair
 import os
