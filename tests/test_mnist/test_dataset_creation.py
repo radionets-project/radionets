@@ -1,5 +1,7 @@
 import numpy as np
 import os
+from unittest.mock import patch
+from click.testing import CliRunner
 
 
 def test_open_mnist():
@@ -26,47 +28,51 @@ def test_prepare_mnist_bundles():
 
     bundle = np.ones((10, 3, 3))
     build = "./tests/build"
-    os.mkdir('./tests/build')
+    os.mkdir("./tests/build")
 
     assert prepare_mnist_bundles(bundle, build, "test", noise=True, pixel=5) is None
 
     os.remove(build + "/fft_bundle_test0.h5")
     os.rmdir("./tests/build")
 
-# def test_train_valid_split():
-#     """"
-#     Validate the shape of the train and valid datasets. Furthermore,
-#     check if the h5 file for saving is created.
-#     """
-#     import numpy as np
-#     import os
-#     from mnist_cnn.utils import open_mnist, process_img, write_h5
 
-#     path = './resources/mnist.pkl.gz'
-#     x_train, x_valid = open_mnist(path)
-#     x_train = x_train[0:10]
-#     x_valid = x_valid[0:10]
-#     processed_train = np.concatenate([process_img(img) for img in x_train])
-#     processed_valid = np.concatenate([process_img(img) for img in x_valid])
+def test_create_mnist_fft():
+    from mnist_cnn.create_mnist_fft import main
 
-#     assert processed_train.shape == (20, 4096)
-#     assert processed_valid.shape == (20, 4096)
+    data_path = "./resources/mnist_test.pkl.gz"
+    out_path = "./tests/build"
+    os.mkdir(out_path)
 
-#     y_train = processed_train[0::2]
-#     x_train = processed_train[1::2]
+    runner = CliRunner()
+    options = [data_path, out_path, "-size", 63, "-bundle_size", 2]
+    result = runner.invoke(main, options)
 
-#     assert x_train.shape == (10, 4096)
-#     assert y_train.shape == (10, 4096)
+    assert result.exit_code == 0
 
-#     y_valid = processed_valid[0::2]
-#     x_valid = processed_valid[1::2]
 
-#     assert x_valid.shape == (10, 4096)
-#     assert y_valid.shape == (10, 4096)
+def test_create_fft_sampled():
+    from mnist_cnn.create_fft_sampled import main
 
-#     outpath = 'mnist.h5'
-#     write_h5(outpath, x_train, y_train)
+    data_path = "./tests/build/"
+    out_path = "./tests/build"
+    antenna_config = "./simulations/layouts/vlba.txt"
 
-#     assert os.path.exists('./mnist.h5')
+    runner = CliRunner()
+    options = [
+        data_path,
+        out_path,
+        antenna_config,
+        "-fourier",
+        False,
+        "-specific_mask",
+        True,
+        "-lon",
+        -80,
+        "-lat",
+        50,
+        "-steps",
+        50,
+    ]
+    result = runner.invoke(main, options)
 
-#     os.remove('./mnist.h5')
+    assert result.exit_code == 0
