@@ -132,12 +132,15 @@ def save_bundle(path, bundle, counter, name="gs_bundle"):
 # open and save functions should be generalized in future versions
 
 
-def open_bundle(path):
+def open_bundle(path, mnist=False, gaussian=False):
     """
     open radio galaxy bundles created in first analysis step
     """
     f = h5py.File(path, "r")
-    bundle = np.array(f["gs_bundle"])
+    if mnist:
+        bundle = np.array([f['x'], f['x']])
+    if gaussian:
+        bundle = np.array(f["gs_bundle"])
     return bundle
 
 
