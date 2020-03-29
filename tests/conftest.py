@@ -9,7 +9,10 @@ def test_suite_cleanup_thing():
     build = "./tests/build/"
     print("Cleaning up tests.")
 
-    if os.listdir(build) is not []:
+    if os.path.exists(build):
         for f in os.listdir(build):
             os.remove(build + f)
         os.rmdir(build)
+
+    else:
+        pass
