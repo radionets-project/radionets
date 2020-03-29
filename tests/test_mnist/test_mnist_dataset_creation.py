@@ -107,15 +107,12 @@ def test_normalization():
 
     bundle_paths = get_bundles(data_path)
     bundle_paths = [
-        path for path in bundle_paths if re.findall("fft_bundle_samp_", path.name)
+        path for path in bundle_paths if re.findall("fft_bundle_samp_train", path.name)
     ]
 
     bundles = [open_fft_pair(bund) for bund in bundle_paths]
 
     a = np.stack((bundles[0][0].real, bundles[0][0].imag), axis=1)
-    b = np.stack((bundles[0][1].real, bundles[0][1].imag), axis=1)
 
     assert np.isclose(do_normalisation(torch.tensor(a), factors).mean(), 0, atol=1e-1)
     assert np.isclose(do_normalisation(torch.tensor(a), factors).std(), 1, atol=1e-1)
-    assert np.isclose(do_normalisation(torch.tensor(b), factors).mean(), 0, atol=1e-1)
-    assert np.isclose(do_normalisation(torch.tensor(b), factors).std(), 1, atol=1e-1)
