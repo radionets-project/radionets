@@ -75,3 +75,29 @@ def test_create_fft_sampled():
     result = runner.invoke(main, options)
 
     assert result.exit_code == 0
+
+
+def test_normalization():
+    from mnist_cnn.calculate_normalization import main
+    import pandas as pd
+
+    data_path = "./tests/build"
+    out_path = "./tests/build/normalization_factors.csv"
+
+    runner = CliRunner()
+    options = [data_path, out_path]
+    result = runner.invoke(main, options)
+
+    assert result.exit_code == 0
+
+    factors = pd.read_csv(out_path)
+
+    assert (factors.keys() == [
+        "train_mean_real",
+        "train_std_real",
+        "train_mean_imag",
+        "train_std_imag",
+    ]).all()
+    assert ~np.isnan(factors.values).all()
+    assert ~np.isinf(factors.values).all()
+    assert (factors.values != 0).all()
