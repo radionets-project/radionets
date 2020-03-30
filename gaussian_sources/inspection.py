@@ -134,7 +134,7 @@ def plot_lr_loss(learn, arch_name, skip_last):
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path):
+def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     """
     Visualizing, if the target variables are displayed in spatial space.
 
@@ -186,7 +186,7 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_with_fourier(i, img_input, img_pred, img_truth, arch, out_path):
+def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
     """
     Visualizing, if the target variables are displayed in fourier space.
 
