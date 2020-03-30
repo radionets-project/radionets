@@ -72,11 +72,14 @@ class h5_dataset:
         bundle = h5py.File(self.bundles[bundle_i], "r")
         data = bundle[var][image_i]
         if var == "x" or self.tar_fourier:
+            print('x')
             data_amp, data_phase = split_real_imag(data)
             data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(
                 -1, data.shape[0] ** 2
             )
         else:
+            print('y')
+            print(data)
             data_channel = data.reshape(data.shape[0] ** 2)
         return torch.tensor(data_channel).float()
 
@@ -132,15 +135,12 @@ def save_bundle(path, bundle, counter, name="gs_bundle"):
 # open and save functions should be generalized in future versions
 
 
-def open_bundle(path, mnist=False, gaussian=False):
+def open_bundle(path):
     """
     open radio galaxy bundles created in first analysis step
     """
     f = h5py.File(path, "r")
-    if mnist:
-        bundle = np.array([f['x'], f['x']])
-    if gaussian:
-        bundle = np.array(f["gs_bundle"])
+    bundle = np.array(f["gs_bundle"])
     return bundle
 
 
