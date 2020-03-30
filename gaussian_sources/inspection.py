@@ -208,37 +208,49 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax1.set_title(r'Real Input')
-    fig.colorbar(im1, cax=cax, orientation='vertical')
+    cbar = fig.colorbar(im1, cax=cax, orientation='vertical')
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
     im2 = ax2.imshow(real_pred, cmap='RdBu')
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax2.set_title(r'Real Prediction')
-    fig.colorbar(im2, cax=cax, orientation='vertical')
+    cbar = fig.colorbar(im2, cax=cax, orientation='vertical')
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
     im3 = ax3.imshow(real_truth, cmap='RdBu')
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax3.set_title(r'Real Truth')
-    fig.colorbar(im3, cax=cax, orientation='vertical')
+    cbar = fig.colorbar(im3, cax=cax, orientation='vertical')
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
     im4 = ax4.imshow(inp_imag, cmap='RdBu')
     divider = make_axes_locatable(ax4)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax4.set_title(r'Imaginary Input')
-    fig.colorbar(im4, cax=cax, orientation='vertical')
+    cbar = fig.colorbar(im4, cax=cax, orientation='vertical')
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
     im5 = ax5.imshow(imag_pred, cmap='RdBu')
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax5.set_title(r'Imaginary Prediction')
-    fig.colorbar(im5, cax=cax, orientation='vertical')
+    cbar = fig.colorbar(im5, cax=cax, orientation='vertical')
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
     im6 = ax6.imshow(imag_truth, cmap='RdBu')
     divider = make_axes_locatable(ax6)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax6.set_title(r'Imaginary Truth')
-    fig.colorbar(im6, cax=cax, orientation='vertical')
+    cbar = fig.colorbar(im6, cax=cax, orientation='vertical')
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
     fig.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
@@ -257,13 +269,19 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
     # create (complex) input for inverse fourier transformation for prediction
-    compl_pred = real_pred + imag_pred * 1j
+    a = real_pred * np.cos(imag_pred)
+    b = real_pred * np.sin(imag_pred)
+    # compl_pred = real_pred + imag_pred * 1j
+    compl_pred = a + b * 1j
 
     # inverse fourier transformation
-    ifft_pred = np.fft.ifft2(compl_pred)
+    ifft_pred = np.fft.ifft2((compl_pred))
 
     # create (complex) input for inverse fourier transformation for prediction
-    compl_truth = real_truth + imag_truth * 1j
+    a = real_truth * np.cos(imag_truth)
+    b = real_truth * np.sin(imag_truth)
+    # compl_truth = real_truth + imag_truth * 1j
+    compl_truth = a + b * 1j
 
     # inverse fourier transform
     ifft_truth = np.fft.ifft2(compl_truth)
