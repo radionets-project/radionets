@@ -207,6 +207,7 @@ class UNet_fourier(nn.Module):
         self.flatten_with_channel = Lambda(flatten_with_channel)
 
     def forward(self, x):
+        inp = x.clone()
         conv1 = self.dconv_down1(x)
         x = self.maxpool(conv1)
         conv2 = self.dconv_down2(x)
@@ -230,6 +231,7 @@ class UNet_fourier(nn.Module):
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         x = self.conv_last(x)
+        x = inp + x
         out = self.flatten_with_channel(x)
 
         return out
