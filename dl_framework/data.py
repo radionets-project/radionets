@@ -72,7 +72,7 @@ class h5_dataset:
         bundle = h5py.File(self.bundles[bundle_i], "r")
         data = bundle[var][image_i]
         if var == "x" or self.tar_fourier:
-            data_amp, data_phase = split_real_imag(data)
+            data_amp, data_phase = split_amp_phase(data)
             data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(
                 -1, data.shape[0] ** 2
             )

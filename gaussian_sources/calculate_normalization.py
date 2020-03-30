@@ -1,6 +1,6 @@
 import click
 from dl_framework.data import (mean_and_std,
-                               split_real_imag
+                               split_amp_phase,
                                )
 from dl_framework.data import open_fft_pair, get_bundles
 import pandas as pd
@@ -25,7 +25,7 @@ def main(data_path, out_path):
     for path in tqdm(bundle_paths):
         x, _ = open_fft_pair(path)
         # split in amp and phase
-        x_real, x_imag = split_real_imag(x)
+        x_real, x_imag = split_amp_phase(x)
         mean_real, std_real = mean_and_std(x_real)
         mean_imag, std_imag = mean_and_std(x_imag)
         means_real = np.append(mean_real, means_real)
