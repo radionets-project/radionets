@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from dl_framework.test_hook import hook_outputs
+from dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from dl_framework.utils import children
 import torch.nn.functional as F
