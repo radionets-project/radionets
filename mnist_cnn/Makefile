@@ -22,12 +22,12 @@ find_lr: ./lr_find
 
 ./data/mnist_fft_done:
 		mkdir -p data/
-		python create_mnist_fft.py ./../resources/mnist.pkl.gz\
+		python scripts/create_mnist_fft.py ./../resources/mnist.pkl.gz\
 		./data -size 63 -noise True -bundle_size 500
 		# touch ./data/mnist_fft_done
 
 ./data/mnist_samp_done:
-		python create_fft_sampled.py \
+		python scripts/create_fft_sampled.py \
 		./data/ ./data/ \
 		../simulations/layouts/vlba.txt \
 		-fourier False \
@@ -38,7 +38,7 @@ find_lr: ./lr_find
 		# touch ./data/mnist_samp_done
 
 ./data/normalization_factors.csv:
-		python calculate_normalization.py \
+		python scripts/calculate_normalization.py \
 		./data \
 		./data/normalization_factors.csv
 

@@ -4,7 +4,7 @@ from click.testing import CliRunner
 
 
 def test_open_mnist():
-    from mnist_cnn.utils import open_mnist
+    from mnist_cnn.scripts.utils import open_mnist
 
     path = "./resources/mnist.pkl.gz"
     x_train, x_valid = open_mnist(path)
@@ -13,7 +13,7 @@ def test_open_mnist():
 
 
 def test_adjust_outpath():
-    from mnist_cnn.utils import adjust_outpath
+    from mnist_cnn.scripts.utils import adjust_outpath
 
     path = "this/is/a/path"
     out = adjust_outpath(path, "test")
@@ -23,7 +23,7 @@ def test_adjust_outpath():
 
 
 def test_prepare_mnist_bundles():
-    from mnist_cnn.utils import prepare_mnist_bundles
+    from mnist_cnn.scripts.utils import prepare_mnist_bundles
 
     bundle = np.ones((10, 3, 3))
     build = "./tests/build"
@@ -34,7 +34,7 @@ def test_prepare_mnist_bundles():
 
 
 def test_create_mnist_fft():
-    from mnist_cnn.create_mnist_fft import main
+    from mnist_cnn.scripts.create_mnist_fft import main
 
     data_path = "./resources/mnist_test.pkl.gz"
     out_path = "./tests/build"
@@ -50,7 +50,7 @@ def test_create_mnist_fft():
 
 
 def test_create_fft_sampled():
-    from mnist_cnn.create_fft_sampled import main
+    from mnist_cnn.scripts.create_fft_sampled import main
 
     data_path = "./tests/build/"
     out_path = "./tests/build"
@@ -78,7 +78,7 @@ def test_create_fft_sampled():
 
 
 def test_normalization():
-    from mnist_cnn.calculate_normalization import main
+    from mnist_cnn.scripts.calculate_normalization import main
     import pandas as pd
     from dl_framework.data import get_bundles, open_fft_pair, do_normalisation
     import re

@@ -2,7 +2,7 @@ import click
 import re
 from tqdm import tqdm
 import numpy as np
-from mnist_cnn.utils import adjust_outpath
+from mnist_cnn.scripts.utils import adjust_outpath
 from simulations.uv_simulations import sample_freqs
 from dl_framework.data import get_bundles, open_bundle, save_fft_pair
 

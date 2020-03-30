@@ -1,6 +1,6 @@
 import click
 from tqdm import tqdm
-from mnist_cnn.utils import open_mnist, prepare_mnist_bundles
+from mnist_cnn.scripts.utils import open_mnist, prepare_mnist_bundles
 
 
 @click.command()
