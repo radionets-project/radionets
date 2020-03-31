@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 from mnist_cnn.scripts.utils import adjust_outpath
 from simulations.uv_simulations import sample_freqs
-from dl_framework.data import get_bundles, open_bundle, save_fft_pair
+from dl_framework.data import get_bundles, open_fft_pair, save_fft_pair
 
 
 @click.command()
@@ -38,7 +38,7 @@ def main(
         ]
 
         for path in tqdm(bundles):
-            bundle = open_bundle(path, mnist=True)
+            bundle = np.asarray(open_fft_pair(path))
             freq, img = bundle[0], bundle[1]
             size = bundle.shape[-1]
             copy = freq.copy()
@@ -46,13 +46,16 @@ def main(
             if specific_mask is True:
                 freq_samp = np.array(
                     [
-                        sample_freqs(img, antenna_config_path, size, lon, lat, steps)
-                        for img in copy
+                        sample_freqs(image, antenna_config_path, size, lon, lat, steps)
+                        for image in copy
                     ]
                 )
             else:
                 freq_samp = np.array(
-                    [sample_freqs(img, antenna_config_path, size=size) for img in copy]
+                    [
+                        sample_freqs(image, antenna_config_path, size=size)
+                        for image in copy
+                    ]
                 )
 
             out = adjust_outpath(out_path, "samp_" + mode)
