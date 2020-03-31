@@ -2,7 +2,6 @@ import sys
 from functools import partial
 import click
 import re
-import numpy as np
 import matplotlib.pyplot as plt
 import dl_framework.architectures as architecture
 import torch
@@ -14,13 +13,12 @@ from dl_framework.callbacks import (
     Recorder,
     SaveCallback,
     normalize_tfm,
-    view_tfm,
     LoggerCallback,
 )
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
 from dl_framework.model import load_pre_model, save_model
-from inspection import evaluate_model, plot_loss
+from mnist_cnn.inspection import evaluate_model, plot_loss
 from dl_framework.data import get_bundles, h5_dataset, get_dls, DataBunch
 
 
