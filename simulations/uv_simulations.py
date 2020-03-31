@@ -349,12 +349,6 @@ def sample_freqs(
     mask = create_mask(u, v, size)
     img = img.copy()
     img[~mask] = 0
-    """
-    if mnist:
-        img = img.reshape(64, 64)
-        img[~mask] = 0
-        img = img.reshape(4096)
-    """
     if plot is True:
         return img, mask
     else:
