@@ -5,9 +5,11 @@ from logging import Formatter, Handler
 
 import requests
 from dateutil import tz
+from pathlib import Path
 
 
-stream = open("../dl_framework/values.yaml", 'r')
+file_dir = Path(__file__).parent.resolve()
+stream = open(file_dir/"values.yaml", 'r')
 values = yaml.load(stream, Loader=yaml.FullLoader)
 
 TELEGRAM_TOKEN = values['TELEGRAM_TOKEN']
