@@ -119,7 +119,7 @@ def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
 
 
 def create_gaussian_source(
-    comps, amp, x, y, sig_x, sig_y, rot, grid, sides=0, blur=True
+    grid, comps, amp, x, y, sig_x, sig_y, rot, sides=0, blur=True
 ):
     """
     Combines Gaussian components on a 2d grid to create a Gaussian source
@@ -132,6 +132,8 @@ def create_gaussian_source(
 
     Parameters
     ----------
+    grid: ndarray
+        2dgrid + X and Y meshgrid
     comps: int
         number of components
     amp: 1darray
@@ -146,8 +148,6 @@ def create_gaussian_source(
         standard deviations of components in y
     rot: int
         rotation of the jet in degree
-    grid: ndarray
-        2dgrid + X and Y meshgrid
     sides: int
         0 one-sided, 1 two-sided jet
     blur: bool
@@ -265,7 +265,7 @@ def gaussian_source(img_size):
     grid = create_grid(img_size)
     comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
     s = create_gaussian_source(
-        comps, amp, x, y, sig_x, sig_y, rot, grid, sides, blur=True
+        grid, comps, amp, x, y, sig_x, sig_y, rot, sides, blur=True
     )
     return s
 
@@ -337,7 +337,7 @@ def get_noise(image, scale, mean=0, std=1):
     return np.random.normal(mean, std, size=image.shape) * scale
 
 
-def add_noise(bundle, preview=False):
+def add_noise(bundle, preview=False, num=1):
     """
     Used for adding noise and plotting the original and noised picture,
     if asked. Using 0.05 * max(image) as scaling factor.
@@ -359,7 +359,7 @@ def add_noise(bundle, preview=False):
     )
 
     if preview:
-        for i in range(10):
+        for i in range(num):
             fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
 
             ax1.set_title(r"Original")
