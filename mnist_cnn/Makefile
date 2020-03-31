@@ -44,10 +44,10 @@ find_lr: ./lr_find
 
 ./training_done:
 		mkdir -p ${path}
-		python train_cnn.py ${data_path}\
+		python scripts/train_cnn.py ${data_path}\
 		${path_model}\
 		${arch} ${norm_path}\
-		${epochs} ${lr} ${lr_type} -fourier ${fourier}\
+		${epochs} ${lr} ${lr_type} ${bs} -fourier ${fourier}\
 		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
 		# touch ./training_done
