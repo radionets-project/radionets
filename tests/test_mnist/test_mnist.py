@@ -95,12 +95,10 @@ def test_normalization():
 
     factors = pd.read_csv(out_path)
 
-    assert (factors.keys() == [
-        "train_mean_real",
-        "train_std_real",
-        "train_mean_imag",
-        "train_std_imag",
-    ]).all()
+    assert (
+        factors.keys()
+        == ["train_mean_real", "train_std_real", "train_mean_imag", "train_std_imag",]
+    ).all()
     assert ~np.isnan(factors.values).all()
     assert ~np.isinf(factors.values).all()
     assert (factors.values != 0).all()
@@ -116,3 +114,37 @@ def test_normalization():
 
     assert np.isclose(do_normalisation(torch.tensor(a), factors).mean(), 0, atol=1e-1)
     assert np.isclose(do_normalisation(torch.tensor(a), factors).std(), 1, atol=1e-1)
+
+
+def test_train_cnn():
+    from mnist_cnn.scripts.train_cnn import main
+
+    data_path = "./tests/build"
+    path_model = "./tests/build/test.model"
+    arch = "UNet_denoise"
+    norm_path = "./tests/build/normalization_factors.csv"
+    epochs = '5'
+    lr = '1e-3'
+    lr_type = "mse"
+    bs = '2'
+
+    runner = CliRunner()
+    options = [
+        data_path,
+        path_model,
+        arch,
+        norm_path,
+        epochs,
+        lr,
+        lr_type,
+        bs,
+        "-fourier",
+        False,
+        "-pretrained",
+        False,
+        "-inspection",
+        False,
+    ]
+    result = runner.invoke(main, options)
+
+    assert result.exit_code == 0
