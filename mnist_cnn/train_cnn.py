@@ -1,9 +1,9 @@
 import sys
 from functools import partial
-
 import click
+import re
+import numpy as np
 import matplotlib.pyplot as plt
-
 import dl_framework.architectures as architecture
 import torch
 import torch.nn as nn
@@ -21,13 +21,11 @@ from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss
 from dl_framework.model import load_pre_model, save_model
 from inspection import evaluate_model, plot_loss
-from mnist_cnn.utils import get_h5_data
-from preprocessing import DataBunch, get_dls, prepare_dataset
+from dl_framework.data import get_bundles, h5_dataset, get_dls, DataBunch
 
 
 @click.command()
-@click.argument("train_path", type=click.Path(exists=True, dir_okay=True))
-@click.argument("valid_path", type=click.Path(exists=True, dir_okay=True))
+@click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("model_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("arch", type=str)
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
@@ -37,21 +35,25 @@ from preprocessing import DataBunch, get_dls, prepare_dataset
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
-@click.option("-log", type=bool, required=False, help="use of logarith")
+@click.option(
+    "-fourier",
+    type=bool,
+    required=False,
+    help="true, if target variables get fourier transformed",
+)
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
 @click.option("-inspection", type=bool, required=False, help="make an inspection plot")
 def main(
-    train_path,
-    valid_path,
+    data_path,
     model_path,
     arch,
     norm_path,
     num_epochs,
     lr,
     loss_func,
-    log=True,
+    fourier,
     pretrained=False,
     pretrained_model=None,
     inspection=False,
@@ -70,47 +72,40 @@ def main(
                      loaded at the beginning of the training\n
     """
     # Load data
-    x_train, y_train = get_h5_data(train_path, columns=["x_train", "y_train"])
-    x_valid, y_valid = get_h5_data(valid_path, columns=["x_valid", "y_valid"])
+    bundle_paths = get_bundles(data_path)
+    train = [
+        path for path in bundle_paths if re.findall("fft_bundle_samp_train", path.name)
+    ]
+    valid = [
+        path for path in bundle_paths if re.findall("fft_bundle_samp_valid", path.name)
+    ]
 
     # Create train and valid datasets
-    train_ds, valid_ds = prepare_dataset(x_train, y_train, x_valid, y_valid, log=log)
+    train_ds = h5_dataset(train, tar_fourier=fourier)
+    valid_ds = h5_dataset(valid, tar_fourier=fourier)
 
     # Create databunch with defined batchsize
-    bs = 128
-    data = DataBunch(*get_dls(train_ds, valid_ds, bs), c=train_ds.c)
+    bs = 64
+    data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # Define model
     arch = getattr(architecture, arch)()
 
-    # Define resize for mnist data
-    mnist_view = view_tfm(2, 64, 64)
-
     # make normalisation
     norm = normalize_tfm(norm_path)
 
-    # Define scheduled learning rate
-    # sched = sched_no(lr, lr)
+    # get model name for recording in LoggerCallback
+    model_name = model_path.split("models/")[-1].split("/")[0]
 
     # Define callback functions
     cbfs = [
         Recorder,
-        # test for use of multiple Metrics or Loss functions
         partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        # partial(ParamScheduler, "lr", sched),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
-        partial(BatchTransformXCallback, mnist_view),
-        SaveCallback,
-        LoggerCallback,
+        partial(SaveCallback, model_path=model_path),
+        # partial(LoggerCallback, model_name=model_name),
     ]
-
-    # Define optimiser function
-    # adam_opt = partial(
-    #     StatefulOptimizer,
-    #     steppers=[adam_step, weight_decay],
-    #     stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
-    # )
 
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
@@ -121,6 +116,7 @@ def main(
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)
+
     # Combine model and data in learner
     learn = get_learner(
         data, arch, lr=lr, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
@@ -169,7 +165,10 @@ def main(
     if inspection is True:
         evaluate_model(valid_ds, learn.model, norm_path, nrows=10)
         plt.savefig(
-            "inspection_plot.pdf", dpi=300, bbox_inches="tight", pad_inches=0.01
+            model_path + "inspection_plot.pdf",
+            dpi=300,
+            bbox_inches="tight",
+            pad_inches=0.01,
         )
 
 
