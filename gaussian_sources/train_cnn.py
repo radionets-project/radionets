@@ -45,6 +45,12 @@ from dl_framework.hooks import model_summary
     required=False,
     help="true, if target variables get fourier transformed",
 )
+@click.option(
+    "-amp_phase",
+    type=bool,
+    required=False,
+    help="true, if if amplitude and phase splitting instead of real and imaginary",
+)
 @click.option("-log", type=bool, required=True, help="use of logarithm")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
@@ -59,6 +65,7 @@ def main(
     lr,
     loss_func,
     fourier,
+    amp_phase,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -83,8 +90,8 @@ def main(
     valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
 
     # Create train and valid datasets
-    train_ds = h5_dataset(train, tar_fourier=fourier)
-    valid_ds = h5_dataset(valid, tar_fourier=fourier)
+    train_ds = h5_dataset(train, tar_fourier=fourier, amp_phase=amp_phase)
+    valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
 
     # Create databunch with defined batchsize
     bs = 256
