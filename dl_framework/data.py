@@ -37,13 +37,14 @@ class Dataset:
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase):
         """
         Save the bundle paths and the number of bundles in one file
         """
         self.bundles = bundle_paths
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
         self.tar_fourier = tar_fourier
+        self.amp_phase = amp_phase
 
     def __call__(self):
         return print("This is the h5_dataset class.")
@@ -72,10 +73,17 @@ class h5_dataset:
         bundle = h5py.File(self.bundles[bundle_i], "r")
         data = bundle[var][image_i]
         if var == "x" or self.tar_fourier:
-            data_amp, data_phase = split_amp_phase(data)
-            data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(
-                -1, data.shape[0] ** 2
-            )
+            if self.amp_phase:
+                data_amp, data_phase = data[0], data[1]
+                data_amp[data[0] == -10] = 0
+                data_channel = np.stack((data_amp, data_phase), axis=0).reshape(
+                    data.shape[0], -1
+                )
+            else:
+                data_amp, data_phase = split_amp_phase(data)
+                data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(
+                    -1, data.shape[0] ** 2
+                )
         else:
             data_channel = data.reshape(data.shape[0] ** 2)
         return torch.tensor(data_channel).float()
