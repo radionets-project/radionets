@@ -1,7 +1,7 @@
 import click
 import numpy as np
 from tqdm import tqdm
-from dl_framework.data import open_bundle, save_fft_pair, get_bundles
+from dl_framework.data import open_bundle, save_fft_pair, get_bundles, split_amp_phase
 from simulations.uv_simulations import sample_freqs
 from simulations.gaussian_simulations import add_noise
 import re
@@ -58,6 +58,11 @@ def main(
         if noise is True:
             images = add_noise(images, preview=preview)
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
+
+        amp, phase = split_amp_phase(bundle_fft)
+        amp = (np.log10(amp + 1e-10)/10) + 1
+        bundle_fft = np.stack((amp, phase), axis=1)
+
         copy = bundle_fft.copy()
         if samp is True:
             if specific_mask is True:
