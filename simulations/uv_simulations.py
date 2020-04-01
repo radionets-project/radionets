@@ -348,7 +348,8 @@ def sample_freqs(
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
     mask = create_mask(u, v, size)
     img = img.copy()
-    img[~mask] = 0
+    # because the minimal values are set to zero
+    img[:, ~mask] = -10
     """
     if mnist:
         img = img.reshape(64, 64)
