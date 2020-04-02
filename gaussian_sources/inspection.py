@@ -289,8 +289,8 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
     # plotting
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
 
-    im1 = ax1.imshow(np.abs(ifft_pred), cmap='RdBu')
-    im2 = ax2.imshow(np.abs(ifft_truth), cmap='RdBu')
+    im1 = ax1.imshow(np.abs(ifft_pred))
+    im2 = ax2.imshow(np.abs(ifft_truth))
     ax1.set_title(r'FFT Prediction')
     ax2.set_title(r'FFT Truth')
 
