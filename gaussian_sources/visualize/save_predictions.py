@@ -18,7 +18,8 @@ from mnist_cnn.visualize.utils import eval_model
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.option("-num", type=int, required=False)
 @click.option("-fourier", type=bool, required=True)
-def main(data_path, arch, pretrained_path, out_path, fourier, num=20):
+@click.option("-amp_phase", type=bool, required=True)
+def main(data_path, arch, pretrained_path, out_path, fourier, amp_phase, num=20):
     """
     Create input, predictions and truth csv files for further investigation,
     such as visualize_predictions.
@@ -40,7 +41,7 @@ def main(data_path, arch, pretrained_path, out_path, fourier, num=20):
     """
     bundle_paths = get_bundles(data_path)
     test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
-    test_ds = h5_dataset(test, tar_fourier=fourier)
+    test_ds = h5_dataset(test, tar_fourier=fourier, amp_phase=amp_phase)
     indices = np.random.randint(0, len(test_ds), size=num)
 
     img_size = int(np.sqrt(test_ds[0][0].shape[1]))
