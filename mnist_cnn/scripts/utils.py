@@ -18,6 +18,8 @@ from dl_framework.callbacks import (
     CudaCallback,
     Recorder,
     SaveCallback,
+    Recorder_lr_find,
+    LR_Find,
 )
 
 
@@ -99,12 +101,15 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
 def define_learner(
     data,
     arch,
-    lr,
     norm,
-    model_name,
-    model_path,
     loss_func,
-    test,
+    lr=1e-3,
+    model_name='',
+    model_path='',
+    max_iter=400,
+    max_lr=1e-1,
+    min_lr=1e-6,
+    test=False,
     lropt_func=torch.optim.Adam,
 ):
     if test:
@@ -113,6 +118,8 @@ def define_learner(
             partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
             partial(BatchTransformXCallback, norm),
             partial(SaveCallback, model_path=model_path),
+            partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
+            Recorder_lr_find,
         ]
     else:
         from dl_framework.callbacks import LoggerCallback

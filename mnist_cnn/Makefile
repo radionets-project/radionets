@@ -61,7 +61,9 @@ find_lr: ./lr_find
 ./lr_find:
 		mkdir -p models/
 		python scripts/find_lr.py ${data_path}\
-		${arch} ${lr_type} ${norm_path} -fourier ${fourier}\
+		${arch} ${path} ${lr_type} ${norm_path}\
+		-max_iter ${max_iter} -min_lr ${min_lr}\
+		-max_lr ${max_lr} -fourier ${fourier}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 

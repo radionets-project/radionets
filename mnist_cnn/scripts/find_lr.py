@@ -11,10 +11,20 @@ from mnist_cnn.scripts.utils import define_learner
 @click.command()
 @click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("arch", type=str)
+@click.argument("model_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("loss_func", type=str)
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
+)
+@click.option(
+    "-max_iter", type=float, required=True, help="maximal iterations for lr_find"
+)
+@click.option(
+    "-min_lr", type=float, required=True, help="minimal learning rate for lr_find"
+)
+@click.option(
+    "-max_lr", type=float, required=True, help="maximal learning rate for lr_find"
 )
 @click.option(
     "-fourier",
@@ -32,8 +42,12 @@ from mnist_cnn.scripts.utils import define_learner
 def main(
     data_path,
     arch,
+    model_path,
     norm_path,
     loss_func,
+    max_iter,
+    min_lr,
+    max_lr,
     fourier=False,
     pretrained=False,
     pretrained_model=None,
@@ -78,7 +92,7 @@ def main(
 
     # Define learner
     learn = define_learner(
-        data, arch, norm, loss_func, test=test,
+        data, arch, norm, loss_func, test=test, max_iter=60, max_lr=1e-1, min_lr=1e-1,
     )
 
     # use pre-trained model if asked
@@ -88,7 +102,7 @@ def main(
 
     learn.fit(2)
     if save:
-        plot_lr_loss(learn, arch_name, pretrained_model, skip_last=5)
+        plot_lr_loss(learn, arch_name, model_path, skip_last=5)
     else:
         learn.recorder_lr_find.plot(skip_last=5)
 
