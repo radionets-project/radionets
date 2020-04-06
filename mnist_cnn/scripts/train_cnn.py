@@ -91,7 +91,14 @@ def main(
 
     # Define learner
     learn = define_learner(
-        data, arch, lr, norm, model_name, model_path, loss_func, test=test,
+        data,
+        arch,
+        norm,
+        loss_func,
+        lr=lr,
+        model_name=model_name,
+        model_path=model_path,
+        test=test,
     )
 
     # Load pre-trained model if asked
