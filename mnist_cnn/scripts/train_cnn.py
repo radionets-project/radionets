@@ -31,6 +31,9 @@ from mnist_cnn.scripts.utils import define_learner
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
+@click.option(
+    "-test", type=bool, default=False, required=False, help="Disable logger in tests"
+)
 @click.option("-inspection", type=bool, required=False, help="make an inspection plot")
 def main(
     data_path,
@@ -45,6 +48,7 @@ def main(
     pretrained=False,
     pretrained_model=None,
     inspection=False,
+    test=False,
 ):
     """
     Train the neural network with existing training and validation data.
@@ -85,8 +89,12 @@ def main(
     # Define model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
 
+    print(test)
+
     # Define learner
-    learn = define_learner(data, arch, lr, norm, model_name, model_path, loss_func)
+    learn = define_learner(
+        data, arch, lr, norm, model_name, model_path, loss_func, test=test,
+    )
 
     # Load pre-trained model if asked
     if pretrained is True:

@@ -97,7 +97,7 @@ def test_normalization():
 
     assert (
         factors.keys()
-        == ["train_mean_real", "train_std_real", "train_mean_imag", "train_std_imag",]
+        == ["train_mean_real", "train_std_real", "train_mean_imag", "train_std_imag", ]
     ).all()
     assert ~np.isnan(factors.values).all()
     assert ~np.isinf(factors.values).all()
@@ -144,6 +144,8 @@ def test_train_cnn():
         False,
         "-inspection",
         False,
+        "-test",
+        True,
     ]
     result = runner.invoke(main, options)
 
