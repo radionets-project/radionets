@@ -1,3 +1,4 @@
+import os
 import datetime
 import logging
 import yaml
@@ -9,11 +10,15 @@ from pathlib import Path
 
 
 file_dir = Path(__file__).parent.resolve()
-stream = open(file_dir/"values.yaml", 'r')
-values = yaml.load(stream, Loader=yaml.FullLoader)
+file_name = file_dir/"values.yaml"
+if file_name.exists():
+    stream = open(file_name, 'r')
+    values = yaml.load(stream, Loader=yaml.FullLoader)
 
-TELEGRAM_TOKEN = values['TELEGRAM_TOKEN']
-TELEGRAM_CHAT_ID = values['CHAT_ID']
+    TELEGRAM_TOKEN = values['TELEGRAM_TOKEN']
+    TELEGRAM_CHAT_ID = values['CHAT_ID']
+else:
+    print("No configuration file for telegram logger!")
 
 
 class RequestsHandler(Handler):
