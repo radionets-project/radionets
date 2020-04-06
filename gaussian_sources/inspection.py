@@ -201,6 +201,10 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
     real_pred, imag_pred = reshape_split(img_pred)
     real_truth, imag_truth = reshape_split(img_truth)
 
+    inp_real = 10**(10*inp_real-10) - 1e-10
+    real_pred = 10**(10*real_pred-10) - 1e-10
+    real_truth = 10**(10*real_truth-10) - 1e-10
+
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
 
@@ -212,7 +216,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
 
-    im2 = ax2.imshow(real_pred, cmap='RdBu')
+    im2 = ax2.imshow(real_pred, cmap='RdBu', vmin=real_truth.min(), vmax=real_truth.max())
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax2.set_title(r'Real Prediction')
@@ -236,7 +240,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
 
-    im5 = ax5.imshow(imag_pred, cmap='RdBu')
+    im5 = ax5.imshow(imag_pred, cmap='RdBu', vmin=imag_truth.min(), vmax=-imag_truth.min())
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax5.set_title(r'Imaginary Prediction')
