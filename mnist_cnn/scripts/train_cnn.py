@@ -1,25 +1,13 @@
 import sys
-from functools import partial
 import click
 import re
 import matplotlib.pyplot as plt
 import dl_framework.architectures as architecture
-import torch
-import torch.nn as nn
-from dl_framework.callbacks import (
-    AvgStatsCallback,
-    BatchTransformXCallback,
-    CudaCallback,
-    Recorder,
-    SaveCallback,
-    normalize_tfm,
-    LoggerCallback,
-)
-from dl_framework.learner import get_learner
-from dl_framework.loss_functions import init_feature_loss
+from dl_framework.callbacks import normalize_tfm
 from dl_framework.model import load_pre_model, save_model
-from mnist_cnn.inspection import evaluate_model, plot_loss
 from dl_framework.data import get_bundles, h5_dataset, get_dls, DataBunch
+from mnist_cnn.inspection import evaluate_model, plot_loss
+from mnist_cnn.scripts.utils import define_learner
 
 
 @click.command()
@@ -30,6 +18,7 @@ from dl_framework.data import get_bundles, h5_dataset, get_dls, DataBunch
 @click.argument("num_epochs", type=int)
 @click.argument("lr", type=float)
 @click.argument("loss_func", type=str)
+@click.argument("batch_size", type=int)
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
@@ -51,7 +40,8 @@ def main(
     num_epochs,
     lr,
     loss_func,
-    fourier,
+    batch_size,
+    fourier=False,
     pretrained=False,
     pretrained_model=None,
     inspection=False,
@@ -83,50 +73,24 @@ def main(
     valid_ds = h5_dataset(valid, tar_fourier=fourier)
 
     # Create databunch with defined batchsize
-    bs = 64
+    bs = batch_size
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # Define model
     arch = getattr(architecture, arch)()
 
-    # make normalisation
+    # Define normalisation
     norm = normalize_tfm(norm_path)
 
-    # get model name for recording in LoggerCallback
+    # Define model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
 
-    # Define callback functions
-    cbfs = [
-        Recorder,
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        CudaCallback,
-        partial(BatchTransformXCallback, norm),
-        partial(SaveCallback, model_path=model_path),
-        # partial(LoggerCallback, model_name=model_name),
-    ]
+    # Define learner
+    learn = define_learner(data, arch, lr, norm, model_name, model_path, loss_func)
 
-    if loss_func == "feature_loss":
-        loss_func = init_feature_loss()
-    elif loss_func == "l1":
-        loss_func = nn.L1Loss()
-    elif loss_func == "mse":
-        loss_func = nn.MSELoss()
-    else:
-        print("\n No matching loss function! Exiting. \n")
-        sys.exit(1)
-
-    # Combine model and data in learner
-    learn = get_learner(
-        data, arch, lr=lr, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
-    )
-
-    # use pre-trained model if asked
+    # Load pre-trained model if asked
     if pretrained is True:
-        # Load model
         load_pre_model(learn, pretrained_model)
-
-    # Print model architecture
-    print(learn.model, "\n")
 
     # Train the model, make it possible to stop at any given time
     try:
@@ -136,7 +100,7 @@ def main(
         print("\nKeyboardInterrupt, do you wanna save the model: yes-(y), no-(n)")
         save = str(input())
         if save == "y":
-            # saving the model if asked
+            # Saving the model if asked
             print("Saving the model after epoch {}".format(learn.epoch))
             save_model(learn, model_path)
 
