@@ -54,7 +54,7 @@ find_lr: ./lr_find
 
 ./plot_loss:
 		mkdir -p ${path}
-		python plot_loss.py\
+		python scripts/plot_loss.py\
 		${path_model}\
 		${arch}\
 

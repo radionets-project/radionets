@@ -5,7 +5,7 @@ import torch
 from dl_framework.callbacks import Recorder
 from dl_framework.learner import get_learner
 from dl_framework.model import load_pre_model
-from inspection import plot_loss
+from mnist_cnn.inspection import plot_loss
 
 
 @click.command()
