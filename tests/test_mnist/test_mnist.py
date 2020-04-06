@@ -149,4 +149,8 @@ def test_train_cnn():
     ]
     result = runner.invoke(main, options)
 
+    import warnings
+    warnings.warn(UserWarning(
+            f'Exec info: {result.exc_info}'))
+
     assert result.exit_code == 0
