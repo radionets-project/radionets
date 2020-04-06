@@ -80,8 +80,8 @@ class h5_dataset:
                     data.shape[0], -1
                 )
             else:
-                data_amp, data_phase = split_amp_phase(data)
-                data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(
+                data_real, data_imag = split_real_imag(data)
+                data_channel = combine_and_swap_axes(data_real, data_imag).reshape(
                     -1, data.shape[0] ** 2
                 )
         else:
