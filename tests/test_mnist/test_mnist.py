@@ -182,8 +182,4 @@ def test_find_lr():
     ]
     result = runner.invoke(main, options)
 
-    import warnings
-
-    warnings.warn(UserWarning(f"Exec info: {result.exc_info}"))
-
     assert result.exit_code == 0
