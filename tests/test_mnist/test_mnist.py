@@ -149,8 +149,37 @@ def test_train_cnn():
     ]
     result = runner.invoke(main, options)
 
-    import warnings
-    warnings.warn(UserWarning(
-            f'Exec info: {result.exc_info}'))
+    assert result.exit_code == 0
+
+
+def test_find_lr():
+    from mnist_cnn.scripts.find_lr import main
+
+    data_path = "./tests/build"
+    arch = "UNet_denoise"
+    norm_path = "./tests/build/normalization_factors.csv"
+    lr_type = "mse"
+
+    runner = CliRunner()
+    options = [
+        data_path,
+        arch,
+        data_path,
+        lr_type,
+        norm_path,
+        "-max_iter",
+        400,
+        "-min_lr",
+        1e-6,
+        "-max_lr",
+        1e-1,
+        "-fourier",
+        False,
+        "-pretrained",
+        False,
+        "-save",
+        True
+    ]
+    result = runner.invoke(main, options)
 
     assert result.exit_code == 0
