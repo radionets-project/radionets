@@ -89,8 +89,6 @@ def main(
     # Define model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
 
-    print(test)
-
     # Define learner
     learn = define_learner(
         data, arch, lr, norm, model_name, model_path, loss_func, test=test,
