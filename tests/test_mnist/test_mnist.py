@@ -97,7 +97,7 @@ def test_normalization():
 
     assert (
         factors.keys()
-        == ["train_mean_real", "train_std_real", "train_mean_imag", "train_std_imag", ]
+        == ["train_mean_real", "train_std_real", "train_mean_imag", "train_std_imag",]
     ).all()
     assert ~np.isnan(factors.values).all()
     assert ~np.isinf(factors.values).all()
@@ -123,10 +123,10 @@ def test_train_cnn():
     path_model = "./tests/build/test.model"
     arch = "UNet_denoise"
     norm_path = "./tests/build/normalization_factors.csv"
-    epochs = '5'
-    lr = '1e-3'
+    epochs = "5"
+    lr = "1e-3"
     lr_type = "mse"
-    bs = '2'
+    bs = "2"
 
     runner = CliRunner()
     options = [
@@ -168,22 +168,22 @@ def test_find_lr():
         lr_type,
         norm_path,
         "-max_iter",
-        400,
+        "400",
         "-min_lr",
-        1e-6,
+        "1e-6",
         "-max_lr",
-        1e-1,
+        "1e-1",
         "-fourier",
         False,
         "-pretrained",
         False,
         "-save",
-        True
+        True,
     ]
     result = runner.invoke(main, options)
 
     import warnings
-    warnings.warn(UserWarning(
-            f'Exec info: {result.exc_info}'))
+
+    warnings.warn(UserWarning(f"Exec info: {result.exc_info}"))
 
     assert result.exit_code == 0
