@@ -1,0 +1,97 @@
+import click
+import re
+import dl_framework.architectures as architecture
+from dl_framework.callbacks import normalize_tfm
+from dl_framework.model import load_pre_model
+from dl_framework.data import get_bundles, h5_dataset, DataBunch, get_dls
+from mnist_cnn.inspection import plot_lr_loss
+from mnist_cnn.scripts.utils import define_learner
+
+
+@click.command()
+@click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
+@click.argument("arch", type=str)
+@click.argument("loss_func", type=str)
+@click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
+@click.argument(
+    "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
+)
+@click.option(
+    "-fourier",
+    type=bool,
+    required=False,
+    help="true, if target variables get fourier transformed",
+)
+@click.option(
+    "-pretrained", type=bool, required=False, help="use of a pretrained model"
+)
+@click.option("-save", type=bool, required=False, help="save the lr vs loss plot")
+@click.option(
+    "-test", type=bool, default=True, required=True, help="Disable logger in tests"
+)
+def main(
+    data_path,
+    arch,
+    norm_path,
+    loss_func,
+    fourier=False,
+    pretrained=False,
+    pretrained_model=None,
+    save=False,
+    test=True,
+):
+    """
+    Train the neural network with existing training and validation data.
+    TRAIN_PATH is the path to the training data\n
+    VALID_PATH ist the path to the validation data\n
+    ARCH is the name of the architecture which is used\n
+    NORM_PATH is the path to the normalisation factors\n
+    PRETRAINED_MODEL is the path to a pretrained model, which is
+                     loaded at the beginning of the training\n
+    """
+    # Load data
+    bundle_paths = get_bundles(data_path)
+    train = [
+        path for path in bundle_paths if re.findall("fft_bundle_samp_train", path.name)
+    ]
+    valid = [
+        path for path in bundle_paths if re.findall("fft_bundle_samp_valid", path.name)
+    ]
+
+    # Create train and valid datasets
+    train_ds = h5_dataset(train, tar_fourier=fourier)
+    valid_ds = h5_dataset(valid, tar_fourier=fourier)
+
+    # Create databunch with defined batchsize
+    bs = 16
+    data = DataBunch(*get_dls(train_ds, valid_ds, bs),)
+
+    # First guess for max_iter
+    print("\nTotal number of batches ~ ", len(data.train_ds) * 2 // bs)
+
+    # Define model
+    arch_name = arch
+    arch = getattr(architecture, arch)()
+
+    # Define normalisation
+    norm = normalize_tfm(norm_path)
+
+    # Define learner
+    learn = define_learner(
+        data, arch, norm, loss_func, test=test,
+    )
+
+    # use pre-trained model if asked
+    if pretrained is True:
+        # Load model
+        load_pre_model(learn, pretrained_model, lr_find=True)
+
+    learn.fit(2)
+    if save:
+        plot_lr_loss(learn, arch_name, pretrained_model, skip_last=5)
+    else:
+        learn.recorder_lr_find.plot(skip_last=5)
+
+
+if __name__ == "__main__":
+    main()

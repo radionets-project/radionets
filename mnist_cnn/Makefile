@@ -60,17 +60,10 @@ find_lr: ./lr_find
 
 ./lr_find:
 		mkdir -p models/
-		python find_lr.py ${samp_train}\
-		${samp_valid}\
-		${arch} ${lr_type} ${norm_path} -log ${log}\
+		python scripts/find_lr.py ${data_path}\
+		${arch} ${lr_type} ${norm_path} -fourier ${fourier}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
-
-./data/plots/input_done:
-		mkdir -p data/
-		mkdir -p data/plots
-		python create_input_plot.py ./../resources/mnist.pkl.gz
-		touch ./data/plots/input_done
 
 clean:
 	rm -rf ./data
