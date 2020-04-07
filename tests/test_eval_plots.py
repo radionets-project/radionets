@@ -1,13 +1,8 @@
-import re
 import os
 
-from dl_framework.data import get_bundles, h5_dataset
+from tests.test_save_load_preds import test_create_h5_dataset
 
-data_path = "tests/test_data"
-fourier = False
-bundle_paths = get_bundles(data_path)
-test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
-test_ds = h5_dataset(test, tar_fourier=fourier)
+test_ds = test_create_h5_dataset()
 
 
 def test_reshape_split():
