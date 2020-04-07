@@ -63,6 +63,8 @@ def test_create_fft_sampled():
         antenna_config,
         "-fourier",
         False,
+        "-real_imag",
+        True,
         "-specific_mask",
         True,
         "-lon",
@@ -110,7 +112,7 @@ def test_normalization():
 
     bundles = [open_fft_pair(bund) for bund in bundle_paths]
 
-    a = np.stack((bundles[0][0].real, bundles[0][0].imag), axis=1)
+    a = np.stack((bundles[0][0][:, 0], bundles[0][0][:, 1]), axis=1)
 
     assert np.isclose(do_normalisation(torch.tensor(a), factors).mean(), 0, atol=1e-1)
     assert np.isclose(do_normalisation(torch.tensor(a), factors).std(), 1, atol=1e-1)
