@@ -5,14 +5,28 @@ import pandas as pd
 from dl_framework.data import get_bundles, h5_dataset
 
 
-def test_save_predictions():
+def test_create_h5_dataset():
     data_path = "tests/test_data/"
     fourier = False
-    num = 3
 
     bundle_paths = get_bundles(data_path)
     test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
     test_ds = h5_dataset(test, tar_fourier=fourier)
+
+    img = test_ds[0][0]
+    img_y = test_ds[0][1]
+
+    assert img[0].shape == (4096,)
+    assert img[1].shape == (4096,)
+    assert img_y.shape == (4096,)
+
+    return test_ds
+
+
+def test_save_predictions():
+    num = 3
+
+    test_ds = test_create_h5_dataset()
     indices = np.random.randint(0, len(test_ds), size=num)
 
     assert len(indices) == 3
