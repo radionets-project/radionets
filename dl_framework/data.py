@@ -95,7 +95,7 @@ class h5_dataset:
                 data_channel = data.reshape(data.shape[-1] ** 2)
             else:
                 data_channel = data.reshape(-1, data.shape[-1] ** 2)
-        return torch.tensor(data_channel).float()
+        return data_channel.float()
 
 
 def combine_and_swap_axes(array1, array2):
