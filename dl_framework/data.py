@@ -73,9 +73,7 @@ class h5_dataset:
         data = bundle[var][image_i]
         if var == "x" or self.tar_fourier:
             data_amp, data_phase = split_real_imag(data)
-            data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(
-                -1, data.shape[0] ** 2
-            )
+            data_channel = combine_and_swap_axes(data_amp, data_phase)
         else:
             data_channel = data.real.reshape(data.shape[0] ** 2)
         return torch.tensor(data_channel).float()
