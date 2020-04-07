@@ -39,7 +39,7 @@ class Dataset:
 class h5_dataset:
     def __init__(self, bundle_paths, tar_fourier):
         """
-        Save the bundle paths and the number of bundles in one file
+        Save the bundle paths and the number of bundles in one file.
         """
         self.bundles = bundle_paths
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
@@ -50,7 +50,7 @@ class h5_dataset:
 
     def __len__(self):
         """
-        Return the total number of pictures in this dataset
+        Returns the total number of pictures in this dataset
         """
         return len(self.bundles) * self.num_img
 
@@ -65,17 +65,36 @@ class h5_dataset:
         return data
 
     def open_image(self, var, i):
-        # at the moment all bundles contain 1024 images
-        # should be variable in the future
-        bundle_i = i // self.num_img
-        image_i = i - bundle_i * self.num_img
-        bundle = h5py.File(self.bundles[bundle_i], "r")
-        data = bundle[var][image_i]
-        if var == "x" or self.tar_fourier:
-            data_amp, data_phase = split_real_imag(data)
-            data_channel = combine_and_swap_axes(data_amp, data_phase)
+        if isinstance(i, int):
+            i = torch.tensor([i])
+        indices, _ = torch.sort(i)
+        bundle = indices // self.num_img
+        image = indices - bundle * self.num_img
+        bundle_unique = torch.unique(bundle)
+        bundle_paths = [
+            h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
+        ]
+        data = torch.tensor(
+            [
+                bund[var][img]
+                for bund in bundle_paths
+                for img in image[bundle == bundle_unique[bundle_paths.index(bund)]]
+            ]
+        )
+        if var == "x" or self.tar_fourier is True:
+            if len(i) == 1:
+                data_amp, data_phase = data[:, 0], data[:, 1]
+
+                data_channel = torch.cat([data_amp, data_phase], dim=0)
+            else:
+                data_amp, data_phase = data[:, 0].unsqueeze(1), data[:, 1].unsqueeze(1)
+
+                data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
-            data_channel = data.real.reshape(data.shape[0] ** 2)
+            if len(i) == 1:
+                data_channel = data.reshape(data.shape[-1] ** 2)
+            else:
+                data_channel = data.reshape(-1, data.shape[-1] ** 2)
         return torch.tensor(data_channel).float()
 
 
