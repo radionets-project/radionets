@@ -171,10 +171,9 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax3.set_title(r'Prediction')
-    im4 = ax4.imshow(img_truth)
-    fig.colorbar(im4, cax=cax, orientation='vertical')
+    fig.colorbar(im3, cax=cax, orientation='vertical')
 
-    # im4 = ax4.imshow(y_valid[index].reshape(64, 64))
+    im4 = ax4.imshow(img_truth)
     divider = make_axes_locatable(ax4)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax4.set_title(r'Truth')
@@ -300,7 +299,7 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
 
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
-    fig.colorbar(im2, cax=cax, orientation='vertical')
+    fig.colorbar(im1, cax=cax, orientation='vertical')
 
     divider = make_axes_locatable(ax2)
     cax = divider.append_axes('right', size='5%', pad=0.05)
