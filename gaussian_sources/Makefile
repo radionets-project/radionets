@@ -83,7 +83,7 @@ ${data}/normalization_factors.csv:
 		${path}/${path_model}\
 		${arch} ${data}/${norm_path}\
 		${epochs} ${lr} ${lr_type} -fourier ${fourier} -amp_phase ${amp_phase} -log ${log}\
-		-pretrained ${pretrained} ${path}/${pre_path}\
+		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
 		# touch ./training_done
 
