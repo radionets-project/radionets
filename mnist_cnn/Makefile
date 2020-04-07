@@ -31,6 +31,7 @@ find_lr: ./lr_find
 		./data/ ./data/ \
 		../simulations/layouts/vlba.txt \
 		-fourier False \
+		-real_imag True\
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \

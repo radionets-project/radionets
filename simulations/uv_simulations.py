@@ -348,7 +348,7 @@ def sample_freqs(
     u, v, _ = get_uv_coverage(s, ant, iterate=False)
     mask = create_mask(u, v, size)
     img = img.copy()
-    img[~mask] = 0
+    img[:, ~mask] = 0
     if plot is True:
         return img, mask
     else:

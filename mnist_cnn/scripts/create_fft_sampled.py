@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 from mnist_cnn.scripts.utils import adjust_outpath
 from simulations.uv_simulations import sample_freqs
-from dl_framework.data import get_bundles, open_fft_pair, save_fft_pair
+from dl_framework.data import get_bundles, open_fft_pair, save_fft_pair, split_real_imag
 
 
 @click.command()
@@ -12,6 +12,7 @@ from dl_framework.data import get_bundles, open_fft_pair, save_fft_pair
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("antenna_config_path", type=click.Path(exists=True, dir_okay=True))
 @click.option("-fourier", type=bool)
+@click.option("-real_imag", type=bool, default=False, required=False)
 @click.option("-specific_mask", type=bool)
 @click.option("-lon", type=float, required=False)
 @click.option("-lat", type=float, required=False)
@@ -25,6 +26,7 @@ def main(
     lat=None,
     steps=None,
     fourier=False,
+    real_imag=False,
 ):
     modes = ["train", "valid", "test"]
 
@@ -41,6 +43,9 @@ def main(
             bundle = np.asarray(open_fft_pair(path))
             freq, img = bundle[0], bundle[1]
             size = bundle.shape[-1]
+            if real_imag:
+                real, imag = split_real_imag(freq)
+                freq = np.stack((real, imag), axis=1)
             copy = freq.copy()
 
             if specific_mask is True:
@@ -62,7 +67,7 @@ def main(
             if fourier:
                 save_fft_pair(out, freq_samp, freq)
             else:
-                save_fft_pair(out, freq_samp, img)
+                save_fft_pair(out, freq_samp, img.real)
 
 
 if __name__ == "__main__":
