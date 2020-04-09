@@ -6,9 +6,10 @@ save_predictions: ./pred_save
 
 build/visualize_predictions_done:
 	mkdir -p ${out_path}
+	mkdir -p ${out_path}diff/
 	python visualize_predictions.py \
 	${out_path} \
-	-fourier ${fourier} \
+	-fourier ${fourier} -amp_phase ${amp_phase} -diff ${diff} \
 	${mode}
 
 ./pred_save:
