@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
 import torch
 import h5py
+import re
 import numpy as np
 from pathlib import Path
 
@@ -189,3 +190,31 @@ def open_fft_pair(path):
 
 def mean_and_std(array):
     return array.mean(), array.std()
+
+
+def load_data(data_path, mode, fourier=False):
+    """
+    Load data set from a directory and return it as h5_dataset.
+
+    Parameters
+    ----------
+    data_path: str
+        path to data directory
+    mode: str
+        specify data set type, e.g. test
+    fourier: bool
+        use Fourier images as target if True, default is False
+
+    Returns
+    -------
+    test_ds: h5_dataset
+        dataset containing x and y images
+    """
+    bundle_paths = get_bundles(data_path)
+    data = [
+        path
+        for path in bundle_paths
+        if re.findall("fft_bundle_samp_" + mode, path.name)
+    ]
+    ds = h5_dataset(data, tar_fourier=fourier)
+    return ds

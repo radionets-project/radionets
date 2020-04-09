@@ -1,9 +1,8 @@
 import click
-import re
 import dl_framework.architectures as architecture
 from dl_framework.callbacks import normalize_tfm
 from dl_framework.model import load_pre_model
-from dl_framework.data import get_bundles, h5_dataset, DataBunch, get_dls
+from dl_framework.data import DataBunch, get_dls, load_data
 from mnist_cnn.inspection import plot_lr_loss
 from mnist_cnn.scripts.utils import define_learner
 
@@ -63,18 +62,9 @@ def main(
     PRETRAINED_MODEL is the path to a pretrained model, which is
                      loaded at the beginning of the training\n
     """
-    # Load data
-    bundle_paths = get_bundles(data_path)
-    train = [
-        path for path in bundle_paths if re.findall("fft_bundle_samp_train", path.name)
-    ]
-    valid = [
-        path for path in bundle_paths if re.findall("fft_bundle_samp_valid", path.name)
-    ]
-
-    # Create train and valid datasets
-    train_ds = h5_dataset(train, tar_fourier=fourier)
-    valid_ds = h5_dataset(valid, tar_fourier=fourier)
+    # Load data and create train and valid datasets
+    train_ds = load_data(data_path, "train", fourier=False)
+    valid_ds = load_data(data_path, "valid", fourier=False)
 
     # Create databunch with defined batchsize
     bs = 16
