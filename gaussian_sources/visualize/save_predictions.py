@@ -57,8 +57,6 @@ def main(data_path, arch, pretrained_path, out_path, fourier, amp_phase, num=20)
 
     prediction = [eval_model(img, arch).numpy().reshape(-1) for img in tqdm(images)]
 
-    print(prediction[10].shape)
-
     outpath = str(out_path) + "input.csv"
     df = pd.DataFrame(data=images_x, index=indices)
     df.to_csv(outpath, index=True)
