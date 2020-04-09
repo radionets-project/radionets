@@ -13,6 +13,7 @@ import re
 @click.argument("antenna_config_path", type=click.Path(exists=True, dir_okay=False))
 @click.option("-mode", type=str, required=True)
 @click.option('-fourier', type=bool, required=True)
+@click.option('-amp_phase', type=bool, required=True)
 @click.option("-samp", type=bool, required=False)
 @click.option("-size", type=int, required=True)
 @click.option("-specific_mask", type=bool)
@@ -27,6 +28,7 @@ def main(
     antenna_config_path,
     mode,
     fourier,
+    amp_phase,
     size,
     samp=True,
     specific_mask=False,
@@ -59,9 +61,11 @@ def main(
             images = add_noise(images, preview=preview)
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
 
-        amp, phase = split_amp_phase(bundle_fft)
-        amp = (np.log10(amp + 1e-10)/10) + 1
-        bundle_fft = np.stack((amp, phase), axis=1)
+        if amp_phase:
+            print("amp_phase")
+            amp, phase = split_amp_phase(bundle_fft)
+            amp = (np.log10(amp + 1e-10)/10) + 1
+            bundle_fft = np.stack((amp, phase), axis=1)
 
         copy = bundle_fft.copy()
         if samp is True:

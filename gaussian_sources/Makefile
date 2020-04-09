@@ -25,6 +25,7 @@ ${data}/fft_samp_train0.h5:
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode train \
 		-fourier ${fourier} \
+		-amp_phase ${amp_phase} \
 		-samp True \
 		-noise ${noise} \
 		-preview ${preview} \
@@ -44,6 +45,7 @@ ${data}/fft_samp_valid0.h5:
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode valid \
 		-fourier ${fourier} \
+		-amp_phase ${amp_phase} \
 		-samp True \
 		-noise ${noise} \
 		-preview ${preview} \
@@ -63,6 +65,7 @@ ${data}/fft_samp_test0.h5:
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode test \
 		-fourier ${fourier} \
+		-amp_phase ${amp_phase} \
 		-samp True \
 		-noise ${noise} \
 		-preview ${preview} \
@@ -75,7 +78,8 @@ ${data}/fft_samp_test0.h5:
 ${data}/normalization_factors.csv:
 		python calculate_normalization.py\
 		${data}/ \
-		${data}/${norm_path}
+		${data}/${norm_path} \
+		-amp_phase ${amp_phase}
 
 ./training_done:
 		mkdir -p ${path}
