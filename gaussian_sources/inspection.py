@@ -185,7 +185,7 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
+def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_path):
     """
     Visualizing, if the target variables are displayed in fourier space.
 
@@ -200,9 +200,10 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
     real_pred, imag_pred = reshape_split(img_pred)
     real_truth, imag_truth = reshape_split(img_truth)
 
-    inp_real = 10**(10*inp_real-10) - 1e-10
-    real_pred = 10**(10*real_pred-10) - 1e-10
-    real_truth = 10**(10*real_truth-10) - 1e-10
+    if amp_phase:
+        inp_real = 10**(10*inp_real-10) - 1e-10
+        real_pred = 10**(10*real_pred-10) - 1e-10
+        real_truth = 10**(10*real_truth-10) - 1e-10
 
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
@@ -260,7 +261,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, out_path):
     return real_pred, imag_pred, real_truth, imag_truth
 
 
-def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
+def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, out_path):
     """
     function for visualizing the output of a inverse fourier transform. For now, it is
     necessary to take the absolute of the result of the inverse fourier transform,
@@ -272,21 +273,22 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
     # create (complex) input for inverse fourier transformation for prediction
-    a = real_pred * np.cos(imag_pred)
-    b = real_pred * np.sin(imag_pred)
-    # compl_pred = real_pred + imag_pred * 1j
-    compl_pred = a + b * 1j
+    if amp_phase:
+        a = real_pred * np.cos(imag_pred)
+        b = real_pred * np.sin(imag_pred)
+        compl_pred = a + b * 1j
 
-    # inverse fourier transformation
-    ifft_pred = np.fft.ifft2((compl_pred))
+        a = real_truth * np.cos(imag_truth)
+        b = real_truth * np.sin(imag_truth)
+        compl_truth = a + b * 1j
+    else:
+        compl_pred = real_pred + imag_pred * 1j
+        compl_truth = real_truth + imag_truth * 1j
 
-    # create (complex) input for inverse fourier transformation for prediction
-    a = real_truth * np.cos(imag_truth)
-    b = real_truth * np.sin(imag_truth)
-    # compl_truth = real_truth + imag_truth * 1j
-    compl_truth = a + b * 1j
+    # inverse fourier transformation for prediction
+    ifft_pred = np.fft.ifft2(compl_pred)
 
-    # inverse fourier transform
+    # inverse fourier transform for truth
     ifft_truth = np.fft.ifft2(compl_truth)
 
     # plotting
@@ -306,4 +308,88 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
     fig.colorbar(im2, cax=cax, orientation='vertical')
 
     outpath = str(out_path) + "fft_pred_{}.png".format(i)
+    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+    return ifft_pred, ifft_truth
+
+
+def plot_difference(i, img_pred, img_truth, fourier, out_path):
+    if fourier:
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
+
+        im1 = ax1.imshow(np.abs(img_pred))
+        im2 = ax2.imshow(np.abs(img_truth))
+        im3 = ax3.imshow(np.abs(img_pred - img_truth))
+
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax1.set_title(r'Prediction')
+        cbar = fig.colorbar(im1, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        divider = make_axes_locatable(ax2)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax2.set_title(r'Truth')
+        cbar = fig.colorbar(im2, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax3.set_title(r'Difference')
+        cbar = fig.colorbar(im3, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        outpath = str(out_path) + "diff/difference_{}.png".format(i)
+        plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+
+        plt.clf()
+        hist_difference(i, img_pred, img_truth, out_path)
+
+    else:
+        pred = reshape_split(img_pred)
+        truth = reshape_split(img_truth)
+
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
+
+        im1 = ax1.imshow(pred)
+        im2 = ax2.imshow(truth)
+        im3 = ax3.imshow(np.abs(pred - truth))
+
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax1.set_title(r'Prediction')
+        cbar = fig.colorbar(im1, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        divider = make_axes_locatable(ax2)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax2.set_title(r'Truth')
+        cbar = fig.colorbar(im2, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax3.set_title(r'Difference')
+        cbar = fig.colorbar(im3, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        outpath = str(out_path) + "diff/difference_{}.png".format(i)
+        plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+
+        plt.clf()
+        hist_difference(i, img_pred, img_truth, out_path)
+
+
+def hist_difference(i, img_pred, img_truth, out_path):
+    x = np.abs(img_pred - img_truth).reshape(-1)
+    plt.hist(x, label="Max Distance: {}".format(np.round(x.max(), 4)))
+    plt.xlabel(r'Difference / a.u.')
+    plt.ylabel(r"Number of pixels")
+    plt.legend(loc="best")
+    outpath = str(out_path) + "diff/hist_difference_{}.pdf".format(i)
     plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
