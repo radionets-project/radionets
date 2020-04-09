@@ -349,7 +349,10 @@ def sample_freqs(
     mask = create_mask(u, v, size)
     img = img.copy()
     # because the minimal values are set to zero
-    img[:, ~mask] = -10
+    if img.shape[0] == 2:
+        img[:, ~mask] = -10
+    else:
+        img[~mask] = 0
     """
     if mnist:
         img = img.reshape(64, 64)
