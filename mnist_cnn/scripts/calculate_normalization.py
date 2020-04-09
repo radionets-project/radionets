@@ -3,7 +3,7 @@ import re
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from dl_framework.data import split_real_imag, mean_and_std, get_bundles, open_fft_pair
+from dl_framework.data import mean_and_std, get_bundles, open_fft_pair
 
 
 @click.command()
@@ -24,16 +24,12 @@ def main(data_path, out_path):
         x, _ = open_fft_pair(path)
         # split in real and imaginary part
         x_real, x_imag = x[:, 0], x[:, 1]
-        print(x_real.shape)
-        print(x_imag.shape)
         mean_real, std_real = mean_and_std(x_real)
         mean_imag, std_imag = mean_and_std(x_imag)
         means_real = np.append(mean_real, means_real)
         means_imag = np.append(mean_imag, means_imag)
         stds_real = np.append(std_real, stds_real)
         stds_imag = np.append(std_imag, stds_imag)
-        print(mean_real, mean_imag)
-        print(std_real, std_imag)
 
     mean_real = means_real.mean()
     std_real = stds_real.mean()
