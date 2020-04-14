@@ -215,7 +215,7 @@ def plot_source(img, ft=False, log=False):
             s = ax.imshow(img, cmap="inferno")
         fig.colorbar(s, label="Intensity")
     else:
-        img = FT(img)
+        img = np.abs(FT(img))
         ax.set_xlabel("u")
         ax.set_ylabel("v")
         if log is True:
