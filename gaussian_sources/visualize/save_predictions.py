@@ -9,7 +9,7 @@ import dl_framework.architectures as architecture
 from dl_framework.data import get_bundles, h5_dataset
 from dl_framework.model import load_pre_model
 from mnist_cnn.visualize.utils import eval_model
-
+from gaussian_sources.inspection import save_indices_and_data
 
 @click.command()
 @click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
@@ -58,16 +58,13 @@ def main(data_path, arch, pretrained_path, out_path, fourier, amp_phase, num=20)
     prediction = [eval_model(img, arch).numpy().reshape(-1) for img in tqdm(images)]
 
     outpath = str(out_path) + "input.csv"
-    df = pd.DataFrame(data=images_x, index=indices)
-    df.to_csv(outpath, index=True)
+    save_indices_and_data(indices, images_x, outpath)
 
     outpath = str(out_path) + "predictions.csv"
-    df = pd.DataFrame(data=prediction, index=indices)
-    df.to_csv(outpath, index=True)
+    save_indices_and_data(indices, prediction, outpath)
 
     outpath = str(out_path) + "truth.csv"
-    df_targets = pd.DataFrame(data=images_y, index=indices)
-    df_targets.to_csv(outpath, index=True)
+    save_indices_and_data(indices, images_y, outpath)
 
 
 if __name__ == "__main__":
