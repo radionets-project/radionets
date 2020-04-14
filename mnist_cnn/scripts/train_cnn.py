@@ -51,17 +51,40 @@ def main(
     test=False,
 ):
     """
-    Train the neural network with existing training and validation data.
+    Train neural network with training and validation data.
+    Progress can be visualized with test data set.
 
-    TRAIN_PATH is the path to the training data\n
-    VALID_PATH ist the path to the validation data\n
-    MODEL_PATH is the Path to which the model is saved\n
-    ARCH is the name of the architecture which is used\n
-    NORM_PATH is the path to the normalisation factors\n
-    NUM_EPOCHS is the number of epochs\n
-    LR is the learning rate\n
-    PRETRAINED_MODEL is the path to a pretrained model, which is
-                     loaded at the beginning of the training\n
+    Parameters
+    ----------
+    data_path: str
+        path to data directory
+    model_path:
+        path to save model
+    arch: str
+        name of architecture
+    norm_path: str
+        path to normalization factors
+    num_epochs: int
+        number of training epochs
+    lr: float
+        learning rate
+    loss_func: str
+        name of loss function
+    batch_size: int
+        number of images in one batch
+    pretrained_model: str
+        path to model, when using option 'pretrained'
+
+    Options
+    -------
+    fourier: bool
+        if True: train in Fourier space, default is False
+    pretrained: bool
+        if True: load pretrained model before training, default is False
+    inspection: bool
+        if True: create inspection plot after training, default is False
+    test: bool
+        if True: load a 'smaller' learner, use for test cases, default is False
     """
     # Load data and create train and valid datasets
     train_ds = load_data(data_path, "train", fourier=False)
