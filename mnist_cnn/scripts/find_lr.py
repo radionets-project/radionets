@@ -29,6 +29,7 @@ from dl_framework.learner import define_learner
     "-fourier",
     type=bool,
     required=False,
+    default=False,
     help="true, if target variables get fourier transformed",
 )
 @click.option(
@@ -54,17 +55,44 @@ def main(
     test=True,
 ):
     """
-    Train the neural network with existing training and validation data.
-    TRAIN_PATH is the path to the training data\n
-    VALID_PATH ist the path to the validation data\n
-    ARCH is the name of the architecture which is used\n
-    NORM_PATH is the path to the normalisation factors\n
-    PRETRAINED_MODEL is the path to a pretrained model, which is
-                     loaded at the beginning of the training\n
+    Tests different learning rates to find best suited for model.
+    Creates a lossvs learning rate plot.
+
+    Paramters
+    ---------
+    data_path: str
+        path to data directory
+    arch: str
+        name of architecture
+    model_path: str
+        path to model directory
+    norm_path: str
+        path to normalization factors
+    loss_func: str
+        used loss func
+
+    Options
+    -------
+    max_iter: float
+        max number of iterations
+    min_lr: float
+        min value for learning rate
+    max_lr: float
+        max value for learning rate
+    fourier: bool
+        set True for training in Fourier space, default is False
+    pretrained: bool
+        if True: load pretrained model, default is False
+    pretrained_model: str
+        specify pretrained model
+    save: bool
+        if True: save loss vs lr plot
+    test: bool
+        if True: using 'small' learner developed for test cases
     """
     # Load data and create train and valid datasets
-    train_ds = load_data(data_path, "train", fourier=False)
-    valid_ds = load_data(data_path, "valid", fourier=False)
+    train_ds = load_data(data_path, "train", fourier=fourier)
+    valid_ds = load_data(data_path, "valid", fourier=fourier)
 
     # Create databunch with defined batchsize
     bs = 16
