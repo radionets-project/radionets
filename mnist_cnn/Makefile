@@ -68,6 +68,11 @@ find_lr: ./lr_find
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
+./visualize_dataset:
+		python scripts/visualize_preprocessing.py\
+		${data_path}\
+		-num_images 10
+
 clean:
 	rm -rf ./data
 	rm -f ./training_done
