@@ -4,7 +4,7 @@ from dl_framework.callbacks import normalize_tfm
 from dl_framework.model import load_pre_model
 from dl_framework.data import DataBunch, get_dls, load_data
 from mnist_cnn.inspection import plot_lr_loss
-from mnist_cnn.scripts.utils import define_learner
+from dl_framework.learner import define_learner
 
 
 @click.command()
