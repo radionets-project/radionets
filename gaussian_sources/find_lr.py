@@ -30,6 +30,9 @@ from inspection import plot_lr_loss
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
 @click.option(
+    "-max_iter", type=float, required=True, help="maximal iterations for lr_find"
+)
+@click.option(
     "-min_lr", type=float, required=True, help="minimal learning rate for lr_find"
 )
 @click.option(
@@ -51,6 +54,7 @@ def main(
     arch,
     norm_path,
     loss_func,
+    max_iter,
     min_lr,
     max_lr,
     fourier,
@@ -96,7 +100,7 @@ def main(
 
     # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=640, max_lr=max_lr, min_lr=min_lr),
+        partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
         Recorder_lr_find,
         CudaCallback,
         partial(BatchTransformXCallback, norm),

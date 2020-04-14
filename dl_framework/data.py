@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
 import torch
 import h5py
+import re
 import numpy as np
 from pathlib import Path
 
@@ -65,18 +66,37 @@ class h5_dataset:
         return data
 
     def open_image(self, var, i):
-        bundle_i = i // self.num_img
-        image_i = i - bundle_i * self.num_img
-        bundle = h5py.File(self.bundles[bundle_i], "r")
-        data = bundle[var][image_i]
+        if isinstance(i, int):
+            i = torch.tensor([i])
+        indices, _ = torch.sort(i)
+        bundle = indices // self.num_img
+        image = indices - bundle * self.num_img
+        bundle_unique = torch.unique(bundle)
+        bundle_paths = [
+            h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
+        ]
+        data = torch.tensor(
+            [
+                bund[var][img]
+                for bund in bundle_paths
+                for img in image[bundle == bundle_unique[bundle_paths.index(bund)]]
+            ]
+        )
         if var == "x" or self.tar_fourier is True:
-            data_amp, data_phase = data[0], data[1]
-            data_amp[data[0] == -10] = 0
-            data_channel = data_amp
+            if len(i) == 1:
+                data_amp, data_phase = data[:, 0], data[:, 1]
+
+                data_channel = torch.cat([data_amp, data_phase], dim=0)
+            else:
+                data_amp, data_phase = data[:, 0].unsqueeze(1), data[:, 1].unsqueeze(1)
+
+                data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
-            data_amp, data_phase = split_amp_phase(data)
-            data_channel = data_amp.reshape(data.shape[0] ** 2)
-        return torch.tensor(data_channel).float()
+            if len(i) == 1:
+                data_channel = data.reshape(data.shape[-1] ** 2)
+            else:
+                data_channel = data.reshape(-1, data.shape[-1] ** 2)
+        return data_channel.float()
 
 
 def combine_and_swap_axes(array1, array2):
@@ -170,3 +190,31 @@ def open_fft_pair(path):
 
 def mean_and_std(array):
     return array.mean(), array.std()
+
+
+def load_data(data_path, mode, fourier=False):
+    """
+    Load data set from a directory and return it as h5_dataset.
+
+    Parameters
+    ----------
+    data_path: str
+        path to data directory
+    mode: str
+        specify data set type, e.g. test
+    fourier: bool
+        use Fourier images as target if True, default is False
+
+    Returns
+    -------
+    test_ds: h5_dataset
+        dataset containing x and y images
+    """
+    bundle_paths = get_bundles(data_path)
+    data = [
+        path
+        for path in bundle_paths
+        if re.findall("fft_bundle_samp_" + mode, path.name)
+    ]
+    ds = h5_dataset(data, tar_fourier=fourier)
+    return ds

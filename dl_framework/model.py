@@ -37,6 +37,18 @@ def shape(x):
     return x
 
 
+def euler(x):
+    img_size = x.size(1) // 2
+    arr_amp = x[:, 0:img_size]
+    arr_phase = x[:, img_size:]
+
+    arr_real = arr_amp*torch.cos(arr_phase)
+    arr_imag = arr_amp*torch.sin(arr_phase)
+
+    arr = torch.stack((arr_real, arr_imag), dim=-1).permute(0, 2, 1)
+    return arr
+
+
 def flatten(x):
     return x.reshape(x.shape[0], -1)
 

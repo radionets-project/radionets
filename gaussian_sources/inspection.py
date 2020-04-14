@@ -4,9 +4,72 @@ import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 from dl_framework.data import do_normalisation
-from mnist_cnn.visualize.utils import eval_model
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import LogNorm
+
+
+def open_csv(path, mode):
+    """
+    opens a .csv file as a pandas dataframe which contains either the input,
+    the predicted or the true images plus the used indices in the index row.
+    The resulting dataframe is converted to a numpy array and returned along
+    with the images.
+
+    Parameters
+    ----------
+    path : path object from click
+        path which leads to the csv file.
+    mode : string
+        Either input, predictions or truth.
+
+    Returns
+    ----------
+    imgs : ndarry
+        contains the images in a numpy array
+    indices : 1-dim. array
+        contains the used indices as an array
+    -------
+    """
+    img_path = str(path) + "{}.csv".format(mode)
+    img_df = pd.read_csv(img_path, index_col=0)
+    indices = img_df.index.to_numpy()
+    imgs = img_df.to_numpy()
+    return imgs, indices
+
+
+def reshape_split(img):
+    """
+    reshapes and splits the the given image based on the image shape.
+    If the image is based on two channels, it reshapes with shape
+    (1, 2, img_size, img_size), otherwise with shape (img_size, img_size).
+    Afterwards, the array is splitted in real and imaginary part if given.
+
+    Parameters
+    ----------
+    img : ndarray
+        image
+
+    Returns
+    ----------
+    img_reshaped : ndarry
+        contains the reshaped image in a numpy array
+    img_real, img_imag: ndarrays
+        contain the real and the imaginary part
+    -------
+    """
+    if np.sqrt(img.shape[0]) % 1 == 0.0:
+        img_size = int(np.sqrt(img.shape[0]))
+        img_reshaped = img.reshape(img_size, img_size)
+
+        return img_reshaped
+
+    else:
+        img_size = int(np.sqrt(img.shape[0] / 2))
+        img_reshaped = img.reshape(1, 2, img_size, img_size)
+        img_real = img_reshaped[0, 0, :]
+        img_imag = img_reshaped[0, 1, :]
+
+        return img_real, img_imag
 
 
 def get_eval_img(valid_ds, model, norm_path):
@@ -86,13 +149,23 @@ def plot_lr_loss(learn, arch_name, skip_last):
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_without_fourier(i, index, img, img_y, arch, out_path):
-    print(index)
-    img_reshaped = img[i].view(1, 2, 64, 64)
+def visualize_without_fourier(i, img_input, img_pred, img_truth, arch, out_path):
+    """
+    Visualizing, if the target variables are displayed in spatial space.
 
-    # predict image
-    prediction = eval_model(img_reshaped, arch)
+    i: Current index given form the loop
+    img_input: current input image as a numpy array in shape (2*img_size^2)
+    img_pred: current prediction image as a numpy array with shape (img_size^2)
+    img_truth: current true image as a numpy array with shape (img_size^2)
+    arch: learn.model object with the used architecture
+    out_path: string which contains the output path
+    """
+    # reshaping and splitting in real and imaginary part if necessary
+    inp_real, inp_imag = reshape_split(img_input)
+    img_pred = reshape_split(img_pred)
+    img_truth = reshape_split(img_truth)
 
+    # plotting
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
 
     inp = img_reshaped.numpy()
@@ -112,8 +185,7 @@ def visualize_without_fourier(i, index, img, img_y, arch, out_path):
     ax2.set_title(r"Imaginary Input")
     fig.colorbar(im2, cax=cax, orientation="vertical")
 
-    pred_img = prediction.reshape(64, 64).numpy()
-    im3 = ax3.imshow(pred_img)
+    im3 = ax3.imshow(img_pred)
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax3.set_title(r"Prediction")
@@ -134,36 +206,21 @@ def visualize_without_fourier(i, index, img, img_y, arch, out_path):
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
-def visualize_with_fourier(i, img, img_y, arch, out_path):
+def visualize_with_fourier(i, img_input, img_pred, img_truth, arch, out_path):
     """
     Visualizing, if the target variables are displayed in fourier space.
 
     i: Current index given form the loop
-    img: list of input images
-    img_y: list of target images
+    img_input: current input image as a numpy array in shape (2*img_size^2)
+    img_pred: current prediction image as a numpy array with shape (2*img_size^2)
+    img_truth: current true image as a numpy array with shape (2*img_size^2)
     arch: learn.model object with the used architecture
     out_path: string which contains the output path
     """
-    # reshaping of target and input
-    img_size = int(np.sqrt(img[i].shape[1]))
-    img_reshaped = img[i].view(1, 2, img_size, img_size)
-    img_y_reshaped = img_y[i].view(1, 2, img_size, img_size)
-
-    # predict image
-    prediction = eval_model(img_reshaped, arch)
-
-    # splitting in real and imaginary part
-    real_pred = prediction[0, 0, :].numpy()
-    imag_pred = prediction[0, 1, :].numpy()
-
-    inp = img_reshaped.numpy()
-    inp_real = inp[0, 0, :]
-    inp_imag = inp[0, 1, :]
-
-    inp_y = img_y_reshaped.numpy()
-
-    real_truth = inp_y[0, 0, :]
-    imag_truth = inp_y[0, 1, :]
+    # reshaping and splitting in real and imaginary part if necessary
+    inp_real, inp_imag = reshape_split(img_input)
+    real_pred, imag_pred = reshape_split(img_pred)
+    real_truth, imag_truth = reshape_split(img_truth)
 
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
@@ -221,18 +278,18 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, out_path):
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
     # create (complex) input for inverse fourier transformation for prediction
-    img_size = int(np.sqrt(real_pred.shape[0]))
     compl_pred = real_pred + imag_pred * 1j
-    compl_pred = compl_pred.reshape(img_size, img_size)
+
     # inverse fourier transformation
     ifft_pred = np.fft.ifft2(compl_pred)
 
     # create (complex) input for inverse fourier transformation for prediction
     compl_truth = real_truth + imag_truth * 1j
-    compl_truth = compl_truth.reshape(img_size, img_size)
+
     # inverse fourier transform
     ifft_truth = np.fft.ifft2(compl_truth)
 
+    # plotting
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
 
     im1 = ax1.imshow(np.abs(ifft_pred), cmap="RdBu")

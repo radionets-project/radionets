@@ -88,8 +88,8 @@ class source:
             raise ValueError("Length of lon and lat are different!")
 
         if multi_pointing is True:
-            lon = self.mod_delete(lon, 5, 20)
-            lat = self.mod_delete(lat, 5, 20)
+            lon = self.mod_delete(lon, 5, 10)
+            lat = self.mod_delete(lat, 5, 10)
 
         self.lon_prop = lon
         self.lat_prop = lat
@@ -137,7 +137,6 @@ class antenna:
         self.X = X
         self.Y = Y
         self.Z = Z
-        self.to_geodetic(self.X, self.Y, self.Z)
 
     def to_geodetic(self, x_ref, y_ref, z_ref, enu=False):
         """
@@ -178,6 +177,11 @@ class antenna:
             y = baselines[1::2]
             x_base = np.append(x_base, x)
             y_base = np.append(y_base, y)
+            
+        drops = np.asarray([((i * 2 + np.array([1, 2])) - 1) + (i * self.len*2) for i in range(self.len)])
+        coords = np.delete(np.stack([x_base, y_base], axis=1), drops.ravel(), axis=0).T
+        x_base = coords[0]
+        y_base = coords[1]
         return x_base, y_base
 
     def to_enu(self, x_ref, y_ref, z_ref):
@@ -190,6 +194,9 @@ class antenna:
             x, y, z reference coordinates
         """
         lon_ref, lat_ref = self.to_geodetic(x_ref, y_ref, z_ref, enu=True)
+        if isinstance(x_ref, int):
+            x_ref, y_ref, z_ref = [x_ref], [y_ref], [z_ref]
+            lon_ref, lat_ref = [lon_ref], [lat_ref]
         ref = np.array(list(zip(x_ref, y_ref, z_ref)))
 
         def rot(lon, lat):
@@ -323,7 +330,7 @@ def test_mask():
 def sample_freqs(
     img,
     ant_config_path,
-    size=64,
+    size=63,
     lon=None,
     lat=None,
     num_steps=None,
@@ -370,13 +377,8 @@ def sample_freqs(
         s.propagate(num_steps=num_steps, multi_pointing=False)
         u, v, _ = get_uv_coverage(s, ant, iterate=False)
         mask = create_mask(u, v, size)
-    img[:, ~mask.astype(bool)] = -10
-    """
-    if mnist:
-        img = img.reshape(64, 64)
-        img[~mask] = 0
-        img = img.reshape(4096)
-    """
+    # img = img.copy() Weiß nicht warum ich das gemacht hab
+    img[:, ~mask.astype(bool)] = 0
     if plot is True:
         return img, mask
     else:

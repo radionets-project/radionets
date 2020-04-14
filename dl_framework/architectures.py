@@ -11,6 +11,7 @@ from dl_framework.model import (
     flatten_with_channel,
     LocallyConnected2d,
     symmetry,
+    shape,
 )
 
 
@@ -137,7 +138,10 @@ class UNet_denoise(nn.Module):
         self.dconv_down5 = nn.Sequential(*double_conv(32, 64, (3, 3), 1, 1),)
 
         self.maxpool = nn.MaxPool2d(2)
-        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+        self.upsample1 = nn.Upsample(size=7, mode="bilinear", align_corners=True)
+        self.upsample2 = nn.Upsample(size=15, mode="bilinear", align_corners=True)
+        self.upsample3 = nn.Upsample(size=31, mode="bilinear", align_corners=True)
+        self.upsample4 = nn.Upsample(size=63, mode="bilinear", align_corners=True)
 
         self.dconv_up4 = nn.Sequential(*double_conv(32 + 64, 32, (3, 3), 1, 1),)
         self.dconv_up3 = nn.Sequential(*double_conv(16 + 32, 16, (3, 3), 1, 1),)
@@ -146,9 +150,10 @@ class UNet_denoise(nn.Module):
 
         self.conv_last = nn.Conv2d(4, 2, 1)
         self.flatten = Lambda(flatten)
-        self.linear = nn.Linear(8192, 4096)
+        self.linear = nn.Linear(7938, 3969)
         self.fft = Lambda(fft)
         self.cut = Lambda(cut_off)
+        self.shape = Lambda(shape)
 
     def forward(self, x):
         x = self.flatten(x)
@@ -163,16 +168,16 @@ class UNet_denoise(nn.Module):
         x = self.maxpool(conv4)
         x = self.dconv_down5(x)
 
-        x = self.upsample(x)
+        x = self.upsample1(x)
         x = torch.cat([x, conv4], dim=1)
         x = self.dconv_up4(x)
-        x = self.upsample(x)
+        x = self.upsample2(x)
         x = torch.cat([x, conv3], dim=1)
         x = self.dconv_up3(x)
-        x = self.upsample(x)
+        x = self.upsample3(x)
         x = torch.cat([x, conv2], dim=1)
         x = self.dconv_up2(x)
-        x = self.upsample(x)
+        x = self.upsample4(x)
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         x = self.conv_last(x)
@@ -366,7 +371,7 @@ class filter(nn.Module):
         x = self.conv_last(comb)
         x = x.clone()
         x[:, 0][inp[:, 0] != 0] = inp[:, 0][inp[:, 0] != 0]
-        #x[:, 0][inp[:, 0] == 0] += 1
+        #  x[:, 0][inp[:, 0] == 0] += 1
         x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
         x[:, 1][inp[:, 0] == 0] += (1e-5 + 1)
         x[:, 1][inp[:, 0] != 0] = 1e-8

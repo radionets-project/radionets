@@ -19,7 +19,6 @@ ${data}/gaussian_sources_train0.h5:
 		mkdir -p ${data}/
 		python simulate_bundles.py \
 		${num_bundles_train} ${num_img} ${size_img} ${data}/gaussian_sources_train \
-		-noise False
 
 ${data}/fft_samp_train0.h5:
 		python create_fft_pairs.py \
@@ -28,8 +27,8 @@ ${data}/fft_samp_train0.h5:
 		-fourier ${fourier} \
 		-samp True \
 		-amp_phase True \
-		-noise False \
-		-preview False \
+		-noise ${noise} \
+		-preview ${preview} \
 		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
@@ -40,7 +39,6 @@ ${data}/gaussian_sources_valid0.h5:
 		mkdir -p ${data}/
 		python simulate_bundles.py \
 		${num_bundles_valid} ${num_img} ${size_img} ${data}/gaussian_sources_valid \
-		-noise False
 
 ${data}/fft_samp_valid0.h5:
 		python create_fft_pairs.py \
@@ -49,8 +47,8 @@ ${data}/fft_samp_valid0.h5:
 		-fourier ${fourier} \
 		-samp True \
 		-amp_phase True \
-		-noise False \
-		-preview False \
+		-noise ${noise} \
+		-preview ${preview} \
 		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
@@ -61,7 +59,6 @@ ${data}/gaussian_sources_test0.h5:
 		mkdir -p ${data}/
 		python simulate_bundles.py \
 		${num_bundles_test} ${num_img} ${size_img} ${data}/gaussian_sources_test \
-		-noise False
 
 ${data}/fft_samp_test0.h5:
 		python create_fft_pairs.py \
@@ -70,8 +67,8 @@ ${data}/fft_samp_test0.h5:
 		-fourier ${fourier} \
 		-samp True \
 		-amp_phase True \
-		-noise False \
-		-preview False \
+		-noise ${noise} \
+		-preview ${preview} \
 		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
@@ -96,7 +93,7 @@ ${data}/normalization_factors.csv:
 ./lr_find:
 		mkdir -p ${path}
 		python find_lr.py ${data}\
-		${arch} ${lr_type} ${norm_path} -min_lr ${min_lr}\
+		${arch} ${lr_type} ${norm_path} -max_iter ${max_iter} -min_lr ${min_lr}\
 		-max_lr ${max_lr} -fourier ${fourier} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}

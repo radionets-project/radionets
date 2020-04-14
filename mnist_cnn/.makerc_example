@@ -1,8 +1,7 @@
 # to be filled in and renamed
 # paths
 path=
-samp_train= 
-samp_valid=
+data_path= 
 path_model=
 norm_path=
 pre_path=
