@@ -45,7 +45,7 @@ def adjust_outpath(path, option, form="h5"):
         adjusted path
     """
     counter = 0
-    filename = path + option + "{}." + form
+    filename = str(path) + (option + "{}." + form)
     while os.path.isfile(filename.format(counter)):
         counter += 1
     out = filename.format(counter)

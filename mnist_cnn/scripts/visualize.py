@@ -6,7 +6,7 @@ from mnist_cnn.scripts.utils import adjust_outpath
 from tqdm import tqdm
 
 
-def plot_results(inp, pred, truth):
+def plot_results(inp, pred, truth, model_path, save=False):
     """
     Plot input images, prediction and true image.
 
@@ -19,7 +19,7 @@ def plot_results(inp, pred, truth):
     truth:n 2d arrays
         true images
     """
-    for i in range(len(inp)):
+    for i in tqdm(range(len(inp))):
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
 
         real = inp[i][0]
@@ -51,6 +51,14 @@ def plot_results(inp, pred, truth):
         fig.colorbar(im4, cax=cax, orientation="vertical")
 
         plt.tight_layout()
+
+        if save:
+            out = model_path/"predictions/"
+            if os.path.exists(out) is False:
+                os.mkdir(out)
+
+            out_path = adjust_outpath(out, "prediction", form="pdf")
+            plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
 def plot_dataset(data, num_images, save=False):
