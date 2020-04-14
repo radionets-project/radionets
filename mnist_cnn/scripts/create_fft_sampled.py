@@ -63,7 +63,7 @@ def main(
                     ]
                 )
 
-            out = adjust_outpath(out_path, "samp_" + mode)
+            out = adjust_outpath(out_path, "/fft_bundle_samp_" + mode)
             if fourier:
                 save_fft_pair(out, freq_samp, freq)
             else:

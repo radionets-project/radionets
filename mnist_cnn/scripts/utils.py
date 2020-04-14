@@ -28,7 +28,7 @@ def open_mnist(path):
     return train_x, valid_x
 
 
-def adjust_outpath(path, option):
+def adjust_outpath(path, option, form="h5"):
     """
     Add number to out path when filename already exists.
 
@@ -45,7 +45,7 @@ def adjust_outpath(path, option):
         adjusted path
     """
     counter = 0
-    filename = path + "/fft_bundle_" + option + "{}.h5"
+    filename = path + option + "{}." + form
     while os.path.isfile(filename.format(counter)):
         counter += 1
     out = filename.format(counter)
@@ -78,5 +78,5 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
     if noise:
         y_prep = add_noise(y_prep)
     x = np.fft.fftshift(np.fft.fft2(y_prep))
-    path = adjust_outpath(path, option)
+    path = adjust_outpath(path, "/fft_bundle_"+option)
     save_fft_pair(path, x, y)

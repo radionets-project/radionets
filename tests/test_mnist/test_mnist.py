@@ -16,10 +16,10 @@ def test_adjust_outpath():
     from mnist_cnn.scripts.utils import adjust_outpath
 
     path = "this/is/a/path"
-    out = adjust_outpath(path, "test")
+    out = adjust_outpath(path, "/test")
 
     assert type(path) == type(out)
-    assert out.split("/")[-1] == "fft_bundle_test0.h5"
+    assert out.split("/")[-1] == "test0.h5"
 
 
 def test_prepare_mnist_bundles():
