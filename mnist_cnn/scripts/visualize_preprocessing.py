@@ -13,6 +13,19 @@ from mnist_cnn.scripts.visualize import plot_dataset
     help="Disable logger in tests",
 )
 def main(data_path, num_images):
+    """
+    Visualize preprocessing of data set. Creates n plots showing input and target image.
+
+    Parameters
+    ----------
+    data_path: str
+        path to data directory
+
+    Options
+    -------
+    num_images: int
+        number of plotted images, default is 4
+    """
     # Load data and create train and valid datasets
     train_ds = load_data(data_path, "train", fourier=False)
 
