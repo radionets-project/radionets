@@ -1,12 +1,13 @@
 import sys
 import click
-import matplotlib.pyplot as plt
+from pathlib import Path
 import dl_framework.architectures as architecture
 from dl_framework.callbacks import normalize_tfm
 from dl_framework.model import load_pre_model, save_model
 from dl_framework.data import get_dls, DataBunch, load_data
-from mnist_cnn.inspection import evaluate_model, plot_loss
+from dl_framework.inspection import eval_model, plot_loss, get_images, reshape_2d
 from dl_framework.learner import define_learner
+from mnist_cnn.scripts.visualize import plot_results
 
 
 @click.command()
@@ -112,9 +113,16 @@ def main(
 
             # Plot input, prediction and true image if asked
             if inspection is True:
-                evaluate_model(valid_ds, learn.model, norm_path)
-                plt.savefig(
-                    "inspection_plot.pdf", dpi=300, bbox_inches="tight", pad_inches=0.01
+                test_ds = load_data(data_path, "test", fourier=False)
+                img_test, img_true = get_images(test_ds, 5, norm_path)
+                pred = eval_model(img_test, learn.model)
+                out_path = Path(model_path).parent
+                plot_results(
+                    img_test,
+                    reshape_2d(pred),
+                    reshape_2d(img_true),
+                    out_path,
+                    save=True,
                 )
         else:
             print("Stopping after epoch {}".format(learn.epoch))
@@ -128,12 +136,12 @@ def main(
 
     # Plot input, prediction and true image if asked
     if inspection is True:
-        evaluate_model(valid_ds, learn.model, norm_path, nrows=10)
-        plt.savefig(
-            model_path + "inspection_plot.pdf",
-            dpi=300,
-            bbox_inches="tight",
-            pad_inches=0.01,
+        test_ds = load_data(data_path, "test", fourier=False)
+        img_test, img_true = get_images(test_ds, 5, norm_path)
+        pred = eval_model(img_test, learn.model.cpu())
+        out_path = Path(model_path).parent
+        plot_results(
+            img_test, reshape_2d(pred), reshape_2d(img_true), out_path, save=True
         )
 
 

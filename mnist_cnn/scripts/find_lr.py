@@ -3,7 +3,7 @@ import dl_framework.architectures as architecture
 from dl_framework.callbacks import normalize_tfm
 from dl_framework.model import load_pre_model
 from dl_framework.data import DataBunch, get_dls, load_data
-from mnist_cnn.inspection import plot_lr_loss
+from dl_framework.inspection import plot_lr_loss
 from dl_framework.learner import define_learner
 
 

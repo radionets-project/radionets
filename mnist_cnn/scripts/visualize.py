@@ -57,7 +57,7 @@ def plot_results(inp, pred, truth, model_path, save=False):
             if os.path.exists(out) is False:
                 os.mkdir(out)
 
-            out_path = adjust_outpath(out, "prediction", form="pdf")
+            out_path = adjust_outpath(out, "/prediction", form="pdf")
             plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
