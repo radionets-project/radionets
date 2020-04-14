@@ -16,9 +16,29 @@ from dl_framework.inspection import (
 @click.argument("model_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("norm_path", type=click.Path(exists=True, dir_okay=False))
 @click.option(
-    "-num_images", type=int, default=4, required=False, help="Disable logger in tests",
+    "-num_images", type=int, default=5, required=False, help="Disable logger in tests",
 )
 def main(data_path, arch_name, model_path, norm_path, num_images):
+    """
+    Visualize predictions of trained model.
+    Creates n plots containing input, prediction and traget image.
+
+    Parameters
+    ----------
+    data_path: str
+        path to data directory
+    arch_name: str
+        name of architecture
+    model_path: str
+        path to saved model
+    norm_path: str
+        path to normalization factors
+
+    Options
+    -------
+    num_images: int
+        number of plotted images, default is 5
+    """
     # Load data and create train and valid datasets
     test_ds = load_data(data_path, "test", fourier=False)
 
