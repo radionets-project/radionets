@@ -15,12 +15,12 @@ def do_normalisation(x, norm):
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
-    train_mean_amp = torch.tensor(norm["train_mean_amp"].values[0]).float()
-    train_std_amp = torch.tensor(norm["train_std_amp"].values[0]).float()
-    # train_mean_imag = torch.tensor(norm["train_mean_imag"].values[0]).float()
-    # train_std_imag = torch.tensor(norm["train_std_imag"].values[0]).float()
-    x[:, 0] = normalize(x[:, 0], train_mean_amp, train_std_amp)
-    # x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
+    train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).float()
+    train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).float()
+    train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).float()
+    train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).float()
+    x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
+    x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
     assert not torch.isinf(x).any()
     return x
 
