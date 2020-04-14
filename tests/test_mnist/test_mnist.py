@@ -99,7 +99,7 @@ def test_normalization():
 
     assert (
         factors.keys()
-        == ["train_mean_real", "train_std_real", "train_mean_imag", "train_std_imag",]
+        == ["train_mean_c0", "train_std_c0", "train_mean_c1", "train_std_c1", ]
     ).all()
     assert ~np.isnan(factors.values).all()
     assert ~np.isinf(factors.values).all()

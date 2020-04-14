@@ -177,8 +177,13 @@ class antenna:
             y = baselines[1::2]
             x_base = np.append(x_base, x)
             y_base = np.append(y_base, y)
-            
-        drops = np.asarray([((i * 2 + np.array([1, 2])) - 1) + (i * self.len*2) for i in range(self.len)])
+
+        drops = np.asarray(
+            [
+                ((i * 2 + np.array([1, 2])) - 1) + (i * self.len * 2)
+                for i in range(self.len)
+            ]
+        )
         coords = np.delete(np.stack([x_base, y_base], axis=1), drops.ravel(), axis=0).T
         x_base = coords[0]
         y_base = coords[1]
@@ -377,7 +382,7 @@ def sample_freqs(
         s.propagate(num_steps=num_steps, multi_pointing=False)
         u, v, _ = get_uv_coverage(s, ant, iterate=False)
         mask = create_mask(u, v, size)
-    # img = img.copy() Weiß nicht warum ich das gemacht hab
+    img = img.copy()
     img[:, ~mask.astype(bool)] = 0
     if plot is True:
         return img, mask
