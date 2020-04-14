@@ -10,34 +10,6 @@ import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
 
 
-def load_eval_data(data_path, mode, fourier=False):
-    """
-    Load eval data set.
-
-    Parameters
-    ----------
-    data_path: str
-        path to data directory
-    mode: str
-        specify data set type, e.g. test
-    fourier: bool
-        use Fourier images as target if True, default is False
-
-    Returns
-    -------
-    test_ds: h5_dataset
-        dataset containing x and y images
-    """
-    bundle_paths = get_bundles(data_path)
-    test = [
-        path
-        for path in bundle_paths
-        if re.findall("fft_bundle_samp_" + mode, path.name)
-    ]
-    test_ds = h5_dataset(test, tar_fourier=fourier)
-    return test_ds
-
-
 def load_pretrained_model(arch_name, model_path):
     """
     Load model architecture and pretrained weigths.
