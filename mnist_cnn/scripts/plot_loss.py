@@ -14,6 +14,16 @@ from dl_framework.inspection import plot_loss
 def main(
     model_path, arch,
 ):
+    """
+    Plot loss plot for trained model.
+
+    Parameters
+    ----------
+    model_path: str
+        path to model
+    arch: str
+        name of used architecture
+    """
     data = []
     # Define model
     arch = getattr(architecture, arch)()
