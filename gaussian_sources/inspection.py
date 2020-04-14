@@ -317,58 +317,59 @@ def plot_difference(i, img_pred, img_truth, fourier, out_path):
     if fourier:
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
+        abs_pred, abs_truth = np.abs(img_pred), np.abs(img_truth)
+
+        rms = np.sqrt((abs_pred[:16, :16]**2).sum()/(16**2))
+        dynamic_range = abs_pred.max()/rms
+
+        im1 = ax1.imshow(abs_pred)
+        im2 = ax2.imshow(abs_truth)
+        im3 = ax3.imshow(np.abs(img_pred - img_truth))
+        ax1.axvspan(0, 16, ymin=0.75, color='red', fill=False, label="Off")
+        ax2.axvspan(0, 16, ymin=0.75, color='red', fill=False, label="Off")
+
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax1.set_title(r'Prediction')
+        cbar = fig.colorbar(im1, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        divider = make_axes_locatable(ax2)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax2.set_title(r'Truth')
+        cbar = fig.colorbar(im2, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes('right', size='5%', pad=0.05)
+        ax3.set_title(r'DR: {}'.format(dynamic_range))
+        cbar = fig.colorbar(im3, cax=cax, orientation='vertical')
+        cbar.formatter.set_powerlimits((0, 0))
+        cbar.update_ticks()
+
+        ax1.legend(loc="best")
+        ax2.legend(loc="best")
+        outpath = str(out_path) + "diff/difference_{}.png".format(i)
+        plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+
+        plt.clf()
+
+    else:
+        img_pred = reshape_split(img_pred)
+        img_truth = reshape_split(img_truth)
+
         rms = np.sqrt((img_pred[:16, :16]**2).sum()/(16**2))
         dynamic_range = img_pred.max()/rms
 
-        im1 = ax1.imshow(np.abs(img_pred))
-        im2 = ax2.imshow(np.abs(img_truth))
-        im3 = ax3.imshow(np.abs(img_pred - img_truth))
-        ax1.axvspan(0, 16, ymin=0.75, color='red', fill=False)
-        ax2.axvspan(0, 16, ymin=0.75, color='red', fill=False)
-
-        divider = make_axes_locatable(ax1)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        ax1.set_title(r'Prediction')
-        cbar = fig.colorbar(im1, cax=cax, orientation='vertical')
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
-
-        divider = make_axes_locatable(ax2)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        ax2.set_title(r'Truth')
-        cbar = fig.colorbar(im2, cax=cax, orientation='vertical')
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
-
-        divider = make_axes_locatable(ax3)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        ax3.set_title(r'DR: {}'.format(dynamic_range))
-        cbar = fig.colorbar(im3, cax=cax, orientation='vertical')
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
-
-        ax1.legend(loc="best")
-        ax2.legend(loc="best")
-        outpath = str(out_path) + "diff/difference_{}.png".format(i)
-        plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
-
-        plt.clf()
-        hist_difference(i, img_pred, img_truth, out_path)
-
-    else:
-        pred = reshape_split(img_pred)
-        truth = reshape_split(img_truth)
-
-        rms = np.sqrt((pred[:16, :16]**2).sum()/(16**2))
-        dynamic_range = pred.max()/rms
-
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
-        im1 = ax1.imshow(pred)
+        im1 = ax1.imshow(img_pred)
         ax1.axvspan(0, 16, ymin=0.75, color='red', fill=False, label="Off")
         ax2.axvspan(0, 16, ymin=0.75, color='red', fill=False, label="Off")
-        im2 = ax2.imshow(truth)
-        im3 = ax3.imshow(np.abs(pred - truth))
+        im2 = ax2.imshow(img_truth)
+        im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -397,7 +398,8 @@ def plot_difference(i, img_pred, img_truth, fourier, out_path):
         plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
 
         plt.clf()
-        hist_difference(i, img_pred, img_truth, out_path)
+    hist_difference(i, img_pred, img_truth, out_path)
+    return dynamic_range
 
 
 def hist_difference(i, img_pred, img_truth, out_path):
@@ -408,3 +410,8 @@ def hist_difference(i, img_pred, img_truth, out_path):
     plt.legend(loc="best")
     outpath = str(out_path) + "diff/hist_difference_{}.pdf".format(i)
     plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+
+
+def save_indices_and_data(indices, dr, outpath):
+    df = pd.DataFrame(data=dr, index=indices)
+    df.to_csv(outpath, index=True)
