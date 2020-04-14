@@ -20,6 +20,13 @@ def main(data_path, out_path, size, bundle_size, noise=False):
         path to MNIST pickle file
     out_path: str
         directory where bundles are saved
+
+    Options
+    -------
+    size: int
+        image size
+    bundle_size: int
+        number of images in one bundle
     noise: bool
         if true: images are noised before fft
     """
