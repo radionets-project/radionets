@@ -11,12 +11,12 @@ from dl_framework.data import get_bundles, open_fft_pair, save_fft_pair, split_r
 @click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("antenna_config_path", type=click.Path(exists=True, dir_okay=True))
-@click.option("-fourier", type=bool)
-@click.option("-real_imag", type=bool, default=False, required=False)
+@click.option("-fourier", type=bool, default=False)
+@click.option("-real_imag", type=bool, default=True, required=False)
 @click.option("-specific_mask", type=bool)
 @click.option("-lon", type=float, required=False)
 @click.option("-lat", type=float, required=False)
-@click.option("-steps", type=float, required=False)
+@click.option("-steps", type=int, required=False)
 def main(
     data_path,
     out_path,
@@ -26,8 +26,38 @@ def main(
     lat=None,
     steps=None,
     fourier=False,
-    real_imag=False,
+    real_imag=True,
 ):
+    """
+    Use mnist_fft and create a sampled data set for train, valid and test.
+    Specific or random masks can be used.
+    Input data can be split into 2 channel: real and imaginary part.
+    To train in Fourier space, target image can be saved in frequency space.
+
+    Parameters
+    ----------
+    data_path: str
+        path to data directory
+    out_path: str
+        path to save sampled data
+    antenna_config_path: str
+        path to antenna config file
+
+    Options
+    -------
+    fourier: bool
+        if True: save target in frequency space, default is False
+    real_imag: bool
+        if True: split input data into a real and imag channel, default is True
+    specific_mask: bool
+        if True: use specific mask for all images
+    lon: float
+        start longitude for specific mask
+    lat: float
+        start latitude for specific mask
+    steps: int
+        number of steps for specific mask
+    """
     modes = ["train", "valid", "test"]
 
     for mode in modes:
