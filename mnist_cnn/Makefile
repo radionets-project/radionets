@@ -68,10 +68,15 @@ find_lr: ./lr_find
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
+./visualize_predictions:
+		python scripts/visualize_predictions.py\
+		${data_path} ${arch} ${path_model}\
+		${norm_path} -num_images ${num_images}
+
 ./visualize_dataset:
 		python scripts/visualize_preprocessing.py\
 		${data_path}\
-		-num_images 10
+		-num_images ${num_images}
 
 clean:
 	rm -rf ./data
