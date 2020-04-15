@@ -237,9 +237,9 @@ class UNet_fourier(nn.Module):
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         x = self.conv_last(x)
-        out = self.flatten_with_channel(x)
+        # out = self.flatten_with_channel(x)
 
-        return out
+        return x
 
 
 def convs():
