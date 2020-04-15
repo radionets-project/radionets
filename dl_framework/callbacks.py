@@ -298,7 +298,7 @@ class SaveCallback(Callback):
     _order = 95
 
     def __init__(self, model_path):
-        self.model_path = "/".join(model_path.split("/", 3)[:3])
+        self.model_path = "/".join(model_path.split("/", 2)[:2])
 
     def after_epoch(self):
         if round(self.n_epochs) % 10 == 0:
