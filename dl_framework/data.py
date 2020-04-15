@@ -38,7 +38,7 @@ class Dataset:
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier, amp_phase):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None):
         """
         Save the bundle paths and the number of bundles in one file.
         """
