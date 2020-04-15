@@ -4,6 +4,18 @@ import torch
 from dl_framework.optimizer import sgd_opt
 import torch.nn as nn
 from dl_framework.model import init_cnn
+import sys
+from functools import partial
+from dl_framework.loss_functions import init_feature_loss
+from dl_framework.callbacks import (
+    AvgStatsCallback,
+    BatchTransformXCallback,
+    CudaCallback,
+    Recorder,
+    SaveCallback,
+    Recorder_lr_find,
+    LR_Find,
+)
 
 
 class CancelTrainException(Exception):
@@ -156,3 +168,54 @@ def get_learner(
 ):
     init_cnn(arch)
     return Learner(arch, data, loss_func, lr=lr, cb_funcs=cb_funcs, opt_func=opt_func)
+
+
+def define_learner(
+    data,
+    arch,
+    norm,
+    loss_func,
+    lr=1e-3,
+    model_name='',
+    model_path='',
+    max_iter=400,
+    max_lr=1e-1,
+    min_lr=1e-6,
+    test=False,
+    lropt_func=torch.optim.Adam,
+):
+    if test:
+        cbfs = [
+            Recorder,
+            partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+            partial(BatchTransformXCallback, norm),
+            partial(SaveCallback, model_path=model_path),
+            partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
+            Recorder_lr_find,
+        ]
+    else:
+        from dl_framework.callbacks import LoggerCallback
+        cbfs = [
+            Recorder,
+            partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+            CudaCallback,
+            partial(BatchTransformXCallback, norm),
+            partial(SaveCallback, model_path=model_path),
+            partial(LoggerCallback, model_name=model_name),
+        ]
+
+    if loss_func == "feature_loss":
+        loss_func = init_feature_loss()
+    elif loss_func == "l1":
+        loss_func = nn.L1Loss()
+    elif loss_func == "mse":
+        loss_func = nn.MSELoss()
+    else:
+        print("\n No matching loss function! Exiting. \n")
+        sys.exit(1)
+
+    # Combine model and data in learner
+    learn = get_learner(
+        data, arch, lr=lr, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
+    )
+    return learn

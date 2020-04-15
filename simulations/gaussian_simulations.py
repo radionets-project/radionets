@@ -376,3 +376,51 @@ def add_noise(bundle, preview=False, num=1):
             plt.show()
 
     return bundle_noised
+
+
+def gauss(mx, my, sx, sy):
+    x = np.arange(64)[None].astype(np.float)
+    y = x.T
+    return np.exp(-((y - my) ** 2) / sy).dot(np.exp(-((x - mx) ** 2) / sx))
+
+
+def create_gauss(N, sources, spherical):
+    img = np.zeros((N, 64, 64))
+    mx = np.random.randint(1, 64, size=(N, sources))
+    my = np.random.randint(1, 64, size=(N, sources))
+
+    if spherical:
+        sx = np.random.randint(1, 15, size=(N, sources))
+        sy = sx
+    else:
+        sx = np.random.randint(1, 15, size=(N, sources))
+        sy = np.random.randint(1, 15, size=(N, sources))
+        theta = np.random.randint(0, 360, size=(N, sources))
+
+    for i in range(N):
+        for j in range(sources):
+            g = gauss(mx[i, j], my[i, j], sx[i, j], sy[i, j])
+            if spherical:
+                img[i] += g
+            else:
+                # rotation around center of the source
+                padX = [g.shape[0] - mx[i, j], mx[i, j]]
+                padY = [g.shape[1] - my[i, j], my[i, j]]
+                imgP = np.pad(g, [padY, padX], "constant")
+                imgR = ndimage.rotate(imgP, theta[i, j], reshape=False)
+                imgC = imgR[padY[0] : -padY[1], padX[0] : -padX[1]]
+                img[i] += imgC
+    return img
+
+
+def gauss_pointsources(num_img, sources):
+    img = np.zeros((num_img, 64, 64))
+    mx = np.random.randint(0, 64, size=(num_img, sources))
+    my = np.random.randint(0, 64, size=(num_img, sources))
+    sigma = 0.5
+    for i in range(num_img):
+        targets = np.random.randint(2, sources + 1)
+        for j in range(targets):
+            g = gauss(mx[i, j], my[i, j], sigma, sigma)
+            img[i] += g + 1e-10
+    return img

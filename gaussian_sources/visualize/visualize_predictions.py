@@ -6,8 +6,8 @@ import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
 from tqdm import tqdm
 from gaussian_sources.inspection import (
-    visualize_without_fourier,
     visualize_with_fourier,
+    visualize_without_fourier,
     visualize_fft,
     open_csv,
 )
