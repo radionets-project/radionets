@@ -1,6 +1,6 @@
-from re import sub
-from dl_framework.utils import camel2snake, AvgStats, listify, lin_comb
 import torch
+from dl_framework.utils import camel2snake, AvgStats, listify, lin_comb
+from re import sub
 import matplotlib.pyplot as plt
 from functools import partial
 from torch.distributions.beta import Beta
@@ -134,7 +134,6 @@ class Recorder(Callback):
     def plot_loss(self, log=True):
         plt.plot(self.train_losses, label="train loss")
         plt.plot(self.valid_losses, label="valid loss")
-        plt.plot(self.losses, label="loss")
         if log:
             plt.yscale("log")
         plt.xlabel(r"Number of Epochs")
@@ -220,9 +219,10 @@ class LoggerCallback(Callback):
         if (self.epoch + 1) % 10 == 0:
             logger = make_notifier()
             logger.info(
-                "{}: Epoche {} zu Ende mit Loss {}".format(
+                "{}: Epoche {}/{} mit Loss {}".format(
                     self.model_name,
                     self.epoch + 1,
+                    self.epochs,
                     self.avg_stats.valid_stats.avg_stats[1],
                 )
             )
@@ -277,11 +277,28 @@ def normalize_tfm(norm_path):
     return _inner
 
 
+def zero_imag():
+    def _inner(x):
+        a = x
+        imag = a[:, 1, :]
+        num = 0
+        for i in range(imag.shape[0]):
+            if imag[i].max() < 1e-9:
+                # print(imag[i].mean().item())
+                num += 1
+                imag[i] = torch.zeros(imag.shape[1])
+        a[:, 1, :] = imag
+        # print(num)
+        return a
+
+    return _inner
+
+
 class SaveCallback(Callback):
     _order = 95
 
     def __init__(self, model_path):
-        self.model_path = "/".join(model_path.split("/", 3)[:3])
+        self.model_path = "/".join(model_path.split("/", 2)[:2])
 
     def after_epoch(self):
         if round(self.n_epochs) % 10 == 0:

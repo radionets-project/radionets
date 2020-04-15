@@ -44,6 +44,12 @@ from inspection import plot_lr_loss
     required=True,
     help="true, if target variables are fourier transformed",
 )
+@click.option(
+    "-amp_phase",
+    type=bool,
+    required=True,
+    help="true, if amplitude and phase splitting instead of real and imaginary",
+)
 @click.option("-log", type=bool, required=False, help="use of logarith")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
@@ -58,6 +64,7 @@ def main(
     min_lr,
     max_lr,
     fourier,
+    amp_phase,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -77,8 +84,8 @@ def main(
     valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
 
     # Create train and valid datasets
-    train_ds = h5_dataset(train, tar_fourier=fourier)
-    valid_ds = h5_dataset(valid, tar_fourier=fourier)
+    train_ds = h5_dataset(train, tar_fourier=fourier, amp_phase=amp_phase)
+    valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
 
     # Create databunch with defined batchsize
     bs = 16

@@ -4,6 +4,7 @@ import torch
 from dl_framework.optimizer import sgd_opt
 import torch.nn as nn
 from dl_framework.model import init_cnn
+from tqdm import tqdm
 import sys
 from functools import partial
 from dl_framework.loss_functions import init_feature_loss
@@ -120,7 +121,7 @@ class Learner:
 
         try:
             self.do_begin_fit(epochs)
-            for epoch in range(epochs):
+            for epoch in tqdm(range(epochs)):
                 self.do_begin_epoch(epoch)
                 if not self("begin_epoch"):
                     self.all_batches()
@@ -182,7 +183,7 @@ def define_learner(
     max_lr=1e-1,
     min_lr=1e-6,
     test=False,
-    lropt_func=torch.optim.Adam,
+    opt_func=torch.optim.Adam,
 ):
     if test:
         cbfs = [

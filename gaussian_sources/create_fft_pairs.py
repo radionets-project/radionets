@@ -34,6 +34,7 @@ def main(
     mode,
     amp_phase,
     fourier,
+    amp_phase,
     size,
     samp=True,
     specific_mask=False,

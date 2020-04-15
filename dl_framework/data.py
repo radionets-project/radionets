@@ -38,13 +38,14 @@ class Dataset:
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None):
         """
         Save the bundle paths and the number of bundles in one file.
         """
         self.bundles = bundle_paths
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
         self.tar_fourier = tar_fourier
+        self.amp_phase = amp_phase
 
     def __call__(self):
         return print("This is the h5_dataset class.")
@@ -122,7 +123,7 @@ def split_amp_phase(array):
 def get_dls(train_ds, valid_ds, bs, **kwargs):
     return (
         DataLoader(train_ds, batch_size=bs, shuffle=True, **kwargs),
-        DataLoader(valid_ds, batch_size=bs, **kwargs),
+        DataLoader(valid_ds, batch_size=bs, shuffle=True, **kwargs),
     )
 
 

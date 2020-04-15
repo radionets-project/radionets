@@ -24,7 +24,7 @@ find_lr: ./lr_find
 		mkdir -p data/
 		python scripts/create_mnist_fft.py ./../resources/mnist.pkl.gz\
 		./data -size 63 -noise False -bundle_size 500
-		# touch ./data/mnist_fft_done
+		touch ./data/mnist_fft_done
 
 ./data/mnist_samp_done:
 		python scripts/create_fft_sampled.py \
@@ -36,7 +36,7 @@ find_lr: ./lr_find
 		-lon -80 \
 		-lat 50 \
 		-steps 50
-		# touch ./data/mnist_samp_done
+		touch ./data/mnist_samp_done
 
 ./data/normalization_factors.csv:
 		python scripts/calculate_normalization.py \

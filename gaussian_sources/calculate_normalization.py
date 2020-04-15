@@ -36,10 +36,10 @@ def main(data_path, out_path):
     std_imag = stds_imag.mean()
 
     d = {
-        "train_mean_amp": [mean_amp],
-        "train_std_amp": [std_amp],
-        #  'train_mean_imag': [mean_imag],
-        #  'train_std_imag': [std_imag]
+        "train_mean_c0": [mean_amp],
+        "train_std_c0": [std_amp],
+        'train_mean_c1': [mean_imag],
+        'train_std_c1': [std_imag]
     }
 
     df = pd.DataFrame(data=d)

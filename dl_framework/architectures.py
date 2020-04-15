@@ -9,6 +9,7 @@ from dl_framework.model import (
     double_conv,
     cut_off,
     flatten_with_channel,
+    depth_conv,
     LocallyConnected2d,
     symmetry,
     shape,
@@ -29,10 +30,12 @@ def cnn():
         *conv(32, 64, (2, 2), 2, 1),
         nn.MaxPool2d((2, 2)),
         Lambda(flatten),
-        nn.Linear(64, 32768),
+        nn.Linear(64, 8192),
         Lambda(fft),
-        *conv(2, 1, 1, 1, 0),
         Lambda(flatten),
+        # *conv(2, 1, 1, 1, 0),
+        nn.Linear(8192, 4096),
+        # Lambda(flatten),
     )
     return arch
 
@@ -234,9 +237,9 @@ class UNet_fourier(nn.Module):
         x = torch.cat([x, conv1], dim=1)
         x = self.dconv_up1(x)
         x = self.conv_last(x)
-        out = self.flatten_with_channel(x)
+        # out = self.flatten_with_channel(x)
 
-        return out
+        return x
 
 
 def convs():
@@ -258,6 +261,85 @@ def convs():
         Lambda(flatten),
     )
     return arch
+
+
+class conv_filter(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.conv1 = nn.Sequential(*conv(2, 1, (5, 5), 1, 2))
+        self.conv2 = nn.Sequential(*conv(1, 128, (5, 5), 1, 2))
+        self.conv3 = nn.Sequential(*conv(128, 1, (5, 5), 1, 2))
+        self.flatten = Lambda(flatten)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        inp = x.clone()
+        x = self.conv2(x)
+        x = self.conv3(x)
+        out = x + inp
+        out = self.flatten(out)
+
+        return out
+
+
+class depthwise_seperable_conv(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.depth1 = nn.Sequential(
+            *depth_conv(1, 64, (7, 7), stride=1, padding=6, dilation=2)
+        )
+        self.depth12 = nn.Sequential(
+            *depth_conv(1, 64, (7, 7), stride=1, padding=3, dilation=1)
+        )
+        self.depth2 = nn.Sequential(
+            *depth_conv(1, 64, (7, 7), stride=1, padding=6, dilation=2)
+        )
+        self.depth21 = nn.Sequential(
+            *depth_conv(1, 64, (7, 7), stride=1, padding=3, dilation=1)
+        )
+        self.point1 = nn.Sequential(*conv(128, 1, (1, 1), 1, 0))
+        self.point2 = nn.Sequential(*conv(128, 1, (1, 1), 1, 0))
+        self.flatten = Lambda(flatten_with_channel)
+
+    def forward(self, x):
+        inp = x.clone()
+        inp_real = x[:, 0, :].view(x.shape[0], 1, x.shape[2], x.shape[3])
+        inp_imag = x[:, 1, :].view(x.shape[0], 1, x.shape[2], x.shape[3])
+
+        depth1 = self.depth1(inp_real)
+        depth12 = self.depth12(inp_real)
+
+        depth2 = self.depth2(inp_imag)
+        depth21 = self.depth21(inp_imag)
+
+        comb1 = torch.cat([depth1, depth12], dim=1)
+        comb2 = torch.cat([depth2, depth21], dim=1)
+
+        point1 = self.point1(comb1)
+        point2 = self.point2(comb2)
+
+        comb = torch.cat([point1, point2], dim=1)
+        comb = comb + inp
+        out = self.flatten(comb)
+
+        return out
+
+
+class small_fourier(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv_last = nn.Conv2d(4, 2, 1)
+        self.flatten_with_channel = Lambda(flatten_with_channel)
+        self.conv1 = nn.Sequential(*conv(2, 4, (3, 3), stride=1, padding=1))
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv_last(x)
+        out = self.flatten_with_channel(x)
+
+        return out
 
 
 class filter(nn.Module):
