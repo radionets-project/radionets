@@ -1,6 +1,6 @@
 import os
 
-from tests.test_save_load_preds import test_create_h5_dataset
+from tests.test_visualization.test_save_load_preds import test_create_h5_dataset
 
 test_ds = test_create_h5_dataset()
 
@@ -41,9 +41,6 @@ def test_visualize_without_fourier():
 
     assert visualize_without_fourier(i, img_input, img_pred, img_truth, build) is None
 
-    os.remove(build + "prediction_0.png")
-    os.rmdir(build)
-
 
 def test_visualize_with_fourier():
     from gaussian_sources.inspection import visualize_with_fourier
@@ -67,9 +64,6 @@ def test_visualize_with_fourier():
     assert real_truth.shape == (64, 64)
     assert imag_truth.shape == (64, 64)
 
-    os.remove(build + "prediction_0.png")
-    os.rmdir(build)
-
 
 def test_compute_fft():
     from gaussian_sources.inspection import visualize_fft, reshape_split
@@ -91,6 +85,3 @@ def test_compute_fft():
 
     assert ifft_pred.shape == (64, 64)
     assert ifft_truth.shape == (64, 64)
-
-    os.remove(build + "fft_pred_0.png")
-    os.rmdir(build)

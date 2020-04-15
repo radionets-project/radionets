@@ -42,7 +42,8 @@ def test_save_predictions():
 
     test_imgs = [test_ds[0][0].numpy().reshape(-1), test_ds[1][1].numpy().reshape(-1)]
     build = "tests/build/"
-    os.mkdir(build)
+    if os.path.exists(build) is False:
+        os.mkdir(build)
 
     outpath = build + "input.csv"
     df = pd.DataFrame(data=test_imgs, index=[1, 2])
@@ -60,6 +61,3 @@ def test_load_predictions():
     assert indices[1] == 2
     assert test_img[0].shape == (8192,)
     assert test_img[1].shape == (8192,)
-
-    os.remove(path + mode + ".csv")
-    os.rmdir(path)
