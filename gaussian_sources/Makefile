@@ -82,7 +82,6 @@ ${data}/normalization_factors.csv:
 		python calculate_normalization.py\
 		${data}/ \
 		${data}/${norm_path} \
-		-amp_phase ${amp_phase}
 
 ./training_done:
 		mkdir -p ${path}
