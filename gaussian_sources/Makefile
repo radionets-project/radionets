@@ -27,7 +27,6 @@ ${data}/fft_samp_train0.h5:
 		-fourier ${fourier} \
 		-amp_phase ${amp_phase} \
 		-samp True \
-		-amp_phase True \
 		-noise ${noise} \
 		-preview ${preview} \
 		-size ${size_img} \
@@ -48,7 +47,6 @@ ${data}/fft_samp_valid0.h5:
 		-fourier ${fourier} \
 		-amp_phase ${amp_phase} \
 		-samp True \
-		-amp_phase True \
 		-noise ${noise} \
 		-preview ${preview} \
 		-size ${size_img} \
@@ -69,7 +67,6 @@ ${data}/fft_samp_test0.h5:
 		-fourier ${fourier} \
 		-amp_phase ${amp_phase} \
 		-samp True \
-		-amp_phase True \
 		-noise ${noise} \
 		-preview ${preview} \
 		-size ${size_img} \
