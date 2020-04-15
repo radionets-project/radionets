@@ -94,7 +94,7 @@ def main(
     valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
 
     # Create databunch with defined batchsize
-    bs = 256
+    bs = 16
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # Define model
@@ -102,7 +102,7 @@ def main(
 
     # Define resize based on the length of an input image
     img = train_ds[0][0]
-    mnist_view = view_tfm(2, int(np.sqrt(img.shape[1])), int(np.sqrt(img.shape[1])))
+    mnist_view = view_tfm(1, img.shape[0], img.shape[0])
 
     # make normalisation
     norm = normalize_tfm(norm_path)
@@ -115,13 +115,13 @@ def main(
     # Define callback functions
     cbfs = [
         Recorder,
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+        partial(AvgStatsCallback, metrics=[]),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
         # partial(BatchTransformXCallback, zero),
         partial(BatchTransformXCallback, mnist_view),
         partial(SaveCallback, model_path=model_path),
-        partial(LoggerCallback, model_name=model_name),
+        # partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
@@ -143,6 +143,22 @@ def main(
         cb_funcs=cbfs,
         loss_func=loss_func,
     )
+
+    def loss(x, y, learn=learn):
+        # xb = learn.xb[:, 0]
+        # unc = x[:, 1][xb == 0]
+        # y_pred = x[:, 0][xb == 0]
+        # loss = (
+        #     (
+        #         2 * torch.log(unc)
+        #         + ((y[xb == 0] - y_pred) ** 2 / unc ** 2)
+        #     )
+        # ).mean()
+        loss = ((x[0, 0, 1:62, 1:62] - y[0, 1:62, 1:62]).pow(2)).mean()
+        # loss = ((x - y).pow(2)).mean()
+        return loss
+
+    learn.loss_func = loss
 
     # use pre-trained model if asked
     if pretrained is True:

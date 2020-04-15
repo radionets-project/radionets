@@ -3,22 +3,22 @@ import sys
 from functools import partial
 
 import click
-import numpy as np
 
 import dl_framework.architectures as architecture
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from dl_framework.callbacks import (BatchTransformXCallback, CudaCallback,
-                                    LR_Find, Recorder_lr_find, normalize_tfm,
-                                    view_tfm)
+from dl_framework.callbacks import (
+    BatchTransformXCallback,
+    CudaCallback,
+    LR_Find,
+    Recorder_lr_find,
+    normalize_tfm,
+    view_tfm,
+)
 from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
 from dl_framework.learner import get_learner
-from dl_framework.loss_functions import FeatureLoss, init_feature_loss
 from dl_framework.model import load_pre_model
-from dl_framework.utils import children
 from inspection import plot_lr_loss
-from torchvision.models import vgg16_bn
 
 
 @click.command()
@@ -88,7 +88,7 @@ def main(
     valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
 
     # Create databunch with defined batchsize
-    bs = 256
+    bs = 16
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # First guess for max_iter
@@ -100,7 +100,7 @@ def main(
 
     # Define resize based on the length of an input image
     img = train_ds[0][0]
-    mnist_view = view_tfm(2, int(np.sqrt(img.shape[1])), int(np.sqrt(img.shape[1])))
+    mnist_view = view_tfm(1, img.shape[0], img.shape[0])
 
     # make normalisation
     norm = normalize_tfm(norm_path)
@@ -114,9 +114,7 @@ def main(
         partial(BatchTransformXCallback, mnist_view),
     ]
 
-    if loss_func == "feature_loss":
-        loss_func = init_feature_loss()
-    elif loss_func == "l1":
+    if loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
@@ -127,6 +125,20 @@ def main(
     learn = get_learner(
         data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
     )
+
+    def loss(x, y, learn=learn):
+        xb = learn.xb[-1, 0]
+        unc = x[-1, 1][xb == -1]
+        y_pred = x[-1, 0][xb == -1]
+        loss = (
+            (
+                2 * torch.log(unc)
+                + ((y.reshape(-1, 63, 63)[:, xb == -1] - y_pred) ** 2 / unc ** 2)
+            )
+        ).mean()
+        return loss
+
+    learn.loss_func = loss
 
     # use pre-trained model if asked
     if pretrained is True:

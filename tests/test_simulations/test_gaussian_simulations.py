@@ -70,13 +70,12 @@ def test_gaussians():
     assert bundle.shape == (10, 63, 63)
 
     path = "./tests/build/bundle_"
-    os.mkdir("./tests/build")
+    build = "./tests/build"
+    if os.path.exists(build) is False:
+        os.mkdir(build)
     create_n_bundles(1, 10, 63, path)
 
     assert os.path.exists(path + "0.h5")
-
-    os.remove(path + "0.h5")
-    os.rmdir("./tests/build")
 
 
 @patch("simulations.gaussian_simulations.plt.show")

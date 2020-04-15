@@ -1,6 +1,6 @@
-from re import sub
-from dl_framework.utils import camel2snake, AvgStats, listify, lin_comb
 import torch
+from dl_framework.utils import camel2snake, AvgStats, listify, lin_comb
+from re import sub
 import matplotlib.pyplot as plt
 from functools import partial
 from torch.distributions.beta import Beta
@@ -131,11 +131,11 @@ class Recorder(Callback):
     def plot_lr(self):
         plt.plot(self.lrs)
 
-    def plot_loss(self):
+    def plot_loss(self, log=True):
         plt.plot(self.train_losses, label="train loss")
         plt.plot(self.valid_losses, label="valid loss")
-        # plt.plot(self.losses, label="loss")
-        plt.yscale("log")
+        if log:
+            plt.yscale("log")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
@@ -269,8 +269,10 @@ def view_tfm(*size):
 def normalize_tfm(norm_path):
     def _inner(x):
         norm = pd.read_csv(norm_path)
-        x = do_normalisation(x, norm)
-        return x
+        a = do_normalisation(x.clone(), norm)
+        assert x[:, 0].mean() != a[:, 0].mean()
+        assert x[:, 1].mean() != a[:, 1].mean()
+        return a
 
     return _inner
 
@@ -292,87 +294,11 @@ def zero_imag():
     return _inner
 
 
-# mix-up
-
-
-class NoneReduce:
-    def __init__(self, loss_func):
-        self.loss_func = loss_func
-        self.old_red = None
-
-    def __enter__(self):
-        if hasattr(self.loss_func, "reduction"):
-            self.old_red = getattr(self.loss_func, "reduction")
-            setattr(self.loss_func, "reduction", "none")
-            return self.loss_func
-        else:
-            return partial(self.loss_func, reduction="none")
-
-    def __exit__(self, type, value, traceback):
-        if self.old_red is not None:
-            setattr(self.loss_func, "reduction", self.old_red)
-
-
-def unsqueeze(input, dims):
-    for dim in listify(dims):
-        input = torch.unsqueeze(input, dim)
-    return input
-
-
-def reduce_loss(loss, reduction="mean"):
-    return (
-        loss.mean()
-        if reduction == "mean"
-        else loss.sum()
-        if reduction == "sum"
-        else loss
-    )
-
-
-class MixUp(Callback):
-    _order = 90  # Runs after normalization and cuda
-
-    def __init__(self, α: float = 0.4):
-        self.distrib = Beta(
-            torch.tensor([α], dtype=torch.float), torch.tensor([α], dtype=torch.float)
-        )
-
-    def begin_fit(self):
-        self.old_loss_func = self.run.loss_func
-        self.run.loss_func = self.loss_func
-
-    def begin_batch(self):
-        if not self.in_train:
-            return  # Only mixup things during training
-        λ = self.distrib.sample((self.yb.size(0),)).squeeze().to(self.xb.device)
-        λ = torch.stack([λ, 1 - λ], 1)
-        self.λ = unsqueeze(λ.max(1)[0], [1, 1, 1])
-        self.λ2 = unsqueeze(λ.max(1)[0], [1])
-        shuffle = torch.randperm(self.yb.size(0)).to(self.xb.device)
-        xb1, self.yb1 = self.xb[shuffle], self.yb[shuffle]
-        self.run.xb = lin_comb(self.xb, xb1, self.λ)
-        # self.run.yb = lin_comb(self.yb, self.yb1, self.λ2)
-        # img = self.run.xb[0].squeeze(0).cpu()
-        # plt.imshow(img, cmap='RdBu', vmin=-img.max(), vmax=img.max())
-
-    def after_fit(self):
-        self.run.loss_func = self.old_loss_func
-
-    def loss_func(self, pred, yb):
-        if not self.in_train:
-            return self.old_loss_func(pred, yb)
-        with NoneReduce(self.old_loss_func) as loss_func:
-            loss1 = loss_func(pred, yb)
-            loss2 = loss_func(pred, self.yb1)
-        loss = lin_comb(loss1, loss2, self.λ)
-        return reduce_loss(loss, getattr(self.old_loss_func, "reduction", "mean"))
-
-
 class SaveCallback(Callback):
     _order = 95
 
     def __init__(self, model_path):
-        self.model_path = "/".join(model_path.split("/", 2)[:2])
+        self.model_path = "/".join(model_path.split("/", 3)[:3])
 
     def after_epoch(self):
         if round(self.n_epochs) % 10 == 0:
