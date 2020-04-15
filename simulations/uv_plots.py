@@ -213,16 +213,16 @@ def plot_source(img, ft=False, log=False):
             s = ax.imshow(img, cmap="inferno", norm=LogNorm(vmin=1e-8, vmax=img.max()))
         else:
             s = ax.imshow(img, cmap="inferno")
-        fig.colorbar(s, label="Intensity")
+        fig.colorbar(s, label="Intensity / a.u.")
     else:
-        img = FT(img)
+        img = np.abs(FT(img))
         ax.set_xlabel("u")
         ax.set_ylabel("v")
         if log is True:
             s = ax.imshow(img, cmap="inferno", norm=LogNorm())
         else:
             s = ax.imshow(img, cmap="inferno")
-        fig.colorbar(s, label="Amplitude")
+        fig.colorbar(s, label="Amplitude / a.u.")
 
     ax.set_yticklabels([])
     ax.set_xticklabels([])
@@ -245,7 +245,7 @@ def FT(img):
     out: 2darray
         Fourier transform of input array
     """
-    return np.abs(np.fft.fftshift(np.fft.fft2(img)))
+    return np.fft.fftshift(np.fft.fft2(img))
 
 
 def apply_mask(img, mask):

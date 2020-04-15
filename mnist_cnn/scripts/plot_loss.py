@@ -5,7 +5,7 @@ import torch
 from dl_framework.callbacks import Recorder
 from dl_framework.learner import get_learner
 from dl_framework.model import load_pre_model
-from inspection import plot_loss
+from dl_framework.inspection import plot_loss
 
 
 @click.command()
@@ -14,6 +14,16 @@ from inspection import plot_loss
 def main(
     model_path, arch,
 ):
+    """
+    Plot loss plot for trained model.
+
+    Parameters
+    ----------
+    model_path: str
+        path to model
+    arch: str
+        name of used architecture
+    """
     data = []
     # Define model
     arch = getattr(architecture, arch)()

@@ -1,7 +1,12 @@
 import click
 import numpy as np
 from tqdm import tqdm
-from dl_framework.data import open_bundle, save_fft_pair, get_bundles
+from dl_framework.data import (
+    open_bundle,
+    save_fft_pair,
+    get_bundles,
+    split_amp_phase,
+)
 from simulations.uv_simulations import sample_freqs
 from simulations.gaussian_simulations import add_noise
 import re
@@ -12,7 +17,8 @@ import re
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument("antenna_config_path", type=click.Path(exists=True, dir_okay=False))
 @click.option("-mode", type=str, required=True)
-@click.option('-fourier', type=bool, required=True)
+@click.option("-amp_phase", type=bool, required=True)
+@click.option("-fourier", type=bool, required=True)
 @click.option("-samp", type=bool, required=False)
 @click.option("-size", type=int, required=True)
 @click.option("-specific_mask", type=bool)
@@ -26,7 +32,9 @@ def main(
     out_path,
     antenna_config_path,
     mode,
+    amp_phase,
     fourier,
+    amp_phase,
     size,
     samp=True,
     specific_mask=False,
@@ -58,23 +66,27 @@ def main(
         if noise is True:
             images = add_noise(images, preview=preview)
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
+        if amp_phase:
+            amp, phase = split_amp_phase(bundle_fft)
+            amp = (np.log10(amp + 1e-10)/10) + 1
+            bundle_fft = np.stack((amp, phase), axis=1)
         copy = bundle_fft.copy()
         if samp is True:
             if specific_mask is True:
                 bundle_samp = np.array(
                     [
-                        sample_freqs(img, antenna_config_path, size, lon, lat, steps)
+                        sample_freqs(
+                            img, antenna_config_path, size, lon, lat, steps, plot=False, test=False,
+                        )
                         for img in copy
                     ]
                 )
             else:
                 bundle_samp = np.array(
-                    [
-                        sample_freqs(img, antenna_config_path, size=size)
-                        for img in copy
-                    ]
+                    [sample_freqs(img, antenna_config_path, size=size) for img in copy]
                 )
-        out = out_path + path.name.split('_')[-1]
+        out = out_path + path.name.split("_")[-1]
+        print(bundle_fft.min(), bundle_samp.min())
         if fourier:
             save_fft_pair(out, bundle_samp, bundle_fft)
         else:

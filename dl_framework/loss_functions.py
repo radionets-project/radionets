@@ -112,3 +112,24 @@ def init_feature_loss(
         vgg_m, pixel_loss, blocks[begin_block:end_block], layer_weights
     )
     return feat_loss
+
+
+def splitted_mse(x, y):
+    inp_real = x[:, 0, :]
+    inp_imag = x[:, 1, :]
+
+    tar_real = y[:, 0, :]
+    tar_imag = y[:, 1, :]
+
+    loss_real = (
+        torch.sum(1 / inp_real.shape[1] * torch.sum((inp_real - tar_real) ** 2, 1))
+        * 1
+        / inp_real.shape[0]
+    )
+    loss_imag = (
+        torch.sum(1 / inp_imag.shape[1] * torch.sum((inp_imag - tar_imag) ** 2, 1))
+        * 1
+        / inp_real.shape[0]
+    )
+
+    return loss_real + loss_imag

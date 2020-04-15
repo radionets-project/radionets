@@ -25,7 +25,9 @@ ${data}/fft_samp_train0.h5:
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode train \
 		-fourier ${fourier} \
+		-amp_phase ${amp_phase} \
 		-samp True \
+		-amp_phase True \
 		-noise ${noise} \
 		-preview ${preview} \
 		-size ${size_img} \
@@ -44,7 +46,9 @@ ${data}/fft_samp_valid0.h5:
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode valid \
 		-fourier ${fourier} \
+		-amp_phase ${amp_phase} \
 		-samp True \
+		-amp_phase True \
 		-noise ${noise} \
 		-preview ${preview} \
 		-size ${size_img} \
@@ -63,7 +67,9 @@ ${data}/fft_samp_test0.h5:
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-mode test \
 		-fourier ${fourier} \
+		-amp_phase ${amp_phase} \
 		-samp True \
+		-amp_phase True \
 		-noise ${noise} \
 		-preview ${preview} \
 		-size ${size_img} \
@@ -75,14 +81,14 @@ ${data}/fft_samp_test0.h5:
 ${data}/normalization_factors.csv:
 		python calculate_normalization.py\
 		${data}/ \
-		${norm_path}
+		${data}/${norm_path} \
 
 ./training_done:
 		mkdir -p ${path}
 		python train_cnn.py ${data}\
-		${path_model}\
-		${arch} ${norm_path}\
-		${epochs} ${lr} ${lr_type} -fourier ${fourier} -log ${log}\
+		${path}/${path_model}\
+		${arch} ${data}/${norm_path}\
+		${epochs} ${lr} ${lr_type} -fourier ${fourier} -amp_phase ${amp_phase} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
 		# touch ./training_done
@@ -90,15 +96,15 @@ ${data}/normalization_factors.csv:
 ./lr_find:
 		mkdir -p ${path}
 		python find_lr.py ${data}\
-		${arch} ${lr_type} ${norm_path} -max_iter ${max_iter} -min_lr ${min_lr}\
-		-max_lr ${max_lr} -fourier ${fourier} -log ${log}\
+		${arch} ${lr_type} ${data}/${norm_path} -max_iter ${max_iter} -min_lr ${min_lr}\
+		-max_lr ${max_lr} -fourier ${fourier} -amp_phase ${amp_phase} -log ${log}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
 ./plot_loss:
 		mkdir -p ${path}
 		python plot_loss.py\
-		${path_model}\
+		${path}/${path_model}\
 		${arch}\
 
 clean_norm:

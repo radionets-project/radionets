@@ -15,15 +15,17 @@ from dl_framework.callbacks import (
     Recorder,
     SaveCallback,
     normalize_tfm,
+    zero_imag,
     view_tfm,
     LoggerCallback,
 )
 from dl_framework.learner import get_learner
-from dl_framework.loss_functions import init_feature_loss
+from dl_framework.loss_functions import init_feature_loss, splitted_mse
 from dl_framework.model import load_pre_model, save_model
 from inspection import evaluate_model, plot_loss
 from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
 import re
+from dl_framework.hooks import model_summary
 
 
 @click.command()
@@ -43,6 +45,12 @@ import re
     required=False,
     help="true, if target variables get fourier transformed",
 )
+@click.option(
+    "-amp_phase",
+    type=bool,
+    required=False,
+    help="true, if if amplitude and phase splitting instead of real and imaginary",
+)
 @click.option("-log", type=bool, required=True, help="use of logarithm")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
@@ -57,6 +65,7 @@ def main(
     lr,
     loss_func,
     fourier,
+    amp_phase,
     log=True,
     pretrained=False,
     pretrained_model=None,
@@ -81,22 +90,20 @@ def main(
     valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
 
     # Create train and valid datasets
-    train_ds = h5_dataset(train, tar_fourier=fourier)
-    valid_ds = h5_dataset(valid, tar_fourier=fourier)
+    train_ds = h5_dataset(train, tar_fourier=fourier, amp_phase=amp_phase)
+    valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
 
     # Create databunch with defined batchsize
-    bs = 256
+    bs = 16
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # Define model
     arch = getattr(architecture, arch)()
 
-    # Define resize based on the length of an input image
-    img = train_ds[0][0]
-    mnist_view = view_tfm(2, int(np.sqrt(img.shape[1])), int(np.sqrt(img.shape[1])))
-
     # make normalisation
     norm = normalize_tfm(norm_path)
+
+    zero = zero_imag()
 
     # get model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
@@ -104,12 +111,12 @@ def main(
     # Define callback functions
     cbfs = [
         Recorder,
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+        partial(AvgStatsCallback, metrics=[]),
         CudaCallback,
         partial(BatchTransformXCallback, norm),
-        partial(BatchTransformXCallback, mnist_view),
+        # partial(BatchTransformXCallback, zero),
         partial(SaveCallback, model_path=model_path),
-        partial(LoggerCallback, model_name=model_name),
+        # partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
@@ -139,6 +146,7 @@ def main(
 
     # Print model architecture
     # print(learn.model, "\n")
+    # model_summary(learn)
 
     # Train the model, make it possible to stop at any given time
     try:

@@ -5,13 +5,19 @@ from logging import Formatter, Handler
 
 import requests
 from dateutil import tz
+from pathlib import Path
 
 
-stream = open("../dl_framework/values.yaml", 'r')
-values = yaml.load(stream, Loader=yaml.FullLoader)
+file_dir = Path(__file__).parent.resolve()
+file_name = file_dir/"values.yaml"
+if file_name.exists():
+    stream = open(file_name, 'r')
+    values = yaml.load(stream, Loader=yaml.FullLoader)
 
-TELEGRAM_TOKEN = values['TELEGRAM_TOKEN']
-TELEGRAM_CHAT_ID = values['CHAT_ID']
+    TELEGRAM_TOKEN = values['TELEGRAM_TOKEN']
+    TELEGRAM_CHAT_ID = values['CHAT_ID']
+else:
+    print("No configuration file for telegram logger!")
 
 
 class RequestsHandler(Handler):
