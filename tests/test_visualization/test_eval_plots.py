@@ -36,7 +36,8 @@ def test_visualize_without_fourier():
     )
     i = 0
     build = "tests/build/"
-    os.mkdir(build)
+    if os.path.exists(build) is False:
+        os.mkdir(build)
 
     assert visualize_without_fourier(i, img_input, img_pred, img_truth, build) is None
 
@@ -54,10 +55,11 @@ def test_visualize_with_fourier():
     )
     i = 0
     build = "tests/build/"
-    os.mkdir(build)
+    if os.path.exists(build) is False:
+        os.mkdir(build)
 
     real_pred, imag_pred, real_truth, imag_truth = visualize_with_fourier(
-        i, img_input, img_pred, img_truth, build
+        i, img_input, img_pred, img_truth, False, build
     )
 
     assert real_pred.shape == (64, 64)
@@ -80,9 +82,15 @@ def test_compute_fft():
     real_truth, imag_truth = reshape_split(img_truth)
     i = 0
     build = "tests/build/"
-    os.mkdir(build)
+    if os.path.exists(build) is False:
+        os.mkdir(build)
 
-    assert visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, build) is None
+    ifft_pred, ifft_truth = visualize_fft(
+        i, real_pred, imag_pred, real_truth, imag_truth, False, build
+    )
+
+    assert ifft_pred.shape == (64, 64)
+    assert ifft_truth.shape == (64, 64)
 
     os.remove(build + "fft_pred_0.png")
     os.rmdir(build)
