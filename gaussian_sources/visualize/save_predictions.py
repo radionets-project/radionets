@@ -8,7 +8,7 @@ from tqdm import tqdm
 import dl_framework.architectures as architecture
 from dl_framework.data import get_bundles, h5_dataset
 from dl_framework.model import load_pre_model
-from mnist_cnn.visualize.utils import eval_model
+from dl_framework.inspection import eval_model
 
 
 @click.command()
@@ -44,10 +44,9 @@ def main(data_path, arch, pretrained_path, out_path, fourier, amp_phase, num=20)
     test_ds = h5_dataset(test, tar_fourier=fourier, amp_phase=amp_phase)
     indices = np.random.randint(0, len(test_ds), size=num)
 
-    img_size = int(np.sqrt(test_ds[0][0].shape[1]))
-    images = [test_ds[i][0].view(1, 2, img_size, img_size) for i in indices]
-    images_x = [test_ds[i][0].numpy().reshape(-1) for i in indices]
-    images_y = [test_ds[i][1].numpy().reshape(-1) for i in indices]
+    images = [test_ds[indices][0]]
+    images_x = [test_ds[indices][0].numpy().reshape(-1)]
+    images_y = [test_ds[indices][1].numpy().reshape(-1)]
 
     arch = getattr(architecture, arch)()
     load_pre_model(arch, pretrained_path, visualize=True)
