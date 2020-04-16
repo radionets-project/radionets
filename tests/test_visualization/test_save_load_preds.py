@@ -1,17 +1,14 @@
-import re
 import os
 import numpy as np
 import pandas as pd
-from dl_framework.data import get_bundles, h5_dataset
+from dl_framework.data import load_data
 
 
 def test_create_h5_dataset():
     data_path = "tests/test_data/"
     fourier = False
 
-    bundle_paths = get_bundles(data_path)
-    test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
-    test_ds = h5_dataset(test, tar_fourier=fourier)
+    test_ds = load_data(data_path, "test", fourier=fourier)
 
     img = test_ds[0][0]
     img_y = test_ds[0][1]
