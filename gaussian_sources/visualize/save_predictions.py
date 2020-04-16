@@ -1,14 +1,11 @@
-import re
-
 import click
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 
 import dl_framework.architectures as architecture
-from dl_framework.data import get_bundles, h5_dataset
-from dl_framework.model import load_pre_model
+from dl_framework.data import load_data
 from dl_framework.inspection import eval_model
+from dl_framework.model import load_pre_model
 
 
 @click.command()
@@ -18,8 +15,7 @@ from dl_framework.inspection import eval_model
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.option("-num", type=int, required=False)
 @click.option("-fourier", type=bool, required=True)
-@click.option("-amp_phase", type=bool, required=True)
-def main(data_path, arch, pretrained_path, out_path, fourier, amp_phase, num=20):
+def main(data_path, arch, pretrained_path, out_path, fourier, num=20):
     """
     Create input, predictions and truth csv files for further investigation,
     such as visualize_predictions.
@@ -39,19 +35,17 @@ def main(data_path, arch, pretrained_path, out_path, fourier, amp_phase, num=20)
     num : int, optional
         number of images taken from the test dataset
     """
-    bundle_paths = get_bundles(data_path)
-    test = [path for path in bundle_paths if re.findall("fft_samp_test", path.name)]
-    test_ds = h5_dataset(test, tar_fourier=fourier, amp_phase=amp_phase)
+    test_ds = load_data(data_path, "test", fourier=fourier)
     indices = np.random.randint(0, len(test_ds), size=num)
 
-    images = [test_ds[indices][0]]
-    images_x = [test_ds[indices][0].numpy().reshape(-1)]
-    images_y = [test_ds[indices][1].numpy().reshape(-1)]
+    images = test_ds[indices][0]
+    images_x = test_ds[indices][0].numpy().reshape(num, -1)
+    images_y = test_ds[indices][1].numpy().reshape(num, -1)
 
     arch = getattr(architecture, arch)()
     load_pre_model(arch, pretrained_path, visualize=True)
 
-    prediction = [eval_model(img, arch).numpy().reshape(-1) for img in tqdm(images)]
+    prediction = eval_model(images, arch).numpy().reshape(num, -1)
 
     outpath = str(out_path) + "input.csv"
     df = pd.DataFrame(data=images_x, index=indices)
