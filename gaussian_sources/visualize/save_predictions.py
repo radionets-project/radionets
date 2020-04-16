@@ -3,19 +3,20 @@ import numpy as np
 import pandas as pd
 
 import dl_framework.architectures as architecture
-from dl_framework.data import load_data
+from dl_framework.data import load_data, do_normalisation
 from dl_framework.inspection import eval_model
 from dl_framework.model import load_pre_model
 
 
 @click.command()
 @click.argument("data_path", type=click.Path(exists=True, dir_okay=True))
+@click.argument("norm_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("arch", type=str)
 @click.argument("pretrained_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.option("-num", type=int, required=False)
 @click.option("-fourier", type=bool, required=True)
-def main(data_path, arch, pretrained_path, out_path, fourier, num=20):
+def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20):
     """
     Create input, predictions and truth csv files for further investigation,
     such as visualize_predictions.
@@ -24,6 +25,8 @@ def main(data_path, arch, pretrained_path, out_path, fourier, num=20):
     ----------
     data_path : click path object
         path to the data files. Just the folder is necessary
+    data_path : click path object
+        path to the normalization factors. Just the name of the file
     arch : string
         contains the name of the used architecture
     pretrained_path : click path object
@@ -35,18 +38,29 @@ def main(data_path, arch, pretrained_path, out_path, fourier, num=20):
     num : int, optional
         number of images taken from the test dataset
     """
+    # Load data and create random indices
     test_ds = load_data(data_path, "test", fourier=fourier)
     indices = np.random.randint(0, len(test_ds), size=num)
 
+    # get input and target images according to random indices
     images = test_ds[indices][0]
-    images_x = test_ds[indices][0].numpy().reshape(num, -1)
     images_y = test_ds[indices][1].numpy().reshape(num, -1)
 
+    # normalization
+    norm = pd.read_csv(norm_path)
+    images = do_normalisation(images, norm)
+
+    # save input images after normalization
+    images_x = images.numpy().reshape(num, -1)
+
+    # load pretrained model
     arch = getattr(architecture, arch)()
     load_pre_model(arch, pretrained_path, visualize=True)
 
+    # create predictions
     prediction = eval_model(images, arch).numpy().reshape(num, -1)
 
+    # save input images, predictions and target images
     outpath = str(out_path) + "input.csv"
     df = pd.DataFrame(data=images_x, index=indices)
     df.to_csv(outpath, index=True)
