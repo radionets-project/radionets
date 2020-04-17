@@ -8,6 +8,7 @@ class source:
     Can be converted to geocentric coordinates. Position of source
     can be propagated to simulate an ongoing observation.
     """
+
     def __init__(self, lon, lat):
         """
         Paramters
@@ -122,6 +123,7 @@ class antenna:
     the telescopes can be computed. Antenna positions can be shifted into a ENU frame
     of a specific observation, for which the (u, v)-coverage can be computed.
     """
+
     def __init__(self, X, Y, Z):
         """
         Parameters
@@ -175,8 +177,13 @@ class antenna:
             y = baselines[1::2]
             x_base = np.append(x_base, x)
             y_base = np.append(y_base, y)
-            
-        drops = np.asarray([((i * 2 + np.array([1, 2])) - 1) + (i * self.len*2) for i in range(self.len)])
+
+        drops = np.asarray(
+            [
+                ((i * 2 + np.array([1, 2])) - 1) + (i * self.len * 2)
+                for i in range(self.len)
+            ]
+        )
         coords = np.delete(np.stack([x_base, y_base], axis=1), drops.ravel(), axis=0).T
         x_base = coords[0]
         y_base = coords[1]
@@ -302,15 +309,38 @@ def create_mask(u, v, size=63):
     """
     uv_hist, _, _ = np.histogram2d(u, v, bins=size)
     # exclude center
-    ex_l = size // 2 - 5
-    ex_h = size // 2 + 5
+    ex_l = size // 2 - 2
+    ex_h = size // 2 + 3
     uv_hist[ex_l:ex_h, ex_l:ex_h] = 0
     mask = uv_hist > 0
     return np.rot90(mask)
 
 
+def test_mask():
+    """
+    Test mask for filter tests
+    """
+    mask = np.ones((63, 63))
+    mask[19, 30] = 0
+    mask[23, 23] = 0
+    mask[30, 19] = 0
+    mask[43, 32] = 0
+    mask[39, 39] = 0
+    mask[32, 43] = 0
+    mask[33:35, 33:35] = 0
+    mask[28:30, 28:30] = 0
+    return mask
+
+
 def sample_freqs(
-    img, ant_config_path, size=63, lon=None, lat=None, num_steps=None, plot=False
+    img,
+    ant_config_path,
+    size=63,
+    lon=None,
+    lat=None,
+    num_steps=None,
+    plot=False,
+    test=False,
 ):
     """
     Sample specific frequencies in 2d Fourier space. Using antenna and source class to
@@ -332,33 +362,28 @@ def sample_freqs(
         number of observation steps
     plot: bool
         if True: returns sampled Fourier spectrum and sampling mask
+    test_mask: bool
+        if True: use same test mask for every image
 
     Returns
     -------
     img: 2darray
         sampled Fourier Spectrum
     """
-    ant = antenna(*get_antenna_config(ant_config_path))
-    if lon is None:
-        lon = np.random.randint(-90, -70)
-    if lat is None:
-        lat = np.random.randint(30, 80)
-    s = source(lon, lat)
-    s.propagate(num_steps=num_steps, multi_pointing=True)
-    u, v, _ = get_uv_coverage(s, ant, iterate=False)
-    mask = create_mask(u, v, size)
-    img = img.copy()
-    # because the minimal values are set to zero
-    if img.shape[0] == 2:
-        img[:, ~mask] = -10
+    if test:
+        mask = test_mask()
     else:
-        img[~mask] = 0
-    """
-    if mnist:
-        img = img.reshape(64, 64)
-        img[~mask] = 0
-        img = img.reshape(4096)
-    """
+        ant = antenna(*get_antenna_config(ant_config_path))
+        if lon is None:
+            lon = np.random.randint(-90, -70)
+        if lat is None:
+            lat = np.random.randint(30, 80)
+        s = source(lon, lat)
+        s.propagate(num_steps=num_steps, multi_pointing=False)
+        u, v, _ = get_uv_coverage(s, ant, iterate=False)
+        mask = create_mask(u, v, size)
+    img = img.copy()
+    img[:, ~mask.astype(bool)] = 0
     if plot is True:
         return img, mask
     else:

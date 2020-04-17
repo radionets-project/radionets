@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 from gaussian_sources.inspection import (
-    visualize_without_fourier,
     visualize_with_fourier,
+    visualize_without_fourier,
     visualize_fft,
     open_csv,
     plot_difference,

@@ -27,7 +27,7 @@ def main(
     load_pre_model(learn, model_path)
 
     # Plot loss
-    plot_loss(learn, model_path)
+    plot_loss(learn, model_path, log=False)
 
 
 if __name__ == "__main__":

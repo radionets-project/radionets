@@ -25,7 +25,8 @@ setup(
         'jupytext==1.2.4',
         'h5py==2.9.0',
         'scikit-image==0.16.2',
-        'pandas==0.25.3'
+        'pandas==0.25.3',
+        'requests',
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
