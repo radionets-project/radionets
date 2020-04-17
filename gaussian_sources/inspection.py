@@ -319,7 +319,7 @@ def plot_difference(i, img_pred, img_truth, fourier, out_path):
 
         abs_pred, abs_truth = np.abs(img_pred), np.abs(img_truth)
 
-        rms = np.sqrt((abs_pred[:16, :16]**2).sum()/(16**2))
+        rms = np.sqrt((abs_pred[:16, :16]**2).mean())
         dynamic_range = abs_pred.max()/rms
 
         im1 = ax1.imshow(abs_pred)
@@ -360,7 +360,7 @@ def plot_difference(i, img_pred, img_truth, fourier, out_path):
         img_pred = reshape_split(img_pred)
         img_truth = reshape_split(img_truth)
 
-        rms = np.sqrt((img_pred[:16, :16]**2).sum()/(16**2))
+        rms = np.sqrt((img_pred[:16, :16]**2).mean())
         dynamic_range = img_pred.max()/rms
 
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
