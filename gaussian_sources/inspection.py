@@ -151,7 +151,6 @@ def plot_lr_loss(learn, arch_name, skip_last):
 def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     """
     Visualizing, if the target variables are displayed in spatial space.
-
     i: Current index given form the loop
     img_input: current input image as a numpy array in shape (2*img_size^2)
     img_pred: current prediction image as a numpy array with shape (img_size^2)
@@ -166,22 +165,19 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     # plotting
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
 
-    inp = img_reshaped.numpy()
-
-    inp_real = inp[0, 0, :]
-    inp_imag = inp[0, 1, :]
-
-    im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-inp_real.max(), vmax=inp_real.max())
+    im1 = ax1.imshow(inp_real, cmap='RdBu', vmin=-inp_real.max(),
+                     vmax=inp_real.max())
     divider = make_axes_locatable(ax1)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax1.set_title(r"Real Input")
-    fig.colorbar(im1, cax=cax, orientation="vertical")
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax1.set_title(r'Real Input')
+    fig.colorbar(im1, cax=cax, orientation='vertical')
 
-    im2 = ax2.imshow(inp_imag, cmap="RdBu", vmin=-inp_imag.max(), vmax=inp_imag.max())
+    im2 = ax2.imshow(inp_imag, cmap='RdBu', vmin=-inp_imag.max(),
+                     vmax=inp_imag.max())
     divider = make_axes_locatable(ax2)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax2.set_title(r"Imaginary Input")
-    fig.colorbar(im2, cax=cax, orientation="vertical")
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax2.set_title(r'Imaginary Input')
+    fig.colorbar(im2, cax=cax, orientation='vertical')
 
     im3 = ax3.imshow(img_pred)
     divider = make_axes_locatable(ax3)
@@ -191,12 +187,12 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
 
     im4 = ax4.imshow(img_truth)
     divider = make_axes_locatable(ax4)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax4.set_title(r"Truth")
-    fig.colorbar(im4, cax=cax, orientation="vertical")
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax4.set_title(r'Truth')
+    fig.colorbar(im4, cax=cax, orientation='vertical')
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
-    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
     plt.clf()
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
@@ -204,7 +200,6 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
 def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_path):
     """
     Visualizing, if the target variables are displayed in fourier space.
-
     i: Current index given form the loop
     img_input: current input image as a numpy array in shape (2*img_size^2)
     img_pred: current prediction image as a numpy array with shape (2*img_size^2)
@@ -224,7 +219,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
 
-    im1 = ax1.imshow(inp_real, cmap="RdBu")
+    im1 = ax1.imshow(inp_real, cmap='RdBu')
     divider = make_axes_locatable(ax1)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax1.set_title(r'Real Input')
@@ -240,7 +235,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
 
-    im3 = ax3.imshow(real_truth, cmap="RdBu")
+    im3 = ax3.imshow(real_truth, cmap='RdBu')
     divider = make_axes_locatable(ax3)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax3.set_title(r'Real Truth')
@@ -248,7 +243,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
 
-    im4 = ax4.imshow(inp_imag, cmap="RdBu")
+    im4 = ax4.imshow(inp_imag, cmap='RdBu')
     divider = make_axes_locatable(ax4)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax4.set_title(r'Imaginary Input')
@@ -264,7 +259,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
 
-    im6 = ax6.imshow(imag_truth, cmap="RdBu")
+    im6 = ax6.imshow(imag_truth, cmap='RdBu')
     divider = make_axes_locatable(ax6)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax6.set_title(r'Imaginary Truth')
@@ -273,7 +268,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     cbar.update_ticks()
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
-    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
     return real_pred, imag_pred, real_truth, imag_truth
 
 
@@ -320,8 +315,8 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     fig.colorbar(im1, cax=cax, orientation='vertical')
 
     divider = make_axes_locatable(ax2)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    fig.colorbar(im2, cax=cax, orientation="vertical")
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    fig.colorbar(im2, cax=cax, orientation='vertical')
 
     outpath = str(out_path) + "fft_pred_{}.png".format(i)
     plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)

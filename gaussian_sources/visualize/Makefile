@@ -14,8 +14,8 @@ build/visualize_predictions_done:
 
 ./pred_save:
 	mkdir -p ${out_path}
-	python save_predictions.py ${data} \
-	${arch} ${path_model} ${out_path} -fourier ${fourier} -amp_phase ${amp_phase} ${mode}
+	python save_predictions.py ${data} ${data}/${norm_path} \
+	${arch} ${path_model} ${out_path} -fourier ${fourier} ${mode}
 
 clean:
 	rm -rf build/
