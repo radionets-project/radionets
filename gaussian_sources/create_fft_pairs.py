@@ -6,6 +6,7 @@ from dl_framework.data import (
     save_fft_pair,
     get_bundles,
     split_amp_phase,
+    split_real_imag,
 )
 from simulations.uv_simulations import sample_freqs
 from simulations.gaussian_simulations import add_noise
@@ -34,7 +35,6 @@ def main(
     mode,
     amp_phase,
     fourier,
-    amp_phase,
     size,
     samp=True,
     specific_mask=False,
@@ -66,10 +66,15 @@ def main(
         if noise is True:
             images = add_noise(images, preview=preview)
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
+
         if amp_phase:
             amp, phase = split_amp_phase(bundle_fft)
             amp = (np.log10(amp + 1e-10)/10) + 1
             bundle_fft = np.stack((amp, phase), axis=1)
+        else:
+            real, imag = split_real_imag(bundle_fft)
+            bundle_fft = np.stack((real, imag), axis=1)
+
         copy = bundle_fft.copy()
         if samp is True:
             if specific_mask is True:
@@ -86,7 +91,6 @@ def main(
                     [sample_freqs(img, antenna_config_path, size=size) for img in copy]
                 )
         out = out_path + path.name.split("_")[-1]
-        print(bundle_fft.min(), bundle_samp.min())
         if fourier:
             save_fft_pair(out, bundle_samp, bundle_fft)
         else:

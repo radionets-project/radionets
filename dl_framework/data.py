@@ -69,6 +69,8 @@ class h5_dataset:
     def open_image(self, var, i):
         if isinstance(i, int):
             i = torch.tensor([i])
+        elif isinstance(i, np.ndarray):
+            i = torch.tensor(i)
         indices, _ = torch.sort(i)
         bundle = indices // self.num_img
         image = indices - bundle * self.num_img
@@ -212,10 +214,14 @@ def load_data(data_path, mode, fourier=False):
         dataset containing x and y images
     """
     bundle_paths = get_bundles(data_path)
-    data = [
-        path
-        for path in bundle_paths
-        if re.findall("fft_bundle_samp_" + mode, path.name)
-    ]
+    data = [path for path in bundle_paths if re.findall("fft_samp_" + mode, path.name)]
+    # this is necessary for the reason of different names for data files in mnist
+    # and gaussian sources
+    if data == []:
+        data = [
+            path
+            for path in bundle_paths
+            if re.findall("fft_bundle_samp_" + mode, path.name)
+        ]
     ds = h5_dataset(data, tar_fourier=fourier)
     return ds
