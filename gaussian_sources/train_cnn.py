@@ -1,3 +1,4 @@
+import re
 import sys
 from functools import partial
 
@@ -5,25 +6,21 @@ import click
 import matplotlib.pyplot as plt
 
 import dl_framework.architectures as architecture
-import torch
-import torch.nn as nn
 from dl_framework.callbacks import (
     AvgStatsCallback,
-    BatchTransformXCallback,
-    CudaCallback,
+    LoggerCallback,
     Recorder,
     SaveCallback,
     normalize_tfm,
     zero_imag,
-    LoggerCallback,
 )
-from dl_framework.learner import get_learner
+from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
+from dl_framework.hooks import model_summary
+from dl_framework.learner import define_learner
 from dl_framework.loss_functions import init_feature_loss, splitted_mse
 from dl_framework.model import load_pre_model, save_model
 from inspection import evaluate_model, plot_loss
-from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
-import re
-from dl_framework.hooks import model_summary
+from torch import nn
 
 
 @click.command()
@@ -109,32 +106,21 @@ def main(
     # Define callback functions
     cbfs = [
         Recorder,
-        partial(AvgStatsCallback, metrics=[]),
-        CudaCallback,
-        partial(BatchTransformXCallback, norm),
+        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         # partial(BatchTransformXCallback, zero),
         partial(SaveCallback, model_path=model_path),
         partial(LoggerCallback, model_name=model_name),
     ]
 
-    if loss_func == "feature_loss":
-        loss_func = init_feature_loss()
-    elif loss_func == "l1":
-        loss_func = nn.L1Loss()
-    elif loss_func == "mse":
-        loss_func = nn.MSELoss()
-    else:
-        print("\n No matching loss function! Exiting. \n")
-        sys.exit(1)
-
-    # Combine model and data in learner
-    learn = get_learner(
+    learn = define_learner(
         data,
         arch,
+        norm,
+        loss_func,
+        cbfs=cbfs,
         lr=lr,
-        opt_func=torch.optim.Adam,
-        cb_funcs=cbfs,
-        loss_func=loss_func,
+        model_name=model_name,
+        model_path=model_path,
     )
 
     # use pre-trained model if asked

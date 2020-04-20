@@ -1,24 +1,14 @@
 import re
-import sys
 from functools import partial
 
 import click
 
 import dl_framework.architectures as architecture
-import torch
-import torch.nn as nn
-from dl_framework.callbacks import (
-    BatchTransformXCallback,
-    CudaCallback,
-    LR_Find,
-    Recorder_lr_find,
-    normalize_tfm,
-)
+from dl_framework.callbacks import LR_Find, Recorder_lr_find, normalize_tfm
 from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
-from dl_framework.learner import get_learner
+from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
 from inspection import plot_lr_loss
-from dl_framework.loss_functions import init_feature_loss
 
 
 @click.command()
@@ -105,24 +95,9 @@ def main(
     cbfs = [
         partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
         Recorder_lr_find,
-        CudaCallback,
-        partial(BatchTransformXCallback, norm),
     ]
 
-    if loss_func == "l1":
-        loss_func = nn.L1Loss()
-    elif loss_func == "mse":
-        loss_func = nn.MSELoss()
-    elif loss_func == "feature_loss":
-        loss_func = init_feature_loss()
-    else:
-        print("\n No matching loss function! Exiting. \n")
-        sys.exit(1)
-
-    # Combine model and data in learner
-    learn = get_learner(
-        data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
-    )
+    learn = define_learner(data, arch, norm, loss_func, cbfs=cbfs,)
 
     # use pre-trained model if asked
     if pretrained is True:
