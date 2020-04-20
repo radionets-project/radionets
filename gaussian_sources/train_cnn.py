@@ -1,3 +1,4 @@
+import re
 import sys
 from functools import partial
 
@@ -5,22 +6,21 @@ import click
 import matplotlib.pyplot as plt
 
 import dl_framework.architectures as architecture
-from torch import nn
 from dl_framework.callbacks import (
+    AvgStatsCallback,
+    LoggerCallback,
     Recorder,
     SaveCallback,
     normalize_tfm,
     zero_imag,
-    LoggerCallback,
-    AvgStatsCallback,
 )
+from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
+from dl_framework.hooks import model_summary
 from dl_framework.learner import define_learner
 from dl_framework.loss_functions import init_feature_loss, splitted_mse
 from dl_framework.model import load_pre_model, save_model
 from inspection import evaluate_model, plot_loss
-from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
-import re
-from dl_framework.hooks import model_summary
+from torch import nn
 
 
 @click.command()
