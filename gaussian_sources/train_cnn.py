@@ -22,7 +22,7 @@ from dl_framework.callbacks import (
 from dl_framework.learner import get_learner
 from dl_framework.loss_functions import init_feature_loss, splitted_mse
 from dl_framework.model import load_pre_model, save_model
-from inspection import evaluate_model, plot_loss
+from gaussian_sources.inspection import evaluate_model, plot_loss
 from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
 import re
 from dl_framework.hooks import model_summary
