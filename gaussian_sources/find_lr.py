@@ -16,7 +16,7 @@ from dl_framework.callbacks import (
     view_tfm,
 )
 from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
-from dl_framework.learner import get_learner
+from dl_framework.learner import get_learner, define_learner
 from dl_framework.model import load_pre_model
 from inspection import plot_lr_loss
 
@@ -88,7 +88,7 @@ def main(
     valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
 
     # Create databunch with defined batchsize
-    bs = 16
+    bs = 256
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # First guess for max_iter
@@ -109,36 +109,41 @@ def main(
     cbfs = [
         partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
         Recorder_lr_find,
-        CudaCallback,
-        partial(BatchTransformXCallback, norm),
-        partial(BatchTransformXCallback, mnist_view),
     ]
 
-    if loss_func == "l1":
-        loss_func = nn.L1Loss()
-    elif loss_func == "mse":
-        loss_func = nn.MSELoss()
-    else:
-        print("\n No matching loss function! Exiting. \n")
-        sys.exit(1)
+    # if loss_func == "l1":
+    #     loss_func = nn.L1Loss()
+    # elif loss_func == "mse":
+    #     loss_func = nn.MSELoss()
+    # else:
+    #     print("\n No matching loss function! Exiting. \n")
+    #     sys.exit(1)
     # Combine model and data in learner
-    learn = get_learner(
-        data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
+    # learn = get_learner(
+    #     data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
+    # )
+
+    learn = define_learner(
+        data,
+        arch,
+        norm,
+        loss_func,
+        cbfs=cbfs,
     )
 
-    def loss(x, y, learn=learn):
-        xb = learn.xb[-1, 0]
-        unc = x[-1, 1][xb == -1]
-        y_pred = x[-1, 0][xb == -1]
-        loss = (
-            (
-                2 * torch.log(unc)
-                + ((y.reshape(-1, 63, 63)[:, xb == -1] - y_pred) ** 2 / unc ** 2)
-            )
-        ).mean()
-        return loss
+    # def loss(x, y, learn=learn):
+    #     xb = learn.xb[-1, 0]
+    #     unc = x[-1, 1][xb == -1]
+    #     y_pred = x[-1, 0][xb == -1]
+    #     loss = (
+    #         (
+    #             2 * torch.log(unc)
+    #             + ((y.reshape(-1, 63, 63)[:, xb == -1] - y_pred) ** 2 / unc ** 2)
+    #         )
+    #     ).mean()
+    #     return loss
 
-    learn.loss_func = loss
+    # learn.loss_func = loss
 
     # use pre-trained model if asked
     if pretrained is True:
