@@ -29,3 +29,38 @@ def test_simulate_bundles():
     print(traceback.print_exception(*result.exc_info))
 
     assert result.exit_code == 0
+
+
+def test_create_fft_pairs():
+    from gaussian_sources.create_fft_pairs import main
+
+    data_path = "./tests/build/gaussian_sources"
+    out_path = "./tests/build/gaussian_sources"
+    antenna_config = "./simulations/layouts/vlba.txt"
+
+    runner = CliRunner()
+    options = [
+        data_path,
+        out_path,
+        antenna_config,
+        "-amp_phase",
+        True,
+        "-fourier",
+        False,
+        "-specific_mask",
+        True,
+        "-lon",
+        -80,
+        "-lat",
+        50,
+        "-steps",
+        50,
+        "-noise",
+        True,
+        "-preview",
+        False
+    ]
+    result = runner.invoke(main, options)
+    print(traceback.print_exception(*result.exc_info))
+
+    assert result.exit_code == 0
