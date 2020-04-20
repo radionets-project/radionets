@@ -1,22 +1,12 @@
 import re
-import sys
 from functools import partial
 
 import click
 
 import dl_framework.architectures as architecture
-import torch
-import torch.nn as nn
-from dl_framework.callbacks import (
-    BatchTransformXCallback,
-    CudaCallback,
-    LR_Find,
-    Recorder_lr_find,
-    normalize_tfm,
-    view_tfm,
-)
+from dl_framework.callbacks import LR_Find, Recorder_lr_find, normalize_tfm
 from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
-from dl_framework.learner import get_learner, define_learner
+from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
 from inspection import plot_lr_loss
 
@@ -98,10 +88,6 @@ def main(
     arch_name = arch
     arch = getattr(architecture, arch)()
 
-    # Define resize based on the length of an input image
-    img = train_ds[0][0]
-    mnist_view = view_tfm(1, img.shape[0], img.shape[0])
-
     # make normalisation
     norm = normalize_tfm(norm_path)
 
@@ -111,39 +97,7 @@ def main(
         Recorder_lr_find,
     ]
 
-    # if loss_func == "l1":
-    #     loss_func = nn.L1Loss()
-    # elif loss_func == "mse":
-    #     loss_func = nn.MSELoss()
-    # else:
-    #     print("\n No matching loss function! Exiting. \n")
-    #     sys.exit(1)
-    # Combine model and data in learner
-    # learn = get_learner(
-    #     data, arch, 1e-3, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
-    # )
-
-    learn = define_learner(
-        data,
-        arch,
-        norm,
-        loss_func,
-        cbfs=cbfs,
-    )
-
-    # def loss(x, y, learn=learn):
-    #     xb = learn.xb[-1, 0]
-    #     unc = x[-1, 1][xb == -1]
-    #     y_pred = x[-1, 0][xb == -1]
-    #     loss = (
-    #         (
-    #             2 * torch.log(unc)
-    #             + ((y.reshape(-1, 63, 63)[:, xb == -1] - y_pred) ** 2 / unc ** 2)
-    #         )
-    #     ).mean()
-    #     return loss
-
-    # learn.loss_func = loss
+    learn = define_learner(data, arch, norm, loss_func, cbfs=cbfs,)
 
     # use pre-trained model if asked
     if pretrained is True:
