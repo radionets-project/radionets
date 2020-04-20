@@ -3,7 +3,7 @@
 *.ipynb
 
 # data
-mnist_cnn/data
+mnist_cnn/data*
 simulations/gaussian_sources
 gaussian_sources/data*
 *.uvf
