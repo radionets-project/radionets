@@ -1,5 +1,6 @@
 import numpy as np
 from pathlib import Path
+import traceback
 from click.testing import CliRunner
 
 
@@ -41,6 +42,7 @@ def test_create_mnist_fft():
     runner = CliRunner()
     options = [data_path, out_path, "-size", 63, "-bundle_size", 2]
     result = runner.invoke(main, options)
+    print(traceback.print_exception(*result.exc_info))
 
     assert result.exit_code == 0
 
@@ -71,6 +73,7 @@ def test_create_fft_sampled():
         50,
     ]
     result = runner.invoke(main, options)
+    print(traceback.print_exception(*result.exc_info))
 
     assert result.exit_code == 0
 
@@ -88,6 +91,7 @@ def test_normalization():
     runner = CliRunner()
     options = [data_path, out_path]
     result = runner.invoke(main, options)
+    print(traceback.print_exception(*result.exc_info))
 
     assert result.exit_code == 0
 
@@ -146,6 +150,7 @@ def test_train_cnn():
         True,
     ]
     result = runner.invoke(main, options)
+    print(traceback.print_exception(*result.exc_info))
 
     assert result.exit_code == 0
 
@@ -179,5 +184,6 @@ def test_find_lr():
         True,
     ]
     result = runner.invoke(main, options)
+    print(traceback.print_exception(*result.exc_info))
 
     assert result.exit_code == 0

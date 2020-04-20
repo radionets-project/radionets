@@ -5,6 +5,8 @@ from dl_framework.model import load_pre_model
 from dl_framework.data import DataBunch, get_dls, load_data
 from dl_framework.inspection import plot_lr_loss
 from dl_framework.learner import define_learner
+from dl_framework.callbacks import LR_Find, Recorder_lr_find
+from functools import partial
 
 
 @click.command()
@@ -108,9 +110,23 @@ def main(
     # Define normalisation
     norm = normalize_tfm(norm_path)
 
+    # Define callback functions
+    cbfs = [
+        partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
+        Recorder_lr_find,
+    ]
+
     # Define learner
     learn = define_learner(
-        data, arch, norm, loss_func, test=test, max_iter=60, max_lr=1e-1, min_lr=1e-1,
+        data,
+        arch,
+        norm,
+        loss_func,
+        cbfs=cbfs,
+        test=test,
+        max_iter=max_iter,
+        max_lr=max_lr,
+        min_lr=min_lr,
     )
 
     # use pre-trained model if asked

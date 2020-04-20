@@ -66,7 +66,7 @@ find_lr: ./lr_find
 		-max_iter ${max_iter} -min_lr ${min_lr}\
 		-max_lr ${max_lr} -fourier ${fourier}\
 		-pretrained ${pretrained} ${pre_path}\
-		-save ${save}
+		-save ${save} -test ${test}
 
 ./visualize_predictions:
 		python scripts/visualize_predictions.py\
