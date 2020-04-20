@@ -146,3 +146,40 @@ def test_normalization():
         assert np.isclose(
             do_normalisation(torch.tensor(a), factors).std(), 1, atol=1e-1
         )
+
+
+def test_train_cnn_fourier():
+    from gaussian_sources.train_cnn import main
+
+    data_path = "./tests/build/gaussian_sources/fourier"
+    path_model = "./tests/build/gaussian_sources/fourier/test.model"
+    arch = "UNet_denoise"
+    norm_path = "./tests/build/gaussian_sources/fourier/normalization_factors.csv"
+    epochs = "5"
+    lr = "1e-3"
+    lr_type = "mse"
+    bs = "2"
+
+    runner = CliRunner()
+    options = [
+        data_path,
+        path_model,
+        arch,
+        norm_path,
+        epochs,
+        lr,
+        lr_type,
+        bs,
+        "-fourier",
+        False,
+        "-pretrained",
+        False,
+        "-inspection",
+        False,
+        # "-test",
+        # True,
+    ]
+    result = runner.invoke(main, options)
+    print(traceback.print_exception(*result.exc_info))
+
+    assert result.exit_code == 0
