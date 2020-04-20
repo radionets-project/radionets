@@ -1,5 +1,4 @@
 import sys
-import numpy as np
 from functools import partial
 
 import click
@@ -16,7 +15,6 @@ from dl_framework.callbacks import (
     SaveCallback,
     normalize_tfm,
     zero_imag,
-    view_tfm,
     LoggerCallback,
 )
 from dl_framework.learner import get_learner
@@ -94,7 +92,7 @@ def main(
     valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
 
     # Create databunch with defined batchsize
-    bs = 16
+    bs = 256
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # Define model
@@ -116,7 +114,7 @@ def main(
         partial(BatchTransformXCallback, norm),
         # partial(BatchTransformXCallback, zero),
         partial(SaveCallback, model_path=model_path),
-        # partial(LoggerCallback, model_name=model_name),
+        partial(LoggerCallback, model_name=model_name),
     ]
 
     if loss_func == "feature_loss":
