@@ -22,7 +22,7 @@ def main(data_path, out_path):
 
     for path in tqdm(bundle_paths):
         x, _ = open_fft_pair(path)
-        x_amp, x_imag = x[:, 0], x[:, 1]
+        x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
         mean_amp, std_amp = mean_and_std(x_amp)
         mean_imag, std_imag = mean_and_std(x_imag)
         means_amp = np.append(mean_amp, means_amp)
