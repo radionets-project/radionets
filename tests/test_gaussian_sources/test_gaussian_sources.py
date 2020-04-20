@@ -1,5 +1,6 @@
 from pathlib import Path
 from click.testing import CliRunner
+import numpy as np
 import traceback
 
 
@@ -42,7 +43,7 @@ def test_create_fft_pairs():
     runner = CliRunner()
     options = [
         data_path,
-        out_path+"/fft_samp_",
+        out_path + "/fft_samp_",
         antenna_config,
         "-amp_phase",
         True,
@@ -72,7 +73,7 @@ def test_create_fft_pairs():
     runner = CliRunner()
     options = [
         data_path,
-        out_path+"/fft_samp_",
+        out_path + "/fft_samp_",
         antenna_config,
         "-amp_phase",
         True,
@@ -95,3 +96,55 @@ def test_create_fft_pairs():
     print(traceback.print_exception(*result.exc_info))
 
     assert result.exit_code == 0
+
+
+def test_normalization():
+    from gaussian_sources.calculate_normalization import main
+    import pandas as pd
+    from dl_framework.data import get_bundles, open_fft_pair, do_normalisation
+    import re
+    import torch
+
+    paths = [
+        "./tests/build/gaussian_sources/fourier",
+        "./tests/build/gaussian_sources/wo_fourier",
+    ]
+
+    for path in paths:
+        data_path = path
+        out_path = path + "normalization_factors.csv"
+
+        runner = CliRunner()
+        options = [data_path, out_path]
+        result = runner.invoke(main, options)
+        print(traceback.print_exception(*result.exc_info))
+
+        assert result.exit_code == 0
+
+        factors = pd.read_csv(out_path)
+
+        assert (
+            factors.keys()
+            == ["train_mean_c0", "train_std_c0", "train_mean_c1", "train_std_c1",]
+        ).all()
+        assert ~np.isnan(factors.values).all()
+        assert ~np.isinf(factors.values).all()
+        assert (factors.values != 0).all()
+
+        bundle_paths = get_bundles(data_path)
+        bundle_paths = [
+            path
+            for path in bundle_paths
+            if re.findall("fft_samp_train", path.name)
+        ]
+
+        bundles = [open_fft_pair(bund) for bund in bundle_paths]
+
+        a = np.stack((bundles[0][0][:, 0], bundles[0][0][:, 1]), axis=1)
+
+        assert np.isclose(
+            do_normalisation(torch.tensor(a), factors).mean(), 0, atol=1e-1
+        )
+        assert np.isclose(
+            do_normalisation(torch.tensor(a), factors).std(), 1, atol=1e-1
+        )
