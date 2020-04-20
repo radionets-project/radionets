@@ -112,7 +112,7 @@ def test_normalization():
 
     for path in paths:
         data_path = path
-        out_path = path + "normalization_factors.csv"
+        out_path = path + "/normalization_factors.csv"
 
         runner = CliRunner()
         options = [data_path, out_path]
@@ -125,7 +125,7 @@ def test_normalization():
 
         assert (
             factors.keys()
-            == ["train_mean_c0", "train_std_c0", "train_mean_c1", "train_std_c1",]
+            == ["train_mean_c0", "train_std_c0", "train_mean_c1", "train_std_c1", ]
         ).all()
         assert ~np.isnan(factors.values).all()
         assert ~np.isinf(factors.values).all()
@@ -133,9 +133,7 @@ def test_normalization():
 
         bundle_paths = get_bundles(data_path)
         bundle_paths = [
-            path
-            for path in bundle_paths
-            if re.findall("fft_samp_train", path.name)
+            path for path in bundle_paths if re.findall("fft_samp_train", path.name)
         ]
 
         bundles = [open_fft_pair(bund) for bund in bundle_paths]
