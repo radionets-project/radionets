@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import traceback
 from click.testing import CliRunner
 
 
@@ -35,7 +36,6 @@ def test_prepare_mnist_bundles():
 
 def test_create_mnist_fft():
     from mnist_cnn.scripts.create_mnist_fft import main
-    import traceback
 
     data_path = "./resources/mnist_test.pkl.gz"
     out_path = "./tests/build"
@@ -53,7 +53,6 @@ def test_create_mnist_fft():
 
 def test_create_fft_sampled():
     from mnist_cnn.scripts.create_fft_sampled import main
-    import traceback
 
     data_path = "./tests/build/"
     out_path = "./tests/build"
@@ -89,7 +88,6 @@ def test_normalization():
     from dl_framework.data import get_bundles, open_fft_pair, do_normalisation
     import re
     import torch
-    import traceback
 
     data_path = "./tests/build"
     out_path = "./tests/build/normalization_factors.csv"
@@ -126,7 +124,6 @@ def test_normalization():
 
 def test_train_cnn():
     from mnist_cnn.scripts.train_cnn import main
-    import traceback
 
     data_path = "./tests/build"
     path_model = "./tests/build/test.model"
@@ -164,7 +161,6 @@ def test_train_cnn():
 
 def test_find_lr():
     from mnist_cnn.scripts.find_lr import main
-    import traceback
 
     data_path = "./tests/build"
     arch = "UNet_denoise"
