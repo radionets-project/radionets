@@ -115,7 +115,6 @@ def main(
         partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
         Recorder_lr_find,
     ]
-    print(test)
     # Define learner
     learn = define_learner(
         data,
