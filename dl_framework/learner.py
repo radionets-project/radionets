@@ -188,6 +188,7 @@ def define_learner(
 ):
     if test:
         cbfs.extend([Recorder,
+                    partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
                     partial(BatchTransformXCallback, norm),
                     partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
                     Recorder_lr_find, ])
