@@ -26,7 +26,6 @@ ${data}/fft_samp_train0.h5:
 		-amp_phase ${amp_phase} \
 		-noise ${noise} \
 		-preview ${preview} \
-		-size ${size_img} \
 		-specific_mask True \
 		-lon -80 \
 		-lat 50 \
