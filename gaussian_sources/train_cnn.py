@@ -34,6 +34,7 @@ from torch import nn
 @click.argument("num_epochs", type=int)
 @click.argument("lr", type=float)
 @click.argument("loss_func", type=str)
+@click.argument("batch_size", type=int)
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
@@ -49,11 +50,13 @@ from torch import nn
     required=False,
     help="true, if if amplitude and phase splitting instead of real and imaginary",
 )
-@click.option("-log", type=bool, required=True, help="use of logarithm")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
 @click.option("-inspection", type=bool, required=False, help="make an inspection plot")
+@click.option(
+    "-test", type=bool, default=False, required=False, help="Disable logger in tests"
+)
 def main(
     data_path,
     model_path,
@@ -62,12 +65,13 @@ def main(
     num_epochs,
     lr,
     loss_func,
+    batch_size,
     fourier,
     amp_phase,
-    log=True,
     pretrained=False,
     pretrained_model=None,
     inspection=False,
+    test=False,
 ):
     """
     Train the neural network with existing training and validation data.
@@ -92,7 +96,7 @@ def main(
     valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
 
     # Create databunch with defined batchsize
-    bs = 16
+    bs = batch_size
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # Define model
@@ -112,9 +116,9 @@ def main(
         partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         # partial(BatchTransformXCallback, zero),
         partial(SaveCallback, model_path=model_path),
-        partial(LoggerCallback, model_name=model_name),
     ]
-
+    if not test:
+        cbfs.append(partial(LoggerCallback, model_name=model_name))
     learn = define_learner(
         data,
         arch,
@@ -124,6 +128,7 @@ def main(
         lr=lr,
         model_name=model_name,
         model_path=model_path,
+        test=test,
     )
 
     # use pre-trained model if asked
