@@ -21,7 +21,6 @@ ${data}/gaussian_sources_train0.h5:
 ${data}/fft_samp_train0.h5:
 		python create_fft_pairs.py \
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
-		-mode train \
 		-fourier ${fourier} \
 		-amp_phase ${amp_phase} \
 		-samp True \
