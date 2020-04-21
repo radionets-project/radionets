@@ -10,7 +10,6 @@ from simulations.gaussian_simulations import create_n_bundles
 @click.argument("bundle_size", type=int)
 @click.argument("img_size", type=int)
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
-@click.option("-noise", type=bool, required=False)
 def main(
     num_bundles_train,
     num_bundles_valid,
@@ -18,7 +17,6 @@ def main(
     bundle_size,
     img_size,
     out_path,
-    noise=False,
 ):
     create_n_bundles(
         num_bundles_train,
