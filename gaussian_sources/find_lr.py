@@ -8,7 +8,7 @@ from dl_framework.callbacks import LR_Find, Recorder_lr_find, normalize_tfm
 from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
 from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
-from inspection import plot_lr_loss
+from gaussian_sources.inspection import plot_lr_loss
 
 
 @click.command()
