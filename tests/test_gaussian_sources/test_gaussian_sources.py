@@ -262,3 +262,39 @@ def test_train_cnn_wo_fourier():
     print(traceback.print_exception(*result.exc_info))
 
     assert result.exit_code == 0
+
+
+def test_find_lr():
+    from gaussian_sources.find_lr import main
+
+    data_path = "./tests/build/gaussian_sources/fourier"
+    arch = "UNet_fourier"
+    norm_path = "./tests/build/gaussian_sources/fourier/normalization_factors.csv"
+    lr_type = "mse"
+
+    runner = CliRunner()
+    options = [
+        data_path,
+        arch,
+        data_path,
+        lr_type,
+        norm_path,
+        "-max_iter",
+        "10",
+        "-min_lr",
+        "1e-6",
+        "-max_lr",
+        "1e-1",
+        "-fourier",
+        True,
+        "-amp_phase",
+        True,
+        "-pretrained",
+        False,
+        "-save",
+        True,
+    ]
+    result = runner.invoke(main, options)
+    print(traceback.print_exception(*result.exc_info))
+
+    assert result.exit_code == 0
