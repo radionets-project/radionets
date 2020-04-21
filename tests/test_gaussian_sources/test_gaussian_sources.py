@@ -30,7 +30,7 @@ def test_simulate_bundles():
     assert result.exit_code == 0
 
 
-def test_create_fft_pairs():
+def test_create_fft_pairs_fourier():
     from gaussian_sources.create_fft_pairs import main
 
     data_path = "./tests/build/gaussian_sources"
@@ -65,8 +65,14 @@ def test_create_fft_pairs():
 
     assert result.exit_code == 0
 
+
+def test_create_fft_pairs_wo_fourier():
+    from gaussian_sources.create_fft_pairs import main
+
+    data_path = "./tests/build/gaussian_sources"
     out_path = "./tests/build/gaussian_sources/wo_fourier"
     Path(out_path).mkdir(parents=True, exist_ok=True)
+    antenna_config = "./simulations/layouts/vlba.txt"
 
     runner = CliRunner()
     options = [
