@@ -19,11 +19,13 @@ from dl_framework.hooks import model_summary
 from dl_framework.learner import define_learner
 from dl_framework.loss_functions import init_feature_loss, splitted_mse
 from dl_framework.model import load_pre_model, save_model
-from gaussian_sources.inspection import evaluate_model, plot_loss
-from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles
+from dl_framework.inspection import eval_model, plot_loss, get_images, reshape_2d
+from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles, load_data
 import re
 from dl_framework.hooks import model_summary
 from torch import nn
+from pathlib import Path
+from mnist_cnn.scripts.visualize import plot_results
 
 
 @click.command()
@@ -157,9 +159,16 @@ def main(
 
             # Plot input, prediction and true image if asked
             if inspection is True:
-                evaluate_model(valid_ds, learn.model, norm_path)
-                plt.savefig(
-                    "inspection_plot.pdf", dpi=300, bbox_inches="tight", pad_inches=0.01
+                test_ds = load_data(data_path, "test", fourier=False)
+                img_test, img_true = get_images(test_ds, 5, norm_path)
+                pred = eval_model(img_test, learn.model)
+                out_path = Path(model_path).parent
+                plot_results(
+                    img_test,
+                    reshape_2d(pred),
+                    reshape_2d(img_true),
+                    out_path,
+                    save=True,
                 )
         else:
             print("Stopping after epoch {}".format(learn.epoch))
@@ -173,9 +182,12 @@ def main(
 
     # Plot input, prediction and true image if asked
     if inspection is True:
-        evaluate_model(valid_ds, learn.model, norm_path, nrows=10)
-        plt.savefig(
-            "inspection_plot.pdf", dpi=300, bbox_inches="tight", pad_inches=0.01
+        test_ds = load_data(data_path, "test", fourier=False)
+        img_test, img_true = get_images(test_ds, 5, norm_path)
+        pred = eval_model(img_test, learn.model.cpu())
+        out_path = Path(model_path).parent
+        plot_results(
+            img_test, reshape_2d(pred), reshape_2d(img_true), out_path, save=True
         )
 
 
