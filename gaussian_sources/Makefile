@@ -43,7 +43,7 @@ ${data}/normalization_factors.csv:
 		python train_cnn.py ${data}\
 		${path}/${path_model}\
 		${arch} ${data}/${norm_path}\
-		${epochs} ${lr} ${lr_type} -fourier ${fourier} -amp_phase ${amp_phase} -log ${log}\
+		${epochs} ${lr} ${lr_type} ${bs} -fourier ${fourier} -amp_phase ${amp_phase}\
 		-pretrained ${pretrained} ${pre_path}\
 		-inspection ${inspection}
 		# touch ./training_done
