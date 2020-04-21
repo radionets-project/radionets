@@ -14,8 +14,7 @@ from dl_framework.callbacks import (
     CudaCallback,
     Recorder,
     SaveCallback,
-    Recorder_lr_find,
-    LR_Find,
+    LoggerCallback,
 )
 
 
@@ -186,12 +185,15 @@ def define_learner(
     test=False,
     opt_func=torch.optim.Adam,
 ):
-    cbfs.extend([Recorder,
-                partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-                partial(BatchTransformXCallback, norm), ])
+    cbfs.extend([
+        Recorder,
+        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+        partial(BatchTransformXCallback, norm),
+        partial(SaveCallback, model_path=model_path),
+    ])
     if not test:
         cbfs.extend([CudaCallback,
-                    partial(BatchTransformXCallback, norm), ])
+                     partial(LoggerCallback, model_name=model_name), ])
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
     elif loss_func == "l1":

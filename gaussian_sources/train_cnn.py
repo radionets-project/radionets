@@ -1,16 +1,8 @@
 import re
 import sys
-from functools import partial
-
 import click
-import matplotlib.pyplot as plt
-
 import dl_framework.architectures as architecture
 from dl_framework.callbacks import (
-    AvgStatsCallback,
-    LoggerCallback,
-    Recorder,
-    SaveCallback,
     normalize_tfm,
     zero_imag,
 )
@@ -112,21 +104,11 @@ def main(
     # get model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
 
-    # Define callback functions
-    cbfs = [
-        Recorder,
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        # partial(BatchTransformXCallback, zero),
-        partial(SaveCallback, model_path=model_path),
-    ]
-    if not test:
-        cbfs.append(partial(LoggerCallback, model_name=model_name))
     learn = define_learner(
         data,
         arch,
         norm,
         loss_func,
-        cbfs=cbfs,
         lr=lr,
         model_name=model_name,
         model_path=model_path,
