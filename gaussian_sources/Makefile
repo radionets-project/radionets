@@ -1,6 +1,7 @@
 -include .makerc
 dataset: simulate_bundles\
-		 fft_samp
+		 fft_samp\
+		 calc_normalization
 
 simulate_bundles: ${data}/gaussian_sources_train0.h5
 
@@ -23,7 +24,6 @@ ${data}/fft_samp_train0.h5:
 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
 		-fourier ${fourier} \
 		-amp_phase ${amp_phase} \
-		-samp True \
 		-noise ${noise} \
 		-preview ${preview} \
 		-size ${size_img} \
