@@ -5,7 +5,7 @@ import click
 
 import dl_framework.architectures as architecture
 from dl_framework.callbacks import LR_Find, Recorder_lr_find, normalize_tfm
-from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
+from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset, load_data
 from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
 from inspection import plot_lr_loss
@@ -69,13 +69,9 @@ def main(
     PRETRAINED_MODEL is the path to a pretrained model, which is
                      loaded at the beginning of the training\n
     """
-    bundle_paths = get_bundles(data_path)
-    train = [path for path in bundle_paths if re.findall("fft_samp_train", path.name)]
-    valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
-
-    # Create train and valid datasets
-    train_ds = h5_dataset(train, tar_fourier=fourier, amp_phase=amp_phase)
-    valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
+    # Load data
+    train_ds = load_data(data_path, 'train', fourier=fourier)
+    valid_ds = load_data(data_path, 'valid', fourier=fourier)
 
     # Create databunch with defined batchsize
     bs = 256
