@@ -52,7 +52,7 @@ ${data}/normalization_factors.csv:
 		mkdir -p ${path}
 		python find_lr.py ${data}\
 		${arch} ${lr_type} ${data}/${norm_path} -max_iter ${max_iter} -min_lr ${min_lr}\
-		-max_lr ${max_lr} -fourier ${fourier} -amp_phase ${amp_phase} -log ${log}\
+		-max_lr ${max_lr} -fourier ${fourier} -amp_phase ${amp_phase}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
