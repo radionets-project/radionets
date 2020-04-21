@@ -270,8 +270,6 @@ def normalize_tfm(norm_path):
     def _inner(x):
         norm = pd.read_csv(norm_path)
         a = do_normalisation(x.clone(), norm)
-        print(x[:, 0].mean(), x[:, 1].mean())
-        print(x[:, 0].std(), x[:, 1].std())
         assert x[:, 0].mean() != a[:, 0].mean()
         # mean for imag and phase is approx 0
         # assert x[:, 1].mean() != a[:, 1].mean()
