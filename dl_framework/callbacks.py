@@ -273,7 +273,8 @@ def normalize_tfm(norm_path):
         print(x[:, 0].mean(), x[:, 1].mean())
         print(x[:, 0].std(), x[:, 1].std())
         assert x[:, 0].mean() != a[:, 0].mean()
-        assert x[:, 1].mean() != a[:, 1].mean()
+        # mean for imag and phase is approx 0
+        # assert x[:, 1].mean() != a[:, 1].mean()
         return a
 
     return _inner
