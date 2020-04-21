@@ -1,9 +1,7 @@
 import torch
-from dl_framework.utils import camel2snake, AvgStats, listify, lin_comb
+from dl_framework.utils import camel2snake, AvgStats, listify
 from re import sub
 import matplotlib.pyplot as plt
-from functools import partial
-from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
 from dl_framework.logger import make_notifier
