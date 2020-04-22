@@ -15,6 +15,8 @@ def do_normalisation(x, norm):
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
+    if len(x.shape) == 3:
+        x = x.unsqueeze(0)
     train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
     train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
     train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
