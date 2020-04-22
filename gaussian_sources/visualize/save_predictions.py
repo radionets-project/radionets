@@ -6,6 +6,7 @@ import dl_framework.architectures as architecture
 from dl_framework.data import load_data, do_normalisation
 from dl_framework.inspection import eval_model
 from dl_framework.model import load_pre_model
+from gaussian_sources.inspection import save_indices_and_data
 
 
 @click.command()
@@ -62,16 +63,13 @@ def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20)
 
     # save input images, predictions and target images
     outpath = str(out_path) + "input.csv"
-    df = pd.DataFrame(data=images_x, index=indices)
-    df.to_csv(outpath, index=True)
+    save_indices_and_data(indices, images_x, outpath)
 
     outpath = str(out_path) + "predictions.csv"
-    df = pd.DataFrame(data=prediction, index=indices)
-    df.to_csv(outpath, index=True)
+    save_indices_and_data(indices, prediction, outpath)
 
     outpath = str(out_path) + "truth.csv"
-    df_targets = pd.DataFrame(data=images_y, index=indices)
-    df_targets.to_csv(outpath, index=True)
+    save_indices_and_data(indices, images_y, outpath)
 
 
 if __name__ == "__main__":
