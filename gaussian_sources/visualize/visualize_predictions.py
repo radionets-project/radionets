@@ -9,6 +9,7 @@ from gaussian_sources.inspection import (
     visualize_fft,
     open_csv,
     plot_difference,
+    save_indices_and_data,
 )
 
 
@@ -33,6 +34,8 @@ def main(
     imgs_input, indices = open_csv(out_path, "input")
     imgs_pred, _ = open_csv(out_path, "predictions")
     imgs_truth, _ = open_csv(out_path, "truth")
+
+    dynamic_ranges = []
 
     if log is True:
         imgs_input = torch.log(imgs_input)
@@ -64,13 +67,18 @@ def main(
                 )
 
                 if diff:
-                    plot_difference(i, ifft_pred, ifft_truth, True, out_path)
+                    dynamic_range = plot_difference(i, ifft_pred, ifft_truth, True, out_path)
+                    dynamic_ranges.append(dynamic_range)
 
             else:
                 visualize_without_fourier(i, img_input, img_pred, img_truth, out_path)
 
                 if diff:
-                    plot_difference(i, img_pred, img_truth, False, out_path)
+                    dynamic_range = plot_difference(i, img_pred, img_truth, False, out_path)
+                    dynamic_ranges.append(dynamic_range)
+
+        outpath = str(out_path) + "diff/dynamic_ranges.csv"
+        save_indices_and_data(indices, dynamic_ranges, outpath)
 
     else:
         print("\nPlotting a single index.\n")
@@ -83,14 +91,18 @@ def main(
                 i, real_pred, imag_pred, real_truth, imag_truth, out_path
             )
             if diff:
-                plot_difference(i, ifft_pred, ifft_truth, True, out_path)
+                dynamic_range = plot_difference(i, ifft_pred, ifft_truth, True, out_path)
+                dynamic_ranges.append(dynamic_range)
         else:
             visualize_without_fourier(
                 i, img_input, img_pred, img_truth, out_path,
             )
 
             if diff:
-                plot_difference(i, img_pred, img_truth, False, out_path)
+                dynamic_range = plot_difference(i, img_pred, img_truth, False, out_path)
+                dynamic_ranges.append(dynamic_range)
+        outpath = str(out_path) + "diff/dynamic_ranges.csv"
+        save_indices_and_data(indices, dynamic_ranges, outpath)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 

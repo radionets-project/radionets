@@ -251,7 +251,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
 
-    im5 = ax5.imshow(imag_pred, cmap='RdBu', vmin=imag_truth.min(), vmax=-imag_truth.min())
+    im5 = ax5.imshow(imag_pred, cmap='RdBu', vmin=imag_truth.min(), vmax=imag_truth.max())
     divider = make_axes_locatable(ax5)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     ax5.set_title(r'Imaginary Prediction')
@@ -324,11 +324,31 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
 
 
 def plot_difference(i, img_pred, img_truth, fourier, out_path):
+    plt.rcParams.update({"figure.max_open_warning": 0})
     if fourier:
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
-        im1 = ax1.imshow(np.abs(img_pred))
-        im2 = ax2.imshow(np.abs(img_truth))
+        abs_pred, abs_truth = np.abs(img_pred), np.abs(img_truth)
+
+        rms1 = np.sqrt((abs_pred[:10, :10]**2).mean())
+        rms2 = np.sqrt((abs_pred[:10, -10:]**2).mean())
+        rms3 = np.sqrt((abs_pred[-10:, :10]**2).mean())
+        rms4 = np.sqrt((abs_pred[-10:, -10:]**2).mean())
+        rms = np.sqrt((rms1**2 + rms2**2 + rms3**2 + rms4**2)/4)
+        dynamic_range = abs_pred.max()/rms
+
+        im1 = ax1.imshow(abs_pred)
+        ax1.axvspan(0, 9, ymin=0.844, ymax=0.999, color='red', fill=False, label='Off')
+        ax1.axvspan(0, 9, ymax=0.156, ymin=0.01, color='red', fill=False)
+        ax1.axvspan(54, 63, ymin=0.844, ymax=0.999, color='red', fill=False)
+        ax1.axvspan(54, 63, ymax=0.156, ymin=0.01, color='red', fill=False)
+
+        im2 = ax2.imshow(abs_truth)
+        ax2.axvspan(0, 9, ymin=0.844, ymax=0.999, color='red', fill=False, label='Off')
+        ax2.axvspan(0, 9, ymax=0.156, ymin=0.01, color='red', fill=False)
+        ax2.axvspan(54, 63, ymin=0.844, ymax=0.999, color='red', fill=False)
+        ax2.axvspan(54, 63, ymax=0.156, ymin=0.01, color='red', fill=False)
+
         im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
         divider = make_axes_locatable(ax1)
@@ -347,26 +367,44 @@ def plot_difference(i, img_pred, img_truth, fourier, out_path):
 
         divider = make_axes_locatable(ax3)
         cax = divider.append_axes('right', size='5%', pad=0.05)
-        ax3.set_title(r'Difference')
+        ax3.set_title(r'DR: {}'.format(dynamic_range))
         cbar = fig.colorbar(im3, cax=cax, orientation='vertical')
         cbar.formatter.set_powerlimits((0, 0))
         cbar.update_ticks()
 
+        ax1.legend(loc="best")
+        ax2.legend(loc="best")
         outpath = str(out_path) + "diff/difference_{}.png".format(i)
         plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
 
         plt.clf()
-        hist_difference(i, img_pred, img_truth, out_path)
 
     else:
-        pred = reshape_split(img_pred)
-        truth = reshape_split(img_truth)
+        img_pred = reshape_split(img_pred)
+        img_truth = reshape_split(img_truth)
+
+        rms1 = np.sqrt((img_pred[:10, :10]**2).mean())
+        rms2 = np.sqrt((img_pred[:10, -10:]**2).mean())
+        rms3 = np.sqrt((img_pred[-10:, :10]**2).mean())
+        rms4 = np.sqrt((img_pred[-10:, -10:]**2).mean())
+        rms = np.sqrt((rms1**2 + rms2**2 + rms3**2 + rms4**2)/4)
+        dynamic_range = img_pred.max()/rms
 
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
-        im1 = ax1.imshow(pred)
-        im2 = ax2.imshow(truth)
-        im3 = ax3.imshow(np.abs(pred - truth))
+        im1 = ax1.imshow(img_pred)
+        ax1.axvspan(0, 9, ymin=0.844, ymax=0.999, color='red', fill=False, label='Off')
+        ax1.axvspan(0, 9, ymax=0.156, ymin=0.01, color='red', fill=False)
+        ax1.axvspan(54, 63, ymin=0.844, ymax=0.999, color='red', fill=False)
+        ax1.axvspan(54, 63, ymax=0.156, ymin=0.01, color='red', fill=False)
+
+        im2 = ax2.imshow(img_truth)
+        ax2.axvspan(0, 9, ymin=0.844, ymax=0.999, color='red', fill=False, label='Off')
+        ax2.axvspan(0, 9, ymax=0.156, ymin=0.01, color='red', fill=False)
+        ax2.axvspan(54, 63, ymin=0.844, ymax=0.999, color='red', fill=False)
+        ax2.axvspan(54, 63, ymax=0.156, ymin=0.01, color='red', fill=False)
+
+        im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes('right', size='5%', pad=0.05)
@@ -384,16 +422,19 @@ def plot_difference(i, img_pred, img_truth, fourier, out_path):
 
         divider = make_axes_locatable(ax3)
         cax = divider.append_axes('right', size='5%', pad=0.05)
-        ax3.set_title(r'Difference')
+        ax3.set_title(r'DR: {}'.format(dynamic_range))
         cbar = fig.colorbar(im3, cax=cax, orientation='vertical')
         cbar.formatter.set_powerlimits((0, 0))
         cbar.update_ticks()
 
+        ax1.legend(loc="best")
+        ax2.legend(loc="best")
         outpath = str(out_path) + "diff/difference_{}.png".format(i)
         plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
 
         plt.clf()
-        hist_difference(i, img_pred, img_truth, out_path)
+    hist_difference(i, img_pred, img_truth, out_path)
+    return dynamic_range
 
 
 def hist_difference(i, img_pred, img_truth, out_path):
@@ -404,3 +445,8 @@ def hist_difference(i, img_pred, img_truth, out_path):
     plt.legend(loc="best")
     outpath = str(out_path) + "diff/hist_difference_{}.pdf".format(i)
     plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
+
+
+def save_indices_and_data(indices, dr, outpath):
+    df = pd.DataFrame(data=dr, index=indices)
+    df.to_csv(outpath, index=True)

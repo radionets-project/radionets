@@ -1,4 +1,3 @@
-import re
 import sys
 import click
 import dl_framework.architectures as architecture
@@ -6,7 +5,7 @@ from dl_framework.callbacks import (
     normalize_tfm,
     zero_imag,
 )
-from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset
+from dl_framework.data import DataBunch, get_dls, load_data
 from dl_framework.hooks import model_summary
 from dl_framework.learner import define_learner
 from dl_framework.loss_functions import init_feature_loss, splitted_mse
@@ -81,13 +80,8 @@ def main(
                      loaded at the beginning of the training\n
     """
     # Load data
-    bundle_paths = get_bundles(data_path)
-    train = [path for path in bundle_paths if re.findall("fft_samp_train", path.name)]
-    valid = [path for path in bundle_paths if re.findall("fft_samp_valid", path.name)]
-
-    # Create train and valid datasets
-    train_ds = h5_dataset(train, tar_fourier=fourier, amp_phase=amp_phase)
-    valid_ds = h5_dataset(valid, tar_fourier=fourier, amp_phase=amp_phase)
+    train_ds = load_data(data_path, 'train', fourier=fourier)
+    valid_ds = load_data(data_path, 'valid', fourier=fourier)
 
     # Create databunch with defined batchsize
     bs = batch_size
