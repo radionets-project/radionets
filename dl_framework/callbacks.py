@@ -1,9 +1,7 @@
 import torch
-from dl_framework.utils import camel2snake, AvgStats, listify, lin_comb
+from dl_framework.utils import camel2snake, AvgStats, listify
 from re import sub
 import matplotlib.pyplot as plt
-from functools import partial
-from torch.distributions.beta import Beta
 import pandas as pd
 from dl_framework.data import do_normalisation
 from dl_framework.logger import make_notifier
@@ -271,7 +269,8 @@ def normalize_tfm(norm_path):
         norm = pd.read_csv(norm_path)
         a = do_normalisation(x.clone(), norm)
         assert x[:, 0].mean() != a[:, 0].mean()
-        assert x[:, 1].mean() != a[:, 1].mean()
+        # mean for imag and phase is approx 0
+        # assert x[:, 1].mean() != a[:, 1].mean()
         return a
 
     return _inner

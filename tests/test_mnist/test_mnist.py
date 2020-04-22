@@ -1,5 +1,5 @@
 import numpy as np
-import os
+from pathlib import Path
 import traceback
 from click.testing import CliRunner
 
@@ -27,9 +27,8 @@ def test_prepare_mnist_bundles():
     from mnist_cnn.scripts.utils import prepare_mnist_bundles
 
     bundle = np.ones((10, 3, 3))
-    build = "./tests/build"
-    if os.path.exists(build) is False:
-        os.mkdir(build)
+    build = "./tests/build/mnist"
+    Path(build).mkdir(parents=True, exist_ok=True)
 
     assert prepare_mnist_bundles(bundle, build, "test", noise=True, pixel=5) is None
 
@@ -38,10 +37,7 @@ def test_create_mnist_fft():
     from mnist_cnn.scripts.create_mnist_fft import main
 
     data_path = "./resources/mnist_test.pkl.gz"
-    out_path = "./tests/build"
-
-    if os.path.exists(out_path) is False:
-        os.mkdir(out_path)
+    out_path = "./tests/build/mnist"
 
     runner = CliRunner()
     options = [data_path, out_path, "-size", 63, "-bundle_size", 2]
@@ -54,8 +50,8 @@ def test_create_mnist_fft():
 def test_create_fft_sampled():
     from mnist_cnn.scripts.create_fft_sampled import main
 
-    data_path = "./tests/build/"
-    out_path = "./tests/build"
+    data_path = "./tests/build/mnist"
+    out_path = "./tests/build/mnist"
     antenna_config = "./simulations/layouts/vlba.txt"
 
     runner = CliRunner()
@@ -89,8 +85,8 @@ def test_normalization():
     import re
     import torch
 
-    data_path = "./tests/build"
-    out_path = "./tests/build/normalization_factors.csv"
+    data_path = "./tests/build/mnist"
+    out_path = "./tests/build/mnist/normalization_factors.csv"
 
     runner = CliRunner()
     options = [data_path, out_path]
@@ -125,10 +121,10 @@ def test_normalization():
 def test_train_cnn():
     from mnist_cnn.scripts.train_cnn import main
 
-    data_path = "./tests/build"
-    path_model = "./tests/build/test.model"
+    data_path = "./tests/build/mnist"
+    path_model = "./tests/build/mnist/test.model"
     arch = "UNet_denoise"
-    norm_path = "./tests/build/normalization_factors.csv"
+    norm_path = "./tests/build/mnist/normalization_factors.csv"
     epochs = "5"
     lr = "1e-3"
     lr_type = "mse"
@@ -162,9 +158,9 @@ def test_train_cnn():
 def test_find_lr():
     from mnist_cnn.scripts.find_lr import main
 
-    data_path = "./tests/build"
+    data_path = "./tests/build/mnist"
     arch = "UNet_denoise"
-    norm_path = "./tests/build/normalization_factors.csv"
+    norm_path = "./tests/build/mnist/normalization_factors.csv"
     lr_type = "mse"
 
     runner = CliRunner()

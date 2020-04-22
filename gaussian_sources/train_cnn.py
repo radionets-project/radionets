@@ -1,15 +1,7 @@
 import sys
-from functools import partial
-
 import click
-import matplotlib.pyplot as plt
-
 import dl_framework.architectures as architecture
 from dl_framework.callbacks import (
-    AvgStatsCallback,
-    LoggerCallback,
-    Recorder,
-    SaveCallback,
     normalize_tfm,
     zero_imag,
 )
@@ -18,8 +10,13 @@ from dl_framework.hooks import model_summary
 from dl_framework.learner import define_learner
 from dl_framework.loss_functions import init_feature_loss, splitted_mse
 from dl_framework.model import load_pre_model, save_model
-from inspection import evaluate_model, plot_loss
+from dl_framework.inspection import eval_model, plot_loss, get_images, reshape_2d
+from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles, load_data
+import re
+from dl_framework.hooks import model_summary
 from torch import nn
+from pathlib import Path
+from mnist_cnn.scripts.visualize import plot_results
 
 
 @click.command()
@@ -30,6 +27,7 @@ from torch import nn
 @click.argument("num_epochs", type=int)
 @click.argument("lr", type=float)
 @click.argument("loss_func", type=str)
+@click.argument("batch_size", type=int)
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
 )
@@ -45,11 +43,13 @@ from torch import nn
     required=False,
     help="true, if if amplitude and phase splitting instead of real and imaginary",
 )
-@click.option("-log", type=bool, required=True, help="use of logarithm")
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
 @click.option("-inspection", type=bool, required=False, help="make an inspection plot")
+@click.option(
+    "-test", type=bool, default=False, required=False, help="Disable logger in tests"
+)
 def main(
     data_path,
     model_path,
@@ -58,12 +58,13 @@ def main(
     num_epochs,
     lr,
     loss_func,
+    batch_size,
     fourier,
     amp_phase,
-    log=True,
     pretrained=False,
     pretrained_model=None,
     inspection=False,
+    test=False,
 ):
     """
     Train the neural network with existing training and validation data.
@@ -83,7 +84,7 @@ def main(
     valid_ds = load_data(data_path, 'valid', fourier=fourier)
 
     # Create databunch with defined batchsize
-    bs = 256
+    bs = batch_size
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # Define model
@@ -97,24 +98,15 @@ def main(
     # get model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
 
-    # Define callback functions
-    cbfs = [
-        Recorder,
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        # partial(BatchTransformXCallback, zero),
-        partial(SaveCallback, model_path=model_path),
-        partial(LoggerCallback, model_name=model_name),
-    ]
-
     learn = define_learner(
         data,
         arch,
         norm,
         loss_func,
-        cbfs=cbfs,
         lr=lr,
         model_name=model_name,
         model_path=model_path,
+        test=test,
     )
 
     # use pre-trained model if asked
@@ -143,9 +135,16 @@ def main(
 
             # Plot input, prediction and true image if asked
             if inspection is True:
-                evaluate_model(valid_ds, learn.model, norm_path)
-                plt.savefig(
-                    "inspection_plot.pdf", dpi=300, bbox_inches="tight", pad_inches=0.01
+                test_ds = load_data(data_path, "test", fourier=False)
+                img_test, img_true = get_images(test_ds, 5, norm_path)
+                pred = eval_model(img_test, learn.model)
+                out_path = Path(model_path).parent
+                plot_results(
+                    img_test,
+                    reshape_2d(pred),
+                    reshape_2d(img_true),
+                    out_path,
+                    save=True,
                 )
         else:
             print("Stopping after epoch {}".format(learn.epoch))
@@ -159,9 +158,12 @@ def main(
 
     # Plot input, prediction and true image if asked
     if inspection is True:
-        evaluate_model(valid_ds, learn.model, norm_path, nrows=10)
-        plt.savefig(
-            "inspection_plot.pdf", dpi=300, bbox_inches="tight", pad_inches=0.01
+        test_ds = load_data(data_path, "test", fourier=False)
+        img_test, img_true = get_images(test_ds, 5, norm_path)
+        pred = eval_model(img_test, learn.model.cpu())
+        out_path = Path(model_path).parent
+        plot_results(
+            img_test, reshape_2d(pred), reshape_2d(img_true), out_path, save=True
         )
 
 

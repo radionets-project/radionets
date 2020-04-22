@@ -15,10 +15,10 @@ def do_normalisation(x, norm):
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
-    train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).float()
-    train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).float()
-    train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).float()
-    train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).float()
+    train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
+    train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
+    train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
+    train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).double()
     x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
     x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
     assert not torch.isinf(x).any()
@@ -145,7 +145,7 @@ class DataBunch:
 
 
 def save_bundle(path, bundle, counter, name="gs_bundle"):
-    with h5py.File(path + str(counter) + ".h5", "w") as hf:
+    with h5py.File(str(path) + str(counter) + ".h5", "w") as hf:
         hf.create_dataset(name, data=bundle)
         hf.close()
 

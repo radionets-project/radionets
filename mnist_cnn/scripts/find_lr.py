@@ -110,11 +110,10 @@ def main(
     # Define normalisation
     norm = normalize_tfm(norm_path)
 
-    # Define callback functions
     cbfs = [
-        partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
-        Recorder_lr_find,
-    ]
+            partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
+            Recorder_lr_find,
+        ]
 
     # Define learner
     learn = define_learner(
@@ -122,11 +121,8 @@ def main(
         arch,
         norm,
         loss_func,
-        cbfs=cbfs,
         test=test,
-        max_iter=max_iter,
-        max_lr=max_lr,
-        min_lr=min_lr,
+        cbfs=cbfs
     )
 
     # use pre-trained model if asked

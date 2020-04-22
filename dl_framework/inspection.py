@@ -76,6 +76,8 @@ def eval_model(img, model):
     pred: n 1d arrays
         predicted images
     """
+    if len(img.shape) == (3):
+        img = img.unsqueeze(0)
     model.eval()
     with torch.no_grad():
         pred = model(img.float())
