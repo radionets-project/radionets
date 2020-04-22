@@ -633,6 +633,7 @@ class filter_deep(nn.Module):
         self.symmetry = Lambda(symmetry)
 
     def forward(self, x):
+        x = x[:, 0].unsqueeze(1)
         inp = x.clone()
 
         # First block
