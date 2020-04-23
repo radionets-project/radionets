@@ -48,8 +48,8 @@ def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20)
     images_y = test_ds[indices][1].numpy().reshape(num, -1)
 
     # normalization
-    norm = pd.read_csv(norm_path)
-    images = do_normalisation(images, norm)
+    # norm = pd.read_csv(norm_path)
+    # images = do_normalisation(images, norm)
 
     # save input images after normalization
     images_x = images.numpy().reshape(num, -1)
