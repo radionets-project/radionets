@@ -324,120 +324,72 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
 
     outpath = str(out_path) + "fft_pred_{}.png".format(i)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
-    return ifft_pred, ifft_truth
+    return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
 def plot_difference(i, img_pred, img_truth, fourier, out_path):
     plt.rcParams.update({"figure.max_open_warning": 0})
-    if fourier:
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
-        abs_pred, abs_truth = np.abs(img_pred), np.abs(img_truth)
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
-        rms1 = np.sqrt((abs_pred[:10, :10] ** 2).mean())
-        rms2 = np.sqrt((abs_pred[:10, -10:] ** 2).mean())
-        rms3 = np.sqrt((abs_pred[-10:, :10] ** 2).mean())
-        rms4 = np.sqrt((abs_pred[-10:, -10:] ** 2).mean())
-        rms = np.sqrt((rms1 ** 2 + rms2 ** 2 + rms3 ** 2 + rms4 ** 2) / 4)
-        dynamic_range = abs_pred.max() / rms
+    dr_pred = compute_dr(img_pred)
+    dr_truth = compute_dr(img_truth)
+    dynamic_range = dr_pred / dr_truth
 
-        im1 = ax1.imshow(abs_pred)
-        ax1.axvspan(0, 9, ymin=0.844, ymax=0.999, color="red", fill=False, label="Off")
-        ax1.axvspan(0, 9, ymax=0.156, ymin=0.01, color="red", fill=False)
-        ax1.axvspan(54, 63, ymin=0.844, ymax=0.999, color="red", fill=False)
-        ax1.axvspan(54, 63, ymax=0.156, ymin=0.01, color="red", fill=False)
+    im1 = ax1.imshow(img_pred)
+    plot_off_regions(ax1)
 
-        im2 = ax2.imshow(abs_truth)
-        ax2.axvspan(0, 9, ymin=0.844, ymax=0.999, color="red", fill=False, label="Off")
-        ax2.axvspan(0, 9, ymax=0.156, ymin=0.01, color="red", fill=False)
-        ax2.axvspan(54, 63, ymin=0.844, ymax=0.999, color="red", fill=False)
-        ax2.axvspan(54, 63, ymax=0.156, ymin=0.01, color="red", fill=False)
+    im2 = ax2.imshow(img_truth)
+    plot_off_regions(ax2)
 
-        im3 = ax3.imshow(np.abs(img_pred - img_truth))
+    im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
-        divider = make_axes_locatable(ax1)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax1.set_title(r"Prediction")
-        cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    ax1.set_title(r"Prediction: {}".format(np.round(dr_pred, 4)))
+    cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
-        divider = make_axes_locatable(ax2)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax2.set_title(r"Truth")
-        cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    ax2.set_title(r"Truth: {}".format(np.round(dr_truth, 4)))
+    cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
-        divider = make_axes_locatable(ax3)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax3.set_title(r"DR: {}".format(dynamic_range))
-        cbar = fig.colorbar(im3, cax=cax, orientation="vertical")
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
+    divider = make_axes_locatable(ax3)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    ax3.set_title(r"DR: {}".format(dynamic_range))
+    cbar = fig.colorbar(im3, cax=cax, orientation="vertical")
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
 
-        ax1.legend(loc="best")
-        ax2.legend(loc="best")
-        outpath = str(out_path) + "diff/difference_{}.png".format(i)
-        plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    ax1.legend(loc="best")
+    ax2.legend(loc="best")
+    outpath = str(out_path) + "diff/difference_{}.png".format(i)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
-        plt.clf()
+    plt.clf()
 
-    else:
-        img_pred = reshape_split(img_pred)
-        img_truth = reshape_split(img_truth)
-
-        rms1 = np.sqrt((img_pred[:10, :10] ** 2).mean())
-        rms2 = np.sqrt((img_pred[:10, -10:] ** 2).mean())
-        rms3 = np.sqrt((img_pred[-10:, :10] ** 2).mean())
-        rms4 = np.sqrt((img_pred[-10:, -10:] ** 2).mean())
-        rms = np.sqrt((rms1 ** 2 + rms2 ** 2 + rms3 ** 2 + rms4 ** 2) / 4)
-        dynamic_range = img_pred.max() / rms
-
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
-
-        im1 = ax1.imshow(img_pred)
-        ax1.axvspan(0, 9, ymin=0.844, ymax=0.999, color="red", fill=False, label="Off")
-        ax1.axvspan(0, 9, ymax=0.156, ymin=0.01, color="red", fill=False)
-        ax1.axvspan(54, 63, ymin=0.844, ymax=0.999, color="red", fill=False)
-        ax1.axvspan(54, 63, ymax=0.156, ymin=0.01, color="red", fill=False)
-
-        im2 = ax2.imshow(img_truth)
-        ax2.axvspan(0, 9, ymin=0.844, ymax=0.999, color="red", fill=False, label="Off")
-        ax2.axvspan(0, 9, ymax=0.156, ymin=0.01, color="red", fill=False)
-        ax2.axvspan(54, 63, ymin=0.844, ymax=0.999, color="red", fill=False)
-        ax2.axvspan(54, 63, ymax=0.156, ymin=0.01, color="red", fill=False)
-
-        im3 = ax3.imshow(np.abs(img_pred - img_truth))
-
-        divider = make_axes_locatable(ax1)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax1.set_title(r"Prediction")
-        cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
-
-        divider = make_axes_locatable(ax2)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax2.set_title(r"Truth")
-        cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
-
-        divider = make_axes_locatable(ax3)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax3.set_title(r"DR: {}".format(dynamic_range))
-        cbar = fig.colorbar(im3, cax=cax, orientation="vertical")
-        cbar.formatter.set_powerlimits((0, 0))
-        cbar.update_ticks()
-
-        ax1.legend(loc="best")
-        ax2.legend(loc="best")
-        outpath = str(out_path) + "diff/difference_{}.png".format(i)
-        plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
-
-        plt.clf()
     hist_difference(i, img_pred, img_truth, out_path)
+    return dynamic_range
+
+
+def plot_off_regions(ax):
+    ax.axvspan(0, 9, ymin=0.844, ymax=0.999, color="red", fill=False, label="Off")
+    ax.axvspan(0, 9, ymax=0.156, ymin=0.01, color="red", fill=False)
+    ax.axvspan(54, 63, ymin=0.844, ymax=0.999, color="red", fill=False)
+    ax.axvspan(54, 63, ymax=0.156, ymin=0.01, color="red", fill=False)
+
+
+def compute_dr(img):
+    rms1 = np.sqrt((img[:10, :10] ** 2).mean())
+    rms2 = np.sqrt((img[:10, -10:] ** 2).mean())
+    rms3 = np.sqrt((img[-10:, :10] ** 2).mean())
+    rms4 = np.sqrt((img[-10:, -10:] ** 2).mean())
+    rms = np.sqrt((rms1 ** 2 + rms2 ** 2 + rms3 ** 2 + rms4 ** 2) / 4)
+    dynamic_range = img.max() / rms
     return dynamic_range
 
 
@@ -463,14 +415,9 @@ def plot_blobs(blobs_log, ax):
         ax.add_patch(c)
 
 
-def blob_detection(i, img_pred, img_truth, fourier, out_path):
+def blob_detection(i, img_pred, img_truth, out_path):
     plt.rcParams.update({"figure.max_open_warning": 0})
-    if fourier:
-        img_pred = np.abs(img_pred)
-        img_truth = np.abs(img_truth)
-    else:
-        img_pred = img_pred.reshape(64, 64)
-        img_truth = img_truth.reshape(64, 64)
+
     tresh = img_truth.max() * 0.1
     kwargs = {
         "min_sigma": 1,
