@@ -133,3 +133,9 @@ def splitted_mse(x, y):
     )
 
     return loss_real + loss_imag
+
+
+def my_loss(x, y):
+    y = y[:, 0].unsqueeze(1)
+    assert y.shape == x.shape
+    return ((x - y).pow(2)).mean()
