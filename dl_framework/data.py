@@ -98,7 +98,9 @@ class h5_dataset:
             if len(i) == 1:
                 data_channel = data.reshape(data.shape[-1] ** 2)
             else:
-                data_channel = data.reshape(-1, data.shape[-1] ** 2)
+                # print(data.shape)
+                data_channel = data  # .reshape(-1, 2, data.shape[-1] ** 2)
+                # print(data_channel.shape)
         return data_channel.float()
 
 
