@@ -5,6 +5,8 @@ import torch
 import pandas as pd
 from dl_framework.data import do_normalisation
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from skimage.feature import blob_log
+from math import sqrt
 
 
 def open_csv(path, mode):
@@ -450,3 +452,51 @@ def hist_difference(i, img_pred, img_truth, out_path):
 def save_indices_and_data(indices, dr, outpath):
     df = pd.DataFrame(data=dr, index=indices)
     df.to_csv(outpath, index=True)
+
+
+def plot_blobs(blobs_log, ax):
+    for blob in blobs_log:
+        y, x, r = blob
+        c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
+        ax.add_patch(c)
+
+
+def blob_detection(i, img_pred, img_truth, fourier, out_path):
+    plt.rcParams.update({"figure.max_open_warning": 0})
+    if fourier:
+        img_pred = np.abs(img_pred)
+        img_truth = np.abs(img_truth)
+    else:
+        img_pred = img_pred.reshape(64, 64)
+        img_truth = img_truth.reshape(64, 64)
+    tresh = img_truth.max()*0.1
+    kwargs = {"min_sigma":1, "max_sigma":10, "num_sigma":100, "threshold": tresh, "overlap":0.9}
+    blobs_log = blob_log(img_pred, **kwargs)
+    blobs_log_truth = blob_log(img_truth, **kwargs)
+    # Compute radii in the 3rd column.
+    blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)
+    blobs_log_truth[:, 2] = blobs_log_truth[:, 2] * sqrt(2)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
+    im1 = ax1.imshow(img_pred)
+    im2 = ax2.imshow(img_truth)
+
+    plot_blobs(blobs_log, ax1)
+    plot_blobs(blobs_log_truth, ax2)
+
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax1.set_title(r'Prediction')
+    cbar = fig.colorbar(im1, cax=cax, orientation='vertical')
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
+
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
+    ax2.set_title(r"Truth")
+    cbar = fig.colorbar(im2, cax=cax, orientation='vertical')
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
+
+    outpath = str(out_path) + "blob/blob_detection_{}.png".format(i)
+    plt.savefig(outpath, bbox_inches='tight', pad_inches=0.01)
