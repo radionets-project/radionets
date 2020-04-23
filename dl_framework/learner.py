@@ -177,23 +177,29 @@ def define_learner(
     loss_func,
     cbfs=[],
     lr=1e-3,
-    model_name='',
-    model_path='',
+    model_name="",
+    model_path="",
     max_iter=400,
     max_lr=1e-1,
     min_lr=1e-6,
     test=False,
     opt_func=torch.optim.Adam,
 ):
-    cbfs.extend([
-        Recorder,
-        partial(AvgStatsCallback, metrics=[]),  # [nn.MSELoss(), nn.L1Loss()]),
-        #partial(BatchTransformXCallback, norm),
-        partial(SaveCallback, model_path=model_path),
-    ])
+    cbfs.extend(
+        [
+            Recorder,
+            partial(AvgStatsCallback, metrics=[]),  # [nn.MSELoss(), nn.L1Loss()]),
+            # partial(BatchTransformXCallback, norm),
+            partial(SaveCallback, model_path=model_path),
+        ]
+    )
     if not test:
-        cbfs.extend([CudaCallback,
-                     partial(LoggerCallback, model_name=model_name), ])
+        cbfs.extend(
+            [
+                CudaCallback,
+                #  partial(LoggerCallback, model_name=model_name),
+            ]
+        )
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
     elif loss_func == "l1":
