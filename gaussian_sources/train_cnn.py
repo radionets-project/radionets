@@ -16,7 +16,7 @@ import re
 from dl_framework.hooks import model_summary
 from torch import nn
 from pathlib import Path
-from mnist_cnn.scripts.visualize import plot_results
+from gaussian_sources.visualize import plot_results
 
 
 @click.command()
@@ -163,7 +163,7 @@ def main(
         pred = eval_model(img_test, learn.model.cpu())
         out_path = Path(model_path).parent
         plot_results(
-            img_test, reshape_2d(pred), reshape_2d(img_true), out_path, save=True
+            img_test, pred, img_true, out_path, save=True
         )
 
 
