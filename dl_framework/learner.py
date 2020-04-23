@@ -7,7 +7,7 @@ from dl_framework.model import init_cnn
 from tqdm import tqdm
 import sys
 from functools import partial
-from dl_framework.loss_functions import init_feature_loss
+from dl_framework.loss_functions import init_feature_loss, my_loss
 from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
@@ -187,8 +187,8 @@ def define_learner(
 ):
     cbfs.extend([
         Recorder,
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        partial(BatchTransformXCallback, norm),
+        partial(AvgStatsCallback, metrics=[]),  # [nn.MSELoss(), nn.L1Loss()]),
+        #partial(BatchTransformXCallback, norm),
         partial(SaveCallback, model_path=model_path),
     ])
     if not test:
@@ -200,6 +200,8 @@ def define_learner(
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
+    elif loss_func == "my_loss":
+        loss_func = my_loss
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)
