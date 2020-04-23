@@ -76,25 +76,33 @@ def main(
                 )
 
                 if diff:
-                    dynamic_range = plot_difference(
-                        i, ifft_pred, ifft_truth, True, out_path
-                    )
+                    dynamic_range = plot_difference(i, ifft_pred, ifft_truth, out_path)
                     dynamic_ranges.append(dynamic_range)
 
                 if blob:
-                    blob_detection(i, ifft_pred, ifft_truth, True, out_path)
+                    blob_detection(i, ifft_pred, ifft_truth, out_path)
 
             else:
                 visualize_without_fourier(i, img_input, img_pred, img_truth, out_path)
 
                 if diff:
                     dynamic_range = plot_difference(
-                        i, img_pred, img_truth, False, out_path
+                        i,
+                        img_pred.reshape(64, 64),
+                        img_truth.reshape(64, 64),
+                        False,
+                        out_path,
                     )
                     dynamic_ranges.append(dynamic_range)
 
                 if blob:
-                    blob_detection(i, img_pred, img_truth, False, out_path)
+                    blob_detection(
+                        i,
+                        img_pred.reshape(64, 64),
+                        img_truth.reshape(64, 64),
+                        False,
+                        out_path,
+                    )
 
         outpath = str(out_path) + "diff/dynamic_ranges.csv"
         save_indices_and_data(indices, dynamic_ranges, outpath)
