@@ -51,9 +51,10 @@ def get_images(test_ds, num_images, norm_path):
     """
     rand = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[rand][0]
-    norm = pd.read_csv(norm_path)
-    img_test = do_normalisation(img_test, norm)
+    # norm = pd.read_csv(norm_path)
+    # img_test = do_normalisation(img_test, norm)
     img_true = test_ds[rand][1]
+    # print(img_true.shape)
     if num_images == 1:
         img_test = img_test.unsqueeze(0)
         img_true = img_true.unsqueeze(0)
