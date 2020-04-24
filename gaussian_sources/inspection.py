@@ -327,7 +327,7 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
-def plot_difference(i, img_pred, img_truth, fourier, out_path):
+def plot_difference(i, img_pred, img_truth, out_path):
     plt.rcParams.update({"figure.max_open_warning": 0})
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
