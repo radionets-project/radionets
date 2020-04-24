@@ -614,7 +614,7 @@ class filter_deep(nn.Module):
         self.conv7 = nn.Sequential(
             nn.Conv2d(
                 in_channels=12,
-                out_channels=16,
+                out_channels=20,
                 kernel_size=(3, 3),
                 stride=1,
                 padding=1,
@@ -622,15 +622,64 @@ class filter_deep(nn.Module):
                 padding_mode="zeros",
                 bias=False,
             ),
-            nn.BatchNorm2d(16),
+            nn.BatchNorm2d(20),
             nn.ELU(),
         )
         self.conv_con2 = nn.Sequential(
-            LocallyConnected2d(16, 1, 63, 1, stride=1, bias=False),
+            LocallyConnected2d(20, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            nn.ELU(),
+        )
+        self.conv8 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=4,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(4),
+            nn.ELU(),
+        )
+        self.conv9 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=4,
+                out_channels=8,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(8),
+            nn.ELU(),
+        )
+        self.conv10 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=8,
+                out_channels=12,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=2,
+                dilation=2,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(12),
+            nn.ELU(),
+        )
+        self.conv_con3 = nn.Sequential(
+            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             nn.ELU(),
         )
         self.symmetry = Lambda(symmetry)
+        self.elu = nn.ELU()
+        self.dropout = nn.Dropout2d(p=0.1)
 
     def forward(self, x):
         x = x[:, 0].unsqueeze(1)
@@ -641,31 +690,26 @@ class filter_deep(nn.Module):
         x = self.conv2(x)
         conv3 = self.conv3(x)
         x = self.conv_con1(conv3)
-        x = x.clone()
-        x[:, 0][inp[:, 0] != 0] = inp[:, 0][inp[:, 0] != 0]
-        x[:, 0][inp[:, 0] == 0] += 1
-        x = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
+        # x = x.clone()
+        # x = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
 
         # Second block
         x = self.conv4(x)
         x = self.conv5(x)
         x = self.conv6(x)
         conv7 = self.conv7(x)
-        # comb = torch.cat(
-        #     [
-        #         conv3,
-        #         conv7,
-        #     ],
-        #     dim=1,
-        # )
         x = self.conv_con2(conv7)
-        x = x.clone()
-        x[:, 0][inp[:, 0] != 0] = inp[:, 0][inp[:, 0] != 0]
-        x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
+        # x = x.clone()
+        # x = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
 
-        # x[:, 1][inp[:, 0] == 0] += (1e-5 + 1)
-        # x[:, 1][inp[:, 0] != 0] = 1e-8
-        # x = self.elu(x)
-        # x1 = self.symmetry(x[:, 1]).reshape(-1, 1, 63, 63)
-        # out = torch.cat([x0, x1], dim=1)
+        # Third block
+        x = self.conv8(x)
+        x = self.conv9(x)
+        conv10 = self.conv10(x)
+        x = self.conv_con3(conv10)
+        # x = self.dropout(x)
+
+        x = x.clone()
+        x[:, 0] = x[:, 0] + inp[:, 0]
+        x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
         return x0
