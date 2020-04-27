@@ -13,7 +13,9 @@ from dl_framework.model import (
     LocallyConnected2d,
     symmetry,
     shape,
+    GeneralELU,
 )
+from functools import partial
 
 
 def cnn():
@@ -524,7 +526,7 @@ class filter_deep(nn.Module):
         super().__init__()
         self.conv1 = nn.Sequential(
             nn.Conv2d(
-                in_channels=1,
+                in_channels=2,
                 out_channels=4,
                 kernel_size=(23, 23),
                 stride=1,
@@ -534,7 +536,7 @@ class filter_deep(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(4),
-            nn.ELU(),
+            GeneralELU(-2.1415),
         )
         self.conv2 = nn.Sequential(
             nn.Conv2d(
@@ -548,7 +550,7 @@ class filter_deep(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(8),
-            nn.ELU(),
+            GeneralELU(-2.1415),
         )
         self.conv3 = nn.Sequential(
             nn.Conv2d(
@@ -562,16 +564,16 @@ class filter_deep(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(12),
-            nn.ELU(),
+            GeneralELU(-2.1415),
         )
         self.conv_con1 = nn.Sequential(
-            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
-            nn.BatchNorm2d(1),
-            nn.ELU(),
+            LocallyConnected2d(12, 2, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(2),
+            GeneralELU(-2.1415),
         )
         self.conv4 = nn.Sequential(
             nn.Conv2d(
-                in_channels=1,
+                in_channels=2,
                 out_channels=4,
                 kernel_size=(5, 5),
                 stride=1,
@@ -581,7 +583,7 @@ class filter_deep(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(4),
-            nn.ELU(),
+            GeneralELU(-2.1415),
         )
         self.conv5 = nn.Sequential(
             nn.Conv2d(
@@ -595,7 +597,7 @@ class filter_deep(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(8),
-            nn.ELU(),
+            GeneralELU(-2.1415),
         )
         self.conv6 = nn.Sequential(
             nn.Conv2d(
@@ -609,12 +611,12 @@ class filter_deep(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(12),
-            nn.ELU(),
+            GeneralELU(-2.1415),
         )
         self.conv7 = nn.Sequential(
             nn.Conv2d(
                 in_channels=12,
-                out_channels=16,
+                out_channels=20,
                 kernel_size=(3, 3),
                 stride=1,
                 padding=1,
@@ -622,15 +624,64 @@ class filter_deep(nn.Module):
                 padding_mode="zeros",
                 bias=False,
             ),
-            nn.BatchNorm2d(16),
-            nn.ELU(),
+            nn.BatchNorm2d(20),
+            GeneralELU(-2.1415),
         )
         self.conv_con2 = nn.Sequential(
-            LocallyConnected2d(16, 1, 63, 1, stride=1, bias=False),
-            nn.BatchNorm2d(1),
-            nn.ELU(),
+            LocallyConnected2d(20, 2, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(2),
+            GeneralELU(-2.1415),
         )
-        self.symmetry = Lambda(symmetry)
+        self.conv8 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=2,
+                out_channels=4,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(4),
+            GeneralELU(-2.1415),
+        )
+        self.conv9 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=4,
+                out_channels=8,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(8),
+            GeneralELU(-2.1415),
+        )
+        self.conv10 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=8,
+                out_channels=12,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=2,
+                dilation=2,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(12),
+            GeneralELU(-2.1415),
+        )
+        self.conv_con3 = nn.Sequential(
+            LocallyConnected2d(12, 2, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(2),
+            GeneralELU(-2.1415),
+        )
+        self.symmetry_real = Lambda(symmetry)
+        self.symmetry_imag = Lambda(partial(symmetry, mode='imag'))
+        self.elu = nn.ELU()
 
     def forward(self, x):
         inp = x.clone()
@@ -640,31 +691,23 @@ class filter_deep(nn.Module):
         x = self.conv2(x)
         conv3 = self.conv3(x)
         x = self.conv_con1(conv3)
-        x = x.clone()
-        x[:, 0][inp[:, 0] != 0] = inp[:, 0][inp[:, 0] != 0]
-        x[:, 0][inp[:, 0] == 0] += 1
-        x = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
 
         # Second block
         x = self.conv4(x)
         x = self.conv5(x)
         x = self.conv6(x)
         conv7 = self.conv7(x)
-        # comb = torch.cat(
-        #     [
-        #         conv3,
-        #         conv7,
-        #     ],
-        #     dim=1,
-        # )
         x = self.conv_con2(conv7)
-        x = x.clone()
-        x[:, 0][inp[:, 0] != 0] = inp[:, 0][inp[:, 0] != 0]
-        x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
 
-        # x[:, 1][inp[:, 0] == 0] += (1e-5 + 1)
-        # x[:, 1][inp[:, 0] != 0] = 1e-8
-        # x = self.elu(x)
-        # x1 = self.symmetry(x[:, 1]).reshape(-1, 1, 63, 63)
-        # out = torch.cat([x0, x1], dim=1)
-        return x0
+        # Third block
+        x = self.conv8(x)
+        x = self.conv9(x)
+        conv10 = self.conv10(x)
+        x = self.conv_con3(conv10)
+
+        x = x.clone()
+        x = x + inp
+        x0 = self.symmetry_real(x[:, 0]).reshape(-1, 1, 63, 63)
+        x1 = self.symmetry_imag(x[:, 1]).reshape(-1, 1, 63, 63)
+        comb = torch.cat([x0, x1], dim=1)
+        return comb
