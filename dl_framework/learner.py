@@ -7,7 +7,7 @@ from dl_framework.model import init_cnn
 from tqdm import tqdm
 import sys
 from functools import partial
-from dl_framework.loss_functions import init_feature_loss
+from dl_framework.loss_functions import init_feature_loss, loss_amp, splitted_mse
 from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
@@ -183,23 +183,34 @@ def define_learner(
     max_lr=1e-1,
     min_lr=1e-6,
     test=False,
+    lr_find=False,
     opt_func=torch.optim.Adam,
 ):
     cbfs.extend([
-        Recorder,
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
-        partial(BatchTransformXCallback, norm),
-        partial(SaveCallback, model_path=model_path),
+        # partial(BatchTransformXCallback, norm),
     ])
     if not test:
-        cbfs.extend([CudaCallback,
-                     partial(LoggerCallback, model_name=model_name), ])
+        cbfs.extend([
+            CudaCallback,
+        ])
+    if not lr_find:
+        cbfs.extend([
+            Recorder,
+            partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+            # partial(SaveCallback, model_path=model_path),
+        ])
+    # if not test and not lr_find:
+        # cbfs.extend([partial(LoggerCallback, model_name=model_name), ])
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
     elif loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
+    elif loss_func == "loss_amp":
+        loss_func = loss_amp
+    elif loss_func == "splitted_mse":
+        loss_func = splitted_mse
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)

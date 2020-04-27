@@ -44,7 +44,7 @@ from dl_framework.inspection import plot_lr_loss
 )
 @click.option("-save", type=bool, required=False, help="save the lr vs loss plot")
 @click.option(
-    "-test", type=bool, default=True, required=True, help="Disable logger in tests"
+    "-test", type=bool, default=False, required=True, help="Disable logger in tests"
 )
 def main(
     data_path,
@@ -60,7 +60,7 @@ def main(
     pretrained=False,
     pretrained_model=None,
     save=False,
-    test=True,
+    test=False,
 ):
     """
     Train the neural network with existing training and validation data.
@@ -93,7 +93,6 @@ def main(
             partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
             Recorder_lr_find,
         ]
-
     learn = define_learner(
         data,
         arch,
@@ -101,6 +100,7 @@ def main(
         loss_func,
         test=test,
         cbfs=cbfs,
+        lr_find=True
     )
 
     # use pre-trained model if asked
