@@ -133,3 +133,13 @@ def splitted_mse(x, y):
     )
 
     return loss_real + loss_imag
+
+
+def loss_amp(x, y):
+    amp = x
+    tar_amp = y[:, 0, :].unsqueeze(1)
+    assert tar_amp.shape == amp.shape
+
+    loss_amp = ((amp - tar_amp).pow(2)).mean()
+
+    return loss_amp
