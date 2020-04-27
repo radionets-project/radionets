@@ -136,10 +136,18 @@ def splitted_mse(x, y):
 
 
 def loss_amp(x, y):
-    amp = x
-    tar_amp = y[:, 0, :].unsqueeze(1)
-    assert tar_amp.shape == amp.shape
+    tar = y[:, 0, :].unsqueeze(1)
+    assert tar.shape == x.shape
 
-    loss_amp = ((amp - tar_amp).pow(2)).mean()
+    loss = ((x - tar).pow(2)).mean()
+
+    return loss
+
+
+def loss_phase(x, y):
+    tar = y[:, 1, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    loss_amp = ((x - tar).pow(2)).mean()
 
     return loss_amp
