@@ -109,9 +109,9 @@ class GeneralELU(nn.Module):
         self.add = add
 
     def forward(self, x):
-        if self.add is not None:
-            x.add_(self.add)
         x = F.elu(x)
+        if self.add is not None:
+            x = x + self.add
         return x
 
 
