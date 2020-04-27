@@ -71,7 +71,7 @@ def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20)
     # create predictions
     prediction2 = eval_model(images, arch).numpy().reshape(num, -1)
 
-    print(prediction.shape, prediction2.shape)
+    prediction = np.stack([prediction, prediction2], 1).reshape(num, -1)
 
     # save input images, predictions and target images
     outpath = str(out_path) + "input.csv"
