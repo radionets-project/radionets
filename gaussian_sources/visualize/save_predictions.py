@@ -61,6 +61,18 @@ def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20)
     # create predictions
     prediction = eval_model(images, arch).numpy().reshape(num, -1)
 
+    pre_path = "../models/filter_deep_phase/filter_deep_phase.model"
+    arch = "filter_deep_phase"
+
+    # load pretrained model
+    arch = getattr(architecture, arch)()
+    load_pre_model(arch, pre_path, visualize=True)
+
+    # create predictions
+    prediction2 = eval_model(images, arch).numpy().reshape(num, -1)
+
+    print(prediction.shape, prediction2.shape)
+
     # save input images, predictions and target images
     outpath = str(out_path) + "input.csv"
     save_indices_and_data(indices, images_x, outpath)
