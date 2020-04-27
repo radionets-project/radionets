@@ -186,6 +186,22 @@ def conv(ni, nc, ks, stride, padding):
     return layers
 
 
+def conv_amp(ni, nc, ks, stride, padding, dilation):
+    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation, bias=False),)
+    bn = (nn.BatchNorm2d(nc),)
+    act = nn.ReLU()
+    layers = [*conv, *bn, act]
+    return layers
+
+
+def conv_phase(ni, nc, ks, stride, padding, dilation, add):
+    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation, bias=False),)
+    bn = (nn.BatchNorm2d(nc),)
+    act = GeneralELU(add)
+    layers = [*conv, *bn, act]
+    return layers
+
+
 def depth_conv(ni, nc, ks, stride, padding, dilation):
     conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation=dilation, groups=ni),)
     bn = (nn.BatchNorm2d(nc),)
