@@ -187,7 +187,7 @@ def conv(ni, nc, ks, stride, padding):
 
 
 def conv_amp(ni, nc, ks, stride, padding, dilation):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation, bias=False),)
+    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"),)
     bn = (nn.BatchNorm2d(nc),)
     act = nn.ReLU()
     layers = [*conv, *bn, act]
@@ -195,7 +195,7 @@ def conv_amp(ni, nc, ks, stride, padding, dilation):
 
 
 def conv_phase(ni, nc, ks, stride, padding, dilation, add):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation, bias=False),)
+    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"),)
     bn = (nn.BatchNorm2d(nc),)
     act = GeneralELU(add)
     layers = [*conv, *bn, act]
