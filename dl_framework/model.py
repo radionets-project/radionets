@@ -42,8 +42,8 @@ def euler(x):
     arr_amp = x[:, 0:img_size]
     arr_phase = x[:, img_size:]
 
-    arr_real = arr_amp*torch.cos(arr_phase)
-    arr_imag = arr_amp*torch.sin(arr_phase)
+    arr_real = arr_amp * torch.cos(arr_phase)
+    arr_imag = arr_amp * torch.sin(arr_phase)
 
     arr = torch.stack((arr_real, arr_imag), dim=-1).permute(0, 2, 1)
     return arr
@@ -63,7 +63,7 @@ def cut_off(x):
     return a
 
 
-def symmetry(x, mode='real'):
+def symmetry(x, mode="real"):
     center = (x.shape[1]) // 2
     u = torch.arange(center)
     v = torch.arange(center)
@@ -76,13 +76,13 @@ def symmetry(x, mode='real'):
     x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),)
     y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),)
     x = torch.rot90(x, 1, dims=(1, 2))
-    i = (center + (center - x_sym))
-    j = (center + (center - y_sym))
-    u = (center - (center - x_sym))
-    v = (center - (center - y_sym))
-    if mode == 'real':
+    i = center + (center - x_sym)
+    j = center + (center - y_sym)
+    u = center - (center - x_sym)
+    v = center - (center - y_sym)
+    if mode == "real":
         x[:, i, j] = x[:, u, v]
-    if mode == 'imag':
+    if mode == "imag":
         x[:, i, j] = -x[:, u, v]
     return torch.rot90(x, 3, dims=(1, 2))
 
@@ -104,7 +104,9 @@ class GeneralRelu(nn.Module):
 
 
 class GeneralELU(nn.Module):
-    def __init__(self, add=None,):
+    def __init__(
+        self, add=None,
+    ):
         super().__init__()
         self.add = add
 
@@ -187,7 +189,11 @@ def conv(ni, nc, ks, stride, padding):
 
 
 def conv_amp(ni, nc, ks, stride, padding, dilation):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"),)
+    conv = (
+        nn.Conv2d(
+            ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"
+        ),
+    )
     bn = (nn.BatchNorm2d(nc),)
     act = nn.ReLU()
     layers = [*conv, *bn, act]
@@ -195,7 +201,11 @@ def conv_amp(ni, nc, ks, stride, padding, dilation):
 
 
 def conv_phase(ni, nc, ks, stride, padding, dilation, add):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"),)
+    conv = (
+        nn.Conv2d(
+            ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"
+        ),
+    )
     bn = (nn.BatchNorm2d(nc),)
     act = GeneralELU(add)
     layers = [*conv, *bn, act]
