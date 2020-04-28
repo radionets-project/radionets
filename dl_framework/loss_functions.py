@@ -148,6 +148,6 @@ def loss_phase(x, y):
     tar = y[:, 1, :].unsqueeze(1)
     assert tar.shape == x.shape
 
-    loss_amp = ((x - tar).pow(2)).mean()
+    loss = ((x - tar).pow(2)).mean()
 
-    return loss_amp
+    return loss
