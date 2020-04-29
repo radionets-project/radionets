@@ -29,7 +29,7 @@ def load_pretrained_model(arch_name, model_path):
     return arch
 
 
-def get_images(test_ds, num_images, norm_path):
+def get_images(test_ds, num_images, norm_path=None):
     """
     Get n random test and truth images.
 
@@ -40,7 +40,7 @@ def get_images(test_ds, num_images, norm_path):
     num_images: int
         number of test images
     norm_path: str
-        path to normalization factors
+        path to normalization factors, if None: no normalization is applied
 
     Returns
     -------
@@ -51,8 +51,10 @@ def get_images(test_ds, num_images, norm_path):
     """
     rand = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[rand][0]
-    # norm = pd.read_csv(norm_path)
-    # img_test = do_normalisation(img_test, norm)
+    if norm_path:
+        print('hi')
+        norm = pd.read_csv(norm_path)
+        img_test = do_normalisation(img_test, norm)
     img_true = test_ds[rand][1]
     # print(img_true.shape)
     if num_images == 1:
