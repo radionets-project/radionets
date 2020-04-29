@@ -201,6 +201,7 @@ def define_learner(
         ])
     if not test and not lr_find:
         cbfs.extend([partial(LoggerCallback, model_name=model_name), ])
+
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
     elif loss_func == "l1":

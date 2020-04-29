@@ -364,7 +364,7 @@ class depthwise_seperable_conv(nn.Module):
         self.flatten = Lambda(flatten_with_channel)
 
     def forward(self, x):
-        inp = x.clone()
+        # inp = x.clone()
         inp_real = x[:, 0, :].view(x.shape[0], 1, x.shape[2], x.shape[3])
         inp_imag = x[:, 1, :].view(x.shape[0], 1, x.shape[2], x.shape[3])
 
@@ -381,10 +381,10 @@ class depthwise_seperable_conv(nn.Module):
         point2 = self.point2(comb2)
 
         comb = torch.cat([point1, point2], dim=1)
-        comb = comb + inp
+        # comb = comb + inp
         out = self.flatten(comb)
 
-        return out
+        return comb
 
 
 class small_fourier(nn.Module):
