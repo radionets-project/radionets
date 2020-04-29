@@ -10,6 +10,7 @@ from gaussian_sources.inspection import (
     open_csv,
     plot_difference,
     save_indices_and_data,
+    blob_detection,
 )
 
 
@@ -18,11 +19,19 @@ from gaussian_sources.inspection import (
 @click.option("-fourier", type=bool, required=True)
 @click.option("-amp_phase", type=bool, required=True)
 @click.option("-diff", type=bool, required=False)
+@click.option("-blob", type=bool, required=False)
 @click.option("-log", type=bool, required=False)
 @click.option("-index", type=int, required=False)
 @click.option("-num", type=int, required=False)
 def main(
-    out_path, fourier, amp_phase, diff=False, index=None, log=False, num=None,
+    out_path,
+    fourier,
+    amp_phase,
+    diff=False,
+    blob=False,
+    index=None,
+    log=False,
+    num=None,
 ):
     # to prevent the localhost error from happening
     # first change the backende and second turn off
@@ -67,15 +76,31 @@ def main(
                 )
 
                 if diff:
-                    dynamic_range = plot_difference(i, ifft_pred, ifft_truth, True, out_path)
+                    dynamic_range = plot_difference(i, ifft_pred, ifft_truth, out_path)
                     dynamic_ranges.append(dynamic_range)
+
+                if blob:
+                    blob_detection(i, ifft_pred, ifft_truth, out_path)
 
             else:
                 visualize_without_fourier(i, img_input, img_pred, img_truth, out_path)
 
                 if diff:
-                    dynamic_range = plot_difference(i, img_pred, img_truth, False, out_path)
+                    dynamic_range = plot_difference(
+                        i,
+                        img_pred.reshape(64, 64),
+                        img_truth.reshape(64, 64),
+                        out_path,
+                    )
                     dynamic_ranges.append(dynamic_range)
+
+                if blob:
+                    blob_detection(
+                        i,
+                        img_pred.reshape(64, 64),
+                        img_truth.reshape(64, 64),
+                        out_path,
+                    )
 
         outpath = str(out_path) + "diff/dynamic_ranges.csv"
         save_indices_and_data(indices, dynamic_ranges, outpath)
@@ -91,16 +116,22 @@ def main(
                 i, real_pred, imag_pred, real_truth, imag_truth, out_path
             )
             if diff:
-                dynamic_range = plot_difference(i, ifft_pred, ifft_truth, True, out_path)
+                dynamic_range = plot_difference(
+                    i, ifft_pred, ifft_truth, out_path
+                )
                 dynamic_ranges.append(dynamic_range)
+            if blob:
+                blob_detection(i, ifft_pred, ifft_truth, out_path)
         else:
             visualize_without_fourier(
                 i, img_input, img_pred, img_truth, out_path,
             )
 
             if diff:
-                dynamic_range = plot_difference(i, img_pred, img_truth, False, out_path)
+                dynamic_range = plot_difference(i, img_pred, img_truth, out_path)
                 dynamic_ranges.append(dynamic_range)
+            if blob:
+                blob_detection(i, img_pred, img_truth, out_path)
         outpath = str(out_path) + "diff/dynamic_ranges.csv"
         save_indices_and_data(indices, dynamic_ranges, outpath)
     matplotlib.rcParams.update(matplotlib.rcParamsDefault)
