@@ -140,11 +140,7 @@ def main(
                 pred = eval_model(img_test, learn.model)
                 out_path = Path(model_path).parent
                 plot_results(
-                    img_test,
-                    reshape_2d(pred),
-                    reshape_2d(img_true),
-                    out_path,
-                    save=True,
+                    img_test, pred, img_true, out_path, save=True
                 )
         else:
             print("Stopping after epoch {}".format(learn.epoch))
@@ -158,7 +154,7 @@ def main(
 
     # Plot input, prediction and true image if asked
     if inspection is True:
-        test_ds = load_data(data_path, "test", fourier=False)
+        test_ds = load_data(data_path, "test", fourier=fourier)
         img_test, img_true = get_images(test_ds, 5, norm_path)
         pred = eval_model(img_test, learn.model.cpu())
         out_path = Path(model_path).parent
