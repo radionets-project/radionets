@@ -18,5 +18,5 @@ build/visualize_predictions_done:
 	${arch} ${path_model} ${out_path} -fourier ${fourier} ${mode}
 
 clean:
-	rm -rf build/
+	rm -rf ${out_path}
 
