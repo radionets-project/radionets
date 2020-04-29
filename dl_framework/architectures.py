@@ -13,7 +13,9 @@ from dl_framework.model import (
     LocallyConnected2d,
     symmetry,
     shape,
+    phase_range,
 )
+from functools import partial
 
 
 def cnn():
@@ -710,6 +712,202 @@ class filter_deep(nn.Module):
         # x = self.dropout(x)
 
         x = x.clone()
+        x[:, 0] = x[:, 0] + inp[:, 0]
+        x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
+        return x0
+
+
+from dl_framework.model import GeneralELU
+import numpy as np
+class filter_deep_phase(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=4,
+                kernel_size=(23, 23),
+                stride=1,
+                padding=11,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(4),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=4,
+                out_channels=8,
+                kernel_size=(21, 21),
+                stride=1,
+                padding=10,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(8),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=8,
+                out_channels=12,
+                kernel_size=(17, 17),
+                stride=1,
+                padding=8,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(12),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv_con1 = nn.Sequential(
+            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv4 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=4,
+                kernel_size=(5, 5),
+                stride=1,
+                padding=2,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(4),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv5 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=4,
+                out_channels=8,
+                kernel_size=(5, 5),
+                stride=1,
+                padding=3,
+                dilation=2,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(8),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv6 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=8,
+                out_channels=12,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(12),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv7 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=12,
+                out_channels=20,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=3,
+                dilation=2,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(20),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv_con2 = nn.Sequential(
+            LocallyConnected2d(20, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv8 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=1,
+                out_channels=4,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(4),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv9 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=4,
+                out_channels=8,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=1,
+                dilation=1,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(8),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv10 = nn.Sequential(
+            nn.Conv2d(
+                in_channels=8,
+                out_channels=12,
+                kernel_size=(3, 3),
+                stride=1,
+                padding=2,
+                dilation=2,
+                padding_mode="zeros",
+                bias=False,
+            ),
+            nn.BatchNorm2d(12),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.conv_con3 = nn.Sequential(
+            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(add=-(np.pi-1)),
+        )
+        self.symmetry = Lambda(partial(symmetry, mode='imag'))
+        self.elu = nn.ELU()
+        self.dropout = nn.Dropout2d(p=0.1)
+        self.phase_range = Lambda(phase_range)
+
+    def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
+        inp = x.clone()
+
+        # First block
+        x = self.conv1(x)
+        x = self.conv2(x)
+        conv3 = self.conv3(x)
+        x = self.conv_con1(conv3)
+
+        # Second block
+        x = self.conv4(x)
+        x = self.conv5(x)
+        x = self.conv6(x)
+        conv7 = self.conv7(x)
+        x = self.conv_con2(conv7)
+
+        # Third block
+        x = self.conv8(x)
+        x = self.conv9(x)
+        conv10 = self.conv10(x)
+        x = self.conv_con3(conv10)
+        # x = self.dropout(x)
+
+        x = x.clone()
+        x = self.phase_range(x)
         x[:, 0] = x[:, 0] + inp[:, 0]
         x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
         return x0
