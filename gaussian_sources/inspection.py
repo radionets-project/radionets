@@ -311,10 +311,10 @@ def plot_difference(i, img_pred, img_truth, out_path):
 
 
 def plot_off_regions(ax):
-    ax.axvspan(0, 9, ymin=0.844, ymax=0.999, color="red", fill=False, label="Off")
+    ax.axvspan(0, 9, ymin=0.844, ymax=0.99, color="red", fill=False, label="Off")
     ax.axvspan(0, 9, ymax=0.156, ymin=0.01, color="red", fill=False)
-    ax.axvspan(54, 63, ymin=0.844, ymax=0.999, color="red", fill=False)
-    ax.axvspan(54, 63, ymax=0.156, ymin=0.01, color="red", fill=False)
+    ax.axvspan(53, 62, ymin=0.844, ymax=0.99, color="red", fill=False)
+    ax.axvspan(53, 62, ymax=0.156, ymin=0.01, color="red", fill=False)
 
 
 def compute_dr(img):
