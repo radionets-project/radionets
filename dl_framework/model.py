@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
-from math import sqrt
+from math import sqrt, pi
 
 
 class Lambda(nn.Module):
@@ -87,6 +87,15 @@ def symmetry(x, mode='real'):
     return torch.rot90(x, 3, dims=(1, 2))
 
 
+def phase_range(phase):
+    if isinstance(phase, float):
+        phase = torch.tensor([phase])
+    factor = ((phase + pi) / (2 * pi))
+    factor[factor != 1] = (factor[factor != 1] % 1)
+    phase = (2 * pi * factor) - pi
+    return phase
+
+
 class GeneralRelu(nn.Module):
     def __init__(self, leak=None, sub=None, maxv=None):
         super().__init__()
@@ -109,9 +118,9 @@ class GeneralELU(nn.Module):
         self.add = add
 
     def forward(self, x):
-        if self.add is not None:
-            x.add_(self.add)
         x = F.elu(x)
+        if self.add is not None:
+            x = x + self.add
         return x
 
 
