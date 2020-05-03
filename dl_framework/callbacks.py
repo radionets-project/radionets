@@ -127,7 +127,11 @@ class Recorder(Callback):
         self.losses.append(self.loss.detach().cpu())
 
     def plot_lr(self):
+        print("Used learning rate: ", list(set(self.lrs)))
         plt.plot(self.lrs)
+        plt.xlabel(r"Number of Batches")
+        plt.ylabel(r"Learning rate")
+        plt.tight_layout()
 
     def plot_loss(self, log=True):
         plt.plot(self.train_losses, label="train loss")
