@@ -4,6 +4,7 @@ from dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from dl_framework.utils import children
 import torch.nn.functional as F
+from math import pi
 
 
 class FeatureLoss(nn.Module):
@@ -138,4 +139,35 @@ def splitted_mse(x, y):
 def my_loss(x, y):
     y = y[:, 1].unsqueeze(1)
     assert y.shape == x.shape
-    return ((x - y).pow(2)).mean()
+    return (((x - y)).pow(2)).mean()
+
+
+def likelihood(x, y):
+    y = y[:, 0]
+    inp = x[:, 2]
+    unc = x[:, 1][inp == 0]
+    y_pred = x[:, 0][inp == 0]
+    y = y[inp == 0]
+    loss = (
+        2 * torch.log(unc)
+        +
+        ((y - y_pred).pow(2) / unc.pow(2))
+    ).mean()
+    assert unc.shape == y_pred.shape == y.shape
+    return loss
+
+
+def likelihood_phase(x, y):
+    y = y[:, 1]
+    inp = x[:, 2]
+    unc = x[:, 1][inp == 0]
+    assert len(unc[unc <= 0]) == 0
+    y_pred = x[:, 0][inp == 0]
+    y = y[inp == 0]
+    loss = (
+        2 * torch.log(unc)
+        +
+        ((y - y_pred).pow(2) / unc.pow(2))
+    ).mean()
+    assert unc.shape == y_pred.shape == y.shape
+    return loss
