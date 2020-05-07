@@ -7,7 +7,12 @@ from dl_framework.model import init_cnn
 from tqdm import tqdm
 import sys
 from functools import partial
-from dl_framework.loss_functions import init_feature_loss, my_loss
+from dl_framework.loss_functions import (
+    init_feature_loss,
+    my_loss,
+    likelihood,
+    likelihood_phase,
+)
 from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
@@ -208,6 +213,10 @@ def define_learner(
         loss_func = nn.MSELoss()
     elif loss_func == "my_loss":
         loss_func = my_loss
+    elif loss_func == "likelihood":
+        loss_func = likelihood
+    elif loss_func == "likelihood_phase":
+        loss_func = likelihood_phase
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)
