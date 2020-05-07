@@ -26,8 +26,6 @@ def test_save_predictions():
     test_ds = test_create_h5_dataset()
     indices = np.random.randint(0, len(test_ds), size=num)
 
-    print(test_ds[0][0].shape)
-
     assert len(indices) == 3
     assert test_ds[0][0].shape[1] == 63
 
