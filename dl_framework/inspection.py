@@ -105,7 +105,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def plot_loss(learn, model_path):
+def plot_loss(learn, model_path, log):
     """
     Plot train and valid loss of model.
 
@@ -123,7 +123,7 @@ def plot_loss(learn, model_path):
     name_model = model_path.split("/")[-1].split(".")[0]
     save_path = model_path.split(".model")[0]
     print("\nPlotting Loss for: {}\n".format(name_model))
-    learn.recorder.plot_loss()
+    learn.recorder.plot_loss(log=log)
     plt.savefig("{}_loss.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
     mpl.rcParams.update(mpl.rcParamsDefault)
 
