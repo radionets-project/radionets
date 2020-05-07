@@ -3,8 +3,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
-from dl_framework.data import do_normalisation
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.feature import blob_log
 from math import sqrt
 
@@ -467,6 +465,8 @@ def blob_detection(i, img_pred, img_truth, out_path):
 
 
 def make_axes_nice(fig, ax, im, title):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
     """Create nice colorbars for every axis in a subplot
 
     Parameters
