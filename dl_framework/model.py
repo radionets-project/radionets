@@ -90,9 +90,22 @@ def symmetry(x, mode='real'):
 def phase_range(phase):
     if isinstance(phase, float):
         phase = torch.tensor([phase])
-    factor = ((phase + pi) / (2 * pi))
-    factor[factor != 1] = (factor[factor != 1] % 1)
-    phase = (2 * pi * factor) - pi
+    # print(phase[0, 0, 0, 0])
+    phase = phase / pi
+    # print(phase[0, 0, 0, 0])
+
+    mask2 = (phase <= -1)
+    mask3 = (phase >= 1)
+    factor = (phase[mask2]) % 4
+    factor[factor == 0] = 2
+    phase[mask2] = 2 * pi - factor * pi
+    factor = (phase[mask3]) % 4
+    factor[factor == 0] = 2
+    phase[mask3] = 2 * pi - factor * pi
+
+    mask1 = (phase > -1) & (phase < 1)
+    phase[mask1] = pi - (1 - phase[mask1]) * pi
+    # print(phase[0, 0, 0, 0])
     return phase
 
 
@@ -113,14 +126,17 @@ class GeneralRelu(nn.Module):
 
 
 class GeneralELU(nn.Module):
-    def __init__(self, add=None,):
+    def __init__(self, add=None, maxv=None):
         super().__init__()
         self.add = add
+        self.maxv = maxv
 
     def forward(self, x):
         x = F.elu(x)
         if self.add is not None:
             x = x + self.add
+        if self.maxv is not None:
+            x.clamp_max_(self.maxv)
         return x
 
 
