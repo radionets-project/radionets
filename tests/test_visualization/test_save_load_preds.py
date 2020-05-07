@@ -5,7 +5,7 @@ from dl_framework.data import load_data
 
 
 def test_create_h5_dataset():
-    data_path = "tests/test_data/"
+    data_path = "./tests/build/gaussian_sources/wo_fourier"
     fourier = False
 
     test_ds = load_data(data_path, "test", fourier=fourier)
@@ -13,9 +13,9 @@ def test_create_h5_dataset():
     img = test_ds[0][0]
     img_y = test_ds[0][1]
 
-    assert img[0].shape == (64, 64)
-    assert img[1].shape == (64, 64)
-    assert img_y.shape == (4096,)
+    assert img[0].shape == (63, 63)
+    assert img[1].shape == (63, 63)
+    assert img_y.shape == (3969,)
 
     return test_ds
 
@@ -29,13 +29,13 @@ def test_save_predictions():
     print(test_ds[0][0].shape)
 
     assert len(indices) == 3
-    assert test_ds[0][0].shape[1] == 64
+    assert test_ds[0][0].shape[1] == 63
 
     img_size = test_ds[0][0].shape[1]
 
-    assert test_ds[0][0].view(1, 2, img_size, img_size).shape == (1, 2, 64, 64)
-    assert test_ds[0][0].numpy().reshape(-1).shape == (8192,)
-    assert test_ds[0][1].numpy().reshape(-1).shape == (4096,)
+    assert test_ds[0][0].view(1, 2, img_size, img_size).shape == (1, 2, 63, 63)
+    assert test_ds[0][0].numpy().reshape(-1).shape == (7938,)
+    assert test_ds[0][1].numpy().reshape(-1).shape == (3969,)
 
     test_imgs = [test_ds[0][0].numpy().reshape(-1), test_ds[1][1].numpy().reshape(-1)]
     build = "tests/build/"
@@ -56,5 +56,5 @@ def test_load_predictions():
 
     assert indices[0] == 1
     assert indices[1] == 2
-    assert test_img[0].shape == (8192,)
-    assert test_img[1].shape == (8192,)
+    assert test_img[0].shape == (7938,)
+    assert test_img[1].shape == (7938,)
