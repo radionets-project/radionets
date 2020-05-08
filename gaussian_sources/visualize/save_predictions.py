@@ -16,9 +16,9 @@ from gaussian_sources.inspection import save_indices_and_data
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.option("-num", type=int, required=False)
 @click.option("-fourier", type=bool, required=True)
-@click.option("-seperate", type=bool, default=False, required=False)
+@click.option("-separate", type=bool, default=False, required=False)
 def main(
-    data_path, norm_path, arch, pretrained_path, out_path, fourier, seperate, num=20
+    data_path, norm_path, arch, pretrained_path, out_path, fourier, separate, num=20
 ):
     """
     Create input, predictions and truth csv files for further investigation,
@@ -38,8 +38,8 @@ def main(
         path for the saving folder
     fourier : bool
         true, if the target images are fourier transformed
-    seperate : bool
-        true, if there are seperate architectures for amplitude and phase
+    separate : bool
+        true, if there are separate architectures for amplitude and phase
     num : int, optional
         number of images taken from the test dataset
     """
@@ -65,7 +65,7 @@ def main(
     # create predictions
     prediction = eval_model(images, arch).numpy().reshape(num, -1)
 
-    if seperate:
+    if separate:
         pre_path = "../models/filter_deep_phase/filter_deep_phase.model"
         arch = "filter_deep_phase"
 
