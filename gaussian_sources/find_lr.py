@@ -93,6 +93,7 @@ def main(
             partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
             Recorder_lr_find,
         ]
+
     learn = define_learner(
         data,
         arch,
@@ -100,7 +101,7 @@ def main(
         loss_func,
         test=test,
         cbfs=cbfs,
-        lr_find=True
+        lr_find=True,
     )
 
     # use pre-trained model if asked
