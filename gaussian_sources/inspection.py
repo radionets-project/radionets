@@ -3,8 +3,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
-from dl_framework.data import do_normalisation
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from skimage.feature import blob_log
 from math import sqrt
 
@@ -279,6 +277,27 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
 
 
 def plot_difference(i, img_pred, img_truth, out_path):
+    """Create a subplot with the prediction, the truth and the difference.
+    Also computes the dynamic range for the prediction and the truth. Last,
+    calculates the quotient between these two values.
+
+
+    Parameters
+    ----------
+    i : int
+        number of picture
+    img_pred : ndarray
+        image of prediction
+    img_truth : ndarray
+        image of truth
+    out_path : string
+        Output path as defined in makerc
+
+    Returns
+    -------
+    float
+        Quotient between the dynamic range sof truth and prediction
+    """
     plt.rcParams.update({"figure.max_open_warning": 0})
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
@@ -311,13 +330,32 @@ def plot_difference(i, img_pred, img_truth, out_path):
 
 
 def plot_off_regions(ax):
-    ax.axvspan(0, 9, ymin=0.844, ymax=0.999, color="red", fill=False, label="Off")
+    """Plot the off regions for the computation of the dynamic range.
+
+    Parameters
+    ----------
+    ax : axis object
+        current axis
+    """
+    ax.axvspan(0, 9, ymin=0.844, ymax=0.99, color="red", fill=False, label="Off")
     ax.axvspan(0, 9, ymax=0.156, ymin=0.01, color="red", fill=False)
-    ax.axvspan(54, 63, ymin=0.844, ymax=0.999, color="red", fill=False)
-    ax.axvspan(54, 63, ymax=0.156, ymin=0.01, color="red", fill=False)
+    ax.axvspan(53, 62, ymin=0.844, ymax=0.99, color="red", fill=False)
+    ax.axvspan(53, 62, ymax=0.156, ymin=0.01, color="red", fill=False)
 
 
 def compute_dr(img):
+    """Calculate the dynamic range of the given image.
+
+    Parameters
+    ----------
+    img : ndarray
+        given image
+
+    Returns
+    -------
+    float
+        dynamic range, calculated from four off regions
+    """
     rms1 = np.sqrt((img[:10, :10] ** 2).mean())
     rms2 = np.sqrt((img[:10, -10:] ** 2).mean())
     rms3 = np.sqrt((img[-10:, :10] ** 2).mean())
@@ -328,6 +366,19 @@ def compute_dr(img):
 
 
 def hist_difference(i, img_pred, img_truth, out_path):
+    """Histogram the difference between the prediction and the truth
+
+    Parameters
+    ----------
+    i : int
+        number of picture
+    img_pred : ndarray
+        image of prediction
+    img_truth : ndarray
+        image of truth
+    out_path : string
+        Output path as defined in the makerc
+    """
     x = np.abs(img_pred - img_truth).reshape(-1)
     plt.hist(x, label="Max Distance: {}".format(np.round(x.max(), 4)))
     plt.xlabel(r"Difference / a.u.")
@@ -338,11 +389,31 @@ def hist_difference(i, img_pred, img_truth, out_path):
 
 
 def save_indices_and_data(indices, dr, outpath):
+    """function for saving data in a csv file with indices
+
+    Parameters
+    ----------
+    indices : list
+        list of indices
+    dr : ndarray
+        data
+    outpath : string
+        Output path as defined in the makerc
+    """
     df = pd.DataFrame(data=dr, index=indices)
     df.to_csv(outpath, index=True)
 
 
 def plot_blobs(blobs_log, ax):
+    """Plot the blobs created in sklearn.blob_log
+
+    Parameters
+    ----------
+    blobs_log : ndarray
+        return values of blob_log
+    ax : axis object
+        plotting axis
+    """
     for blob in blobs_log:
         y, x, r = blob
         c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
@@ -350,6 +421,19 @@ def plot_blobs(blobs_log, ax):
 
 
 def blob_detection(i, img_pred, img_truth, out_path):
+    """Blob detection for the prediction and the truth with the same kwargs.
+
+    Parameters
+    ----------
+    i : int
+        number of picture
+    img_pred : ndarray
+        image of prediction
+    img_truth : ndarray
+        image of truth
+    out_path : string
+        Output path as defined in makerc
+    """
     plt.rcParams.update({"figure.max_open_warning": 0})
 
     tresh = img_truth.max() * 0.1
@@ -381,6 +465,21 @@ def blob_detection(i, img_pred, img_truth, out_path):
 
 
 def make_axes_nice(fig, ax, im, title):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    """Create nice colorbars for every axis in a subplot
+
+    Parameters
+    ----------
+    fig : figure object
+        current figure
+    ax : axis object
+        current axis
+    im : ndarray
+        plotted image
+    title : string
+        title of subplot
+    """
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title(title)

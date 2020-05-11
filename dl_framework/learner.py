@@ -7,7 +7,7 @@ from dl_framework.model import init_cnn
 from tqdm import tqdm
 import sys
 from functools import partial
-from dl_framework.loss_functions import init_feature_loss
+from dl_framework.loss_functions import init_feature_loss, loss_amp, loss_phase
 from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
@@ -208,6 +208,10 @@ def define_learner(
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
+    elif loss_func == "loss_amp":
+        loss_func = loss_amp
+    elif loss_func == "loss_phase":
+        loss_func = loss_phase
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)

@@ -13,7 +13,12 @@ from dl_framework.model import (
     LocallyConnected2d,
     symmetry,
     shape,
+    GeneralELU,
+    conv_phase,
+    conv_amp,
 )
+from functools import partial
+from math import pi
 
 
 def cnn():
@@ -522,149 +527,345 @@ class filter(nn.Module):
 class filter_deep(nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(
-                in_channels=1,
-                out_channels=4,
-                kernel_size=(23, 23),
-                stride=1,
-                padding=11,
-                dilation=1,
-                padding_mode="zeros",
-                bias=False,
-            ),
-            nn.BatchNorm2d(4),
-            nn.ELU(),
+        self.conv1_amp = nn.Sequential(
+            *conv_amp(1, 4, (23, 23), 1, 11, 1)
         )
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(
-                in_channels=4,
-                out_channels=8,
-                kernel_size=(21, 21),
-                stride=1,
-                padding=10,
-                dilation=1,
-                padding_mode="zeros",
-                bias=False,
-            ),
-            nn.BatchNorm2d(8),
-            nn.ELU(),
+        self.conv1_phase = nn.Sequential(
+            *conv_phase(1, 4, (23, 23), 1, 11, 1, add=1-pi)
         )
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(
-                in_channels=8,
-                out_channels=12,
-                kernel_size=(17, 17),
-                stride=1,
-                padding=8,
-                dilation=1,
-                padding_mode="zeros",
-                bias=False,
-            ),
-            nn.BatchNorm2d(12),
-            nn.ELU(),
+        self.conv2_amp = nn.Sequential(
+             *conv_amp(4, 8, (21, 21), 1, 10, 1)
         )
-        self.conv_con1 = nn.Sequential(
+        self.conv2_phase = nn.Sequential(
+             *conv_phase(4, 8, (21, 21), 1, 10, 1, add=1-pi)
+        )
+        self.conv3_amp = nn.Sequential(
+             *conv_amp(8, 12, (17, 17), 1, 8, 1)
+        )
+        self.conv3_phase = nn.Sequential(
+             *conv_phase(8, 12, (17, 17), 1, 8, 1, add=1-pi)
+        )
+        self.conv_con1_amp = nn.Sequential(
             LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            nn.ELU(),
+            nn.ReLU(),
         )
-        self.conv4 = nn.Sequential(
-            nn.Conv2d(
-                in_channels=1,
-                out_channels=4,
-                kernel_size=(5, 5),
-                stride=1,
-                padding=3,
-                dilation=2,
-                padding_mode="zeros",
-                bias=False,
-            ),
-            nn.BatchNorm2d(4),
-            nn.ELU(),
+        self.conv_con1_phase = nn.Sequential(
+            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(1-pi),
         )
-        self.conv5 = nn.Sequential(
-            nn.Conv2d(
-                in_channels=4,
-                out_channels=8,
-                kernel_size=(5, 5),
-                stride=1,
-                padding=2,
-                dilation=1,
-                padding_mode="zeros",
-                bias=False,
-            ),
-            nn.BatchNorm2d(8),
-            nn.ELU(),
+
+        self.conv4_amp = nn.Sequential(
+             *conv_amp(1, 4, (5, 5), 1, 3, 2)
         )
-        self.conv6 = nn.Sequential(
-            nn.Conv2d(
-                in_channels=8,
-                out_channels=12,
-                kernel_size=(3, 3),
-                stride=1,
-                padding=3,
-                dilation=2,
-                padding_mode="zeros",
-                bias=False,
-            ),
-            nn.BatchNorm2d(12),
-            nn.ELU(),
+        self.conv4_phase = nn.Sequential(
+             *conv_phase(1, 4, (5, 5), 1, 3, 2, add=1-pi)
         )
-        self.conv7 = nn.Sequential(
-            nn.Conv2d(
-                in_channels=12,
-                out_channels=16,
-                kernel_size=(3, 3),
-                stride=1,
-                padding=1,
-                dilation=1,
-                padding_mode="zeros",
-                bias=False,
-            ),
-            nn.BatchNorm2d(16),
-            nn.ELU(),
+        self.conv5_amp = nn.Sequential(
+             *conv_amp(4, 8, (5, 5), 1, 2, 1)
         )
-        self.conv_con2 = nn.Sequential(
+        self.conv5_phase = nn.Sequential(
+             *conv_phase(4, 8, (5, 5), 1, 2, 1, add=1-pi)
+        )
+        self.conv6_amp = nn.Sequential(
+             *conv_amp(8, 12, (3, 3), 1, 3, 2)
+        )
+        self.conv6_phase = nn.Sequential(
+             *conv_phase(8, 12, (3, 3), 1, 3, 2, add=1-pi)
+        )
+        self.conv7_amp = nn.Sequential(
+             *conv_amp(12, 16, (3, 3), 1, 1, 1)
+        )
+        self.conv7_phase = nn.Sequential(
+             *conv_phase(12, 16, (3, 3), 1, 1, 1, add=1-pi)
+        )
+        self.conv_con2_amp = nn.Sequential(
             LocallyConnected2d(16, 1, 63, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            nn.ELU(),
+            nn.ReLU(),
         )
-        self.symmetry = Lambda(symmetry)
+        self.conv_con2_phase = nn.Sequential(
+            LocallyConnected2d(16, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(1-pi),
+        )
+
+        self.conv8_amp = nn.Sequential(
+             *conv_amp(1, 4, (3, 3), 1, 1, 1)
+        )
+        self.conv8_phase = nn.Sequential(
+             *conv_phase(1, 4, (3, 3), 1, 1, 1, add=1-pi)
+        )
+        self.conv9_amp = nn.Sequential(
+             *conv_amp(4, 8, (3, 3), 1, 1, 1)
+        )
+        self.conv9_phase = nn.Sequential(
+             *conv_phase(4, 8, (3, 3), 1, 1, 1, add=1-pi)
+        )
+        self.conv10_amp = nn.Sequential(
+             *conv_amp(8, 12, (3, 3), 1, 2, 2)
+        )
+        self.conv10_phase = nn.Sequential(
+             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
+        )
+        self.conv11_amp = nn.Sequential(
+             *conv_amp(12, 20, (3, 3), 1, 1, 1)
+        )
+        self.conv11_phase = nn.Sequential(
+             *conv_phase(12, 20, (3, 3), 1, 1, 1, add=1-pi)
+        )
+        self.conv_con3_amp = nn.Sequential(
+            LocallyConnected2d(20, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+        )
+        self.conv_con3_phase = nn.Sequential(
+            LocallyConnected2d(20, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(1-pi),
+        )
+        self.symmetry_real = Lambda(symmetry)
+        self.symmetry_imag = Lambda(partial(symmetry, mode='imag'))
 
     def forward(self, x):
         inp = x.clone()
+        amp = x[:, 0, :].unsqueeze(1)
+        phase = x[:, 1, :].unsqueeze(1)
 
         # First block
-        x = self.conv1(x)
-        x = self.conv2(x)
-        conv3 = self.conv3(x)
-        x = self.conv_con1(conv3)
-        x = x.clone()
-        x[:, 0][inp[:, 0] != 0] = inp[:, 0][inp[:, 0] != 0]
-        x[:, 0][inp[:, 0] == 0] += 1
-        x = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
+        amp = self.conv1_amp(amp)
+        phase = self.conv1_phase(phase)
+
+        amp = self.conv2_amp(amp)
+        phase = self.conv2_phase(phase)
+
+        amp = self.conv3_amp(amp)
+        phase = self.conv3_phase(phase)
+
+        amp = self.conv_con1_amp(amp)
+        phase = self.conv_con1_phase(phase)
 
         # Second block
-        x = self.conv4(x)
-        x = self.conv5(x)
-        x = self.conv6(x)
-        conv7 = self.conv7(x)
-        # comb = torch.cat(
-        #     [
-        #         conv3,
-        #         conv7,
-        #     ],
-        #     dim=1,
-        # )
-        x = self.conv_con2(conv7)
-        x = x.clone()
-        x[:, 0][inp[:, 0] != 0] = inp[:, 0][inp[:, 0] != 0]
-        x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
+        amp = self.conv4_amp(amp)
+        phase = self.conv4_phase(phase)
 
-        # x[:, 1][inp[:, 0] == 0] += (1e-5 + 1)
-        # x[:, 1][inp[:, 0] != 0] = 1e-8
-        # x = self.elu(x)
-        # x1 = self.symmetry(x[:, 1]).reshape(-1, 1, 63, 63)
-        # out = torch.cat([x0, x1], dim=1)
+        amp = self.conv5_amp(amp)
+        phase = self.conv5_phase(phase)
+
+        amp = self.conv6_amp(amp)
+        phase = self.conv6_phase(phase)
+
+        amp = self.conv7_amp(amp)
+        phase = self.conv7_phase(phase)
+
+        amp = self.conv_con2_amp(amp)
+        phase = self.conv_con2_phase(phase)
+
+        # Third block
+        amp = self.conv8_amp(amp)
+        phase = self.conv8_phase(phase)
+
+        amp = self.conv9_amp(amp)
+        phase = self.conv9_phase(phase)
+
+        amp = self.conv10_amp(amp)
+        phase = self.conv10_phase(phase)
+
+        amp = self.conv11_amp(amp)
+        phase = self.conv11_phase(phase)
+
+        amp = self.conv_con3_amp(amp)
+        phase = self.conv_con3_phase(phase)
+
+        # amp = amp + inp[:, 0].unsqueeze(1)
+        inp_amp = inp[:, 0].unsqueeze(1)
+        inp_phase = inp[:, 1].unsqueeze(1)
+        # phase = phase + inp[:, 1].unsqueeze(1)
+        x0 = self.symmetry_real(amp).reshape(-1, 1, 63, 63)
+        x0[inp_amp != 0] = inp_amp[inp_amp != 0]
+
+        x1 = self.symmetry_imag(phase).reshape(-1, 1, 63, 63)
+        x1[inp_phase != 0] = inp_phase[inp_phase != 0]
+        comb = torch.cat([x0, x1], dim=1)
+        return comb
+
+
+class filter_deep_amp(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1_amp = nn.Sequential(
+            *conv_amp(1, 4, (23, 23), 1, 11, 1)
+        )
+        self.conv2_amp = nn.Sequential(
+             *conv_amp(4, 8, (21, 21), 1, 10, 1)
+        )
+        self.conv3_amp = nn.Sequential(
+             *conv_amp(8, 12, (17, 17), 1, 8, 1)
+        )
+        self.conv_con1_amp = nn.Sequential(
+            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+        )
+
+        self.conv4_amp = nn.Sequential(
+             *conv_amp(1, 4, (5, 5), 1, 3, 2)
+        )
+        self.conv5_amp = nn.Sequential(
+             *conv_amp(4, 8, (5, 5), 1, 2, 1)
+        )
+        self.conv6_amp = nn.Sequential(
+             *conv_amp(8, 12, (3, 3), 1, 3, 2)
+        )
+        self.conv7_amp = nn.Sequential(
+             *conv_amp(12, 16, (3, 3), 1, 1, 1)
+        )
+        self.conv_con2_amp = nn.Sequential(
+            LocallyConnected2d(16, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+        )
+
+        self.conv8_amp = nn.Sequential(
+             *conv_amp(1, 4, (3, 3), 1, 1, 1)
+        )
+        self.conv9_amp = nn.Sequential(
+             *conv_amp(4, 8, (3, 3), 1, 1, 1)
+        )
+        self.conv10_amp = nn.Sequential(
+             *conv_amp(8, 12, (3, 3), 1, 2, 2)
+        )
+        self.conv_con3_amp = nn.Sequential(
+            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+        )
+        self.symmetry_real = Lambda(symmetry)
+
+    def forward(self, x):
+        inp = x.clone()
+        amp = x[:, 0, :].unsqueeze(1)
+
+        # First block
+        amp = self.conv1_amp(amp)
+
+        amp = self.conv2_amp(amp)
+
+        amp = self.conv3_amp(amp)
+
+        amp = self.conv_con1_amp(amp)
+
+        # Second block
+        amp = self.conv4_amp(amp)
+
+        amp = self.conv5_amp(amp)
+
+        amp = self.conv6_amp(amp)
+
+        amp = self.conv7_amp(amp)
+
+        amp = self.conv_con2_amp(amp)
+
+        # Third block
+        amp = self.conv8_amp(amp)
+
+        amp = self.conv9_amp(amp)
+
+        amp = self.conv10_amp(amp)
+
+        amp = self.conv_con3_amp(amp)
+
+        amp = amp + inp[:, 0].unsqueeze(1)
+        x0 = self.symmetry_real(amp).reshape(-1, 1, 63, 63)
         return x0
+
+
+class filter_deep_phase(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1_phase = nn.Sequential(
+            *conv_phase(1, 4, (23, 23), 1, 11, 1, add=-2.1415)
+        )
+        self.conv2_phase = nn.Sequential(
+             *conv_phase(4, 8, (21, 21), 1, 10, 1, add=-2.1415)
+        )
+        self.conv3_phase = nn.Sequential(
+             *conv_phase(8, 12, (17, 17), 1, 8, 1, add=-2.1415)
+        )
+        self.conv_con1_phase = nn.Sequential(
+            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(-2.1415),
+        )
+
+        self.conv4_phase = nn.Sequential(
+             *conv_phase(1, 4, (5, 5), 1, 3, 2, add=-2.1415)
+        )
+        self.conv5_phase = nn.Sequential(
+             *conv_phase(4, 8, (5, 5), 1, 2, 1, add=-2.1415)
+        )
+        self.conv6_phase = nn.Sequential(
+             *conv_phase(8, 12, (3, 3), 1, 3, 2, add=-2.1415)
+        )
+        self.conv7_phase = nn.Sequential(
+             *conv_phase(12, 16, (3, 3), 1, 1, 1, add=-2.1415)
+        )
+        self.conv_con2_phase = nn.Sequential(
+            LocallyConnected2d(16, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(-2.1415),
+        )
+
+        self.conv8_phase = nn.Sequential(
+             *conv_phase(1, 4, (3, 3), 1, 1, 1, add=-2.1415)
+        )
+        self.conv9_phase = nn.Sequential(
+             *conv_phase(4, 8, (3, 3), 1, 1, 1, add=-2.1415)
+        )
+        self.conv10_phase = nn.Sequential(
+             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=-2.1415)
+        )
+        self.conv_con3_phase = nn.Sequential(
+            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(-2.1415),
+        )
+        self.symmetry_imag = Lambda(partial(symmetry, mode='imag'))
+
+    def forward(self, x):
+        inp = x.clone()
+        phase = x[:, 1, :].unsqueeze(1)
+
+        # First block
+        phase = self.conv1_phase(phase)
+
+        phase = self.conv2_phase(phase)
+
+        phase = self.conv3_phase(phase)
+
+        phase = self.conv_con1_phase(phase)
+
+        # Second block
+        phase = self.conv4_phase(phase)
+
+        phase = self.conv5_phase(phase)
+
+        phase = self.conv6_phase(phase)
+
+        phase = self.conv7_phase(phase)
+
+        phase = self.conv_con2_phase(phase)
+
+        # Third block
+        phase = self.conv8_phase(phase)
+
+        phase = self.conv9_phase(phase)
+
+        phase = self.conv10_phase(phase)
+
+        phase = self.conv_con3_phase(phase)
+
+        phase = phase + inp[:, 1].unsqueeze(1)
+        x1 = self.symmetry_imag(phase).reshape(-1, 1, 63, 63)
+        return x1
