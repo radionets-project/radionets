@@ -1,9 +1,11 @@
 import torch
+import numpy as np
 from dl_framework.utils import camel2snake, AvgStats, listify
 from re import sub
 import matplotlib.pyplot as plt
 import pandas as pd
 from dl_framework.data import do_normalisation
+from gaussian_sources.inspection import make_axes_nice
 from dl_framework.logger import make_notifier
 from dl_framework.model import save_model
 
@@ -295,6 +297,30 @@ def zero_imag():
         return a
 
     return _inner
+
+
+class data_aug(Callback):
+    _order = 3
+
+    def begin_batch(self):
+        x = self.run.xb.clone()
+        y = self.run.yb.clone()
+        randint = np.random.randint(0, 4, x.shape[0])
+        for i in range(x.shape[0]):
+            x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
+            x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
+            y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
+            y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
+        # print(self.run.xb[0][0].shape)
+        # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
+        # im1 = ax1.imshow(self.run.yb[0][1].cpu(), cmap="RdBu")
+        # im2 = ax2.imshow(y[0][1].cpu(), cmap="RdBu")
+
+        # make_axes_nice(fig, ax1, im1, "Original")
+        # make_axes_nice(fig, ax2, im2, "Rotiert, {}".format(randint[0]))
+        # plt.savefig("test.png", bbox_inches="tight", pad_inches=0.01)
+        self.run.xb = x
+        self.run.yb = y
 
 
 class SaveCallback(Callback):
