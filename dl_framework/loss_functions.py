@@ -4,7 +4,6 @@ from dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from dl_framework.utils import children
 import torch.nn.functional as F
-from math import pi
 
 
 class FeatureLoss(nn.Module):
