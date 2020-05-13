@@ -124,7 +124,33 @@ def plot_loss(learn, model_path, log):
     save_path = model_path.split(".model")[0]
     print("\nPlotting Loss for: {}\n".format(name_model))
     learn.recorder.plot_loss(log=log)
+    plt.title(r"{}".format(name_model))
     plt.savefig("{}_loss.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
+    plt.clf()
+    mpl.rcParams.update(mpl.rcParamsDefault)
+
+
+def plot_lr(learn, model_path):
+    """
+    Plot learning rate of model.
+
+    Parameters
+    ----------
+    learn: learner-object
+        learner containing data and model
+    model_path: str
+        path to trained model
+    """
+    # to prevent the localhost error from happening first change the backende and
+    # second turn off the interactive mode
+    mpl.use("Agg")
+    plt.ioff()
+    name_model = model_path.split("/")[-1].split(".")[0]
+    save_path = model_path.split(".model")[0]
+    print("\nPlotting Learning rate for: {}\n".format(name_model))
+    learn.recorder.plot_lr()
+    plt.savefig("{}_lr.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
+    plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 

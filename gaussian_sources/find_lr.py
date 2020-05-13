@@ -101,6 +101,7 @@ def main(
         loss_func,
         test=test,
         cbfs=cbfs,
+        lr_find=True,
     )
 
     # use pre-trained model if asked

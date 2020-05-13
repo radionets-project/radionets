@@ -1,6 +1,5 @@
 import click
 import numpy as np
-import pandas as pd
 
 import dl_framework.architectures as architecture
 from dl_framework.data import load_data, do_normalisation
@@ -17,7 +16,10 @@ from gaussian_sources.inspection import save_indices_and_data
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
 @click.option("-num", type=int, required=False)
 @click.option("-fourier", type=bool, required=True)
-def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20):
+@click.option("-separate", type=bool, default=False, required=False)
+def main(
+    data_path, norm_path, arch, pretrained_path, out_path, fourier, separate, num=20
+):
     """
     Create input, predictions and truth csv files for further investigation,
     such as visualize_predictions.
@@ -36,6 +38,8 @@ def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20)
         path for the saving folder
     fourier : bool
         true, if the target images are fourier transformed
+    separate : bool
+        true, if there are separate architectures for amplitude and phase
     num : int, optional
         number of images taken from the test dataset
     """
@@ -48,8 +52,8 @@ def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20)
     images_y = test_ds[indices][1].numpy().reshape(num, -1)
 
     # normalization
-    norm = pd.read_csv(norm_path)
-    images = do_normalisation(images, norm)
+    # norm = pd.read_csv(norm_path)
+    # images = do_normalisation(images, norm)
 
     # save input images after normalization
     images_x = images.numpy().reshape(num, -1)
@@ -60,6 +64,19 @@ def main(data_path, norm_path, arch, pretrained_path, out_path, fourier, num=20)
 
     # create predictions
     prediction = eval_model(images, arch).numpy().reshape(num, -1)
+
+    if separate:
+        pre_path = "../models/filter_deep_phase/filter_deep_phase.model"
+        arch = "filter_deep_phase"
+
+        # load pretrained model
+        arch = getattr(architecture, arch)()
+        load_pre_model(arch, pre_path, visualize=True)
+
+        # create predictions
+        prediction2 = eval_model(images, arch).numpy().reshape(num, -1)
+
+        prediction = np.stack([prediction, prediction2], 1).reshape(num, -1)
 
     # save input images, predictions and target images
     outpath = str(out_path) + "input.csv"
