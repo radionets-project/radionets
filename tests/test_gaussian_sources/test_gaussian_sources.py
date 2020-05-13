@@ -293,6 +293,8 @@ def test_find_lr():
         False,
         "-save",
         True,
+        "-test",
+        True,
     ]
     result = runner.invoke(main, options)
     print(traceback.print_exception(*result.exc_info))
