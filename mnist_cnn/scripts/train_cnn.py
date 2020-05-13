@@ -172,7 +172,7 @@ def main(
     save_model(learn, model_path)
 
     # Plot loss
-    plot_loss(learn, model_path)
+    plot_loss(learn, model_path, log=True)
 
     # Plot input, prediction and true image if asked
     if inspection is True:
