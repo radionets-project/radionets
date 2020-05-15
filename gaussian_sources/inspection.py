@@ -276,7 +276,7 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
-def plot_difference(i, img_pred, img_truth, out_path):
+def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
     """Create a subplot with the prediction, the truth and the difference.
     Also computes the dynamic range for the prediction and the truth. Last,
     calculates the quotient between these two values.
@@ -303,15 +303,15 @@ def plot_difference(i, img_pred, img_truth, out_path):
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
     # dr_pred = compute_dr(img_pred)
-    dr_truth, mode = compute_dr(img_truth)
+    dr_truth, mode = compute_dr(img_truth, sensitivity)
     dr_pred = compute_dr_pred(img_pred, mode)
     dynamic_range = dr_pred / dr_truth
 
     im1 = ax1.imshow(img_pred)
-    plot_off_regions(ax1)
+    plot_off_regions(ax1, mode)
 
     im2 = ax2.imshow(img_truth)
-    plot_off_regions(ax2)
+    plot_off_regions(ax2, mode)
 
     im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
@@ -330,7 +330,7 @@ def plot_difference(i, img_pred, img_truth, out_path):
     return dynamic_range
 
 
-def plot_off_regions(ax):
+def plot_off_regions(ax, mode):
     """Plot the off regions for the computation of the dynamic range.
 
     Parameters
@@ -338,13 +338,36 @@ def plot_off_regions(ax):
     ax : axis object
         current axis
     """
-    ax.axvspan(0, 9, ymin=0.844, ymax=0.99, color="red", fill=False, label="Off")
-    ax.axvspan(0, 9, ymax=0.156, ymin=0.01, color="red", fill=False)
-    ax.axvspan(53, 62, ymin=0.844, ymax=0.99, color="red", fill=False)
-    ax.axvspan(53, 62, ymax=0.156, ymin=0.01, color="red", fill=False)
+    if mode == "rms1":
+        ax.axvspan(0, 12, ymax=13/63, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(50, 62, ymin=1-13/63, ymax=0.99, color="red", fill=False)
+        ax.axvspan(50, 62, ymax=13/63, ymin=0.01, color="red", fill=False)
+    elif mode == "rms2":
+        ax.axvspan(0, 12, ymax=13/63, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(0, 12, ymax=1-13/63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(50, 62, ymax=13/63, ymin=0.01, color="red", fill=False)
+    elif mode == "rms3":
+        ax.axvspan(0, 12, ymax=1-13/63, ymin=0.99, color="red", fill=False, label="Off")
+        ax.axvspan(50, 62, ymax=1-13/63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(50, 62, ymax=13/63, ymin=0.01, color="red", fill=False)
+    elif mode == "rms4":
+        ax.axvspan(0, 12, ymax=13/63, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(0, 12, ymax=1-13/63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(50, 62, ymax=1-13/63, ymin=0.99, color="red", fill=False)
+    elif mode == "rms1+4":
+        ax.axvspan(0, 19, ymax=20/63, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(43, 62, ymax=1-20/63, ymin=0.99, color="red", fill=False)
+    elif mode == "rms2+3":
+        ax.axvspan(0, 19, ymax=1-20/63, ymin=0.99, color="red", fill=False, label="Off")
+        ax.axvspan(43, 62, ymax=20/63, ymin=0.01, color="red", fill=False)
+    elif mode is None:
+        ax.axvspan(0, 9, ymin=1-10/63, ymax=0.99, color="red", fill=False, label="Off")
+        ax.axvspan(0, 9, ymax=10/63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(53, 62, ymin=1-10/63, ymax=0.99, color="red", fill=False)
+        ax.axvspan(53, 62, ymax=10/63, ymin=0.01, color="red", fill=False)
 
 
-def compute_dr(img):
+def compute_dr(img, sensitivity):
     """Calculate the dynamic range of the given image.
 
     Parameters
@@ -366,7 +389,6 @@ def compute_dr(img):
     # unten rechts
     rms4 = compute_rms(img, "rms4", 10)
 
-    sensitivity = 1e-7
     if rms1 > sensitivity:
         if rms4 > sensitivity:
             print("Oben links und unten rechts zu groß.")
