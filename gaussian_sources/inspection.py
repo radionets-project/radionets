@@ -302,8 +302,9 @@ def plot_difference(i, img_pred, img_truth, out_path):
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
-    dr_pred = compute_dr(img_pred)
-    dr_truth = compute_dr(img_truth)
+    # dr_pred = compute_dr(img_pred)
+    dr_truth, mode = compute_dr(img_truth)
+    dr_pred = compute_dr_pred(img_pred, mode)
     dynamic_range = dr_pred / dr_truth
 
     im1 = ax1.imshow(img_pred)
@@ -356,13 +357,149 @@ def compute_dr(img):
     float
         dynamic range, calculated from four off regions
     """
-    rms1 = np.sqrt((img[:10, :10] ** 2).mean())
-    rms2 = np.sqrt((img[:10, -10:] ** 2).mean())
-    rms3 = np.sqrt((img[-10:, :10] ** 2).mean())
-    rms4 = np.sqrt((img[-10:, -10:] ** 2).mean())
-    rms = np.sqrt((rms1 ** 2 + rms2 ** 2 + rms3 ** 2 + rms4 ** 2) / 4)
+    # oben links
+    rms1 = compute_rms(img, "rms1", 10)
+    # oben rechts
+    rms2 = compute_rms(img, "rms2", 10)
+    # unten links
+    rms3 = compute_rms(img, "rms3", 10)
+    # unten rechts
+    rms4 = compute_rms(img, "rms4", 10)
+
+    sensitivity = 1e-7
+    if rms1 > sensitivity:
+        if rms4 > sensitivity:
+            print("Oben links und unten rechts zu groß.")
+            mode = "rms1+4"
+            rms = rms_comp(img, mode)
+            # print(rms2, rms3)
+        else:
+            print("Oben links zu groß")
+            # print(rms2, rms3, rms4)
+            mode = "rms1"
+            rms = rms_comp(img, mode)
+    elif rms2 > sensitivity:
+        if rms3 > sensitivity:
+            print("Oben rechts und unten links zu groß.")
+            # print(rms1, rms4)
+            mode = "rms2+3"
+            rms = rms_comp(img, mode)
+        else:
+            print("oben rechts zu groß")
+            # print(rms1, rms3, rms4)
+            mode = "rms2"
+            rms = rms_comp(img, mode)
+    elif rms3 > sensitivity:
+        print("Unten links zu groß")
+        # print(rms1, rms2, rms4)
+        mode = "rms3"
+        rms = rms_comp(img, mode)
+    elif rms4 > sensitivity:
+        print("Unten rechts zu groß")
+        # print(rms1, rms2, rms3)
+        mode = "rms4"
+        rms = rms_comp(img, mode)
+    else:
+        # print(rms1, rms2, rms3, rms4)
+        mode = None
+        rms = rms_comp(img, mode)
+    # print(rms1, rms2, rms3, rms4)
+    dynamic_range = img.max() / rms
+    return dynamic_range, mode
+
+
+def compute_dr_pred(img, mode):
+    if mode == "rms1":
+        rms = rms_comp(img, "rms1")
+
+    elif mode == "rms2":
+        rms = rms_comp(img, "rms2")
+
+    elif mode == "rms3":
+        rms = rms_comp(img, "rms3")
+
+    elif mode == "rms4":
+        rms = rms_comp(img, "rms4")
+
+    elif mode == "rms1+4":
+        rms = rms_comp(img, "rms1+4")
+
+    elif mode == "rms2+3":
+        rms = rms_comp(img, "rms2+3")
+
+    elif mode is None:
+        rms = rms_comp(img, None)
+
     dynamic_range = img.max() / rms
     return dynamic_range
+
+
+def rms_comp(img, mode):
+    rms = []
+    if mode == "rms1":
+        rms.extend([compute_rms(img, "rms2", 13)])
+        rms.extend([compute_rms(img, "rms3", 13)])
+        rms.extend([compute_rms(img, "rms4", 13)])
+        rms = combine_rms(rms)
+
+    elif mode == "rms2":
+        rms.extend([compute_rms(img, "rms1", 13)])
+        rms.extend([compute_rms(img, "rms3", 13)])
+        rms.extend([compute_rms(img, "rms4", 13)])
+        rms = combine_rms(rms)
+
+    elif mode == "rms3":
+        rms.extend([compute_rms(img, "rms1", 13)])
+        rms.extend([compute_rms(img, "rms2", 13)])
+        rms.extend([compute_rms(img, "rms4", 13)])
+        rms = combine_rms(rms)
+
+    elif mode == "rms4":
+        rms.extend([compute_rms(img, "rms1", 13)])
+        rms.extend([compute_rms(img, "rms2", 13)])
+        rms.extend([compute_rms(img, "rms3", 13)])
+        rms = combine_rms(rms)
+
+    elif mode == "rms1+4":
+        rms.extend([compute_rms(img, "rms2", 20)])
+        rms.extend([compute_rms(img, "rms3", 20)])
+        rms = combine_rms(rms)
+
+    elif mode == "rms2+3":
+        rms.extend([compute_rms(img, "rms1", 20)])
+        rms.extend([compute_rms(img, "rms4", 20)])
+        rms = combine_rms(rms)
+
+    elif mode is None:
+        rms.extend([compute_rms(img, "rms1", 10)])
+        rms.extend([compute_rms(img, "rms2", 10)])
+        rms.extend([compute_rms(img, "rms3", 10)])
+        rms.extend([compute_rms(img, "rms4", 10)])
+        rms = combine_rms(rms)
+    assert rms.dtype == np.float64
+    return rms
+
+
+def compute_rms(img, mode, num):
+    if mode == "rms1":
+        rms = np.sqrt((img[:num, :num] ** 2).mean())
+    elif mode == "rms2":
+        rms = np.sqrt((img[:num, -num:] ** 2).mean())
+    elif mode == "rms3":
+        rms = np.sqrt((img[-num:, :num] ** 2).mean())
+    elif mode == "rms4":
+        rms = np.sqrt((img[-num:, -num:] ** 2).mean())
+    return rms
+
+
+def combine_rms(rms):
+    if len(rms) == 2:
+        rms = np.sqrt((rms[0] ** 2 + rms[1] ** 2) / 2)
+    elif len(rms) == 3:
+        rms = np.sqrt((rms[0] ** 2 + rms[1] ** 2 + rms[2] ** 2) / 3)
+    elif len(rms) == 4:
+        rms = np.sqrt((rms[0] ** 2 + rms[1] ** 2 + rms[2] ** 2 + rms[3] ** 2) / 4)
+    return rms
 
 
 def hist_difference(i, img_pred, img_truth, out_path):
