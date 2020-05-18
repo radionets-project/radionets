@@ -18,7 +18,7 @@ def open_csv(path, mode):
     ----------
     path : path object from click
         path which leads to the csv file.
-    mode : string
+    mode : str
         Either input, predictions or truth.
 
     Returns
@@ -155,7 +155,7 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     img_input: current input image as a numpy array in shape (2*img_size^2)
     img_pred: current prediction image as a numpy array with shape (img_size^2)
     img_truth: current true image as a numpy array with shape (img_size^2)
-    out_path: string which contains the output path
+    out_path: str which contains the output path
     """
     # reshaping and splitting in real and imaginary part if necessary
     inp_real, inp_imag = reshape_split(img_input)
@@ -190,7 +190,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     img_input: current input image as a numpy array in shape (2*img_size^2)
     img_pred: current prediction image as a numpy array with shape (2*img_size^2)
     img_truth: current true image as a numpy array with shape (2*img_size^2)
-    out_path: string which contains the output path
+    out_path: str which contains the output path
     """
     # reshaping and splitting in real and imaginary part if necessary
     inp_real, inp_imag = reshape_split(img_input)
@@ -279,7 +279,10 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
 def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
     """Create a subplot with the prediction, the truth and the difference.
     Also computes the dynamic range for the prediction and the truth. Last,
-    calculates the quotient between these two values.
+    calculates the quotient between these two values. If one RMS value in one corner of
+    the true image exceeds a given sensitivity, this region is excluded from the
+    computation and the other regions get larger by a third. If two opposite corners
+    exceed the sensitivity, the other two regions double in size.
 
 
     Parameters
@@ -290,7 +293,9 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
         image of prediction
     img_truth : ndarray
         image of truth
-    out_path : string
+    sensitivity : float
+        upper limit for RMS value
+    out_path : str
         Output path as defined in makerc
 
     Returns
@@ -302,8 +307,7 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
-    # dr_pred = compute_dr(img_pred)
-    dr_truth, mode = compute_dr(img_truth, sensitivity)
+    dr_truth, mode = compute_dr(i, img_truth, sensitivity)
     dr_pred = compute_dr_pred(img_pred, mode)
     dynamic_range = dr_pred / dr_truth
 
@@ -332,53 +336,70 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
 
 def plot_off_regions(ax, mode):
     """Plot the off regions for the computation of the dynamic range.
+    Adjust the plotted off regions according to the mode.
 
     Parameters
     ----------
     ax : axis object
         current axis
+    mode : str
+        current mode
     """
     if mode == "rms1":
-        ax.axvspan(0, 12, ymax=13/63, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(50, 62, ymin=1-13/63, ymax=0.99, color="red", fill=False)
-        ax.axvspan(50, 62, ymax=13/63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(0, 12, ymax=13 / 63, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(50, 62, ymin=1 - 13 / 63, ymax=0.99, color="red", fill=False)
+        ax.axvspan(50, 62, ymax=13 / 63, ymin=0.01, color="red", fill=False)
     elif mode == "rms2":
-        ax.axvspan(0, 12, ymax=13/63, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(0, 12, ymax=1-13/63, ymin=0.99, color="red", fill=False)
-        ax.axvspan(50, 62, ymax=13/63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(0, 12, ymax=13 / 63, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(0, 12, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(50, 62, ymax=13 / 63, ymin=0.01, color="red", fill=False)
     elif mode == "rms3":
-        ax.axvspan(0, 12, ymax=1-13/63, ymin=0.99, color="red", fill=False, label="Off")
-        ax.axvspan(50, 62, ymax=1-13/63, ymin=0.99, color="red", fill=False)
-        ax.axvspan(50, 62, ymax=13/63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(
+            0, 12, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False, label="Off"
+        )
+        ax.axvspan(50, 62, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(50, 62, ymax=13 / 63, ymin=0.01, color="red", fill=False)
     elif mode == "rms4":
-        ax.axvspan(0, 12, ymax=13/63, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(0, 12, ymax=1-13/63, ymin=0.99, color="red", fill=False)
-        ax.axvspan(50, 62, ymax=1-13/63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(0, 12, ymax=13 / 63, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(0, 12, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(50, 62, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False)
     elif mode == "rms1+4":
-        ax.axvspan(0, 19, ymax=20/63, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(43, 62, ymax=1-20/63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(0, 19, ymax=20 / 63, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(43, 62, ymax=1 - 20 / 63, ymin=0.99, color="red", fill=False)
     elif mode == "rms2+3":
-        ax.axvspan(0, 19, ymax=1-20/63, ymin=0.99, color="red", fill=False, label="Off")
-        ax.axvspan(43, 62, ymax=20/63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(
+            0, 19, ymax=1 - 20 / 63, ymin=0.99, color="red", fill=False, label="Off"
+        )
+        ax.axvspan(43, 62, ymax=20 / 63, ymin=0.01, color="red", fill=False)
     elif mode is None:
-        ax.axvspan(0, 9, ymin=1-10/63, ymax=0.99, color="red", fill=False, label="Off")
-        ax.axvspan(0, 9, ymax=10/63, ymin=0.01, color="red", fill=False)
-        ax.axvspan(53, 62, ymin=1-10/63, ymax=0.99, color="red", fill=False)
-        ax.axvspan(53, 62, ymax=10/63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(
+            0, 9, ymin=1 - 10 / 63, ymax=0.99, color="red", fill=False, label="Off"
+        )
+        ax.axvspan(0, 9, ymax=10 / 63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(53, 62, ymin=1 - 10 / 63, ymax=0.99, color="red", fill=False)
+        ax.axvspan(53, 62, ymax=10 / 63, ymin=0.01, color="red", fill=False)
 
 
-def compute_dr(img, sensitivity):
-    """Calculate the dynamic range of the given image.
+def compute_dr(i, img, sensitivity):
+    """Compute the dynamic range for the true image. Also checks if one region
+    exceeds the sensitivity. If so, mode is set accordingly for the following
+    computations, including the predicted image.
 
     Parameters
     ----------
+    i : int
+        current index
     img : ndarray
-        given image
+        current image
+    sensitivity : float
+        upper limit for RMS value
 
     Returns
     -------
-    float
-        dynamic range, calculated from four off regions
+    dynamic_range
+        computed dynamic range for the true image
+    mode
+        mode for following computations
     """
     # oben links
     rms1 = compute_rms(img, "rms1", 10)
@@ -391,33 +412,33 @@ def compute_dr(img, sensitivity):
 
     if rms1 > sensitivity:
         if rms4 > sensitivity:
-            print("Oben links und unten rechts zu groß.")
+            print("Bild {}: Oben links und unten rechts zu groß.".format(i))
             mode = "rms1+4"
             rms = rms_comp(img, mode)
             # print(rms2, rms3)
         else:
-            print("Oben links zu groß")
+            print("Bild {}: Oben links zu groß".format(i))
             # print(rms2, rms3, rms4)
             mode = "rms1"
             rms = rms_comp(img, mode)
     elif rms2 > sensitivity:
         if rms3 > sensitivity:
-            print("Oben rechts und unten links zu groß.")
+            print("Bild {}: Oben rechts und unten links zu groß.".format(i))
             # print(rms1, rms4)
             mode = "rms2+3"
             rms = rms_comp(img, mode)
         else:
-            print("oben rechts zu groß")
+            print("Bild {}: oben rechts zu groß".format(i))
             # print(rms1, rms3, rms4)
             mode = "rms2"
             rms = rms_comp(img, mode)
     elif rms3 > sensitivity:
-        print("Unten links zu groß")
+        print("Bild {}: Unten links zu groß".format(i))
         # print(rms1, rms2, rms4)
         mode = "rms3"
         rms = rms_comp(img, mode)
     elif rms4 > sensitivity:
-        print("Unten rechts zu groß")
+        print("Bild {}: Unten rechts zu groß".format(i))
         # print(rms1, rms2, rms3)
         mode = "rms4"
         rms = rms_comp(img, mode)
@@ -431,6 +452,21 @@ def compute_dr(img, sensitivity):
 
 
 def compute_dr_pred(img, mode):
+    """Compute the dynamic range on the predicted image according to the mode set
+    by compute_dr.
+
+    Parameters
+    ----------
+    img : ndarray
+        current image
+    mode : str
+        current mode
+
+    Returns
+    -------
+    dynamic_range
+        dynamic range for the predicted image
+    """
     if mode == "rms1":
         rms = rms_comp(img, "rms1")
 
@@ -457,6 +493,21 @@ def compute_dr_pred(img, mode):
 
 
 def rms_comp(img, mode):
+    """Calls compute_rms according to the mode for the remaining corners
+    with the right size.
+
+    Parameters
+    ----------
+    img : ndarray
+        current image
+    mode : str
+        current mode
+
+    Returns
+    -------
+    rms
+        combined RMS value for the given image
+    """
     rms = []
     if mode == "rms1":
         rms.extend([compute_rms(img, "rms2", 13)])
@@ -502,19 +553,47 @@ def rms_comp(img, mode):
     return rms
 
 
-def compute_rms(img, mode, num):
-    if mode == "rms1":
+def compute_rms(img, corner, num):
+    """Compute the RMS value for the given corner with the size determined by num.
+
+    Parameters
+    ----------
+    img : int
+        current index
+    corner : str
+        corner of image
+    num : int
+        size of the corner
+
+    Returns
+    -------
+    rms
+        RMS value of the given corner
+    """
+    if corner == "rms1":
         rms = np.sqrt((img[:num, :num] ** 2).mean())
-    elif mode == "rms2":
+    elif corner == "rms2":
         rms = np.sqrt((img[:num, -num:] ** 2).mean())
-    elif mode == "rms3":
+    elif corner == "rms3":
         rms = np.sqrt((img[-num:, :num] ** 2).mean())
-    elif mode == "rms4":
+    elif corner == "rms4":
         rms = np.sqrt((img[-num:, -num:] ** 2).mean())
     return rms
 
 
 def combine_rms(rms):
+    """Combine the RMS values of the image according to the number of values.
+
+    Parameters
+    ----------
+    rms : list
+        list of RMS values
+
+    Returns
+    -------
+    rms
+        combined RMS value for the image
+    """
     if len(rms) == 2:
         rms = np.sqrt((rms[0] ** 2 + rms[1] ** 2) / 2)
     elif len(rms) == 3:
@@ -535,7 +614,7 @@ def hist_difference(i, img_pred, img_truth, out_path):
         image of prediction
     img_truth : ndarray
         image of truth
-    out_path : string
+    out_path : str
         Output path as defined in the makerc
     """
     x = np.abs(img_pred - img_truth).reshape(-1)
@@ -556,7 +635,7 @@ def save_indices_and_data(indices, dr, outpath):
         list of indices
     dr : ndarray
         data
-    outpath : string
+    outpath : str
         Output path as defined in the makerc
     """
     df = pd.DataFrame(data=dr, index=indices)
@@ -590,7 +669,7 @@ def blob_detection(i, img_pred, img_truth, out_path):
         image of prediction
     img_truth : ndarray
         image of truth
-    out_path : string
+    out_path : str
         Output path as defined in makerc
     """
     plt.rcParams.update({"figure.max_open_warning": 0})
@@ -636,7 +715,7 @@ def make_axes_nice(fig, ax, im, title):
         current axis
     im : ndarray
         plotted image
-    title : string
+    title : str
         title of subplot
     """
     divider = make_axes_locatable(ax)
