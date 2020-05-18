@@ -120,9 +120,9 @@ def test_plot_difference():
         test_ds[0][1].numpy(),
         test_ds[1][1].numpy(),
     )
-    dr_fourier = plot_difference(0, ifft_pred, ifft_truth, build)
+    dr_fourier = plot_difference(0, ifft_pred, ifft_truth, 1e-6, build)
     dr_wo_fourier = plot_difference(
-        0, img_pred.reshape(63, 63), img_truth.reshape(63, 63), build
+        0, img_pred.reshape(63, 63), img_truth.reshape(63, 63), 1e-6, build
     )
 
     assert dr_fourier.dtype == float
