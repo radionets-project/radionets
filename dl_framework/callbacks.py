@@ -5,7 +5,6 @@ from re import sub
 import matplotlib.pyplot as plt
 import pandas as pd
 from dl_framework.data import do_normalisation
-from gaussian_sources.inspection import make_axes_nice
 from dl_framework.logger import make_notifier
 from dl_framework.model import save_model
 
@@ -311,14 +310,6 @@ class data_aug(Callback):
             x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
             y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
             y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
-        # print(self.run.xb[0][0].shape)
-        # fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
-        # im1 = ax1.imshow(self.run.yb[0][1].cpu(), cmap="RdBu")
-        # im2 = ax2.imshow(y[0][1].cpu(), cmap="RdBu")
-
-        # make_axes_nice(fig, ax1, im1, "Original")
-        # make_axes_nice(fig, ax2, im2, "Rotiert, {}".format(randint[0]))
-        # plt.savefig("test.png", bbox_inches="tight", pad_inches=0.01)
         self.run.xb = x
         self.run.yb = y
 
