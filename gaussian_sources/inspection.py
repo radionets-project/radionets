@@ -401,52 +401,45 @@ def compute_dr(i, img, sensitivity):
     mode
         mode for following computations
     """
-    # oben links
+    # upper left
     rms1 = compute_rms(img, "rms1", 10)
-    # oben rechts
+    # upper right
     rms2 = compute_rms(img, "rms2", 10)
-    # unten links
+    # down left
     rms3 = compute_rms(img, "rms3", 10)
-    # unten rechts
+    # down right
     rms4 = compute_rms(img, "rms4", 10)
 
     if rms1 > sensitivity:
         if rms4 > sensitivity:
-            print("Bild {}: Oben links und unten rechts zu groß.".format(i))
+            print("Image {}: RMS exceeds upper left and down right.".format(i))
             mode = "rms1+4"
             rms = rms_comp(img, mode)
-            # print(rms2, rms3)
         else:
-            print("Bild {}: Oben links zu groß".format(i))
-            # print(rms2, rms3, rms4)
+            print("Image {}: RMS exceeds upper left".format(i))
             mode = "rms1"
             rms = rms_comp(img, mode)
     elif rms2 > sensitivity:
         if rms3 > sensitivity:
-            print("Bild {}: Oben rechts und unten links zu groß.".format(i))
-            # print(rms1, rms4)
+            print("Image {}: RMS exceeds upper right and down left.".format(i))
             mode = "rms2+3"
             rms = rms_comp(img, mode)
         else:
-            print("Bild {}: oben rechts zu groß".format(i))
-            # print(rms1, rms3, rms4)
+            print("Image {}: RMS exceeds upper right".format(i))
             mode = "rms2"
             rms = rms_comp(img, mode)
     elif rms3 > sensitivity:
-        print("Bild {}: Unten links zu groß".format(i))
-        # print(rms1, rms2, rms4)
+        print("Image {}: RMS exceeds down left".format(i))
         mode = "rms3"
         rms = rms_comp(img, mode)
     elif rms4 > sensitivity:
-        print("Bild {}: Unten rechts zu groß".format(i))
-        # print(rms1, rms2, rms3)
+        print("Image {}: RMS exceeds down right".format(i))
         mode = "rms4"
         rms = rms_comp(img, mode)
     else:
-        # print(rms1, rms2, rms3, rms4)
         mode = None
         rms = rms_comp(img, mode)
-    # print(rms1, rms2, rms3, rms4)
+
     dynamic_range = img.max() / rms
     return dynamic_range, mode
 
