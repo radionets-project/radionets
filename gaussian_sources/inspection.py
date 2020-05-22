@@ -206,26 +206,26 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
 
     im1 = ax1.imshow(inp_real, cmap="RdBu")
-    make_axes_nice(fig, ax1, im1, r"Real Input")
+    make_axes_nice(fig, ax1, im1, r"Amplitude Input")
 
     im2 = ax2.imshow(
         real_pred, cmap="RdBu", vmin=real_truth.min(), vmax=real_truth.max()
     )
-    make_axes_nice(fig, ax2, im2, r"Real Prediction")
+    make_axes_nice(fig, ax2, im2, r"Amplitude Prediction")
 
     im3 = ax3.imshow(real_truth, cmap="RdBu")
-    make_axes_nice(fig, ax3, im3, r"Real Truth")
+    make_axes_nice(fig, ax3, im3, r"Amplitude Truth")
 
     im4 = ax4.imshow(inp_imag, cmap="RdBu")
-    make_axes_nice(fig, ax4, im4, r"Imaginary Input")
+    make_axes_nice(fig, ax4, im4, r"Phase Input")
 
     im5 = ax5.imshow(
         imag_pred, cmap="RdBu", vmin=imag_truth.min(), vmax=imag_truth.max()
     )
-    make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
+    make_axes_nice(fig, ax5, im5, r"Phase Prediction")
 
     im6 = ax6.imshow(imag_truth, cmap="RdBu")
-    make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
+    make_axes_nice(fig, ax6, im6, r"Phase Truth")
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
