@@ -15,7 +15,7 @@ setup(
         'numpy==1.17.3',
         'astropy==3.2.3',
         'tqdm==4.36.1',
-        'click==7.0',
+        'click==7.1.2',
         'geos',
         'shapely==1.6.4',
         'proj',
