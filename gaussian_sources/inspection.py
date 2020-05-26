@@ -307,15 +307,26 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 12))
 
-    dr_truth, mode = compute_dr(i, img_truth, sensitivity)
-    dr_pred = compute_dr_pred(img_pred, mode)
+    img_size = img_pred.shape[0]
+    if img_size == 63:
+        # num_tree for 3 off regions, num_two for 2 off regions and so on
+        num_three = 13
+        num_two = 20
+        num_four = 10
+    elif img_size == 127:
+        num_three = 60
+        num_two = 50
+        num_four = 40
+    num = [num_three, num_two, num_four]
+    dr_truth, mode = compute_dr(i, img_truth, sensitivity, num)
+    dr_pred = compute_dr_pred(img_pred, mode, num)
     dynamic_range = dr_pred / dr_truth
 
     im1 = ax1.imshow(img_pred)
-    plot_off_regions(ax1, mode)
+    plot_off_regions(ax1, mode, img_size, num)
 
     im2 = ax2.imshow(img_truth)
-    plot_off_regions(ax2, mode)
+    plot_off_regions(ax2, mode, img_size, num)
 
     im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
@@ -334,7 +345,7 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
     return dynamic_range
 
 
-def plot_off_regions(ax, mode):
+def plot_off_regions(ax, mode, img_size, num):
     """Plot the off regions for the computation of the dynamic range.
     Adjust the plotted off regions according to the mode.
 
@@ -344,43 +355,48 @@ def plot_off_regions(ax, mode):
         current axis
     mode : str
         current mode
+    img_size : int
+        current image size
+    num : list
+        side length of quadratic off region
     """
+    num_three, num_two, num_four = num[0], num[1], num[2]
     if mode == "rms1":
-        ax.axvspan(0, 12, ymax=13 / 63, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(50, 62, ymin=1 - 13 / 63, ymax=0.99, color="red", fill=False)
-        ax.axvspan(50, 62, ymax=13 / 63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(0, num_three-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(img_size-num_three, img_size-1, ymin=1 - num_three / img_size, ymax=0.99, color="red", fill=False)
+        ax.axvspan(img_size-num_three, img_size-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False)
     elif mode == "rms2":
-        ax.axvspan(0, 12, ymax=13 / 63, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(0, 12, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False)
-        ax.axvspan(50, 62, ymax=13 / 63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(0, num_three-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(0, num_three-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False)
+        ax.axvspan(img_size-num_three, img_size-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False)
     elif mode == "rms3":
         ax.axvspan(
-            0, 12, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False, label="Off"
+            0, num_three-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False, label="Off"
         )
-        ax.axvspan(50, 62, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False)
-        ax.axvspan(50, 62, ymax=13 / 63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(img_size-num_three, img_size-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False)
+        ax.axvspan(img_size-num_three, img_size-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False)
     elif mode == "rms4":
-        ax.axvspan(0, 12, ymax=13 / 63, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(0, 12, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False)
-        ax.axvspan(50, 62, ymax=1 - 13 / 63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(0, num_three-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(0, num_three-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False)
+        ax.axvspan(img_size-num_three, img_size-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False)
     elif mode == "rms1+4":
-        ax.axvspan(0, 19, ymax=20 / 63, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(43, 62, ymax=1 - 20 / 63, ymin=0.99, color="red", fill=False)
+        ax.axvspan(0, num_two-1, ymax=num_two / img_size, ymin=0.01, color="red", fill=False, label="Off")
+        ax.axvspan(img_size-num_two, img_size-1, ymax=1 - num_two / img_size, ymin=0.99, color="red", fill=False)
     elif mode == "rms2+3":
         ax.axvspan(
-            0, 19, ymax=1 - 20 / 63, ymin=0.99, color="red", fill=False, label="Off"
+            0, num_two-1, ymax=1 - num_two / img_size, ymin=0.99, color="red", fill=False, label="Off"
         )
-        ax.axvspan(43, 62, ymax=20 / 63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(img_size-num_two, img_size-1, ymax=num_two / img_size, ymin=0.01, color="red", fill=False)
     elif mode is None:
         ax.axvspan(
-            0, 9, ymin=1 - 10 / 63, ymax=0.99, color="red", fill=False, label="Off"
+            0, num_four-1, ymin=1 - num_four / img_size, ymax=0.99, color="red", fill=False, label="Off"
         )
-        ax.axvspan(0, 9, ymax=10 / 63, ymin=0.01, color="red", fill=False)
-        ax.axvspan(53, 62, ymin=1 - 10 / 63, ymax=0.99, color="red", fill=False)
-        ax.axvspan(53, 62, ymax=10 / 63, ymin=0.01, color="red", fill=False)
+        ax.axvspan(0, num_four-1, ymax=num_four / img_size, ymin=0.01, color="red", fill=False)
+        ax.axvspan(img_size-num_four, img_size-1, ymin=1 - num_four / img_size, ymax=0.99, color="red", fill=False)
+        ax.axvspan(img_size-num_four, img_size-1, ymax=num_four / img_size, ymin=0.01, color="red", fill=False)
 
 
-def compute_dr(i, img, sensitivity):
+def compute_dr(i, img, sensitivity, num):
     """Compute the dynamic range for the true image. Also checks if one region
     exceeds the sensitivity. If so, mode is set accordingly for the following
     computations, including the predicted image.
@@ -393,6 +409,8 @@ def compute_dr(i, img, sensitivity):
         current image
     sensitivity : float
         upper limit for RMS value
+    num : list
+        side length of quadratic off region
 
     Returns
     -------
@@ -401,50 +419,51 @@ def compute_dr(i, img, sensitivity):
     mode
         mode for following computations
     """
+    num_four = num[2]
     # upper left
-    rms1 = compute_rms(img, "rms1", 10)
+    rms1 = compute_rms(img, "rms1", num_four)
     # upper right
-    rms2 = compute_rms(img, "rms2", 10)
+    rms2 = compute_rms(img, "rms2", num_four)
     # down left
-    rms3 = compute_rms(img, "rms3", 10)
+    rms3 = compute_rms(img, "rms3", num_four)
     # down right
-    rms4 = compute_rms(img, "rms4", 10)
+    rms4 = compute_rms(img, "rms4", num_four)
 
     if rms1 > sensitivity:
         if rms4 > sensitivity:
             print("Image {}: RMS exceeds upper left and down right.".format(i))
             mode = "rms1+4"
-            rms = rms_comp(img, mode)
+            rms = rms_comp(img, mode, num)
         else:
             print("Image {}: RMS exceeds upper left".format(i))
             mode = "rms1"
-            rms = rms_comp(img, mode)
+            rms = rms_comp(img, mode, num)
     elif rms2 > sensitivity:
         if rms3 > sensitivity:
             print("Image {}: RMS exceeds upper right and down left.".format(i))
             mode = "rms2+3"
-            rms = rms_comp(img, mode)
+            rms = rms_comp(img, mode, num)
         else:
             print("Image {}: RMS exceeds upper right".format(i))
             mode = "rms2"
-            rms = rms_comp(img, mode)
+            rms = rms_comp(img, mode, num)
     elif rms3 > sensitivity:
         print("Image {}: RMS exceeds down left".format(i))
         mode = "rms3"
-        rms = rms_comp(img, mode)
+        rms = rms_comp(img, mode, num)
     elif rms4 > sensitivity:
         print("Image {}: RMS exceeds down right".format(i))
         mode = "rms4"
-        rms = rms_comp(img, mode)
+        rms = rms_comp(img, mode, num)
     else:
         mode = None
-        rms = rms_comp(img, mode)
+        rms = rms_comp(img, mode, num)
 
     dynamic_range = img.max() / rms
     return dynamic_range, mode
 
 
-def compute_dr_pred(img, mode):
+def compute_dr_pred(img, mode, num):
     """Compute the dynamic range on the predicted image according to the mode set
     by compute_dr.
 
@@ -454,6 +473,8 @@ def compute_dr_pred(img, mode):
         current image
     mode : str
         current mode
+    num : list
+        side length of quadratic off region
 
     Returns
     -------
@@ -461,31 +482,31 @@ def compute_dr_pred(img, mode):
         dynamic range for the predicted image
     """
     if mode == "rms1":
-        rms = rms_comp(img, "rms1")
+        rms = rms_comp(img, "rms1", num)
 
     elif mode == "rms2":
-        rms = rms_comp(img, "rms2")
+        rms = rms_comp(img, "rms2", num)
 
     elif mode == "rms3":
-        rms = rms_comp(img, "rms3")
+        rms = rms_comp(img, "rms3", num)
 
     elif mode == "rms4":
-        rms = rms_comp(img, "rms4")
+        rms = rms_comp(img, "rms4", num)
 
     elif mode == "rms1+4":
-        rms = rms_comp(img, "rms1+4")
+        rms = rms_comp(img, "rms1+4", num)
 
     elif mode == "rms2+3":
-        rms = rms_comp(img, "rms2+3")
+        rms = rms_comp(img, "rms2+3", num)
 
     elif mode is None:
-        rms = rms_comp(img, None)
+        rms = rms_comp(img, None, num)
 
     dynamic_range = img.max() / rms
     return dynamic_range
 
 
-def rms_comp(img, mode):
+def rms_comp(img, mode, num):
     """Calls compute_rms according to the mode for the remaining corners
     with the right size.
 
@@ -495,52 +516,55 @@ def rms_comp(img, mode):
         current image
     mode : str
         current mode
+    num : list
+        side length of quadratic off region
 
     Returns
     -------
     rms
         combined RMS value for the given image
     """
+    num_three, num_two, num_four = num[0], num[1], num[2]
     rms = []
     if mode == "rms1":
-        rms.extend([compute_rms(img, "rms2", 13)])
-        rms.extend([compute_rms(img, "rms3", 13)])
-        rms.extend([compute_rms(img, "rms4", 13)])
+        rms.extend([compute_rms(img, "rms2", num_three)])
+        rms.extend([compute_rms(img, "rms3", num_three)])
+        rms.extend([compute_rms(img, "rms4", num_three)])
         rms = combine_rms(rms)
 
     elif mode == "rms2":
-        rms.extend([compute_rms(img, "rms1", 13)])
-        rms.extend([compute_rms(img, "rms3", 13)])
-        rms.extend([compute_rms(img, "rms4", 13)])
+        rms.extend([compute_rms(img, "rms1", num_three)])
+        rms.extend([compute_rms(img, "rms3", num_three)])
+        rms.extend([compute_rms(img, "rms4", num_three)])
         rms = combine_rms(rms)
 
     elif mode == "rms3":
-        rms.extend([compute_rms(img, "rms1", 13)])
-        rms.extend([compute_rms(img, "rms2", 13)])
-        rms.extend([compute_rms(img, "rms4", 13)])
+        rms.extend([compute_rms(img, "rms1", num_three)])
+        rms.extend([compute_rms(img, "rms2", num_three)])
+        rms.extend([compute_rms(img, "rms4", num_three)])
         rms = combine_rms(rms)
 
     elif mode == "rms4":
-        rms.extend([compute_rms(img, "rms1", 13)])
-        rms.extend([compute_rms(img, "rms2", 13)])
-        rms.extend([compute_rms(img, "rms3", 13)])
+        rms.extend([compute_rms(img, "rms1", num_three)])
+        rms.extend([compute_rms(img, "rms2", num_three)])
+        rms.extend([compute_rms(img, "rms3", num_three)])
         rms = combine_rms(rms)
 
     elif mode == "rms1+4":
-        rms.extend([compute_rms(img, "rms2", 20)])
-        rms.extend([compute_rms(img, "rms3", 20)])
+        rms.extend([compute_rms(img, "rms2", num_two)])
+        rms.extend([compute_rms(img, "rms3", num_two)])
         rms = combine_rms(rms)
 
     elif mode == "rms2+3":
-        rms.extend([compute_rms(img, "rms1", 20)])
-        rms.extend([compute_rms(img, "rms4", 20)])
+        rms.extend([compute_rms(img, "rms1", num_two)])
+        rms.extend([compute_rms(img, "rms4", num_two)])
         rms = combine_rms(rms)
 
     elif mode is None:
-        rms.extend([compute_rms(img, "rms1", 10)])
-        rms.extend([compute_rms(img, "rms2", 10)])
-        rms.extend([compute_rms(img, "rms3", 10)])
-        rms.extend([compute_rms(img, "rms4", 10)])
+        rms.extend([compute_rms(img, "rms1", num_four)])
+        rms.extend([compute_rms(img, "rms2", num_four)])
+        rms.extend([compute_rms(img, "rms3", num_four)])
+        rms.extend([compute_rms(img, "rms4", num_four)])
         rms = combine_rms(rms)
     assert rms.dtype == np.float64
     return rms
