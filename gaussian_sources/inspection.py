@@ -362,38 +362,179 @@ def plot_off_regions(ax, mode, img_size, num):
     """
     num_three, num_two, num_four = num[0], num[1], num[2]
     if mode == "rms1":
-        ax.axvspan(0, num_three-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(img_size-num_three, img_size-1, ymin=1 - num_three / img_size, ymax=0.99, color="red", fill=False)
-        ax.axvspan(img_size-num_three, img_size-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False)
+        ax.axvspan(
+            0,
+            num_three - 1,
+            ymax=num_three / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+            label="Off",
+        )
+        ax.axvspan(
+            img_size - num_three,
+            img_size - 1,
+            ymin=1 - num_three / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+        )
+        ax.axvspan(
+            img_size - num_three,
+            img_size - 1,
+            ymax=num_three / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+        )
     elif mode == "rms2":
-        ax.axvspan(0, num_three-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(0, num_three-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False)
-        ax.axvspan(img_size-num_three, img_size-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False)
+        ax.axvspan(
+            0,
+            num_three - 1,
+            ymax=num_three / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+            label="Off",
+        )
+        ax.axvspan(
+            0,
+            num_three - 1,
+            ymax=1 - num_three / img_size,
+            ymin=0.99,
+            color="red",
+            fill=False,
+        )
+        ax.axvspan(
+            img_size - num_three,
+            img_size - 1,
+            ymax=num_three / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+        )
     elif mode == "rms3":
         ax.axvspan(
-            0, num_three-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False, label="Off"
+            0,
+            num_three - 1,
+            ymax=1 - num_three / img_size,
+            ymin=0.99,
+            color="red",
+            fill=False,
+            label="Off",
         )
-        ax.axvspan(img_size-num_three, img_size-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False)
-        ax.axvspan(img_size-num_three, img_size-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False)
+        ax.axvspan(
+            img_size - num_three,
+            img_size - 1,
+            ymax=1 - num_three / img_size,
+            ymin=0.99,
+            color="red",
+            fill=False,
+        )
+        ax.axvspan(
+            img_size - num_three,
+            img_size - 1,
+            ymax=num_three / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+        )
     elif mode == "rms4":
-        ax.axvspan(0, num_three-1, ymax=num_three / img_size, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(0, num_three-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False)
-        ax.axvspan(img_size-num_three, img_size-1, ymax=1 - num_three / img_size, ymin=0.99, color="red", fill=False)
+        ax.axvspan(
+            0,
+            num_three - 1,
+            ymax=num_three / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+            label="Off",
+        )
+        ax.axvspan(
+            0,
+            num_three - 1,
+            ymax=1 - num_three / img_size,
+            ymin=0.99,
+            color="red",
+            fill=False,
+        )
+        ax.axvspan(
+            img_size - num_three,
+            img_size - 1,
+            ymax=1 - num_three / img_size,
+            ymin=0.99,
+            color="red",
+            fill=False,
+        )
     elif mode == "rms1+4":
-        ax.axvspan(0, num_two-1, ymax=num_two / img_size, ymin=0.01, color="red", fill=False, label="Off")
-        ax.axvspan(img_size-num_two, img_size-1, ymax=1 - num_two / img_size, ymin=0.99, color="red", fill=False)
+        ax.axvspan(
+            0,
+            num_two - 1,
+            ymax=num_two / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+            label="Off",
+        )
+        ax.axvspan(
+            img_size - num_two,
+            img_size - 1,
+            ymax=1 - num_two / img_size,
+            ymin=0.99,
+            color="red",
+            fill=False,
+        )
     elif mode == "rms2+3":
         ax.axvspan(
-            0, num_two-1, ymax=1 - num_two / img_size, ymin=0.99, color="red", fill=False, label="Off"
+            0,
+            num_two - 1,
+            ymax=1 - num_two / img_size,
+            ymin=0.99,
+            color="red",
+            fill=False,
+            label="Off",
         )
-        ax.axvspan(img_size-num_two, img_size-1, ymax=num_two / img_size, ymin=0.01, color="red", fill=False)
+        ax.axvspan(
+            img_size - num_two,
+            img_size - 1,
+            ymax=num_two / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+        )
     elif mode is None:
         ax.axvspan(
-            0, num_four-1, ymin=1 - num_four / img_size, ymax=0.99, color="red", fill=False, label="Off"
+            0,
+            num_four - 1,
+            ymin=1 - num_four / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+            label="Off",
         )
-        ax.axvspan(0, num_four-1, ymax=num_four / img_size, ymin=0.01, color="red", fill=False)
-        ax.axvspan(img_size-num_four, img_size-1, ymin=1 - num_four / img_size, ymax=0.99, color="red", fill=False)
-        ax.axvspan(img_size-num_four, img_size-1, ymax=num_four / img_size, ymin=0.01, color="red", fill=False)
+        ax.axvspan(
+            0,
+            num_four - 1,
+            ymax=num_four / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+        )
+        ax.axvspan(
+            img_size - num_four,
+            img_size - 1,
+            ymin=1 - num_four / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+        )
+        ax.axvspan(
+            img_size - num_four,
+            img_size - 1,
+            ymax=num_four / img_size,
+            ymin=0.01,
+            color="red",
+            fill=False,
+        )
 
 
 def compute_dr(i, img, sensitivity, num):
