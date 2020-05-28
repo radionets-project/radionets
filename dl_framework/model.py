@@ -189,6 +189,29 @@ def conv(ni, nc, ks, stride, padding):
 
 
 def conv_amp(ni, nc, ks, stride, padding, dilation):
+    """Create a convolutional layer for the amplitude reconstruction.
+    The activation function ist ReLU with a 2d Batch normalization.
+
+    Parameters
+    ----------
+    ni : int
+        Number of input channels
+    nc : int
+        Number of output channels
+    ks : tuple
+        Size of the kernel
+    stride : int
+        Stepsize between use of kernel
+    padding : int
+        Number of pixels added to edges of picture
+    dilation : int
+        Factor for spreading the receptive field
+
+    Returns
+    -------
+    list
+        list of convolutional layer, 2d Batch Normalisation and Activation function.
+    """
     conv = (
         nn.Conv2d(
             ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"
@@ -201,6 +224,31 @@ def conv_amp(ni, nc, ks, stride, padding, dilation):
 
 
 def conv_phase(ni, nc, ks, stride, padding, dilation, add):
+    """Create a convolutional layer for the amplitude reconstruction.
+    The activation function ist GeneralELU with a 2d Batch normalization.
+
+    Parameters
+    ----------
+    ni : int
+        Number of input channels
+    nc : int
+        Number of output channels
+    ks : tuple
+        Size of the kernel
+    stride : int
+        Stepsize between use of kernel
+    padding : int
+        Number of pixels added to edges of picture
+    dilation : int
+        Factor for spreading the receptive field
+    add : int
+        Number which is added to GeneralELU
+
+    Returns
+    -------
+    list
+        list of convolutional layer, 2d Batch Normalisation and Activation function.
+    """
     conv = (
         nn.Conv2d(
             ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"
