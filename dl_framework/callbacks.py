@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from dl_framework.utils import camel2snake, AvgStats, listify
 from re import sub
 import matplotlib.pyplot as plt
@@ -295,6 +296,22 @@ def zero_imag():
         return a
 
     return _inner
+
+
+class data_aug(Callback):
+    _order = 3
+
+    def begin_batch(self):
+        x = self.run.xb.clone()
+        y = self.run.yb.clone()
+        randint = np.random.randint(0, 4, x.shape[0])
+        for i in range(x.shape[0]):
+            x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
+            x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
+            y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
+            y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
+        self.run.xb = x
+        self.run.yb = y
 
 
 class SaveCallback(Callback):
