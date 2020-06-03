@@ -224,7 +224,7 @@ def gauss_paramters():
     amp = np.array([amp_start / np.exp(i) for i in range(comps)])
 
     # linear distance bestween the components
-    x = np.arange(0, comps) * 5
+    x = np.arange(0, comps) * 25
     y = np.zeros(comps)
 
     # extension of components
@@ -236,8 +236,8 @@ def gauss_paramters():
     off2 = (np.random.random() + 0.5) / 4
     fac1 = (np.random.random() + 1) / 4
     fac2 = (np.random.random() + 1) / 4
-    sig_x = (np.arange(1, comps + 1) - off1) * fac1
-    sig_y = (np.arange(1, comps + 1) - off2) * fac2
+    sig_x = (np.arange(1, comps + 1) - off1) * fac1 * 12
+    sig_y = (np.arange(1, comps + 1) - off2) * fac2 * 12
 
     # jet rotation
     rot = np.random.randint(0, 360)
