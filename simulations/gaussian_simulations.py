@@ -221,7 +221,7 @@ def gauss_paramters():
     while amp_start == 0:
         amp_start = (np.random.randint(0, 100) * np.random.random()) / 10
     # logarithmic decrease to outer components
-    amp = np.array([amp_start / np.exp(i) * 5 for i in range(comps)])
+    amp = np.array([amp_start / np.exp(i) for i in range(comps)])
 
     # linear distance bestween the components
     x = np.arange(0, comps) * 25
