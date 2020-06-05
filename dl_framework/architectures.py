@@ -961,7 +961,7 @@ class filter_deep_phase_unc(nn.Module):
         x0 = self.block1(x)
         b2 = self.block2(x0)
         b3 = self.block3(x0)
-        x0 = self.bridge(torch.cat([b2, b3], dim=1))
+        x0 = self.bridge(torch.cat([inp, b2, b3], dim=1))
         x0 = self.block4(x0)
 
         x0 = x0.clone()
@@ -981,3 +981,133 @@ class filter_deep_phase_unc(nn.Module):
 
         out = torch.cat([x0, x1, inp], dim=1)
         return out
+
+
+from dl_framework.model import split_parts, combine_parts
+from dl_framework.uncertainty_arch import block_1_p_32, block_2_p_32, block_1_p_31, block_2_p_31
+
+
+class phase_parts(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.part1_block1 = block_1_p_32()
+        self.part1_block2 = block_2_p_32()
+        self.part2_block1 = block_1_p_31()
+        self.part2_block2 = block_2_p_31()
+        self.part3_block1 = block_1_p_32()
+        self.part3_block2 = block_2_p_32()
+        self.part4_block1 = block_1_p_32()
+        self.part4_block2 = block_2_p_32()
+        self.split_parts = Lambda(split_parts)
+        self.combine_parts = Lambda(combine_parts)
+        self.symmetry = Lambda(partial(symmetry, mode="imag"))
+
+    def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
+        inp = x.clone()
+        bs = x.shape[0]
+
+        part1, part2, part3, part4 = self.split_parts(x)
+
+        # part1
+        part1 = self.part1_block1(part1)
+        part1 = self.part1_block2(part1)
+
+        # part2
+        part2 = self.part2_block1(part2)
+        part2 = self.part2_block2(part2)
+
+        # part3
+        part3 = self.part3_block1(part3)
+        part3 = self.part3_block2(part3)
+
+        # part4
+        part4 = self.part4_block1(part4)
+        part4 = self.part4_block2(part4)
+
+        # combine
+        phase = self.combine_parts([part1, part2, part3, part4, (bs, 1, 63, 63)])
+        phase = phase + inp
+        phase = self.symmetry(phase[:, 0]).reshape(-1, 1, 63, 63)
+        return phase
+
+
+class phase_parts_3d(nn.Module):
+    def init(self):
+        super().init()
+        self.part1_block1 = block_1_p_32()
+        self.part1_block2 = block_2_p_32()
+        self.part1_1 = local_block()
+        self.part1_local = local_p_32()
+        self.part2_block1 = block_1_p_32()
+        self.part2_block2 = block_2_p_32()
+        self.part2_1 = local_block()
+        self.part2_local = local_p_32()
+        self.part3_block1 = block_1_p_32()
+        self.part3_block2 = block_2_p_32()
+        self.part3_1 = local_block()
+        self.part3_local = local_p_32()
+        self.part4_block1 = block_1_p_32()
+        self.part4_block2 = block_2_p_32()
+        self.part4_1 = local_block()
+        self.part4_local = local_p_32()
+        self.conv_3d_12 = nn.Conv3d(1, 12, 3, 1, 1, 1)
+        self.conv_3d_34 = nn.Conv3d(1, 12, 3, 1, 1, 1)
+        self.split_parts = Lambda(split_parts)
+        self.combine_parts = Lambda(combine_parts)
+        self.symmetry = Lambda(partial(symmetry, mode="imag"))
+
+    def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
+        inp = x.clone()
+        bs = x.shape[0]
+
+        part1, part2, part3, part4 = self.split_parts(x)
+
+        # part1
+        part1 = self.part1_block1(part1)
+        part1 = self.part1_block2(part1)
+        p1 = self.part1_1(part1)
+
+        # part2
+        part2 = self.part2_block1(part2)
+        part2 = self.part2_block2(part2)
+        p2 = self.part2_1(part2)
+
+        p1 = p1.unsqueeze(2)
+        p2 = p2.unsqueeze(2)
+        part12 = torch.cat([p1, p2], dim=2)
+        part12 = self.conv_3d_12(part12)
+        part12 = part12.reshape(bs, 24, 32, 32)
+
+        part1 = torch.cat([part1, part12], dim=1)
+        part1 = self.part1_local(part1)
+        part2 = torch.cat([part2, part12], dim=1)
+        part2 = self.part2_local(part2)
+
+        # part3
+        part3 = self.part3_block1(part3)
+        part3 = self.part3_block2(part3)
+        p3 = self.part3_1(part3)
+
+        # part4
+        part4 = self.part4_block1(part4)
+        part4 = self.part4_block2(part4)
+        p4 = self.part4_1(part4)
+
+        p3 = p3.unsqueeze(2)
+        p4 = p4.unsqueeze(2)
+        part34 = torch.cat([p3, p4], dim=2)
+        part34 = self.conv_3d_34(part34)
+        part34 = part34.reshape(bs, 24, 32, 32)
+
+        part3 = torch.cat([part3, part34], dim=1)
+        part3 = self.part3_local(part1)
+        part4 = torch.cat([part4, part34], dim=1)
+        part4 = self.part4_local(part4)
+
+        # combine
+        phase = self.combine_parts([part1, part2, part3, part4, (bs, 1, 63, 63)])
+        phase = phase + inp
+        phase = self.symmetry(phase[:, 0]).reshape(-1, 1, 63, 63)
+        return phase
