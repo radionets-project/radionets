@@ -82,9 +82,10 @@ def eval_model(img, model):
     if len(img.shape) == (3):
         img = img.unsqueeze(0)
     model.eval()
+    model.cuda()
     with torch.no_grad():
-        pred = model(img.float())
-    return pred
+        pred = model(img.float().cuda())
+    return pred.cpu()
 
 
 def reshape_2d(array):
