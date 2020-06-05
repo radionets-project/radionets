@@ -14,6 +14,28 @@ class Lambda(nn.Module):
         return self.func(x)
 
 
+def split_parts(img):
+    t_img = img.clone()
+    part1 = t_img[:, 0, 0::2, 0::2]
+    part2 = t_img[:, 0, 1::2, 1::2]
+    part3 = t_img[:, 0, 0::2, 1::2]
+    part4 = t_img[:, 0, 1::2, 0::2]
+    # part2 = F.pad(input=part2, pad=(0, 1, 0, 1), mode='constant', value=0)
+    part3 = F.pad(input=part3, pad=(0, 1, 0, 0), mode='constant', value=0)
+    part4 = F.pad(input=part4, pad=(0, 0, 0, 1), mode='constant', value=0)
+    return part1.unsqueeze(1), part2.unsqueeze(1), part3.unsqueeze(1), part4.unsqueeze(1)
+
+
+def combine_parts(params):
+    part1, part2, part3, part4, img_size = params[0], params[1], params[2], params[3], params[4]
+    comb = torch.zeros(img_size).cuda()
+    comb[:, :, 0::2, 0::2] = part1
+    comb[:, :, 1::2, 1::2] = part2#[:, :, :-1, :-1]
+    comb[:, :, 0::2, 1::2] = part3[:, :, :, :-1]
+    comb[:, :, 1::2, 0::2] = part4[:, :, :-1, :]
+    return comb
+
+
 def fft(x):
     """
     Layer that performs a fast Fourier-Transformation.
@@ -42,8 +64,8 @@ def euler(x):
     arr_amp = x[:, 0:img_size]
     arr_phase = x[:, img_size:]
 
-    arr_real = arr_amp * torch.cos(arr_phase)
-    arr_imag = arr_amp * torch.sin(arr_phase)
+    arr_real = (10**(10 * (arr_amp - 1)) - 1e-10) * torch.cos(arr_phase)
+    arr_imag = (10**(10 * (arr_amp - 1)) - 1e-10) * torch.sin(arr_phase)
 
     arr = torch.stack((arr_real, arr_imag), dim=-1).permute(0, 2, 1)
     return arr
