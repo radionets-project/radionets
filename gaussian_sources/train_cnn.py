@@ -87,8 +87,12 @@ def main(
     bs = batch_size
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
+    img_size = train_ds[0][0][0].shape[1]
     # Define model
-    arch = getattr(architecture, arch)()
+    if arch == "filter_deep":
+        arch = getattr(architecture, arch)(img_size)
+    else:
+        arch = getattr(architecture, arch)()
 
     # make normalisation
     norm = normalize_tfm(norm_path)

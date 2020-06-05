@@ -11,7 +11,7 @@ build/visualize_predictions_done:
 	python visualize_predictions.py \
 	${out_path} \
 	-fourier ${fourier} -amp_phase ${amp_phase} -diff ${diff} \
-	-blob ${blob} ${mode}
+	-sensitivity ${sensitivity} -blob ${blob} ${mode}
 
 ./pred_save:
 	mkdir -p ${out_path}

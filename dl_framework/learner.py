@@ -22,6 +22,7 @@ from dl_framework.callbacks import (
     Recorder,
     SaveCallback,
     LoggerCallback,
+    data_aug,
 )
 
 
@@ -207,7 +208,10 @@ def define_learner(
             partial(SaveCallback, model_path=model_path),
         ])
     if not test and not lr_find:
-        cbfs.extend([partial(LoggerCallback, model_name=model_name), ])
+        cbfs.extend([
+            partial(LoggerCallback, model_name=model_name), 
+            data_aug,
+        ])
 
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()

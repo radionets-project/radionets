@@ -19,6 +19,7 @@ from gaussian_sources.inspection import (
 @click.option("-fourier", type=bool, required=True)
 @click.option("-amp_phase", type=bool, required=True)
 @click.option("-diff", type=bool, required=False)
+@click.option("-sensitivity", type=float, required=False)
 @click.option("-blob", type=bool, required=False)
 @click.option("-log", type=bool, required=False)
 @click.option("-index", type=int, required=False)
@@ -28,6 +29,7 @@ def main(
     fourier,
     amp_phase,
     diff=False,
+    sensitivity=1e-6,
     blob=False,
     index=None,
     log=False,
@@ -76,7 +78,9 @@ def main(
                 )
 
                 if diff:
-                    dynamic_range = plot_difference(i, ifft_pred, ifft_truth, out_path)
+                    dynamic_range = plot_difference(
+                        i, ifft_pred, ifft_truth, sensitivity, out_path
+                    )
                     dynamic_ranges.append(dynamic_range)
 
                 if blob:
@@ -90,6 +94,7 @@ def main(
                         i,
                         img_pred.reshape(64, 64),
                         img_truth.reshape(64, 64),
+                        sensitivity,
                         out_path,
                     )
                     dynamic_ranges.append(dynamic_range)
@@ -117,7 +122,7 @@ def main(
             )
             if diff:
                 dynamic_range = plot_difference(
-                    i, ifft_pred, ifft_truth, out_path
+                    i, ifft_pred, ifft_truth, sensitivity, out_path
                 )
                 dynamic_ranges.append(dynamic_range)
             if blob:
@@ -128,7 +133,9 @@ def main(
             )
 
             if diff:
-                dynamic_range = plot_difference(i, img_pred, img_truth, out_path)
+                dynamic_range = plot_difference(
+                    i, img_pred, img_truth, sensitivity, out_path
+                )
                 dynamic_ranges.append(dynamic_range)
             if blob:
                 blob_detection(i, img_pred, img_truth, out_path)
