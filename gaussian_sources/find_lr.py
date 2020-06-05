@@ -82,9 +82,13 @@ def main(
     # First guess for max_iter
     print("\nTotal number of batches ~ ", len(data.train_ds) * 2 // bs)
 
+    img_size = train_ds[0][0][0].shape[1]
     # Define model
     arch_name = arch
-    arch = getattr(architecture, arch)()
+    if arch == "filter_deep":
+        arch = getattr(architecture, arch)(img_size)
+    else:
+        arch = getattr(architecture, arch)()
 
     # make normalisation
     norm = normalize_tfm(norm_path)
