@@ -203,7 +203,7 @@ def define_learner(
     if not lr_find:
         cbfs.extend([
             Recorder,
-            partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+            partial(AvgStatsCallback, metrics=[]),  # , metrics=[nn.MSELoss(), nn.L1Loss()]),
             partial(SaveCallback, model_path=model_path),
         ])
     if not test and not lr_find:
