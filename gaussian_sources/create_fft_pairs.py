@@ -69,6 +69,11 @@ def main(
             if amp_phase:
                 amp, phase = split_amp_phase(bundle_fft)
                 amp = (np.log10(amp + 1e-10) / 10) + 1
+
+                # Test new masking for 511 Pixel pictures
+                if amp.shape[1] == 511:
+                    mask = amp > 0.1
+                    phase[~mask] = 0
                 bundle_fft = np.stack((amp, phase), axis=1)
             else:
                 real, imag = split_real_imag(bundle_fft)
