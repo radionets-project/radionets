@@ -11,6 +11,7 @@ from dl_framework.data import (
 from simulations.uv_simulations import sample_freqs
 from simulations.gaussian_simulations import add_noise
 import re
+from numpy import savez_compressed
 
 
 @click.command()
@@ -105,7 +106,11 @@ def main(
                 )
             out = out_path + path.name.split("_")[-1]
             if fourier:
-                save_fft_pair(out, bundle_samp, bundle_fft)
+                # with open(out, 'wb') as f:
+                #     np.save(f, bundle_samp)
+                #     np.save(f, bundle_fft)
+                savez_compressed(out, x=bundle_samp, y=bundle_fft)
+                # save_fft_pair(out, bundle_samp, bundle_fft)
             else:
                 save_fft_pair(out, bundle_samp, images)
 
