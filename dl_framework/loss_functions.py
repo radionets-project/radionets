@@ -4,10 +4,7 @@ from dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from dl_framework.utils import children
 import torch.nn.functional as F
-import numpy as np
-from scipy import ndimage
-from dl_framework.model import fft, flatten, euler
-from math import pi
+from dl_framework.regularization import inv_fft, calc_jet_angle, rot, calc_spec
 
 
 class FeatureLoss(nn.Module):
@@ -139,167 +136,22 @@ def splitted_mse(x, y):
     return loss_real + loss_imag
 
 
-def torch_abs(pred):
-    return torch.sqrt(pred[:, 0] ** 2 + pred[:, 1] ** 2)
-
-
-def bmul(vec, mat, axis=0):
-    mat = mat.transpose(axis, -1)
-    return (mat * vec.expand_as(mat)).transpose(axis, -1)
-
-
-def PCA(image):
-    """
-    Compute the major components of an image. The Image is treated as a
-    distribution.
-
-    Parameters
-    ----------
-    image: Image or 2DArray (N, M)
-            Image to be used as distribution
-
-    Returns
-    -------
-    cog_x: Skalar
-            X-position of the distributions center of gravity
-    cog_y: Skalar
-            Y-position of the distributions center of gravity
-    psi: Skalar
-            Angle between first mjor component and x-axis
-
-    """
-    torch.set_printoptions(precision=16)
-
-    pix_x, pix_y, image = im_to_array_value(image)
-
-    cog_x = (torch.sum(pix_x * image, axis=1) / torch.sum(image, axis=1)).unsqueeze(-1)
-    cog_y = (torch.sum(pix_y * image, axis=1) / torch.sum(image, axis=1)).unsqueeze(-1)
-
-    delta_x = pix_x - cog_x
-    delta_y = pix_y - cog_y
-
-    inp = torch.cat([delta_x.unsqueeze(1), delta_y.unsqueeze(1)], dim=1)
-
-    cov_w = bmul(
-        (cog_x - 1 * torch.sum(image * image, axis=1).unsqueeze(-1) / cog_x).squeeze(1),
-        (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
-    )
-
-    eig_vals_torch, eig_vecs_torch = torch.symeig(cov_w, eigenvectors=True)
-    sqrt = torch.sqrt(eig_vals_torch)
-    width_torch, length_torch = sqrt[:, 0], sqrt[:, 1]
-
-    psi_torch = torch.atan(eig_vecs_torch[:, 1, 1] / eig_vecs_torch[:, 0, 1])
-
-    return cog_x, cog_y, psi_torch
-
-
-def im_to_array_value(image):
-    """
-    Transforms the image to an array of pixel coordinates and the containt
-    intensity
-
-    Parameters
-    ----------
-    image: Image or 2DArray (N, M)
-            Image to be transformed
-
-    Returns
-    -------
-    x_coords: Numpy 1Darray (N*M, 1)
-            Contains the x-pixel-position of every pixel in the image
-    y_coords: Numpy 1Darray (N*M, 1)
-            Contains the y-pixel-position of every pixel in the image
-    value: Numpy 1Darray (N*M, 1)
-            Contains the image-value corresponding to every x-y-pair
-
-    """
-    num = image.shape[0]
-    pix = image.shape[-1]
-
-    a = torch.arange(0, pix, 1).cuda()
-    grid_x, grid_y = torch.meshgrid(a, a)
-    x_coords = torch.cat(num * [grid_x.flatten().unsqueeze(0)])
-    y_coords = torch.cat(num * [grid_y.flatten().unsqueeze(0)])
-    value = image.reshape(-1, pix ** 2)
-    return x_coords, y_coords, value
-
-
-def cross_section(img):
-    img = torch.abs(img).clone().detach()
-
-    # delete outer parts
-    img[:, 0:10] = 0
-    img[:, 53:63] = 0
-    img[:, :, 0:10] = 0
-    img[:, :, 53:63] = 0
-
-    for i in img:
-        # only use brightest pixel
-        i[i < i.max() * 0.4] = 0
-
-    # pca
-    y, x, alpha = PCA(img)
-
-    # Get line of major component
-    m = torch.tan(pi / 2 - alpha)
-    n = y - m.unsqueeze(-1) * x
-    return m, n, alpha
-
-
-def calc_spec(img, m, n, alpha):
-    s = [
-        np.abs(
-            np.fft.fft(
-                ndimage.rotate(np.abs(i), 180 * (2 * pi - a) / pi, reshape=True).sum(
-                    axis=0
-                )
-            )
-        )
-        for i, a in zip(img, alpha)
-    ]
-    return s
-
-
 def regularization(pred_phase, img_true):
     real_amp_re = img_true[:, 0].reshape(-1, 63 ** 2)
     real_phase_re = img_true[:, 1].reshape(-1, 63 ** 2)
     pred_phase_re = pred_phase[:, 0].reshape(-1, 63 ** 2)
 
-    x = torch.cat([real_amp_re, pred_phase_re], dim=1)
-    comp_pred = flatten(euler(x))
-    fft_pred = fft(comp_pred)
-    img_pred = torch_abs(fft_pred)
+    img_pred = inv_fft(real_amp_re, pred_phase_re)
+    img_true = inv_fft(real_amp_re, real_phase_re)
 
-    y = torch.cat([real_amp_re, real_phase_re], dim=1)
-    comp_true = flatten(euler(y))
-    fft_true = fft(comp_true)
-    img_true = torch_abs(fft_true)
+    m_true, n_true, alpha_true = calc_jet_angle(img_true)
 
-    m_pred, n_pred, alpha_pred = cross_section(img_pred)
-    s_pred = calc_spec(
-        img_pred.detach().cpu(),
-        m_pred.detach().cpu(),
-        n_pred.detach().cpu(),
-        alpha_pred.detach().cpu(),
-    )
+    img_rot_pred = rot(img_pred, alpha_true)
+    s_pred = calc_spec(img_rot_pred)
+    img_rot_true = rot(img_true, alpha_true)
+    s_true = calc_spec(img_rot_true)
 
-    m_true, n_true, alpha_true = cross_section(img_true)
-    s_true = calc_spec(
-        img_true.detach().cpu(),
-        m_true.detach().cpu(),
-        n_true.detach().cpu(),
-        alpha_true.detach().cpu(),
-    )
-
-    loss = torch.tensor(
-        [
-            (
-                (s_p[: len(s_p) // 2] - s_t[: len(s_p) // 2]) ** 2
-            ).sum()  # / np.abs(s_t).max()
-            for s_p, s_t in zip(s_pred, s_true)
-        ]
-    ).mean()
+    loss = (((s_pred - s_true) ** 2).sum(axis=0)).mean()
     print(loss)
     return loss
 
@@ -310,7 +162,9 @@ def my_loss(x, y):
     assert y.shape == x.shape
     loss = (((x - y)).pow(2)).mean()
     print(loss)
-    return loss + regularization(x, img_true)
+    final_loss = loss * 10 + regularization(x, img_true) / 100
+    print(final_loss)
+    return final_loss
 
 
 def likelihood(x, y):
