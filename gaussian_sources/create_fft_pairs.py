@@ -109,8 +109,8 @@ def main(
                 # with open(out, 'wb') as f:
                 #     np.save(f, bundle_samp)
                 #     np.save(f, bundle_fft)
-                savez_compressed(out, x=bundle_samp, y=bundle_fft)
-                # save_fft_pair(out, bundle_samp, bundle_fft)
+                # savez_compressed(out, x=bundle_samp, y=bundle_fft)
+                save_fft_pair(out, bundle_samp, bundle_fft)
             else:
                 save_fft_pair(out, bundle_samp, images)
 
