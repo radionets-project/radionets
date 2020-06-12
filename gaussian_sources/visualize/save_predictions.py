@@ -59,7 +59,11 @@ def main(
     images_x = images.numpy().reshape(num, -1)
 
     # load pretrained model
-    arch = getattr(architecture, arch)()
+    img_size = test_ds[0][0][0].shape[1]
+    if arch == "filter_deep":
+        arch = getattr(architecture, arch)(img_size)
+    else:
+        arch = getattr(architecture, arch)()
     load_pre_model(arch, pretrained_path, visualize=True)
 
     # create predictions
