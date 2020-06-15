@@ -56,9 +56,9 @@ ${data}/normalization_factors.csv:
 
 ./plot_loss:
 		mkdir -p ${path}
-		python plot_loss.py\
+		python plot_loss.py ${data}\
 		${path}/${path_model}\
-		${arch}\
+		${arch} -fourier ${fourier}\
 
 clean_norm:
 	rm -r ${norm_path}

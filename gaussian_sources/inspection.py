@@ -861,8 +861,6 @@ def blob_detection(i, img_pred, img_truth, out_path):
 
 
 def make_axes_nice(fig, ax, im, title):
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-
     """Create nice colorbars for every axis in a subplot
 
     Parameters
@@ -876,6 +874,8 @@ def make_axes_nice(fig, ax, im, title):
     title : str
         title of subplot
     """
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title(title)

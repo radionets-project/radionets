@@ -525,7 +525,7 @@ class filter(nn.Module):
 
 
 class filter_deep(nn.Module):
-    def __init__(self):
+    def __init__(self, img_size):
         super().__init__()
         self.conv1_amp = nn.Sequential(
             *conv_amp(1, 4, (23, 23), 1, 11, 1)
@@ -546,12 +546,12 @@ class filter_deep(nn.Module):
              *conv_phase(8, 12, (17, 17), 1, 8, 1, add=1-pi)
         )
         self.conv_con1_amp = nn.Sequential(
-            LocallyConnected2d(12, 1, 127, 1, stride=1, bias=False),
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             nn.ReLU(),
         )
         self.conv_con1_phase = nn.Sequential(
-            LocallyConnected2d(12, 1, 127, 1, stride=1, bias=False),
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             GeneralELU(1-pi),
         )
@@ -581,12 +581,12 @@ class filter_deep(nn.Module):
              *conv_phase(12, 16, (3, 3), 1, 1, 1, add=1-pi)
         )
         self.conv_con2_amp = nn.Sequential(
-            LocallyConnected2d(16, 1, 127, 1, stride=1, bias=False),
+            LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             nn.ReLU(),
         )
         self.conv_con2_phase = nn.Sequential(
-            LocallyConnected2d(16, 1, 127, 1, stride=1, bias=False),
+            LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             GeneralELU(1-pi),
         )
@@ -616,12 +616,12 @@ class filter_deep(nn.Module):
              *conv_phase(12, 20, (3, 3), 1, 1, 1, add=1-pi)
         )
         self.conv_con3_amp = nn.Sequential(
-            LocallyConnected2d(20, 1, 127, 1, stride=1, bias=False),
+            LocallyConnected2d(20, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             nn.ReLU(),
         )
         self.conv_con3_phase = nn.Sequential(
-            LocallyConnected2d(20, 1, 127, 1, stride=1, bias=False),
+            LocallyConnected2d(20, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             GeneralELU(1-pi),
         )
