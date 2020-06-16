@@ -89,7 +89,7 @@ def main(
 
     img_size = train_ds[0][0][0].shape[1]
     # Define model
-    if arch == "filter_deep":
+    if arch == "filter_deep" or arch == "filter_deep_amp" or arch == "filter_deep_phase":
         arch = getattr(architecture, arch)(img_size)
     else:
         arch = getattr(architecture, arch)()

@@ -692,7 +692,7 @@ class filter_deep(nn.Module):
 
 
 class filter_deep_amp(nn.Module):
-    def __init__(self):
+    def __init__(self, img_size):
         super().__init__()
         self.conv1_amp = nn.Sequential(
             *conv_amp(1, 4, (23, 23), 1, 11, 1)
@@ -704,7 +704,7 @@ class filter_deep_amp(nn.Module):
              *conv_amp(8, 12, (17, 17), 1, 8, 1)
         )
         self.conv_con1_amp = nn.Sequential(
-            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             nn.ReLU(),
         )
@@ -722,7 +722,7 @@ class filter_deep_amp(nn.Module):
              *conv_amp(12, 16, (3, 3), 1, 1, 1)
         )
         self.conv_con2_amp = nn.Sequential(
-            LocallyConnected2d(16, 1, 63, 1, stride=1, bias=False),
+            LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             nn.ReLU(),
         )
@@ -737,7 +737,7 @@ class filter_deep_amp(nn.Module):
              *conv_amp(8, 12, (3, 3), 1, 2, 2)
         )
         self.conv_con3_amp = nn.Sequential(
-            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             nn.ReLU(),
         )
@@ -776,13 +776,15 @@ class filter_deep_amp(nn.Module):
 
         amp = self.conv_con3_amp(amp)
 
-        amp = amp + inp[:, 0].unsqueeze(1)
-        x0 = self.symmetry_real(amp).reshape(-1, 1, 63, 63)
+        inp_amp = inp[:, 0].unsqueeze(1)
+        x0 = self.symmetry_real(amp).reshape(-1, 1, amp.shape[2], amp.shape[2])
+        x0[inp_amp != 0] = inp_amp[inp_amp != 0]
+
         return x0
 
 
 class filter_deep_phase(nn.Module):
-    def __init__(self):
+    def __init__(self, img_size):
         super().__init__()
         self.conv1_phase = nn.Sequential(
             *conv_phase(1, 4, (23, 23), 1, 11, 1, add=-2.1415)
@@ -794,7 +796,7 @@ class filter_deep_phase(nn.Module):
              *conv_phase(8, 12, (17, 17), 1, 8, 1, add=-2.1415)
         )
         self.conv_con1_phase = nn.Sequential(
-            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             GeneralELU(-2.1415),
         )
@@ -812,7 +814,7 @@ class filter_deep_phase(nn.Module):
              *conv_phase(12, 16, (3, 3), 1, 1, 1, add=-2.1415)
         )
         self.conv_con2_phase = nn.Sequential(
-            LocallyConnected2d(16, 1, 63, 1, stride=1, bias=False),
+            LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             GeneralELU(-2.1415),
         )
@@ -827,7 +829,7 @@ class filter_deep_phase(nn.Module):
              *conv_phase(8, 12, (3, 3), 1, 2, 2, add=-2.1415)
         )
         self.conv_con3_phase = nn.Sequential(
-            LocallyConnected2d(12, 1, 63, 1, stride=1, bias=False),
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
             GeneralELU(-2.1415),
         )
@@ -866,6 +868,8 @@ class filter_deep_phase(nn.Module):
 
         phase = self.conv_con3_phase(phase)
 
-        phase = phase + inp[:, 1].unsqueeze(1)
-        x1 = self.symmetry_imag(phase).reshape(-1, 1, 63, 63)
+        inp_phase = inp[:, 1].unsqueeze(1)
+
+        x1 = self.symmetry_imag(phase).reshape(-1, 1, phase.shape[2], phase.shape[2])
+        x1[inp_phase != 0] = inp_phase[inp_phase != 0]
         return x1
