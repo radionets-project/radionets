@@ -64,7 +64,7 @@ class h5_dataset:
         return x, y
 
     def open_bundle(self, bundle_path, var):
-        bundle = h5py.File(bundle_path, "r")
+        bundle = np.load(bundle_path)
         data = bundle[var]
         return data
 
@@ -78,7 +78,7 @@ class h5_dataset:
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
         bundle_paths = [
-            h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
+            np.load(self.bundles[bundle]) for bundle in bundle_unique
         ]
         data = torch.tensor(
             [
