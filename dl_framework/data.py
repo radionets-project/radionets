@@ -64,7 +64,7 @@ class h5_dataset:
         return x, y
 
     def open_bundle(self, bundle_path, var):
-        bundle = np.load(bundle_path)
+        bundle = np.load(bundle_path, mmap_mode="r")
         data = bundle[var]
         return data
 
@@ -81,7 +81,6 @@ class h5_dataset:
             np.load(self.bundles[bundle], mmap_mode='r') for bundle in bundle_unique
         ]
         bundle_paths_str = list(map(str, bundle_paths))
-        print("image", image)
         for bund in bundle_paths_str:
             print("bundle paths str: ", bundle_paths_str)
             print("bundle paths: ", bundle_paths)
