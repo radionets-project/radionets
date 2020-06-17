@@ -80,6 +80,16 @@ class h5_dataset:
         bundle_paths = [
             np.load(self.bundles[bundle]) for bundle in bundle_unique
         ]
+        print("bundle_unique: ", bundle_unique)
+        print("image", image)
+        for bund in bundle_paths:
+            print("bund: ", bund)
+            print("bundle paths: ", bundle_paths)
+            # if False in (bundle == bundle_unique[bundle_paths.index(bund)]).numpy():
+            #     print("jo")
+            print("bundle path index: ", bundle_paths.index(bund))
+            # print("Maske: ", bundle == bundle_unique[bundle_paths.index(bund)])
+            # print("image bundle geschichte: ", image[bundle == bundle_unique[bundle_paths.index(bund)]])
         data = torch.tensor(
             [
                 bund[var][img]
