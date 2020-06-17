@@ -110,24 +110,14 @@ def symmetry(x, mode="real"):
 
 
 def phase_range(phase):
-    if isinstance(phase, float):
-        phase = torch.tensor([phase])
-    # print(phase[0, 0, 0, 0])
-    phase = phase / pi
-    # print(phase[0, 0, 0, 0])
-
-    mask2 = (phase <= -1)
-    mask3 = (phase >= 1)
-    factor = (phase[mask2]) % 4
-    factor[factor == 0] = 2
-    phase[mask2] = 2 * pi - factor * pi
-    factor = (phase[mask3]) % 4
-    factor[factor == 0] = 2
-    phase[mask3] = 2 * pi - factor * pi
-
-    mask1 = (phase > -1) & (phase < 1)
-    phase[mask1] = pi - (1 - phase[mask1]) * pi
-    # print(phase[0, 0, 0, 0])
+    # if isinstance(phase, float):
+    #     phase = torch.tensor([phase])
+    mult = phase / pi
+    mult[mult <= 1] = 0
+    mult[mult % 2 <= 1] -= 1
+    mult = torch.round(mult/2)
+    mult[(phase / pi > 1) & (mult == 0)] = 1
+    phase = phase - mult * 2 * pi
     return phase
 
 
