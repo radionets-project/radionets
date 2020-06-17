@@ -78,23 +78,24 @@ class h5_dataset:
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
         bundle_paths = [
-            np.load(self.bundles[bundle]) for bundle in bundle_unique
+            np.load(self.bundles[bundle], mmap_mode='r') for bundle in bundle_unique
         ]
-        print("bundle_unique: ", bundle_unique)
+        bundle_paths_str = list(map(str, bundle_paths))
         print("image", image)
-        for bund in bundle_paths:
-            print("bund: ", bund)
+        for bund in bundle_paths_str:
+            print("bundle paths str: ", bundle_paths_str)
             print("bundle paths: ", bundle_paths)
+            print("bund: ", bund)
             # if False in (bundle == bundle_unique[bundle_paths.index(bund)]).numpy():
             #     print("jo")
-            print("bundle path index: ", bundle_paths.index(bund))
+            print("bundle path index: ", bundle_paths_str.index(str(bund)))
             # print("Maske: ", bundle == bundle_unique[bundle_paths.index(bund)])
             # print("image bundle geschichte: ", image[bundle == bundle_unique[bundle_paths.index(bund)]])
         data = torch.tensor(
             [
                 bund[var][img]
-                for bund in bundle_paths
-                for img in image[bundle == bundle_unique[bundle_paths.index(bund)]]
+                for bund, bund_str in zip(bundle_paths, bundle_paths_str)
+                for img in image[bundle == bundle_unique[bundle_paths_str.index(bund_str)]]
             ]
         )
         if var == "x" or self.tar_fourier is True:
