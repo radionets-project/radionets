@@ -151,7 +151,16 @@ def regularization(pred_phase, img_true):
     img_rot_true = rot(img_true, alpha_true)
     s_true = calc_spec(img_rot_true)
 
-    loss = (((s_pred - s_true) ** 2).sum(axis=0)).mean()
+    img_rot_pred_cj = rot(img_pred, alpha_true-90)
+    s_pred_cj = calc_spec(img_rot_pred_cj)
+    img_rot_true_cj = rot(img_true, alpha_true-90)
+    s_true_cj = calc_spec(img_rot_true_cj)
+
+    loss_1 = (((s_pred - s_true) ** 2).sum(axis=0)).mean()
+    #print(loss_1)
+    #loss_2 = (((s_pred_cj - s_true_cj) ** 2).sum(axis=0)).mean()
+    #print(loss_2)
+    loss = loss_1 #+ loss_2
     print(loss)
     return loss
 
@@ -164,6 +173,7 @@ def my_loss(x, y):
     print(loss)
     final_loss = loss * 10 + regularization(x, img_true) / 100
     print(final_loss)
+    print('')
     return final_loss
 
 
