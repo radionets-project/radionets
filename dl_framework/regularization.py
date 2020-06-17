@@ -143,7 +143,7 @@ def rot(img, angle):
     img : 3dtesnor
         images to be rotated
     angle : 2dtensor
-        tensor holding rotation angles
+        tensor holding rotation angles, in degrees
 
     Returns
     -------
