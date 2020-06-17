@@ -203,6 +203,16 @@ def open_fft_pair(path):
     return bundle_x, bundle_y
 
 
+def open_fft_pair_npz(path):
+    """
+    open fft_pairs for files saved in .npz format
+    """
+    f = np.load(path)
+    bundle_x = np.array(f["x"])
+    bundle_y = np.array(f["y"])
+    return bundle_x, bundle_y
+
+
 def mean_and_std(array):
     return array.mean(), array.std()
 

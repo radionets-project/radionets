@@ -1,5 +1,5 @@
 import click
-from dl_framework.data import open_fft_pair, get_bundles, mean_and_std
+from dl_framework.data import open_fft_pair_npz, get_bundles, mean_and_std
 import pandas as pd
 import numpy as np
 import re
@@ -21,7 +21,7 @@ def main(data_path, out_path):
     stds_imag = np.array([])
 
     for path in tqdm(bundle_paths):
-        x, _ = open_fft_pair(path)
+        x, _ = open_fft_pair_npz(path)
         x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
         mean_amp, std_amp = mean_and_std(x_amp)
         mean_imag, std_imag = mean_and_std(x_imag)
