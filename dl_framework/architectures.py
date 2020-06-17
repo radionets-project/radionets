@@ -1001,6 +1001,7 @@ class phase_parts(nn.Module):
         self.split_parts = Lambda(split_parts)
         self.combine_parts = Lambda(combine_parts)
         self.symmetry = Lambda(partial(symmetry, mode="imag"))
+        self.elu = GeneralELU(add=-(pi - 1), maxv=pi)
 
     def forward(self, x):
         x = x[:, 1].unsqueeze(1)
@@ -1028,6 +1029,10 @@ class phase_parts(nn.Module):
         # combine
         phase = self.combine_parts([part1, part2, part3, part4, (bs, 1, 63, 63)])
         phase = phase + inp
+        phase = self.elu(phase)
+        #phase = phase_range(phase)
+        #assert phase.max() <= pi
+        #assert phase.min() >= -pi
         phase = self.symmetry(phase[:, 0]).reshape(-1, 1, 63, 63)
         return phase
 
