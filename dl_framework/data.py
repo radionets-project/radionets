@@ -64,7 +64,10 @@ class h5_dataset:
         return x, y
 
     def open_bundle(self, bundle_path, var):
-        bundle = np.load(bundle_path, mmap_mode="r")
+        if re.search(".npz", str(bundle_path)):
+            bundle = np.load(bundle_path, mmap_mode="r")
+        else:
+            bundle = h5py.File(bundle_path, "r")
         data = bundle[var]
         return data
 
@@ -77,19 +80,24 @@ class h5_dataset:
         bundle = indices // self.num_img
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
-        bundle_paths = [
-            np.load(self.bundles[bundle], mmap_mode='r') for bundle in bundle_unique
-        ]
+        if re.search(".npz", str(self.bundles[bundle])):
+            bundle_paths = [
+                np.load(self.bundles[bundle], mmap_mode='r') for bundle in bundle_unique
+            ]
+        else:
+            bundle_paths = [
+                h5py.File(self.bundles[bundle], 'r') for bundle in bundle_unique
+            ]
         bundle_paths_str = list(map(str, bundle_paths))
-        for bund in bundle_paths_str:
-            print("bundle paths str: ", bundle_paths_str)
-            print("bundle paths: ", bundle_paths)
-            print("bund: ", bund)
-            # if False in (bundle == bundle_unique[bundle_paths.index(bund)]).numpy():
-            #     print("jo")
-            print("bundle path index: ", bundle_paths_str.index(str(bund)))
-            # print("Maske: ", bundle == bundle_unique[bundle_paths.index(bund)])
-            # print("image bundle geschichte: ", image[bundle == bundle_unique[bundle_paths.index(bund)]])
+        # for bund in bundle_paths_str:
+        #     print("bundle paths str: ", bundle_paths_str)
+        #     print("bundle paths: ", bundle_paths)
+        #     print("bund: ", bund)
+        #     # if False in (bundle == bundle_unique[bundle_paths.index(bund)]).numpy():
+        #     #     print("jo")
+        #     print("bundle path index: ", bundle_paths_str.index(str(bund)))
+        #     # print("Maske: ", bundle == bundle_unique[bundle_paths.index(bund)])
+        #     # print("image bundle geschichte: ", image[bundle == bundle_unique[bundle_paths.index(bund)]])
         data = torch.tensor(
             [
                 bund[var][img]
