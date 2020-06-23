@@ -271,6 +271,7 @@ def test_find_lr():
     arch = "UNet_fourier"
     norm_path = "./tests/build/gaussian_sources/fourier/normalization_factors.csv"
     lr_type = "mse"
+    bs = "2"
 
     runner = CliRunner()
     options = [
@@ -278,6 +279,7 @@ def test_find_lr():
         arch,
         data_path,
         lr_type,
+        bs,
         norm_path,
         "-max_iter",
         "10",
