@@ -1,7 +1,7 @@
 -include .makerc
 dataset: simulate_bundles\
 		 fft_samp\
-		#  calc_normalization
+		 calc_normalization
 
 simulate_bundles: ${data}/gaussian_sources_train0.h5
 
