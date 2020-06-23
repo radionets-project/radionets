@@ -64,6 +64,7 @@ class h5_dataset:
         return x, y
 
     def open_bundle(self, bundle_path, var):
+        # distinguish between compressed (npz) or not compressed (h5)
         if re.search(".npz", str(bundle_path)):
             bundle = np.load(bundle_path, mmap_mode="r")
         else:
@@ -80,6 +81,7 @@ class h5_dataset:
         bundle = indices // self.num_img
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
+        # distinguish between compressed (npz) or not compressed (h5)
         if re.search(".npz", str(self.bundles[bundle])):
             bundle_paths = [
                 np.load(self.bundles[bundle], mmap_mode='r') for bundle in bundle_unique
