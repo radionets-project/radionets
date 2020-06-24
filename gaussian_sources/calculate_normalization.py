@@ -26,6 +26,7 @@ def main(data_path, out_path):
     stds_imag = np.array([])
 
     for path in tqdm(bundle_paths):
+        # distinguish between compressed (.npz) and not compressed (.h5) files
         if re.search(".npz", str(path)):
             x, _ = open_fft_pair_npz(path)
         else:
