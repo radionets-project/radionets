@@ -22,6 +22,7 @@ from numpy import savez_compressed
 @click.option("-amp_phase", type=bool, required=True)
 @click.option("-fourier", type=bool, required=True)
 @click.option("-specific_mask", type=bool)
+@click.option("-compressed", type=bool)
 @click.option("-lon", type=float, required=False)
 @click.option("-lat", type=float, required=False)
 @click.option("-steps", type=float, required=False)
@@ -33,6 +34,7 @@ def main(
     antenna_config_path,
     amp_phase,
     fourier,
+    compressed=False,
     specific_mask=False,
     lon=None,
     lat=None,
@@ -107,14 +109,13 @@ def main(
                 )
             out = out_path + path.name.split("_")[-1]
             if fourier:
-                # with open(out, 'wb') as f:
-                #     np.save(f, bundle_samp)
-                #     np.save(f, bundle_fft)
-                # savez_compressed(out, x=bundle_samp, y=bundle_fft)
-                save_fft_pair(out, bundle_samp, bundle_fft)
+                if compressed:
+                    savez_compressed(out, x=bundle_samp, y=bundle_fft)
+                    os.remove(path)
+                else:
+                    save_fft_pair(out, bundle_samp, bundle_fft)
             else:
                 save_fft_pair(out, bundle_samp, images)
-            # os.remove(path)
 
 
 if __name__ == "__main__":
