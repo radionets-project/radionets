@@ -82,7 +82,7 @@ class h5_dataset:
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
         # distinguish between compressed (npz) or not compressed (h5)
-        if re.search(".npz", str(self.bundles[bundle])):
+        if re.search(".npz", str(self.bundles[bundle[0]])):
             bundle_paths = [
                 np.load(self.bundles[bundle], mmap_mode='r') for bundle in bundle_unique
             ]
