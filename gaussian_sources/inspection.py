@@ -317,6 +317,11 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
         num_three = 60
         num_two = 50
         num_four = 40
+    elif img_size == 511:
+        # work in progress, these are dummy values for compilating
+        num_three = 60
+        num_two = 50
+        num_four = 40
     num = [num_three, num_two, num_four]
     dr_truth, mode = compute_dr(i, img_truth, sensitivity, num)
     dr_pred = compute_dr_pred(img_pred, mode, num)

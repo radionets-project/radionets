@@ -64,7 +64,11 @@ class h5_dataset:
         return x, y
 
     def open_bundle(self, bundle_path, var):
-        bundle = h5py.File(bundle_path, "r")
+        # distinguish between compressed (npz) or not compressed (h5)
+        if re.search(".npz", str(bundle_path)):
+            bundle = np.load(bundle_path, mmap_mode="r")
+        else:
+            bundle = h5py.File(bundle_path, "r")
         data = bundle[var]
         return data
 
@@ -77,14 +81,21 @@ class h5_dataset:
         bundle = indices // self.num_img
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
-        bundle_paths = [
-            h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
-        ]
+        # distinguish between compressed (npz) or not compressed (h5)
+        if re.search(".npz", str(self.bundles[bundle[0]])):
+            bundle_paths = [
+                np.load(self.bundles[bundle], mmap_mode='r') for bundle in bundle_unique
+            ]
+        else:
+            bundle_paths = [
+                h5py.File(self.bundles[bundle], 'r') for bundle in bundle_unique
+            ]
+        bundle_paths_str = list(map(str, bundle_paths))
         data = torch.tensor(
             [
                 bund[var][img]
-                for bund in bundle_paths
-                for img in image[bundle == bundle_unique[bundle_paths.index(bund)]]
+                for bund, bund_str in zip(bundle_paths, bundle_paths_str)
+                for img in image[bundle == bundle_unique[bundle_paths_str.index(bund_str)]]
             ]
         )
         if var == "x" or self.tar_fourier is True:
@@ -188,6 +199,16 @@ def open_fft_pair(path):
     open fft_pairs which were created in second analysis step
     """
     f = h5py.File(path, "r")
+    bundle_x = np.array(f["x"])
+    bundle_y = np.array(f["y"])
+    return bundle_x, bundle_y
+
+
+def open_fft_pair_npz(path):
+    """
+    open fft_pairs for files saved in .npz format
+    """
+    f = np.load(path)
     bundle_x = np.array(f["x"])
     bundle_y = np.array(f["y"])
     return bundle_x, bundle_y
