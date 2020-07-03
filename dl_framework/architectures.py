@@ -662,8 +662,8 @@ class filter_deep(nn.Module):
                 nc=12,
                 ks=(round_odd(0.0476 * img_size), round_odd(0.0476 * img_size)),
                 stride=1,
-                padding=2,
-                dilation=make_padding(round_odd(0.0476 * img_size), 1, 2),
+                padding=make_padding(round_odd(0.0476 * img_size), 1, 2),
+                dilation=2,
                 add=1 - pi,
             )
         )
@@ -683,8 +683,8 @@ class filter_deep(nn.Module):
                 nc=16,
                 ks=(round_odd(0.0476 * img_size), round_odd(0.0476 * img_size)),
                 stride=1,
-                padding=1,
-                dilation=make_padding(round_odd(0.0476 * img_size), 1, 1),
+                padding=make_padding(round_odd(0.0476 * img_size), 1, 1),
+                dilation=1,
                 add=1 - pi,
             )
         )
