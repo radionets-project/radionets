@@ -1,10 +1,23 @@
 import numpy as np
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 from skimage.feature import blob_log
 from math import sqrt
+
+
+# make nice Latex friendly plots
+mpl.use("pgf")
+mpl.rcParams.update(
+    {
+        "font.size": 12,
+        "font.family": "sans-serif",
+        "text.usetex": True,
+        "pgf.rcfonts": False,
+        "pgf.texsystem": "lualatex",
+    }
+)
 
 
 def open_csv(path, mode):
@@ -124,7 +137,7 @@ def plot_loss(learn, model_path, log=True):
     # to prevent the localhost error from happening
     # first change the backende and second turn off
     # the interactive mode
-    matplotlib.use("Agg")
+    mpl.use("Agg")
     plt.ioff()
     name_model = model_path.split("/")[-1].split(".")[0]
     save_path = model_path.split(".model")[0]
@@ -132,20 +145,20 @@ def plot_loss(learn, model_path, log=True):
     learn.recorder.plot_loss()
     plt.title(r"{}".format(name_model))
     plt.savefig("{}_loss.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    mpl.rcParams.update(mpl.rcParamsDefault)
 
 
 def plot_lr_loss(learn, arch_name, skip_last):
     # to prevent the localhost error from happening
     # first change the backende and second turn off
     # the interactive mode
-    matplotlib.use("Agg")
+    mpl.use("Agg")
     plt.ioff()
     print("\nPlotting Lr vs Loss for architecture: {}\n".format(arch_name))
     learn.recorder_lr_find.plot(skip_last, save=True)
     # plt.yscale('log')
     plt.savefig("./models/lr_loss.pdf", bbox_inches="tight", pad_inches=0.01)
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    mpl.rcParams.update(mpl.rcParamsDefault)
 
 
 def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
@@ -180,7 +193,7 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     outpath = str(out_path) + "prediction_{}.png".format(i)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.clf()
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    mpl.rcParams.update(mpl.rcParamsDefault)
 
 
 def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_path):
