@@ -27,7 +27,7 @@ ${data}/fft_samp_train0.h5:
 		-noise ${noise} \
 		-preview ${preview} \
 		-specific_mask False \
-		-compressed True\
+		-compressed False\
 		-lon -80 \
 		-lat 50 \
 		-steps 50
