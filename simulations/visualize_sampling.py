@@ -4,10 +4,11 @@ from simulations.gaussian_simulations import gaussian_source
 from simulations.uv_plots import (
     FT,
     plot_source,
-    animate_baselines,
-    animate_uv_coverage,
+    # animate_baselines,
+    # animate_uv_coverage,
     plot_uv_coverage,
     apply_mask,
+    plot_antenna_distribution,
 )
 from simulations.uv_simulations import (
     antenna,
@@ -18,7 +19,7 @@ from simulations.uv_simulations import (
 )
 
 
-sim_source = gaussian_source(64)
+sim_source = gaussian_source(63)
 
 plot_source(sim_source, ft=False, log=True)
 plt.savefig(
@@ -33,8 +34,12 @@ plt.savefig(
 ant = antenna(*get_antenna_config("./layouts/vlba.txt"))
 s = source(-80, 40)
 s.propagate()
-animate_baselines(s, ant, "examples/baselines", 5)
-animate_uv_coverage(s, ant, "examples/uv_coverage", 5)
+# animate_baselines(s, ant, "examples/baselines", 5)
+# animate_uv_coverage(s, ant, "examples/uv_coverage", 5)
+s_lon = s.lon_prop
+s_lat = s.lat_prop
+plot_antenna_distribution(s_lon[0], s_lat[0], s, ant, baselines=True)
+plt.savefig("examples/baselines.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
 
 u, v, steps = get_uv_coverage(s, ant, iterate=False)
 
