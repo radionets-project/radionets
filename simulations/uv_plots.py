@@ -216,32 +216,55 @@ def plot_source(img, ft=False, log=False):
     -------
     None
     """
-    plt.rcParams.update({"font.size": 18})
+    # plt.rcParams.update({"font.size": 18})
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111)
     if ft is False:
         img = np.abs(img)
-        ax.set_xlabel("l")
-        ax.set_ylabel("m")
+        ax.set_xlabel("l", fontsize=20)
+        ax.set_ylabel("m", fontsize=20)
         if log is True:
             s = ax.imshow(img, cmap="inferno", norm=LogNorm(vmin=1e-8, vmax=img.max()))
         else:
             s = ax.imshow(img, cmap="inferno")
-        fig.colorbar(s, label="Intensity / a.u.")
+        cbar = fig.colorbar(s, label="Intensity / a.u.")
+        cbar.set_label("Intensity / a.u.", size=20)
+        cbar.ax.tick_params(labelsize=20)
     else:
         img = np.abs(FT(img))
-        ax.set_xlabel("u")
-        ax.set_ylabel("v")
+        ax.set_xlabel("u", fontsize=20)
+        ax.set_ylabel("v", fontsize=20)
         if log is True:
             s = ax.imshow(img, cmap="inferno", norm=LogNorm())
         else:
             s = ax.imshow(img, cmap="inferno")
-        fig.colorbar(s, label="Amplitude / a.u.")
+        cbar = fig.colorbar(s, label="Amplitude / a.u.")
+        cbar.set_label("Amplitude / a.u.", size=20)
+        cbar.ax.tick_params(labelsize=20)
 
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     ax.xaxis.set_ticks_position("none")
     ax.yaxis.set_ticks_position("none")
+    plt.tight_layout()
+
+
+def plot_mask(fig, mask):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    ax = fig.add_subplot(111)
+    s = plt.imshow(mask.astype(int), cmap="inferno")
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.3)
+    cbar = plt.colorbar(s, cax=cax)
+    cbar.ax.tick_params(labelsize=20)
+
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+    ax.xaxis.set_ticks_position("none")
+    ax.yaxis.set_ticks_position("none")
+    ax.set_xlabel("u", fontsize=20)
+    ax.set_ylabel("v", fontsize=20)
     plt.tight_layout()
 
 
