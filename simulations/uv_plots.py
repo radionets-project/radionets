@@ -1,10 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import cartopy.crs as ccrs
 from matplotlib.animation import FuncAnimation
 from matplotlib.animation import PillowWriter
 from simulations.uv_simulations import get_uv_coverage
 from matplotlib.colors import LogNorm
+
+
+# make nice Latex friendly plots
+mpl.use("pgf")
+mpl.rcParams.update(
+    {
+        "font.size": 12,
+        "font.family": "sans-serif",
+        "text.usetex": True,
+        "pgf.rcfonts": False,
+        "pgf.texsystem": "lualatex",
+    }
+)
 
 
 def plot_uv_coverage(u, v):
@@ -206,7 +220,7 @@ def plot_source(img, ft=False, log=False):
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111)
     if ft is False:
-        img = img
+        img = np.abs(img)
         ax.set_xlabel("l")
         ax.set_ylabel("m")
         if log is True:
