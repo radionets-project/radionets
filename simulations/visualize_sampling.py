@@ -9,6 +9,7 @@ from simulations.uv_plots import (
     plot_uv_coverage,
     apply_mask,
     plot_antenna_distribution,
+    plot_mask,
 )
 from simulations.uv_simulations import (
     antenna,
@@ -47,26 +48,21 @@ fig = plt.figure(figsize=(6, 6), dpi=100)
 plot_uv_coverage(u, v)
 plt.ylim(-5e8, 5e8)
 plt.xlim(-5e8, 5e8)
-plt.savefig("examples/uv_coverage.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
+plt.savefig("examples/uv_coverage.pdf", dpi=100, bbox_inches="tight", pad_inches=0.05)
 
-fig = plt.figure(figsize=(6, 6), dpi=100)
-ax = fig.add_subplot(111)
+fig = plt.figure(figsize=(8, 6), dpi=100)
 mask = create_mask(u, v)
-plt.imshow(mask, cmap="inferno")
-ax.set_yticklabels([])
-ax.set_xticklabels([])
-ax.xaxis.set_ticks_position("none")
-ax.yaxis.set_ticks_position("none")
+plot_mask(fig, mask)
 plt.savefig("examples/mask.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
 
 sampled_freqs = apply_mask(FT(sim_source), mask)
 
 plot_source(sampled_freqs, ft=False, log=True)
-plt.xlabel("u")
-plt.ylabel("v")
+plt.xlabel("u", fontsize=20)
+plt.ylabel("v", fontsize=20)
 plt.savefig("examples/sampled_freqs.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
 
 plot_source(sampled_freqs, ft=True, log=True)
-plt.xlabel("l")
-plt.ylabel("m")
+plt.xlabel("l", fontsize=20)
+plt.ylabel("m", fontsize=20)
 plt.savefig("examples/recons_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
