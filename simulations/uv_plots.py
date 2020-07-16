@@ -238,8 +238,8 @@ def plot_source(img, ft=False, log=False):
             s = ax.imshow(img, cmap="inferno", norm=LogNorm())
         else:
             s = ax.imshow(img, cmap="inferno")
-        cbar = fig.colorbar(s, label="Amplitude / a.u.")
-        cbar.set_label("Amplitude / a.u.", size=20)
+        cbar = fig.colorbar(s, label="Intensity / a.u.")
+        cbar.set_label("Intensity / a.u.", size=20)
         cbar.ax.tick_params(labelsize=20)
 
     ax.set_yticklabels([])
