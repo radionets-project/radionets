@@ -24,12 +24,12 @@ sim_source = gaussian_source(63)
 
 plot_source(sim_source, ft=False, log=True)
 plt.savefig(
-    "examples/gaussian_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01,
+    "examples/gaussian_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.05,
 )
 
 plot_source(sim_source, ft=True, log=True)
 plt.savefig(
-    "examples/fft_gaussian_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01,
+    "examples/fft_gaussian_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.05,
 )
 
 ant = antenna(*get_antenna_config("./layouts/vlba.txt"))
@@ -60,9 +60,9 @@ sampled_freqs = apply_mask(FT(sim_source), mask)
 plot_source(sampled_freqs, ft=False, log=True)
 plt.xlabel("u", fontsize=20)
 plt.ylabel("v", fontsize=20)
-plt.savefig("examples/sampled_freqs.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
+plt.savefig("examples/sampled_freqs.pdf", dpi=100, bbox_inches="tight", pad_inches=0.05)
 
 plot_source(sampled_freqs, ft=True, log=True)
 plt.xlabel("l", fontsize=20)
 plt.ylabel("m", fontsize=20)
-plt.savefig("examples/recons_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
+plt.savefig("examples/recons_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.05)
