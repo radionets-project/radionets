@@ -4,6 +4,19 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from dl_framework.inspection import reshape_2d
 from mnist_cnn.scripts.utils import adjust_outpath
 from tqdm import tqdm
+import matplotlib as mpl
+
+# make nice Latex friendly plots
+mpl.use("pgf")
+mpl.rcParams.update(
+    {
+        "font.size": 12,
+        "font.family": "sans-serif",
+        "text.usetex": True,
+        "pgf.rcfonts": False,
+        "pgf.texsystem": "lualatex",
+    }
+)
 
 
 def plot_results(inp, pred, truth, model_path, save=False):
@@ -23,28 +36,28 @@ def plot_results(inp, pred, truth, model_path, save=False):
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
 
         real = inp[i][0]
-        im1 = ax1.imshow(real, cmap="RdBu", vmin=-real.max(), vmax=real.max())
+        im1 = ax1.imshow(real, cmap="RdBu")
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         ax1.set_title(r"Real Input")
         fig.colorbar(im1, cax=cax, orientation="vertical")
 
         imag = inp[i][1]
-        im2 = ax2.imshow(imag, cmap="RdBu", vmin=-imag.max(), vmax=imag.max())
+        im2 = ax2.imshow(imag, cmap="RdBu")
         divider = make_axes_locatable(ax2)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         ax2.set_title(r"Imag Input")
         fig.colorbar(im2, cax=cax, orientation="vertical")
 
         pre = pred[i]
-        im3 = ax3.imshow(pre, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
+        im3 = ax3.imshow(pre)
         divider = make_axes_locatable(ax3)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         ax3.set_title(r"Prediction")
         fig.colorbar(im3, cax=cax, orientation="vertical")
 
         true = truth[i]
-        im4 = ax4.imshow(true, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
+        im4 = ax4.imshow(true)
         divider = make_axes_locatable(ax4)
         cax = divider.append_axes("right", size="5%", pad=0.05)
         ax4.set_title(r"Truth")
@@ -57,7 +70,7 @@ def plot_results(inp, pred, truth, model_path, save=False):
             if os.path.exists(out) is False:
                 os.mkdir(out)
 
-            out_path = adjust_outpath(out, "/prediction", form="pdf")
+            out_path = adjust_outpath(out, "/prediction", form="png")
             plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
