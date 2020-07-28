@@ -171,10 +171,10 @@ def my_loss(x, y):
     assert y.shape == x.shape
     loss = (((x - y)).pow(2)).mean()
     print(loss)
-    final_loss = loss * 10 + regularization(x, img_true) / 100
-    print(final_loss)
+    # final_loss = loss * 10 + regularization(x, img_true) / 100
+    # print(final_loss)
     print('')
-    return final_loss
+    return loss
 
 
 def likelihood(x, y):
