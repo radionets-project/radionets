@@ -1,4 +1,5 @@
 import click
+import os
 import numpy as np
 from tqdm import tqdm
 from dl_framework.data import (
@@ -11,6 +12,7 @@ from dl_framework.data import (
 from simulations.uv_simulations import sample_freqs
 from simulations.gaussian_simulations import add_noise
 import re
+from numpy import savez_compressed
 
 
 @click.command()
@@ -20,6 +22,7 @@ import re
 @click.option("-amp_phase", type=bool, required=True)
 @click.option("-fourier", type=bool, required=True)
 @click.option("-specific_mask", type=bool)
+@click.option("-compressed", type=bool)
 @click.option("-lon", type=float, required=False)
 @click.option("-lat", type=float, required=False)
 @click.option("-steps", type=float, required=False)
@@ -31,6 +34,7 @@ def main(
     antenna_config_path,
     amp_phase,
     fourier,
+    compressed=False,
     specific_mask=False,
     lon=None,
     lat=None,
@@ -69,6 +73,11 @@ def main(
             if amp_phase:
                 amp, phase = split_amp_phase(bundle_fft)
                 amp = (np.log10(amp + 1e-10) / 10) + 1
+
+                # Test new masking for 511 Pixel pictures
+                if amp.shape[1] == 511:
+                    mask = amp > 0.1
+                    phase[~mask] = 0
                 bundle_fft = np.stack((amp, phase), axis=1)
             else:
                 real, imag = split_real_imag(bundle_fft)
@@ -100,7 +109,11 @@ def main(
                 )
             out = out_path + path.name.split("_")[-1]
             if fourier:
-                save_fft_pair(out, bundle_samp, bundle_fft)
+                if compressed:
+                    savez_compressed(out, x=bundle_samp, y=bundle_fft)
+                    os.remove(path)
+                else:
+                    save_fft_pair(out, bundle_samp, bundle_fft)
             else:
                 save_fft_pair(out, bundle_samp, images)
 

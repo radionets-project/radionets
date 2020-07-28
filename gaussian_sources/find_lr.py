@@ -1,12 +1,13 @@
-import re
-import click
 from functools import partial
+
+import click
+
 import dl_framework.architectures as architecture
 from dl_framework.callbacks import LR_Find, Recorder_lr_find, normalize_tfm
-from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset, load_data
+from dl_framework.data import DataBunch, get_dls, load_data
+from dl_framework.inspection import plot_lr_loss
 from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
-from dl_framework.inspection import plot_lr_loss
 
 
 @click.command()
@@ -14,6 +15,7 @@ from dl_framework.inspection import plot_lr_loss
 @click.argument("arch", type=str)
 @click.argument("model_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("loss_func", type=str)
+@click.argument("batch_size", type=int)
 @click.argument("norm_path", type=click.Path(exists=False, dir_okay=True))
 @click.argument(
     "pretrained_model", type=click.Path(exists=True, dir_okay=True), required=False
@@ -51,6 +53,7 @@ def main(
     arch,
     model_path,
     norm_path,
+    batch_size,
     loss_func,
     max_iter,
     min_lr,
@@ -72,36 +75,34 @@ def main(
                      loaded at the beginning of the training\n
     """
     # Load data
-    train_ds = load_data(data_path, 'train', fourier=fourier)
-    valid_ds = load_data(data_path, 'valid', fourier=fourier)
+    train_ds = load_data(data_path, "train", fourier=fourier)
+    valid_ds = load_data(data_path, "valid", fourier=fourier)
 
     # Create databunch with defined batchsize
-    bs = 256
+    bs = batch_size
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
     # First guess for max_iter
     print("\nTotal number of batches ~ ", len(data.train_ds) * 2 // bs)
 
+    img_size = train_ds[0][0][0].shape[1]
     # Define model
     arch_name = arch
-    arch = getattr(architecture, arch)()
+    if arch == "filter_deep" or arch == "filter_deep_amp" or arch == "filter_deep_phase":
+        arch = getattr(architecture, arch)(img_size)
+    else:
+        arch = getattr(architecture, arch)()
 
     # make normalisation
     norm = normalize_tfm(norm_path)
 
     cbfs = [
-            partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
-            Recorder_lr_find,
-        ]
+        partial(LR_Find, max_iter=max_iter, max_lr=max_lr, min_lr=min_lr),
+        Recorder_lr_find,
+    ]
 
     learn = define_learner(
-        data,
-        arch,
-        norm,
-        loss_func,
-        test=test,
-        cbfs=cbfs,
-        lr_find=True,
+        data, arch, norm, loss_func, test=test, cbfs=cbfs, lr_find=True,
     )
 
     # use pre-trained model if asked

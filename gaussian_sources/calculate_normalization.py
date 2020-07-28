@@ -1,5 +1,10 @@
 import click
-from dl_framework.data import open_fft_pair, get_bundles, mean_and_std
+from dl_framework.data import (
+    open_fft_pair_npz,
+    open_fft_pair,
+    get_bundles,
+    mean_and_std,
+)
 import pandas as pd
 import numpy as np
 import re
@@ -21,7 +26,11 @@ def main(data_path, out_path):
     stds_imag = np.array([])
 
     for path in tqdm(bundle_paths):
-        x, _ = open_fft_pair(path)
+        # distinguish between compressed (.npz) and not compressed (.h5) files
+        if re.search(".npz", str(path)):
+            x, _ = open_fft_pair_npz(path)
+        else:
+            x, _ = open_fft_pair(path)
         x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
         mean_amp, std_amp = mean_and_std(x_amp)
         mean_imag, std_imag = mean_and_std(x_imag)
@@ -38,8 +47,8 @@ def main(data_path, out_path):
     d = {
         "train_mean_c0": [mean_amp],
         "train_std_c0": [std_amp],
-        'train_mean_c1': [mean_imag],
-        'train_std_c1': [std_imag]
+        "train_mean_c1": [mean_imag],
+        "train_std_c1": [std_imag],
     }
 
     df = pd.DataFrame(data=d)

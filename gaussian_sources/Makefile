@@ -26,7 +26,8 @@ ${data}/fft_samp_train0.h5:
 		-amp_phase ${amp_phase} \
 		-noise ${noise} \
 		-preview ${preview} \
-		-specific_mask True \
+		-specific_mask False \
+		-compressed True\
 		-lon -80 \
 		-lat 50 \
 		-steps 50
@@ -49,16 +50,16 @@ ${data}/normalization_factors.csv:
 ./lr_find:
 		mkdir -p ${path}
 		python find_lr.py ${data}\
-		${arch} ${path} ${lr_type} ${data}/${norm_path} -max_iter ${max_iter}\
+		${arch} ${path} ${lr_type} ${bs} ${data}/${norm_path} -max_iter ${max_iter}\
 		-min_lr ${min_lr} -max_lr ${max_lr} -fourier ${fourier} -amp_phase ${amp_phase}\
 		-pretrained ${pretrained} ${pre_path}\
 		-save ${save}
 
 ./plot_loss:
 		mkdir -p ${path}
-		python plot_loss.py\
+		python plot_loss.py ${data}\
 		${path}/${path_model}\
-		${arch}\
+		${arch} -fourier ${fourier}\
 
 clean_norm:
 	rm -r ${norm_path}

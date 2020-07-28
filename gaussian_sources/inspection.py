@@ -317,6 +317,11 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
         num_three = 60
         num_two = 50
         num_four = 40
+    elif img_size == 511:
+        # work in progress, these are dummy values for compilating
+        num_three = 60
+        num_two = 50
+        num_four = 40
     num = [num_three, num_two, num_four]
     dr_truth, mode = compute_dr(i, img_truth, sensitivity, num)
     dr_pred = compute_dr_pred(img_pred, mode, num)
@@ -861,8 +866,6 @@ def blob_detection(i, img_pred, img_truth, out_path):
 
 
 def make_axes_nice(fig, ax, im, title):
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
-
     """Create nice colorbars for every axis in a subplot
 
     Parameters
@@ -876,6 +879,8 @@ def make_axes_nice(fig, ax, im, title):
     title : str
         title of subplot
     """
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title(title)

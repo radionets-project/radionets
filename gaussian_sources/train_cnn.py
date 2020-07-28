@@ -1,21 +1,15 @@
 import sys
+from pathlib import Path
+
 import click
+
 import dl_framework.architectures as architecture
-from dl_framework.callbacks import (
-    normalize_tfm,
-    zero_imag,
-)
+from dl_framework.callbacks import normalize_tfm, zero_imag
 from dl_framework.data import DataBunch, get_dls, load_data
 from dl_framework.hooks import model_summary
+from dl_framework.inspection import eval_model, get_images, plot_loss, reshape_2d
 from dl_framework.learner import define_learner
-from dl_framework.loss_functions import init_feature_loss, splitted_mse
 from dl_framework.model import load_pre_model, save_model
-from dl_framework.inspection import eval_model, plot_loss, get_images, reshape_2d
-from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles, load_data
-import re
-from dl_framework.hooks import model_summary
-from torch import nn
-from pathlib import Path
 from mnist_cnn.scripts.visualize import plot_results
 
 
@@ -80,8 +74,8 @@ def main(
                      loaded at the beginning of the training\n
     """
     # Load data
-    train_ds = load_data(data_path, 'train', fourier=fourier)
-    valid_ds = load_data(data_path, 'valid', fourier=fourier)
+    train_ds = load_data(data_path, "train", fourier=fourier)
+    valid_ds = load_data(data_path, "valid", fourier=fourier)
 
     # Create databunch with defined batchsize
     bs = batch_size
@@ -89,7 +83,7 @@ def main(
 
     img_size = train_ds[0][0][0].shape[1]
     # Define model
-    if arch == "filter_deep":
+    if arch == "filter_deep" or arch == "filter_deep_amp" or arch == "filter_deep_phase":
         arch = getattr(architecture, arch)(img_size)
     else:
         arch = getattr(architecture, arch)()
