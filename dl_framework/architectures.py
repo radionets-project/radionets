@@ -949,14 +949,18 @@ def Sin(x):
 class phase_parts(nn.Module):
     def __init__(self):
         super().__init__()
-        self.part1_block1 = block_1_p_32()
-        self.part1_block2 = block_2_p_32()
-        self.part2_block1 = block_1_p_32()
-        self.part2_block2 = block_2_p_32()
-        self.part3_block1 = block_1_p_32()
-        self.part3_block2 = block_2_p_32()
-        self.part4_block1 = block_1_p_32()
-        self.part4_block2 = block_2_p_32()
+        self.block1 = block_1_p()
+        self.block2 = block_2_p()
+        self.block3 = block_3_p()
+        self.bridge = bridge()
+        # self.part1_block1 = block_1_p_32()
+        # self.part1_block2 = block_2_p_32()
+        # self.part2_block1 = block_1_p_32()
+        # self.part2_block2 = block_2_p_32()
+        # self.part3_block1 = block_1_p_32()
+        # self.part3_block2 = block_2_p_32()
+        # self.part4_block1 = block_1_p_32()
+        # self.part4_block2 = block_2_p_32()
         self.split_parts = Lambda(split_parts)
         self.compress = Lambda(compress_image)
         self.expand = Lambda(expand_image)
@@ -971,6 +975,16 @@ class phase_parts(nn.Module):
         self.lin3_2 = nn.Linear(256, 256)
         self.lin4_1 = nn.Linear(256, 256)
         self.lin4_2 = nn.Linear(256, 256)
+        self.lin1_1_2 = nn.Linear(256, 256)
+        self.lin1_3_2 = nn.Linear(256, 256)
+        self.lin2_1_2 = nn.Linear(256, 256)
+        self.lin2_2_2 = nn.Linear(256, 256)
+        self.lin2_3_2 = nn.Linear(256, 256)
+        self.lin2_4_2 = nn.Linear(256, 256)
+        self.lin3_1_2 = nn.Linear(256, 256)
+        self.lin3_2_2 = nn.Linear(256, 256)
+        self.lin4_1_2 = nn.Linear(256, 256)
+        self.lin4_2_2 = nn.Linear(256, 256)
         self.combine_parts = Lambda(combine_parts)
         self.symmetry = Lambda(partial(symmetry, mode="imag"))
         self.elu = GeneralELU(add=-(pi - 1), maxv=pi)
@@ -980,6 +994,10 @@ class phase_parts(nn.Module):
         x = x[:, 1].unsqueeze(1)
         inp = x.clone()
         bs = x.shape[0]
+
+        x0 = self.block1(x)
+        b2 = self.block2(x0)
+        b3 = self.block3(b2)
 
         # part1, part2, part3, part4 = self.split_parts(x)
 
@@ -1014,23 +1032,23 @@ class phase_parts(nn.Module):
             part3_2,
             part4_1,
             part4_2,
-        ) = self.compress(x)
+        ) = self.compress(b3)
 
-        part1_1 = self.sin(self.lin1_1(self.flatten(part1_1)).reshape(bs, -1, 16, 16))
-        part1_3 = self.sin(self.lin1_3(self.flatten(part1_3)).reshape(bs, -1, 16, 16))
+        part1_1 = self.elu(self.lin1_1_2(self.elu(self.lin1_1(self.flatten(part1_1)))).reshape(bs, -1, 16, 16))
+        part1_3 = self.elu(self.lin1_3_2(self.elu(self.lin1_3(self.flatten(part1_3)))).reshape(bs, -1, 16, 16))
 
-        part2_1 = self.sin(self.lin2_1(self.flatten(part2_1)).reshape(bs, -1, 16, 16))
-        part2_2 = self.sin(self.lin2_2(self.flatten(part2_2)).reshape(bs, -1, 16, 16))
-        part2_3 = self.sin(self.lin2_3(self.flatten(part2_3)).reshape(bs, -1, 16, 16))
-        part2_4 = self.sin(self.lin2_4(self.flatten(part2_4)).reshape(bs, -1, 16, 16))
+        part2_1 = self.elu(self.lin2_1_2(self.elu(self.lin2_1(self.flatten(part2_1)))).reshape(bs, -1, 16, 16))
+        part2_2 = self.elu(self.lin2_2_2(self.elu(self.lin2_2(self.flatten(part2_2)))).reshape(bs, -1, 16, 16))
+        part2_3 = self.elu(self.lin2_3_2(self.elu(self.lin2_3(self.flatten(part2_3)))).reshape(bs, -1, 16, 16))
+        part2_4 = self.elu(self.lin2_4_2(self.elu(self.lin2_4(self.flatten(part2_4)))).reshape(bs, -1, 16, 16))
 
-        part3_1 = self.sin(self.lin3_1(self.flatten(part3_1)).reshape(bs, -1, 16, 16))
-        part3_2 = self.sin(self.lin3_2(self.flatten(part3_2)).reshape(bs, -1, 16, 16))
+        part3_1 = self.elu(self.lin3_1_2(self.elu(self.lin3_1(self.flatten(part3_1)))).reshape(bs, -1, 16, 16))
+        part3_2 = self.elu(self.lin3_2_2(self.elu(self.lin3_2(self.flatten(part3_2)))).reshape(bs, -1, 16, 16))
 
-        part4_1 = self.sin(self.lin4_1(self.flatten(part4_1)).reshape(bs, -1, 16, 16))
-        part4_2 = self.sin(self.lin4_2(self.flatten(part4_2)).reshape(bs, -1, 16, 16))
+        part4_1 = self.elu(self.lin4_1_2(self.elu(self.lin4_1(self.flatten(part4_1)))).reshape(bs, -1, 16, 16))
+        part4_2 = self.elu(self.lin4_2_2(self.elu(self.lin4_2(self.flatten(part4_2)))).reshape(bs, -1, 16, 16))
 
-        phase = self.expand(
+        p = self.expand(
             [
                 part1_1,
                 part1_3,
@@ -1044,6 +1062,8 @@ class phase_parts(nn.Module):
                 part4_2,
             ]
         )
+
+        phase = self.bridge(torch.cat([b3, p], dim=1))
 
         # Residuum
         phase = phase + inp
