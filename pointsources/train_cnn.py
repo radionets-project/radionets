@@ -18,7 +18,7 @@ from dl_framework.optimizer import adam_step, AverageSqrGrad, StepCount
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model,save_model
 from dl_framework.loss_functions import init_feature_loss
-from mnist_cnn.utils import get_h5_data
+from pointsources.utils import get_h5_data
 
 
 @click.command()
@@ -72,7 +72,7 @@ def main(train_path, valid_path, model_path, arch, norm_path, num_epochs,
     mnist_view = view_tfm(1, 64, 64)
 
     # make normalisation
-    norm = normalize_tfm(norm_path)
+    norm = normalize_tfm(norm_path, pointsources=True)
 
     # Define scheduled learning rate
     sched = sched_no(lr, lr)

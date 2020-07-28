@@ -269,10 +269,10 @@ def view_tfm(*size):
     return _inner
 
 
-def normalize_tfm(norm_path):
+def normalize_tfm(norm_path, pointsources=False):
     def _inner(x):
         norm = pd.read_csv(norm_path)
-        a = do_normalisation(x.clone(), norm)
+        a = do_normalisation(x.clone(), norm, pointsources)
         assert x[:, 0].mean() != a[:, 0].mean()
         # mean for imag and phase is approx 0
         # assert x[:, 1].mean() != a[:, 1].mean()

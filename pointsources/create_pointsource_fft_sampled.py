@@ -1,5 +1,5 @@
 import click
-from sampling.uv_simulations import sample_freqs
+from simulations.uv_simulations import sample_freqs
 from pointsources.utils import write_h5, get_h5_data
 from tqdm import tqdm
 import numpy as np
@@ -31,15 +31,15 @@ def main(
 
     if specific_mask is True:
         x_samp = [
-            sample_freqs(i, antenna_config_path, lon, lat, steps) for i in tqdm(x)
+            sample_freqs(i.reshape(1, 64, 64), antenna_config_path, 64, lon, lat, steps) for i in tqdm(x)
         ]
     else:
-        x_samp = [sample_freqs(i, antenna_config_path) for i in tqdm(x)]
+        x_samp = [sample_freqs(i.reshape(1, 64, 64), antenna_config_path, 64) for i in tqdm(x)]
     y_samp = y
 
     x_samp = np.array(
         [
-            abs(np.fft.ifft2(np.fft.ifftshift(x_samp[i].reshape(64, 64))))
+            abs(np.fft.ifft2(np.fft.ifftshift(x_samp[i])))
             for i in range(len(x_samp))
         ]
     )
