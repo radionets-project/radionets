@@ -63,7 +63,7 @@ test_normalization: ./test_data/normalization_factors.csv
 		touch ./data/pointsources_fft_done
 
 ./data/pointsources_samp_train.h5:
-		python create_mnist_fft_sampled.py\
+		python create_pointsource_fft_sampled.py\
 		data/pointsources_train.h5 data/pointsources_samp_train.h5\
 		../simulations/layouts/vlba.txt -train True\
 		-specific_mask True\
@@ -72,7 +72,7 @@ test_normalization: ./test_data/normalization_factors.csv
 		-steps 50
 
 ./data/pointsources_samp_valid.h5:
-		python create_mnist_fft_sampled.py\
+		python create_pointsource_fft_sampled.py\
 		data/pointsources_valid.h5 data/pointsources_samp_valid.h5\
 		../simulations/layouts/vlba.txt -train False\
 		-specific_mask True\
