@@ -46,7 +46,7 @@ def plot_results(inp, pred, truth, model_path, save=False):
         im2 = ax2.imshow(imag, cmap="RdBu")
         divider = make_axes_locatable(ax2)
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax2.set_title(r"Imag Input")
+        ax2.set_title(r"Imaginary Input")
         fig.colorbar(im2, cax=cax, orientation="vertical")
 
         pre = pred[i]
