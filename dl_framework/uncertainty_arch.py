@@ -151,27 +151,32 @@ def block_1_p():
 
 def block_2_p():
     layers = [
-        # *conv(1, 8, 5, 1, 2, 1, GeneralELU(add=-(pi - 1))),
-        *conv(1, 24, 5, 1, 4, 2, GeneralELU(add=-(pi - 1))),
-        # *conv(16, 24, 3, 1, 1, 1, GeneralELU(add=-(pi - 1))),
-        # *conv(24, 32, 3, 1, 2, 2, GeneralELU(add=-(pi - 1))),
-        # LocallyConnected2d(32, 1, 63, 1, stride=1, bias=False),
-        # nn.BatchNorm2d(1),
-        # GeneralELU(add=-(pi - 1)),
+        *conv(1, 8, 5, 1, 2, 1, GeneralELU(add=-(pi - 1))),
+        *conv(8, 16, 5, 1, 4, 2, GeneralELU(add=-(pi - 1))),
+        *conv(16, 24, 3, 1, 1, 1, GeneralELU(add=-(pi - 1))),
+        *conv(24, 32, 3, 1, 2, 2, GeneralELU(add=-(pi - 1))),
+        LocallyConnected2d(32, 1, 63, 1, stride=1, bias=False),
+        nn.BatchNorm2d(1),
+        GeneralELU(add=-(pi - 1)),
     ]
     return nn.Sequential(*layers)
 
 
 def block_3_p():
     layers = [
-        *conv(1, 24, 3, 1, 2, 2, GeneralELU(add=-(pi - 1))),
+        *conv(1, 8, 3, 1, 1, 1, GeneralELU(add=-(pi - 1))),
+        *conv(8, 16, 3, 1, 1, 1, GeneralELU(add=-(pi - 1))),
+        *conv(16, 24, 3, 1, 1, 1, GeneralELU(add=-(pi - 1))),
+        LocallyConnected2d(24, 1, 63, 1, stride=1, bias=False),
+        nn.BatchNorm2d(1),
+        GeneralELU(add=-(pi - 1)),
     ]
     return nn.Sequential(*layers)
 
 
 def bridge():
     layers = [
-        LocallyConnected2d(49, 1, 63, 1, stride=1, bias=False),
+        LocallyConnected2d(2, 1, 63, 1, stride=1, bias=False),
         nn.BatchNorm2d(1),
         GeneralELU(add=-(pi - 1)),
     ]
