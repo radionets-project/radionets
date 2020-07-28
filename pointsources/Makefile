@@ -51,7 +51,7 @@ test_normalization: ./test_data/normalization_factors.csv
 ./data/pointsources_fft_done:
 		mkdir -p data/
 		python create_pointsources_fft.py ./data\
-		50000 784 20\
+		50000 20\
 		-test False -noise False
 		touch ./data/pointsources_fft_done
 
