@@ -37,15 +37,15 @@ class Hooks(ListContainer):
 
 
 # aus utils hier rüberkopiert, weil hooks benötigt werden
-def model_summary(run, learn, data, find_all=False):
-    xb, yb = get_batch(data.valid_dl, run)
+def model_summary(learn, find_all=False):
+    xb, yb = get_batch(learn.data.valid_dl, learn)
     # Model may not be on the GPU yet
     device = next(learn.model.parameters()).device
     xb, yb = xb.to(device), yb.to(device)
     if find_all:
         mods = find_modules(learn.model, is_lin_layer)
     else:
-        learn.model.children()
+        mods = learn.model.children()
     # mods = find_modules(learn.model, is_lin_layer)
     # if find_all else learn.model.children()
     f = lambda hook, mod, inp, out: print(f"{mod}\n{out.shape}\n")

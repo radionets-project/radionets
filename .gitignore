@@ -3,17 +3,10 @@
 *.ipynb
 
 # data
-mnist_cnn/data
-simulations/gaussian_sources
+mnist_cnn/data*
 gaussian_sources/data*
-*.uvf
-*.h5
-
-gauss/data
-*.uvf
-*.h5
-
-pointsources/data
+gauss/data*
+pointsources/data*
 *.uvf
 *.h5
 
@@ -24,6 +17,7 @@ test_data
 #evaluation results
 */results
 results/
+simulations/test_data/
 
 # cache
 __pycache__/
@@ -59,3 +53,4 @@ mnist_cnn/old
 .flake8
 *.yaml
 .makerc
+.coverage

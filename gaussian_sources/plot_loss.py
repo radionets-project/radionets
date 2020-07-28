@@ -5,7 +5,7 @@ import torch
 from dl_framework.callbacks import Recorder
 from dl_framework.learner import get_learner
 from dl_framework.model import load_pre_model
-from inspection import plot_loss
+from dl_framework.inspection import plot_loss, plot_lr
 
 
 @click.command()
@@ -27,6 +27,7 @@ def main(
     load_pre_model(learn, model_path)
 
     # Plot loss
+    plot_lr(learn, model_path)
     plot_loss(learn, model_path)
 
 

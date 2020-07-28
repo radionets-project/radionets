@@ -1,12 +1,12 @@
-import re
 import click
-from functools import partial
 import dl_framework.architectures as architecture
-from dl_framework.callbacks import LR_Find, Recorder_lr_find, normalize_tfm
-from dl_framework.data import DataBunch, get_bundles, get_dls, h5_dataset, load_data
-from dl_framework.learner import define_learner
+from dl_framework.callbacks import normalize_tfm
 from dl_framework.model import load_pre_model
+from dl_framework.data import DataBunch, get_dls, load_data
 from dl_framework.inspection import plot_lr_loss
+from dl_framework.learner import define_learner
+from dl_framework.callbacks import LR_Find, Recorder_lr_find
+from functools import partial
 
 
 @click.command()
@@ -30,21 +30,16 @@ from dl_framework.inspection import plot_lr_loss
 @click.option(
     "-fourier",
     type=bool,
-    required=True,
-    help="true, if target variables are fourier transformed",
-)
-@click.option(
-    "-amp_phase",
-    type=bool,
-    required=True,
-    help="true, if amplitude and phase splitting instead of real and imaginary",
+    required=False,
+    default=False,
+    help="true, if target variables get fourier transformed",
 )
 @click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
 @click.option("-save", type=bool, required=False, help="save the lr vs loss plot")
 @click.option(
-    "-test", type=bool, default=False, required=True, help="Disable logger in tests"
+    "-test", type=bool, default=True, required=True, help="Disable logger in tests"
 )
 def main(
     data_path,
@@ -55,29 +50,55 @@ def main(
     max_iter,
     min_lr,
     max_lr,
-    fourier,
-    amp_phase,
+    fourier=False,
     pretrained=False,
     pretrained_model=None,
     save=False,
-    test=False,
+    test=True,
 ):
     """
-    Train the neural network with existing training and validation data.
-    TRAIN_PATH is the path to the training data\n
-    VALID_PATH ist the path to the validation data\n
-    ARCH is the name of the architecture which is used\n
-    NORM_PATH is the path to the normalisation factors\n
-    PRETRAINED_MODEL is the path to a pretrained model, which is
-                     loaded at the beginning of the training\n
+    Tests different learning rates to find best suited for model.
+    Creates a lossvs learning rate plot.
+
+    Paramters
+    ---------
+    data_path: str
+        path to data directory
+    arch: str
+        name of architecture
+    model_path: str
+        path to model directory
+    norm_path: str
+        path to normalization factors
+    loss_func: str
+        used loss func
+
+    Options
+    -------
+    max_iter: float
+        max number of iterations
+    min_lr: float
+        min value for learning rate
+    max_lr: float
+        max value for learning rate
+    fourier: bool
+        set True for training in Fourier space, default is False
+    pretrained: bool
+        if True: load pretrained model, default is False
+    pretrained_model: str
+        specify pretrained model
+    save: bool
+        if True: save loss vs lr plot
+    test: bool
+        if True: using 'small' learner developed for test cases
     """
-    # Load data
-    train_ds = load_data(data_path, 'train', fourier=fourier)
-    valid_ds = load_data(data_path, 'valid', fourier=fourier)
+    # Load data and create train and valid datasets
+    train_ds = load_data(data_path, "train", fourier=fourier)
+    valid_ds = load_data(data_path, "valid", fourier=fourier)
 
     # Create databunch with defined batchsize
-    bs = 256
-    data = DataBunch(*get_dls(train_ds, valid_ds, bs))
+    bs = 16
+    data = DataBunch(*get_dls(train_ds, valid_ds, bs),)
 
     # First guess for max_iter
     print("\nTotal number of batches ~ ", len(data.train_ds) * 2 // bs)
@@ -86,7 +107,7 @@ def main(
     arch_name = arch
     arch = getattr(architecture, arch)()
 
-    # make normalisation
+    # Define normalisation
     norm = normalize_tfm(norm_path)
 
     cbfs = [
@@ -94,14 +115,14 @@ def main(
             Recorder_lr_find,
         ]
 
+    # Define learner
     learn = define_learner(
         data,
         arch,
         norm,
         loss_func,
         test=test,
-        cbfs=cbfs,
-        lr_find=True,
+        cbfs=cbfs
     )
 
     # use pre-trained model if asked

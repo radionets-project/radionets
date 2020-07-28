@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from dl_framework.test_hook import hook_outputs
+from dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from dl_framework.utils import children
 import torch.nn.functional as F
@@ -112,3 +112,42 @@ def init_feature_loss(
         vgg_m, pixel_loss, blocks[begin_block:end_block], layer_weights
     )
     return feat_loss
+
+
+def splitted_mse(x, y):
+    inp_real = x[:, 0, :]
+    inp_imag = x[:, 1, :]
+
+    tar_real = y[:, 0, :]
+    tar_imag = y[:, 1, :]
+
+    loss_real = (
+        torch.sum(1 / inp_real.shape[1] * torch.sum((inp_real - tar_real) ** 2, 1))
+        * 1
+        / inp_real.shape[0]
+    )
+    loss_imag = (
+        torch.sum(1 / inp_imag.shape[1] * torch.sum((inp_imag - tar_imag) ** 2, 1))
+        * 1
+        / inp_real.shape[0]
+    )
+
+    return loss_real + loss_imag
+
+
+def loss_amp(x, y):
+    tar = y[:, 0, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    loss = ((x - tar).pow(2)).mean()
+
+    return loss
+
+
+def loss_phase(x, y):
+    tar = y[:, 1, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    loss = ((x - tar).pow(2)).mean()
+
+    return loss

@@ -1,6 +1,7 @@
 from torch.utils.data import DataLoader
 import torch
 import h5py
+import re
 import numpy as np
 from pathlib import Path
 
@@ -9,23 +10,26 @@ def normalize(x, m, s):
     return (x - m) / s
 
 
-def do_normalisation(x, norm):
+def do_normalisation(x, norm, pointsource=False):
     """
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
-    '''
-    train_mean_real = torch.tensor(norm['train_mean_real'].values[0]).float()
-    train_std_real = torch.tensor(norm['train_std_real'].values[0]).float()
-    train_mean_imag = torch.tensor(norm['train_mean_imag'].values[0]).float()
-    train_std_imag = torch.tensor(norm['train_std_imag'].values[0]).float()
-    x[:, 0] = normalize(x[:, 0], train_mean_real, train_std_real)
-    x[:, 1] = normalize(x[:, 1], train_mean_imag, train_std_imag)
+    if len(x.shape) == 3:
+        x = x.unsqueeze(0)
+    if pointsource is True:
+        train_mean = torch.tensor(norm['train_mean'].values[0]).float()
+        train_std = torch.tensor(norm['train_std'].values[0]).float()
+        x = normalize(x, train_mean, train_std)
+    else:
+        train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
+        train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
+        train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
+        train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).double()
+        x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
+        x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
+
     assert not torch.isinf(x).any()
-    '''
-    train_mean = torch.tensor(norm['train_mean'].values[0]).float()
-    train_std = torch.tensor(norm['train_std'].values[0]).float()
-    x = normalize(x, train_mean, train_std)
     return x
 
 
@@ -42,19 +46,21 @@ class Dataset:
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None):
         """
-        Save the bundle paths and the number of bundles in one file
+        Save the bundle paths and the number of bundles in one file.
         """
         self.bundles = bundle_paths
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
+        self.tar_fourier = tar_fourier
+        self.amp_phase = amp_phase
 
     def __call__(self):
         return print("This is the h5_dataset class.")
 
     def __len__(self):
         """
-        Return the total number of pictures in this dataset
+        Returns the total number of pictures in this dataset
         """
         return len(self.bundles) * self.num_img
 
@@ -69,20 +75,39 @@ class h5_dataset:
         return data
 
     def open_image(self, var, i):
-        # at the moment all bundles contain 1024 images
-        # should be variable in the future
-        bundle_i = i // self.num_img
-        image_i = i - bundle_i * self.num_img
-        bundle = h5py.File(self.bundles[bundle_i], "r")
-        data = bundle[var][image_i]
-        if var == "x":
-            data_amp, data_phase = split_real_imag(data)
-            data_channel = combine_and_swap_axes(data_amp, data_phase).reshape(
-                -1, data.shape[0] ** 2
-            )
+        if isinstance(i, int):
+            i = torch.tensor([i])
+        elif isinstance(i, np.ndarray):
+            i = torch.tensor(i)
+        indices, _ = torch.sort(i)
+        bundle = indices // self.num_img
+        image = indices - bundle * self.num_img
+        bundle_unique = torch.unique(bundle)
+        bundle_paths = [
+            h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
+        ]
+        data = torch.tensor(
+            [
+                bund[var][img]
+                for bund in bundle_paths
+                for img in image[bundle == bundle_unique[bundle_paths.index(bund)]]
+            ]
+        )
+        if var == "x" or self.tar_fourier is True:
+            if len(i) == 1:
+                data_amp, data_phase = data[:, 0], data[:, 1]
+
+                data_channel = torch.cat([data_amp, data_phase], dim=0)
+            else:
+                data_amp, data_phase = data[:, 0].unsqueeze(1), data[:, 1].unsqueeze(1)
+
+                data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
-            data_channel = data.reshape(data.shape[0] ** 2)
-        return torch.tensor(data_channel).float()
+            if len(i) == 1:
+                data_channel = data.reshape(data.shape[-1] ** 2)
+            else:
+                data_channel = data.reshape(-1, data.shape[-1] ** 2)
+        return data_channel.float()
 
 
 def combine_and_swap_axes(array1, array2):
@@ -108,7 +133,7 @@ def split_amp_phase(array):
 def get_dls(train_ds, valid_ds, bs, **kwargs):
     return (
         DataLoader(train_ds, batch_size=bs, shuffle=True, **kwargs),
-        DataLoader(valid_ds, batch_size=bs, **kwargs),
+        DataLoader(valid_ds, batch_size=bs, shuffle=True, **kwargs),
     )
 
 
@@ -128,7 +153,7 @@ class DataBunch:
 
 
 def save_bundle(path, bundle, counter, name="gs_bundle"):
-    with h5py.File(path + str(counter) + ".h5", "w") as hf:
+    with h5py.File(str(path) + str(counter) + ".h5", "w") as hf:
         hf.create_dataset(name, data=bundle)
         hf.close()
 
@@ -176,3 +201,35 @@ def open_fft_pair(path):
 
 def mean_and_std(array):
     return array.mean(), array.std()
+
+
+def load_data(data_path, mode, fourier=False):
+    """
+    Load data set from a directory and return it as h5_dataset.
+
+    Parameters
+    ----------
+    data_path: str
+        path to data directory
+    mode: str
+        specify data set type, e.g. test
+    fourier: bool
+        use Fourier images as target if True, default is False
+
+    Returns
+    -------
+    test_ds: h5_dataset
+        dataset containing x and y images
+    """
+    bundle_paths = get_bundles(data_path)
+    data = [path for path in bundle_paths if re.findall("fft_samp_" + mode, path.name)]
+    # this is necessary for the reason of different names for data files in mnist
+    # and gaussian sources
+    if data == []:
+        data = [
+            path
+            for path in bundle_paths
+            if re.findall("fft_bundle_samp_" + mode, path.name)
+        ]
+    ds = h5_dataset(data, tar_fourier=fourier)
+    return ds

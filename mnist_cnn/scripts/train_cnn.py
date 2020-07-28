@@ -1,22 +1,21 @@
 import sys
 import click
-import dl_framework.architectures as architecture
-from dl_framework.callbacks import (
-    normalize_tfm,
-    zero_imag,
-)
-from dl_framework.data import DataBunch, get_dls, load_data
-from dl_framework.hooks import model_summary
-from dl_framework.learner import define_learner
-from dl_framework.loss_functions import init_feature_loss, splitted_mse
-from dl_framework.model import load_pre_model, save_model
-from dl_framework.inspection import eval_model, plot_loss, get_images, reshape_2d
-from dl_framework.data import DataBunch, get_dls, h5_dataset, get_bundles, load_data
-import re
-from dl_framework.hooks import model_summary
-from torch import nn
+from functools import partial
 from pathlib import Path
+from torch import nn
+import dl_framework.architectures as architecture
+from dl_framework.callbacks import normalize_tfm
+from dl_framework.model import load_pre_model, save_model
+from dl_framework.data import get_dls, DataBunch, load_data
+from dl_framework.inspection import eval_model, plot_loss, get_images, reshape_2d
+from dl_framework.learner import define_learner
 from mnist_cnn.scripts.visualize import plot_results
+from dl_framework.callbacks import (
+    AvgStatsCallback,
+    Recorder,
+    SaveCallback,
+    LoggerCallback,
+)
 
 
 @click.command()
@@ -38,18 +37,12 @@ from mnist_cnn.scripts.visualize import plot_results
     help="true, if target variables get fourier transformed",
 )
 @click.option(
-    "-amp_phase",
-    type=bool,
-    required=False,
-    help="true, if if amplitude and phase splitting instead of real and imaginary",
-)
-@click.option(
     "-pretrained", type=bool, required=False, help="use of a pretrained model"
 )
-@click.option("-inspection", type=bool, required=False, help="make an inspection plot")
 @click.option(
     "-test", type=bool, default=False, required=False, help="Disable logger in tests"
 )
+@click.option("-inspection", type=bool, required=False, help="make an inspection plot")
 def main(
     data_path,
     model_path,
@@ -59,68 +52,89 @@ def main(
     lr,
     loss_func,
     batch_size,
-    fourier,
-    amp_phase,
+    fourier=False,
     pretrained=False,
     pretrained_model=None,
     inspection=False,
     test=False,
 ):
     """
-    Train the neural network with existing training and validation data.
+    Train neural network with training and validation data.
+    Progress can be visualized with test data set.
 
-    TRAIN_PATH is the path to the training data\n
-    VALID_PATH ist the path to the validation data\n
-    MODEL_PATH is the Path to which the model is saved\n
-    ARCH is the name of the architecture which is used\n
-    NORM_PATH is the path to the normalisation factors\n
-    NUM_EPOCHS is the number of epochs\n
-    LR is the learning rate\n
-    PRETRAINED_MODEL is the path to a pretrained model, which is
-                     loaded at the beginning of the training\n
+    Parameters
+    ----------
+    data_path: str
+        path to data directory
+    model_path:
+        path to save model
+    arch: str
+        name of architecture
+    norm_path: str
+        path to normalization factors
+    num_epochs: int
+        number of training epochs
+    lr: float
+        learning rate
+    loss_func: str
+        name of loss function
+    batch_size: int
+        number of images in one batch
+    pretrained_model: str
+        path to model, when using option 'pretrained'
+
+    Options
+    -------
+    fourier: bool
+        if True: train in Fourier space, default is False
+    pretrained: bool
+        if True: load pretrained model before training, default is False
+    inspection: bool
+        if True: create inspection plot after training, default is False
+    test: bool
+        if True: load a 'smaller' learner, use for test cases, default is False
     """
-    # Load data
-    train_ds = load_data(data_path, 'train', fourier=fourier)
-    valid_ds = load_data(data_path, 'valid', fourier=fourier)
+    # Load data and create train and valid datasets
+    train_ds = load_data(data_path, "train", fourier=False)
+    valid_ds = load_data(data_path, "valid", fourier=False)
 
     # Create databunch with defined batchsize
     bs = batch_size
     data = DataBunch(*get_dls(train_ds, valid_ds, bs))
 
-    img_size = train_ds[0][0][0].shape[1]
     # Define model
-    if arch == "filter_deep":
-        arch = getattr(architecture, arch)(img_size)
-    else:
-        arch = getattr(architecture, arch)()
+    arch = getattr(architecture, arch)()
 
-    # make normalisation
+    # Define normalisation
     norm = normalize_tfm(norm_path)
 
-    zero = zero_imag()
-
-    # get model name for recording in LoggerCallback
+    # Define model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
 
+    cbfs = [
+        Recorder,
+        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
+        partial(SaveCallback, model_path=model_path),
+    ]
+    if not test:
+        cbfs.append(partial(LoggerCallback, model_name=model_name))
+
+    # Define learner
     learn = define_learner(
         data,
         arch,
         norm,
         loss_func,
+        cbfs=cbfs,
         lr=lr,
         model_name=model_name,
         model_path=model_path,
         test=test,
     )
 
-    # use pre-trained model if asked
+    # Load pre-trained model if asked
     if pretrained is True:
-        # Load model
         load_pre_model(learn, pretrained_model)
-
-    # Print model architecture
-    # print(learn.model, "\n")
-    # model_summary(learn)
 
     # Train the model, make it possible to stop at any given time
     try:
@@ -130,7 +144,7 @@ def main(
         print("\nKeyboardInterrupt, do you wanna save the model: yes-(y), no-(n)")
         save = str(input())
         if save == "y":
-            # saving the model if asked
+            # Saving the model if asked
             print("Saving the model after epoch {}".format(learn.epoch))
             save_model(learn, model_path)
 
