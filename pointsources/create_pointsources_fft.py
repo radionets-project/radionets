@@ -1,26 +1,24 @@
 import click
 import numpy as np
 from tqdm import tqdm
-from utils import process_img, write_h5, pointsources, gauss_pointsources
+from pointsources.utils import process_img, write_h5, gauss_pointsources
 
 
 @click.command()
-@click.argument('out_path', type=click.Path(exists=False, dir_okay=True))
-@click.argument('num_img', type=int)
-@click.argument('pi', type=int)
-@click.argument('targets', type=int)
-@click.option('-test', type=bool, required=False)
-@click.option('-noise', type=bool, required=False)
+@click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
+@click.argument("num_img", type=int)
+@click.argument("targets", type=int)
+@click.option("-test", type=bool, required=False)
+@click.option("-noise", type=bool, required=False)
+def main(out_path, num_img, targets, test=False, noise=False):
 
-def main(out_path, num_img, pi, targets,  test=False, noise=False):
-    
     if test:
         num_img = 50
     # Create num_img pointsources images with targets sources
-    train_x, valid_x = gauss_pointsources(num_img,targets), gauss_pointsources(num_img//4, targets)
-
-    # Check if its a test call
-    # take only the first 50 pictures for a faster run
+    train_x, valid_x = (
+        gauss_pointsources(num_img, targets),
+        gauss_pointsources(num_img // 4, targets),
+    )
 
     # Process train images, split into x and y
     all_train = np.concatenate([process_img(img, noise) for img in tqdm(train_x)])
@@ -33,11 +31,11 @@ def main(out_path, num_img, pi, targets,  test=False, noise=False):
     x_valid = all_valid[1::2]
 
     # Write data to h5 file
-    outpath_train = str(out_path) + '/pointsources_train.h5'
-    write_h5(outpath_train, x_train, y_train, 'x_train', 'y_train')
-    outpath_valid = str(out_path) + '/pointsources_valid.h5'
-    write_h5(outpath_valid, x_valid, y_valid, 'x_valid', 'y_valid')
+    outpath_train = str(out_path) + "/pointsources_train.h5"
+    write_h5(outpath_train, x_train, y_train, "x_train", "y_train")
+    outpath_valid = str(out_path) + "/pointsources_valid.h5"
+    write_h5(outpath_valid, x_valid, y_valid, "x_valid", "y_valid")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
