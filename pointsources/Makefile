@@ -95,12 +95,6 @@ test_normalization: ./test_data/normalization_factors.csv
 		-inspection False
 		touch ./training_done
 
-./data/plots/input_done:
-		mkdir -p data/
-		mkdir -p data/plots
-		python create_input_plot.py ./../resources/mnist.pkl.gz
-		touch ./data/plots/input_done
-
 ./lr_find:
 		mkdir -p models/
 		python find_lr.py ./data/pointsources_samp_train.h5\
