@@ -1,5 +1,5 @@
 import click
-from mnist_cnn.utils import get_h5_data, mean_and_std
+from pointsources.utils import get_h5_data, mean_and_std
 import pandas as pd
 
 
