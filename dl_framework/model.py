@@ -286,16 +286,6 @@ def deconv(ni, nc, ks, stride, padding, out_padding):
     layers = [*conv, *bn, act]
     return layers
 
-# def double_conv(in_channels, out_channels):
-#     return nn.Sequential(
-#         nn.Conv2d(in_channels, out_channels, 3, padding=1),
-#         nn.BatchNorm2d(out_channels),
-#         nn.ReLU(inplace=True),
-#         nn.Conv2d(out_channels, out_channels, 3, padding=1),
-#         nn.BatchNorm2d(out_channels),
-#         nn.ReLU(inplace=True)
-#    )
-
 
 def load_pre_model(learn, pre_path, visualize=False, lr_find=False):
     """
