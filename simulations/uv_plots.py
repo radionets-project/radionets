@@ -37,8 +37,8 @@ def plot_uv_coverage(u, v):
     None
     """
     plt.plot(u, v, marker="o", linestyle="none", markersize=2, color="#1f77b4")
-    plt.xlabel(r"u / $\lambda$", fontsize=16)
-    plt.ylabel(r"v / $\lambda$", fontsize=16)
+    plt.xlabel(r"u / $\lambda$", fontsize=20)
+    plt.ylabel(r"v / $\lambda$", fontsize=20)
     plt.tight_layout()
 
 
