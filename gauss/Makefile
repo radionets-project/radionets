@@ -119,13 +119,6 @@ test_normalization: ./test_data/normalization_factors.csv
                 -lat 50\
                 -steps 50
 
-./test_data/normalization_factors.csv:
-		python test_normalization.py\
-                test_data/gauss_samp_test.h5 \
-                test_data/normalization_factors.csv
-
-
-
 ###########################################################################
 
 clean:
