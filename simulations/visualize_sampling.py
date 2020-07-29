@@ -34,6 +34,16 @@ plt.savefig(
 
 ant = antenna(*get_antenna_config("./layouts/vlba.txt"))
 s = source(-80, 40)
+
+# plot beginning of uv_coverage
+s.propagate(num_steps=1)
+u, v, steps = get_uv_coverage(s, ant, iterate=False)
+fig = plt.figure(figsize=(6, 6), dpi=100)
+plot_uv_coverage(u, v)
+plt.ylim(-5e8, 5e8)
+plt.xlim(-5e8, 5e8)
+plt.savefig("examples/uv_coverage_begin.pdf", dpi=100, bbox_inches="tight", pad_inches=0.05)
+
 s.propagate()
 # animate_baselines(s, ant, "examples/baselines", 5)
 # animate_uv_coverage(s, ant, "examples/uv_coverage", 5)
@@ -41,6 +51,9 @@ s_lon = s.lon_prop
 s_lat = s.lat_prop
 plot_antenna_distribution(s_lon[0], s_lat[0], s, ant, baselines=True)
 plt.savefig("examples/baselines.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
+# plot also end of baseline simulation
+plot_antenna_distribution(s_lon[-1], s_lat[-1], s, ant, baselines=True)
+plt.savefig("examples/baselines_end.pdf", dpi=100, bbox_inches="tight", pad_inches=0.01)
 
 u, v, steps = get_uv_coverage(s, ant, iterate=False)
 
