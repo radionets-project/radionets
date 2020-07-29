@@ -60,7 +60,7 @@ find_lr: ./lr_find
 		${arch}\
 
 ./lr_find:
-		mkdir -p models/
+		mkdir -p ${path}
 		python scripts/find_lr.py ${data_path}\
 		${arch} ${path} ${lr_type} ${norm_path}\
 		-max_iter ${max_iter} -min_lr ${min_lr}\
