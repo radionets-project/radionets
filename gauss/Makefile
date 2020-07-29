@@ -91,7 +91,7 @@ test_normalization: ./test_data/normalization_factors.csv
 		./data/gauss_samp_valid.h5 ./models/unet_gauss.model\
 		UNet ./data/normalization_factors.csv\
 		1000 2e-5 feature_loss -log False\
-		-pretrained False ./models/unet_gauss.model \
+		-pretrained False \
 		-inspection False
 		touch ./training_done
 

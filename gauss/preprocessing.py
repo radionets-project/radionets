@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 import warnings
-from mnist_cnn.utils import split_real_imag, combine_and_swap_axes
+from gauss.utils import split_real_imag, combine_and_swap_axes
 
 
 # Define torch device
