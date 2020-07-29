@@ -6,7 +6,7 @@ import pandas as pd
 @click.command()
 @click.argument("train_path", type=click.Path(exists=True, dir_okay=True))
 @click.argument("out_path", type=click.Path(exists=False, dir_okay=True))
-def main(train_path, out_path, log=False, use_mask=False):
+def main(train_path, out_path):
     x_train, _ = get_h5_data(train_path, columns=["x_train", "y_train"])
 
     train_mean, train_std = mean_and_std(x_train)
