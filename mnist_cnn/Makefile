@@ -23,7 +23,7 @@ find_lr: ./lr_find
 ./data/mnist_fft_done:
 		mkdir -p data/
 		python scripts/create_mnist_fft.py ./../resources/mnist.pkl.gz\
-		./data -size 63 -noise False -bundle_size 500
+		./data -size 64 -noise False -bundle_size 500
 		touch ./data/mnist_fft_done
 
 ./data/mnist_samp_done:
