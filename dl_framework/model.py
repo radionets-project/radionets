@@ -268,7 +268,7 @@ def depth_conv(ni, nc, ks, stride, padding, dilation):
     return layers
 
 
-def double_conv(ni, nc, ks, stride, padding):
+def double_conv(ni, nc, ks=3, stride=1, padding=1):
     conv = (nn.Conv2d(ni, nc, ks, stride, padding),)
     bn = (nn.BatchNorm2d(nc),)
     act = (nn.ReLU(inplace=True),)
