@@ -63,7 +63,7 @@ test_normalization: ./test_data/normalization_factors.csv
 		touch ./data/gauss_fft_done
 
 ./data/gauss_samp_train.h5:
-		python create_mnist_fft_sampled.py\
+		python create_gauss_fft_sampled.py\
 		data/gauss_train.h5 data/gauss_samp_train.h5\
 		../simulations/layouts/vlba.txt -train True\
 		-specific_mask True\
@@ -72,7 +72,7 @@ test_normalization: ./test_data/normalization_factors.csv
 		-steps 50
 
 ./data/gauss_samp_valid.h5:
-		python create_mnist_fft_sampled.py\
+		python create_gauss_fft_sampled.py\
 		data/gauss_valid.h5 data/gauss_samp_valid.h5\
 		../simulations/layouts/vlba.txt -train False\
 		-specific_mask True\
