@@ -60,19 +60,19 @@ class UNet(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.dconv_down1 = double_conv(1, 4)
-        self.dconv_down2 = double_conv(4, 8)
-        self.dconv_down3 = double_conv(8, 16)
-        self.dconv_down4 = double_conv(16, 32)
-        self.dconv_down5 = double_conv(32, 64)
+        self.dconv_down1 = nn.Sequential(*double_conv(1, 4))
+        self.dconv_down2 = nn.Sequential(*double_conv(4, 8))
+        self.dconv_down3 = nn.Sequential(*double_conv(8, 16))
+        self.dconv_down4 = nn.Sequential(*double_conv(16, 32))
+        self.dconv_down5 = nn.Sequential(*double_conv(32, 64))
 
         self.maxpool = nn.MaxPool2d(2)
         self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
 
-        self.dconv_up4 = double_conv(32 + 64, 32)
-        self.dconv_up3 = double_conv(16 + 32, 16)
-        self.dconv_up2 = double_conv(8 + 16, 8)
-        self.dconv_up1 = double_conv(4 + 8, 4)
+        self.dconv_up4 = nn.Sequential(*double_conv(32 + 64, 32))
+        self.dconv_up3 = nn.Sequential(*double_conv(16 + 32, 16))
+        self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8))
+        self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4))
 
         self.conv_last = nn.Conv2d(4, 1, 1)
         self.flatten = Lambda(flatten)
