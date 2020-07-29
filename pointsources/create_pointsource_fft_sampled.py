@@ -31,17 +31,17 @@ def main(
 
     if specific_mask is True:
         x_samp = [
-            sample_freqs(i.reshape(1, 64, 64), antenna_config_path, 64, lon, lat, steps) for i in tqdm(x)
+            sample_freqs(i.reshape(1, 64, 64), antenna_config_path, 64, lon, lat, steps)
+            for i in tqdm(x)
         ]
     else:
-        x_samp = [sample_freqs(i.reshape(1, 64, 64), antenna_config_path, 64) for i in tqdm(x)]
+        x_samp = [
+            sample_freqs(i.reshape(1, 64, 64), antenna_config_path, 64) for i in tqdm(x)
+        ]
     y_samp = y
 
     x_samp = np.array(
-        [
-            abs(np.fft.ifft2(np.fft.ifftshift(x_samp[i])))
-            for i in range(len(x_samp))
-        ]
+        [np.abs(np.fft.ifft2(np.fft.ifftshift(x_samp[i]))) for i in range(len(x_samp))]
     )
     x_samp = x_samp.reshape(-1, 4096)
 
