@@ -21,9 +21,6 @@ def main(out_path, num_img, sources, spherical, test=False, noise=False):
         create_gauss(num_img // 4, sources, spherical),
     )
 
-    # Check if its a test call
-    # take only the first 50 pictures for a faster run
-
     # Process train images, split into x and y
     all_train = np.concatenate([process_img(img, noise) for img in tqdm(train_x)])
     y_train = np.abs(all_train[0::2])
