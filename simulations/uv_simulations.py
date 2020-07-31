@@ -341,6 +341,7 @@ def sample_freqs(
     num_steps=None,
     plot=False,
     test=False,
+    specific_mask=True,
 ):
     """
     Sample specific frequencies in 2d Fourier space. Using antenna and source class to
@@ -370,20 +371,45 @@ def sample_freqs(
     img: 2darray
         sampled Fourier Spectrum
     """
+
+    def get_mask(lon, lat, num_steps, ant, size):
+        s = source(lon, lat)
+        s.propagate(num_steps=num_steps, multi_pointing=False)
+        u, v, _ = get_uv_coverage(s, ant, iterate=False)
+        single_mask = create_mask(u, v, size)
+        return single_mask
+
+    bundle_size = img.shape[0]
+    num_channel = img.shape[1]
     if test:
         mask = test_mask()
     else:
         ant = antenna(*get_antenna_config(ant_config_path))
-        if lon is None:
-            lon = np.random.randint(-90, -70)
-        if lat is None:
-            lat = np.random.randint(30, 80)
-        s = source(lon, lat)
-        s.propagate(num_steps=num_steps, multi_pointing=False)
-        u, v, _ = get_uv_coverage(s, ant, iterate=False)
-        mask = create_mask(u, v, size)
+        if specific_mask is True:
+            s = source(lon, lat)
+            s.propagate(num_steps=num_steps, multi_pointing=False)
+            u, v, _ = get_uv_coverage(s, ant, iterate=False)
+            single_mask = create_mask(u, v, size)
+            mask = np.repeat(
+                np.repeat(single_mask[None, None, :, :], num_channel, axis=1),
+                bundle_size,
+                axis=0,
+            )
+        else:
+            mask = np.array([None, None, None])
+            if lon is None:
+                lon = np.random.randint(-90, -70, size=(bundle_size,))
+            if lat is None:
+                lat = np.random.randint(30, 80, size=(bundle_size,))
+            mask_woc = np.asarray(
+                [
+                    get_mask(lon[i], lat[i], num_steps, ant, size)
+                    for i in range(bundle_size)
+                ]
+            )
+            mask = np.repeat(mask_woc[:, None, :, :], num_channel, axis=1)
     img = img.copy()
-    img[:, ~mask.astype(bool)] = 0
+    img[~mask.astype(bool)] = 0
     if plot is True:
         return img, mask
     else:
