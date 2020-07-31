@@ -70,34 +70,25 @@ def main(
         ]
 
         for path in tqdm(bundles):
-            bundle = np.asarray(open_fft_pair(path))
-            freq, img = bundle[0], bundle[1]
-            size = bundle.shape[-1]
+            freq, img = open_fft_pair(path)
+            size = freq.shape[-1]
             if real_imag:
                 real, imag = split_real_imag(freq)
                 freq = np.stack((real, imag), axis=1)
-            copy = freq.copy()
-
             if specific_mask is True:
-                freq_samp = np.array(
-                    [
-                        sample_freqs(image, antenna_config_path, size, lon, lat, steps)
-                        for image in copy
-                    ]
+                freq_samp = sample_freqs(
+                    freq, antenna_config_path, size, lon, lat, steps
                 )
             else:
-                freq_samp = np.array(
-                    [
-                        sample_freqs(image, antenna_config_path, size=size)
-                        for image in copy
-                    ]
+                freq_samp = sample_freqs(
+                    freq, antenna_config_path, size=size, specific_mask=False
                 )
 
             out = adjust_outpath(out_path, "/fft_bundle_samp_" + mode)
             if fourier:
                 save_fft_pair(out, freq_samp, freq)
             else:
-                save_fft_pair(out, freq_samp, img.real)
+                save_fft_pair(out, freq_samp, img)
 
 
 if __name__ == "__main__":

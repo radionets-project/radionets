@@ -70,13 +70,12 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
     y: 2d array
         rescaled input image
     """
-    y = [
-        resize(bund, (pixel, pixel), anti_aliasing=True, mode="constant",)
-        for bund in bundle
-    ]
+    y = resize(
+        bundle.swapaxes(0, 2), (pixel, pixel), anti_aliasing=True, mode="constant",
+    ).swapaxes(2, 0)
     y_prep = y.copy()
     if noise:
         y_prep = add_noise(y_prep)
     x = np.fft.fftshift(np.fft.fft2(y_prep))
-    path = adjust_outpath(path, "/fft_bundle_"+option)
+    path = adjust_outpath(path, "/fft_bundle_" + option)
     save_fft_pair(path, x, y)
