@@ -2,7 +2,6 @@ import sys
 import click
 from functools import partial
 from pathlib import Path
-from torch import nn
 import dl_framework.architectures as architecture
 from dl_framework.callbacks import normalize_tfm
 from dl_framework.model import load_pre_model, save_model
@@ -11,10 +10,8 @@ from dl_framework.inspection import eval_model, plot_loss, get_images, reshape_2
 from dl_framework.learner import define_learner
 from mnist_cnn.scripts.visualize import plot_results
 from dl_framework.callbacks import (
-    AvgStatsCallback,
     Recorder,
     SaveCallback,
-    LoggerCallback,
 )
 
 
