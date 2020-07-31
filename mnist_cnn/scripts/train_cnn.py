@@ -113,11 +113,8 @@ def main(
 
     cbfs = [
         Recorder,
-        partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
         partial(SaveCallback, model_path=model_path),
     ]
-    if not test:
-        cbfs.append(partial(LoggerCallback, model_name=model_name))
 
     # Define learner
     learn = define_learner(
