@@ -7,7 +7,7 @@ from dl_framework.model import init_cnn
 from tqdm import tqdm
 import sys
 from functools import partial
-from dl_framework.loss_functions import init_feature_loss, loss_amp, loss_phase
+from dl_framework.loss_functions import init_feature_loss, loss_amp, loss_phase, loss_msssim, loss_mse_msssim
 from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
@@ -188,7 +188,7 @@ def define_learner(
     opt_func=torch.optim.Adam,
 ):
     cbfs.extend([
-        partial(BatchTransformXCallback, norm),
+        # partial(BatchTransformXCallback, norm),
     ])
     if not test:
         cbfs.extend([
@@ -203,7 +203,7 @@ def define_learner(
     if not test and not lr_find:
         cbfs.extend([
             partial(LoggerCallback, model_name=model_name), 
-            # data_aug,
+            data_aug,
         ])
 
     if loss_func == "feature_loss":
@@ -216,6 +216,10 @@ def define_learner(
         loss_func = loss_amp
     elif loss_func == "loss_phase":
         loss_func = loss_phase
+    elif loss_func == "msssim":
+        loss_func = loss_msssim
+    elif loss_func == "mse_msssim":
+        loss_func = loss_mse_msssim
     else:
         print("\n No matching loss function! Exiting. \n")
         sys.exit(1)
