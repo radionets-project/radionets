@@ -47,6 +47,7 @@ def main(
     imgs_truth, _ = open_csv(out_path, "truth")
 
     dynamic_ranges = []
+    msssims = []
 
     if log is True:
         imgs_input = torch.log(imgs_input)
@@ -78,10 +79,11 @@ def main(
                 )
 
                 if diff:
-                    dynamic_range = plot_difference(
+                    dynamic_range, msssim = plot_difference(
                         i, ifft_pred, ifft_truth, sensitivity, out_path
                     )
                     dynamic_ranges.append(dynamic_range)
+                    msssims.append(msssim)
 
                 if blob:
                     blob_detection(i, ifft_pred, ifft_truth, out_path)
@@ -90,7 +92,7 @@ def main(
                 visualize_without_fourier(i, img_input, img_pred, img_truth, out_path)
 
                 if diff:
-                    dynamic_range = plot_difference(
+                    dynamic_range, msssim = plot_difference(
                         i,
                         img_pred.reshape(64, 64),
                         img_truth.reshape(64, 64),
@@ -98,6 +100,7 @@ def main(
                         out_path,
                     )
                     dynamic_ranges.append(dynamic_range)
+                    msssims.append(msssim)
 
                 if blob:
                     blob_detection(
@@ -109,6 +112,8 @@ def main(
 
         outpath = str(out_path) + "diff/dynamic_ranges.csv"
         save_indices_and_data(indices, dynamic_ranges, outpath)
+        outpath = str(out_path) + "diff/msssims.csv"
+        save_indices_and_data(indices, msssims, outpath)
 
     else:
         print("\nPlotting a single index.\n")

@@ -5,7 +5,7 @@ import torch
 import pandas as pd
 from skimage.feature import blob_log
 from math import sqrt
-
+import pytorch_msssim
 
 # make nice Latex friendly plots
 mpl.use("pgf")
@@ -348,9 +348,13 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
 
     im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
+    tensor_pred = torch.tensor(np.float32(img_pred)).unsqueeze(0).unsqueeze(1)
+    tensor_truth = torch.tensor(np.float32(img_truth)).unsqueeze(0).unsqueeze(1)
+    msssim = pytorch_msssim.msssim(tensor_pred, tensor_truth, normalize="None")
+
     make_axes_nice(fig, ax1, im1, r"Prediction: {}".format(np.round(dr_pred, 4)))
-    make_axes_nice(fig, ax2, im2, r"Truth: {}".format(np.round(dr_truth, 4)))
-    make_axes_nice(fig, ax3, im3, r"DR: {}".format(dynamic_range))
+    make_axes_nice(fig, ax2, im2, r"DR: {}".format(dynamic_range))
+    make_axes_nice(fig, ax3, im3, r"MS-SSIM: {}".format(msssim))
 
     ax1.legend(loc="best")
     ax2.legend(loc="best")
@@ -360,7 +364,7 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
     plt.clf()
 
     hist_difference(i, img_pred, img_truth, out_path)
-    return dynamic_range
+    return dynamic_range, msssim
 
 
 def plot_off_regions(ax, mode, img_size, num):
