@@ -4,6 +4,7 @@ from dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from dl_framework.utils import children
 import torch.nn.functional as F
+import pytorch_msssim
 
 
 class FeatureLoss(nn.Module):
@@ -151,3 +152,63 @@ def loss_phase(x, y):
     loss = ((x - tar).pow(2)).mean()
 
     return loss
+
+
+def loss_msssim(x, y):
+    inp_real = x[:, 0, :].unsqueeze(1)
+    inp_imag = x[:, 1, :].unsqueeze(1)
+
+    tar_real = y[:, 0, :].unsqueeze(1)
+    tar_imag = y[:, 1, :].unsqueeze(1)
+
+    loss = (
+        1.0
+        - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
+        + 1.0
+        - pytorch_msssim.msssim(inp_imag, tar_imag, normalize="relu")
+    )
+
+    return loss
+
+
+def loss_msssim_diff(x, y):
+    inp_real = x[:, 0, :].unsqueeze(1)
+    inp_imag = x[:, 1, :].unsqueeze(1)
+
+    tar_real = y[:, 0, :].unsqueeze(1)
+    tar_imag = y[:, 1, :].unsqueeze(1)
+
+    loss = -(
+        pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
+        + pytorch_msssim.msssim(inp_imag, tar_imag, normalize="relu")
+    )
+
+    return loss
+
+
+def loss_mse_msssim(x, y):
+    inp_real = x[:, 0, :].unsqueeze(1)
+    inp_imag = x[:, 1, :].unsqueeze(1)
+
+    tar_real = y[:, 0, :].unsqueeze(1)
+    tar_imag = y[:, 1, :].unsqueeze(1)
+
+    # # loss_mse_real = ((inp_real - tar_real).pow(2)).mean()
+    loss_mse_real = nn.MSELoss()
+    loss_mse_real = loss_mse_real(inp_real, tar_real)
+    loss_mse_imag = nn.MSELoss()
+    loss_mse_imag = loss_mse_imag(inp_imag, tar_imag)
+    # # loss_mse_imag = ((inp_imag - tar_imag).pow(2)).mean()
+
+    loss_real = (
+        loss_mse_real
+        + 1.0
+        - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
+    )
+    loss_imag = (
+        loss_mse_imag
+        + 1.0
+        - pytorch_msssim.msssim(inp_imag, tar_imag, normalize="relu")
+    )
+
+    return loss_real + loss_imag
