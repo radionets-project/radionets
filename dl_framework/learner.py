@@ -219,15 +219,15 @@ def define_learner(
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
-    elif loss_func == "loss_amp" and arch == "filter_deep_amp":
+    elif loss_func == "loss_amp":
         loss_func = loss_amp
-    elif loss_func == "loss_phase" and arch == "filter_deep_phase":
+    elif loss_func == "loss_phase":
         loss_func = loss_phase
     elif loss_func == "msssim":
         loss_func = loss_msssim
     elif loss_func == "mse_msssim":
         loss_func = loss_mse_msssim
-    elif loss_func == "mse_msssim_phase" and arch == "filter_deep_phase":
+    elif loss_func == "mse_msssim_phase":
         loss_func = loss_mse_msssim_phase
     else:
         print("\n No matching loss function or architecture! Exiting. \n")
