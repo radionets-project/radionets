@@ -1,0 +1,6 @@
+# This is a TOML document.
+
+title = "Simulations configuration"
+
+[paths]
+out_path = "./build"
