@@ -188,7 +188,7 @@ def define_learner(
     opt_func=torch.optim.Adam,
 ):
     cbfs.extend([
-        # partial(BatchTransformXCallback, norm),
+        partial(BatchTransformXCallback, norm),
     ])
     if not test:
         cbfs.extend([
@@ -203,7 +203,7 @@ def define_learner(
     if not test and not lr_find:
         cbfs.extend([
             partial(LoggerCallback, model_name=model_name), 
-            data_aug,
+            #data_aug,
         ])
 
     if loss_func == "feature_loss":

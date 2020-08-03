@@ -648,10 +648,10 @@ class filter_deep(nn.Module):
         )
 
         self.conv4_amp = nn.Sequential(
-             *conv_amp(1, 4, (5, 5), 1, 3, 2)
+             *conv_amp(1, 4, (5, 5), 1, 4, 2)
         )
         self.conv4_phase = nn.Sequential(
-             *conv_phase(1, 4, (5, 5), 1, 3, 2, add=1-pi)
+             *conv_phase(1, 4, (5, 5), 1, 4, 2, add=1-pi)
         )
         self.conv5_amp = nn.Sequential(
              *conv_amp(4, 8, (5, 5), 1, 2, 1)
@@ -660,10 +660,10 @@ class filter_deep(nn.Module):
              *conv_phase(4, 8, (5, 5), 1, 2, 1, add=1-pi)
         )
         self.conv6_amp = nn.Sequential(
-             *conv_amp(8, 12, (3, 3), 1, 3, 2)
+             *conv_amp(8, 12, (3, 3), 1, 2, 2)
         )
         self.conv6_phase = nn.Sequential(
-             *conv_phase(8, 12, (3, 3), 1, 3, 2, add=1-pi)
+             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
         )
         self.conv7_amp = nn.Sequential(
              *conv_amp(12, 16, (3, 3), 1, 1, 1)
