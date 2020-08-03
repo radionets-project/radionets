@@ -278,9 +278,7 @@ def loss_mse_msssim(x, y):
 
     # add mse loss to MS-SSIM
     loss_amp = (
-        loss_mse_amp
-        + 1.0
-        - pytorch_msssim.msssim(inp_amp, tar_amp, normalize="relu")
+        loss_mse_amp + 1.0 - pytorch_msssim.msssim(inp_amp, tar_amp, normalize="relu")
     )
     loss_phase = (
         loss_mse_phase
@@ -288,4 +286,4 @@ def loss_mse_msssim(x, y):
         - pytorch_msssim.msssim(inp_phase, tar_phase, normalize="relu")
     )
 
-    return loss_real + loss_imag
+    return loss_amp + loss_phase
