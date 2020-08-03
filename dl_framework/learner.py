@@ -7,7 +7,14 @@ from dl_framework.model import init_cnn
 from tqdm import tqdm
 import sys
 from functools import partial
-from dl_framework.loss_functions import init_feature_loss, loss_amp, loss_phase, loss_msssim, loss_mse_msssim
+from dl_framework.loss_functions import (
+    init_feature_loss,
+    loss_amp,
+    loss_phase,
+    loss_msssim,
+    loss_mse_msssim,
+    loss_mse_msssim_phase
+)
 from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
@@ -212,16 +219,18 @@ def define_learner(
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
-    elif loss_func == "loss_amp":
+    elif loss_func == "loss_amp" and arch == "filter_deep_amp":
         loss_func = loss_amp
-    elif loss_func == "loss_phase":
+    elif loss_func == "loss_phase" and arch == "filter_deep_phase":
         loss_func = loss_phase
     elif loss_func == "msssim":
         loss_func = loss_msssim
     elif loss_func == "mse_msssim":
         loss_func = loss_mse_msssim
+    elif loss_func == "mse_msssim_phase" and arch == "filter_deep_phase":
+        loss_func = loss_mse_msssim_phase
     else:
-        print("\n No matching loss function! Exiting. \n")
+        print("\n No matching loss function or architecture! Exiting. \n")
         sys.exit(1)
 
     # Combine model and data in learner
