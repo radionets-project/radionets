@@ -31,6 +31,11 @@ setup(
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
     zip_safe=False,
+    entry_points={
+        "console_scripts": [
+            "radionets_simulations = simulations.scripts.simulate_images:main",
+        ],
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Science/Research",
@@ -42,5 +47,7 @@ setup(
         "Programming Language :: Python :: 3 :: Only",
         "Topic :: Scientific/Engineering :: Astronomy",
         "Topic :: Scientific/Engineering :: Physics",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Scientific/Engineering :: Information Analysis",
     ],
 )
