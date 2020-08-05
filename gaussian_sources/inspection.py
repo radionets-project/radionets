@@ -348,6 +348,14 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
 
     im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
+    # scale all images to the same magnitude
+    if img_truth.max() < 0.099999:
+        magnitude = int(np.round(np.abs(np.log10(img_truth.max()))))
+        # print(magnitude, img_pred.max(), img_truth.max())
+        img_pred = img_pred * 10 ** magnitude
+        img_truth = img_truth * 10 ** magnitude
+    # print(img_pred.max(), img_truth.max())
+
     tensor_pred = torch.tensor(np.float32(img_pred)).unsqueeze(0).unsqueeze(1)
     tensor_truth = torch.tensor(np.float32(img_truth)).unsqueeze(0).unsqueeze(1)
     msssim = pytorch_msssim.msssim(tensor_pred, tensor_truth, normalize="None")
