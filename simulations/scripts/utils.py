@@ -61,6 +61,36 @@ def check_outpath(outpath, data_format):
     return sim_fft, sim_sampled
 
 
+def read_config(config):
+    sim_conf = {}
+    sim_conf['out_path'] = config["paths"]["out_path"]
+    if config["mnist"]["simulate"]:
+        click.echo("Create fft_images from mnist data set!")
+
+        sim_conf["type"] = "mnist"
+        sim_conf["resource"] = config["mnist"]["resource"]
+    # else:
+    #     click.echo("Create fft_images from simulated data set!")
+
+    #     points = config["pointsources"]["simulate"]
+    #     if points:
+    #         num_sources_points = config["pointsources"]["num_sources"]
+
+    #     pointg = config["pointlike_gaussians"]["simulate"]
+    #     if pointg:
+    #         num_sources_pointg = config["pointlike_gaussians"]["num_sources"]
+
+    #     extendedg = config["extended_gaussians"]["simulate"]
+    #     if extendedg:
+    #         num_components = config["pointlike_gaussians"]["num_components"]
+
+    sim_conf["num_bundles"] = config["image_options"]["num_bundles"]
+    sim_conf["bundle_size"] = config["image_options"]["bundle_size"]
+    sim_conf["img_size"] = config["image_options"]["img_size"]
+    sim_conf["noise"] = config["image_options"]["noise"]
+    return sim_conf
+
+
 def open_mnist(path):
     """
     Open MNIST data set pickle file.

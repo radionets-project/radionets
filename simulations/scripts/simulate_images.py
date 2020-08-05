@@ -1,7 +1,7 @@
 import click
 import toml
 from create_fft_images import create_fft_images
-from simulations.scripts.utils import check_outpath
+from simulations.scripts.utils import check_outpath, read_config
 
 
 @click.command()
@@ -22,32 +22,8 @@ def main(configuration_path):
     )
 
     # declare source options
-    sim_conf = {}
-    sim_conf['out_path'] = out_path
-    if config["mnist"]["simulate"]:
-        click.echo("Create fft_images from mnist data set!")
+    sim_conf = read_config(config)
 
-        sim_conf["type"] = "mnist"
-        sim_conf["resource"] = config["mnist"]["resource"]
-    # else:
-    #     click.echo("Create fft_images from simulated data set!")
-
-    #     points = config["pointsources"]["simulate"]
-    #     if points:
-    #         num_sources_points = config["pointsources"]["num_sources"]
-
-    #     pointg = config["pointlike_gaussians"]["simulate"]
-    #     if pointg:
-    #         num_sources_pointg = config["pointlike_gaussians"]["num_sources"]
-
-    #     extendedg = config["extended_gaussians"]["simulate"]
-    #     if extendedg:
-    #         num_components = config["pointlike_gaussians"]["num_components"]
-
-    sim_conf["num_bundles"] = config["image_options"]["num_bundles"]
-    sim_conf["bundle_size"] = config["image_options"]["bundle_size"]
-    sim_conf["img_size"] = config["image_options"]["img_size"]
-    sim_conf["noise"] = config["image_options"]["noise"]
     print(sim_conf)
 
     # start simulations
