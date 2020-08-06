@@ -201,7 +201,7 @@ def animate_uv_coverage(source, antenna, filename, fps=5):
     ani.save(str(filename) + ".gif", dpi=80, writer=PillowWriter(fps=fps))
 
 
-def plot_source(img, ft=False, log=False):
+def plot_source(img, ft=False, log=False, ft2=False):
     """
     Visualize a radio source
 
@@ -231,7 +231,10 @@ def plot_source(img, ft=False, log=False):
         cbar.set_label("Intensity / a.u.", size=20)
         cbar.ax.tick_params(labelsize=20)
     else:
-        img = np.abs(FT(img))
+        if ft2:
+            img = np.abs(FT2(img))
+        else:
+            img = np.abs(FT(img))
         ax.set_xlabel("u", fontsize=20)
         ax.set_ylabel("v", fontsize=20)
         if log is True:
@@ -283,6 +286,23 @@ def FT(img):
         Fourier transform of input array
     """
     return np.fft.fftshift(np.fft.fft2(img))
+
+
+def FT2(img):
+    """
+    Computes the 2d Fourier trafo of an image
+
+    Parameters
+    ----------
+    img: 2darray
+        values of Gaussian source
+
+    Returns
+    -------
+    out: 2darray
+        Fourier transform of input array
+    """
+    return np.fft.ifft2(np.fft.ifftshift(img))
 
 
 def apply_mask(img, mask):

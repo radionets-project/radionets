@@ -77,7 +77,7 @@ plt.xlabel("u", fontsize=20)
 plt.ylabel("v", fontsize=20)
 plt.savefig("examples/sampled_freqs.pdf", dpi=100, bbox_inches="tight", pad_inches=0.05)
 
-plot_source(sampled_freqs, ft=True, log=True)
+plot_source(sampled_freqs, ft=True, log=True, ft2=True)
 plt.xlabel("l", fontsize=20)
 plt.ylabel("m", fontsize=20)
 plt.savefig("examples/recons_source.pdf", dpi=100, bbox_inches="tight", pad_inches=0.05)
