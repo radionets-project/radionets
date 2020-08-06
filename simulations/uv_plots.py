@@ -114,7 +114,7 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
         markersize=15,
         transform=ccrs.Geodetic(),
         zorder=10,
-        label="Source",
+        label="Projected source",
     )
 
     if baselines is True:
