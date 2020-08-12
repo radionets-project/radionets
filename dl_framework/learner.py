@@ -13,7 +13,8 @@ from dl_framework.loss_functions import (
     loss_phase,
     loss_msssim,
     loss_mse_msssim,
-    loss_mse_msssim_phase
+    loss_mse_msssim_phase,
+    loss_mse_msssim_amp,
 )
 from dl_framework.callbacks import (
     AvgStatsCallback,
@@ -229,6 +230,8 @@ def define_learner(
         loss_func = loss_mse_msssim
     elif loss_func == "mse_msssim_phase":
         loss_func = loss_mse_msssim_phase
+    elif loss_func == "mse_msssim_amp":
+        loss_func = loss_mse_msssim_amp
     else:
         print("\n No matching loss function or architecture! Exiting. \n")
         sys.exit(1)

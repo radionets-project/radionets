@@ -247,6 +247,35 @@ def loss_mse_msssim_phase(x, y):
     return loss_phase
 
 
+def loss_mse_msssim_amp(x, y):
+    """Combine MSE and MS-SSIM loss for amp
+
+    Parameters
+    ----------
+    x : tensor
+        ouptut of net
+    y : tensor
+        target image
+
+    Returns
+    -------
+    float
+        value of addition of MSE and MS-SSIM
+    """
+
+    tar_amp = y[:, 0, :].unsqueeze(1)
+    inp_amp = x
+
+    loss_mse_amp = nn.MSELoss()
+    loss_mse_amp = loss_mse_amp(inp_amp, tar_amp)
+
+    loss_amp = (
+        loss_mse_amp + 1.0 - pytorch_msssim.msssim(inp_amp, tar_amp, normalize="relu")
+    )
+
+    return loss_amp
+
+
 def loss_mse_msssim(x, y):
     """Combine MSE and MS-SSIM loss
 
