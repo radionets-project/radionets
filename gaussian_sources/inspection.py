@@ -218,26 +218,32 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
 
-    im1 = ax1.imshow(inp_real, cmap="RdBu")
+    a = check_vmin_vmax(inp_real)
+    im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
     make_axes_nice(fig, ax1, im1, r"Amplitude Input")
 
+    a = check_vmin_vmax(real_pred)
     im2 = ax2.imshow(
-        real_pred, cmap="RdBu", vmin=real_truth.min(), vmax=real_truth.max()
+        real_pred, cmap="RdBu", vmin=-a, vmax=a
     )
     make_axes_nice(fig, ax2, im2, r"Amplitude Prediction")
 
-    im3 = ax3.imshow(real_truth, cmap="RdBu")
+    a = check_vmin_vmax(real_truth)
+    im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
     make_axes_nice(fig, ax3, im3, r"Amplitude Truth")
 
-    im4 = ax4.imshow(inp_imag, cmap="RdBu")
+    a = check_vmin_vmax(inp_imag)
+    im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
     make_axes_nice(fig, ax4, im4, r"Phase Input")
 
+    a = check_vmin_vmax(imag_pred)
     im5 = ax5.imshow(
-        imag_pred, cmap="RdBu", vmin=imag_truth.min(), vmax=imag_truth.max()
+        imag_pred, cmap="RdBu", vmin=-a, vmax=a
     )
     make_axes_nice(fig, ax5, im5, r"Phase Prediction")
 
-    im6 = ax6.imshow(imag_truth, cmap="RdBu")
+    a = check_vmin_vmax(imag_truth)
+    im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-a, vmax=a)
     make_axes_nice(fig, ax6, im6, r"Phase Truth")
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
@@ -912,3 +918,26 @@ def make_axes_nice(fig, ax, im, title):
     cbar = fig.colorbar(im, cax=cax, orientation="vertical")
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
+
+
+def check_vmin_vmax(inp):
+    """
+    Check wether the absolute of the maxmimum or the minimum is bigger.
+    If the minimum is bigger, return value with minus. Otherwise return
+    maximum.
+
+    Parameters
+    ----------
+    inp : float
+        input image
+
+    Returns
+    -------
+    float
+        negative minimal or maximal value
+    """
+    if np.abs(inp.min()) > np.abs(inp.max()):
+        a = -inp.min()
+    else:
+        a = inp.max()
+    return a
