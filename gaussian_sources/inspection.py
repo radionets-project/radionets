@@ -216,35 +216,48 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
         real_truth = 10 ** (10 * real_truth - 10) - 1e-10
 
     # plotting
-    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
 
     a = check_vmin_vmax(inp_real)
     im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice(fig, ax1, im1, r"Amplitude Input")
+    make_axes_nice(fig, ax1, im1, r"Real Input")
 
     a = check_vmin_vmax(real_pred)
     im2 = ax2.imshow(
         real_pred, cmap="RdBu", vmin=-a, vmax=a
     )
-    make_axes_nice(fig, ax2, im2, r"Amplitude Prediction")
+    make_axes_nice(fig, ax2, im2, r"Real Prediction")
 
     a = check_vmin_vmax(real_truth)
     im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice(fig, ax3, im3, r"Amplitude Truth")
+    make_axes_nice(fig, ax3, im3, r"Real Truth")
 
     a = check_vmin_vmax(inp_imag)
     im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice(fig, ax4, im4, r"Phase Input")
+    make_axes_nice(fig, ax4, im4, r"Imaginary Input")
 
     a = check_vmin_vmax(imag_pred)
     im5 = ax5.imshow(
         imag_pred, cmap="RdBu", vmin=-a, vmax=a
     )
-    make_axes_nice(fig, ax5, im5, r"Phase Prediction")
+    make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
 
     a = check_vmin_vmax(imag_truth)
     im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice(fig, ax6, im6, r"Phase Truth")
+    make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
+
+    ax1.set_ylabel(r"Pixel", fontsize=20)
+    ax4.set_ylabel(r"Pixel", fontsize=20)
+    ax4.set_xlabel(r"Pixel", fontsize=20)
+    ax5.set_xlabel(r"Pixel", fontsize=20)
+    ax6.set_xlabel(r"Pixel", fontsize=20)
+    ax1.tick_params(axis='both', labelsize=20)
+    ax2.tick_params(axis='both', labelsize=20)
+    ax3.tick_params(axis='both', labelsize=20)
+    ax4.tick_params(axis='both', labelsize=20)
+    ax5.tick_params(axis='both', labelsize=20)
+    ax6.tick_params(axis='both', labelsize=20)
+    plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
@@ -282,13 +295,18 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     ifft_truth = np.fft.ifft2(compl_truth)
 
     # plotting
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
 
     im1 = ax1.imshow(np.abs(ifft_pred))
     im2 = ax2.imshow(np.abs(ifft_truth))
 
-    make_axes_nice(fig, ax1, im1, r"FFT Prediction")
-    make_axes_nice(fig, ax2, im2, r"FFT Truth")
+    make_axes_nice2(fig, ax1, im1, r"FFT Prediction")
+    make_axes_nice2(fig, ax2, im2, r"FFT Truth")
+
+    ax1.set_ylabel(r"Pixel")
+    ax1.set_xlabel(r"Pixel")
+    ax2.set_xlabel(r"Pixel")
+    plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + "fft_pred_{}.png".format(i)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
@@ -896,6 +914,33 @@ def blob_detection(i, img_pred, img_truth, out_path):
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
 
+def make_axes_nice2(fig, ax, im, title):
+    """Create nice colorbars for every axis in a subplot
+
+    Parameters
+    ----------
+    fig : figure object
+        current figure
+    ax : axis object
+        current axis
+    im : ndarray
+        plotted image
+    title : str
+        title of subplot
+    """
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    ax.set_title(title, fontsize=20)
+    cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+    cbar.set_label("Intensity / a.u.", size=20)
+    cbar.ax.tick_params(labelsize=20)
+    cbar.ax.yaxis.get_offset_text().set_fontsize(20)
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
+
+
 def make_axes_nice(fig, ax, im, title):
     """Create nice colorbars for every axis in a subplot
 
@@ -916,6 +961,7 @@ def make_axes_nice(fig, ax, im, title):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title(title)
     cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+    cbar.set_label("Intensity / a.u.")
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
 
