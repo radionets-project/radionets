@@ -175,8 +175,12 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     img_pred = reshape_split(img_pred)
     img_truth = reshape_split(img_truth)
 
+    m_truth, n_truth, alpha_truth = calc_jet_angle(img_truth)
+    m_pred, n_pred, alpha_pred = calc_jet_angle(img_pred)
+    x_space = torch.arange(0, 63, 1)
+
     # plotting
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8), sharex=True, sharey=True)
 
     im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-inp_real.max(), vmax=inp_real.max())
     make_axes_nice(fig, ax1, im1, r"Real Input")
@@ -184,11 +188,20 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     im2 = ax2.imshow(inp_imag, cmap="RdBu", vmin=-inp_imag.max(), vmax=inp_imag.max())
     make_axes_nice(fig, ax2, im2, r"Imaginary Input")
 
-    im3 = ax3.imshow(img_pred)
+    ax3.plot(x_space, m_truth*x_space + n_truth, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_truth, 3)))
+    im3 = ax3.imshow(img_pred, zorder=0)
+    ax3.legend(loc="best")
     make_axes_nice(fig, ax3, im3, r"Prediction")
 
-    im4 = ax4.imshow(img_truth)
+    ax4.plot(x_space, m_pred*x_space + n_pred, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_pred, 3)))
+    im4 = ax4.imshow(img_truth, zorder=0)
+    ax4.legend(loc="best")
     make_axes_nice(fig, ax4, im4, r"Truth")
+
+    ax1.set_ylabel(r"Pixel")
+    ax3.set_ylabel(r"Pixel")
+    ax3.set_xlabel(r"Pixel")
+    ax4.set_xlabel(r"Pixel")
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
@@ -294,18 +307,26 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     # inverse fourier transform for truth
     ifft_truth = np.fft.ifft2(compl_truth)
 
+    m_truth, n_truth, alpha_truth = calc_jet_angle(np.abs(ifft_truth))
+    m_pred, n_pred, alpha_pred = calc_jet_angle(np.abs(ifft_pred))
+    x_space = torch.arange(0, 63, 1)
+
     # plotting
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
 
+    ax1.plot(x_space, m_pred*x_space + n_pred, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_pred, 3)))
     im1 = ax1.imshow(np.abs(ifft_pred))
+    ax2.plot(x_space, m_truth*x_space + n_truth, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_truth, 3)))
     im2 = ax2.imshow(np.abs(ifft_truth))
 
-    make_axes_nice2(fig, ax1, im1, r"FFT Prediction")
-    make_axes_nice2(fig, ax2, im2, r"FFT Truth")
+    make_axes_nice(fig, ax1, im1, r"FFT Prediction")
+    make_axes_nice(fig, ax2, im2, r"FFT Truth")
 
     ax1.set_ylabel(r"Pixel")
     ax1.set_xlabel(r"Pixel")
     ax2.set_xlabel(r"Pixel")
+    ax1.legend(loc="best")
+    ax2.legend(loc="best")
     plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + "fft_pred_{}.png".format(i)
@@ -987,3 +1008,53 @@ def check_vmin_vmax(inp):
     else:
         a = inp.max()
     return a
+
+
+def calc_jet_angle(image):
+    image = image.copy()
+    image[image < 0] = 0
+    # only use brightest pixel
+    image[image < image.max() * 0.4] = 0
+    pix_x, pix_y, image = im_to_array_value_rune(image)
+
+    cog_x = np.average(pix_x, weights=image)
+    cog_y = np.average(pix_y, weights=image)
+
+    delta_x = pix_x - cog_x
+    delta_y = pix_y - cog_y
+
+    cov = np.cov(delta_x, delta_y, aweights=image, ddof=1)
+    values, vectors = np.linalg.eigh(cov)
+    psi_torch = np.arctan(vectors[1, 1] / vectors[0, 1])
+    m = np.tan(np.pi / 2 - psi_torch)
+    n = cog_y - m * cog_x
+    alpha = (psi_torch) * 180 / np.pi
+    return m, n, alpha
+
+
+def im_to_array_value_rune(image):
+    '''
+    Transforms the image to an array of pixel coordinates and the containt
+    intensity
+    Parameters
+    ----------
+    image: Image or 2DArray (N, M)
+            Image to be transformed
+    Returns
+    -------
+    x_coords: Numpy 1Darray (N*M, 1)
+            Contains the x-pixel-position of every pixel in the image
+    y_coords: Numpy 1Darray (N*M, 1)
+            Contains the y-pixel-position of every pixel in the image
+    value: Numpy 1Darray (N*M, 1)
+            Contains the image-value corresponding to every x-y-pair
+    '''
+    x_coords = []
+    y_coords = []
+    value = []
+    for x in range(image.shape[0]):
+        for y in range(image.shape[1]):
+            x_coords.append(x)
+            y_coords.append(y)
+            value.append(image[x, y])
+    return np.asarray(x_coords), np.asarray(y_coords), np.asarray(value)
