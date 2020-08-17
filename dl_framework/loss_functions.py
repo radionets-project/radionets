@@ -216,6 +216,32 @@ def loss_msssim_diff(x, y):
     return loss
 
 
+def loss_msssim_amp(x, y):
+    """Loss function with 1 - the value of the MS-SSIM for amplitude
+
+    Parameters
+    ----------
+    x : tensor
+        output of net
+    y : tensor
+        output of net
+
+    Returns
+    -------
+    float
+        value of 1 - MS-SSIM
+    """
+    inp_real = x
+    tar_real = y[:, 0, :].unsqueeze(1)
+
+    loss = (
+        1.0
+        - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
+    )
+
+    return loss
+
+
 def loss_mse_msssim_phase(x, y):
     """Combine MSE and MS-SSIM loss for phase
 
