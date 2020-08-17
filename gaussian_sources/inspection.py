@@ -1013,6 +1013,10 @@ def check_vmin_vmax(inp):
 def calc_jet_angle(image):
     image = image.copy()
     image[image < 0] = 0
+    image[0:5] = 0
+    image[58:63] = 0
+    image[:, 0:5] = 0
+    image[:, 58:63] = 0
     # only use brightest pixel
     image[image < image.max() * 0.4] = 0
     pix_x, pix_y, image = im_to_array_value_rune(image)
