@@ -206,7 +206,6 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     outpath = str(out_path) + "prediction_{}.png".format(i)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.clf()
-    mpl.rcParams.update(mpl.rcParamsDefault)
 
 
 def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_path):
@@ -1013,10 +1012,10 @@ def check_vmin_vmax(inp):
 def calc_jet_angle(image):
     image = image.copy()
     image[image < 0] = 0
-    image[0:5] = 0
-    image[58:63] = 0
-    image[:, 0:5] = 0
-    image[:, 58:63] = 0
+    image[0:20] = 0
+    image[43:63] = 0
+    image[:, 0:20] = 0
+    image[:, 43:63] = 0
     # only use brightest pixel
     image[image < image.max() * 0.4] = 0
     pix_x, pix_y, image = im_to_array_value_rune(image)
