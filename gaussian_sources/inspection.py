@@ -19,6 +19,8 @@ mpl.rcParams.update(
     }
 )
 
+plot_mode = "png"
+
 
 def open_csv(path, mode):
     """
@@ -203,7 +205,7 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     ax1.set_xlabel(r"Pixel")
     ax2.set_xlabel(r"Pixel")
 
-    outpath = str(out_path) + "prediction_{}.png".format(i)
+    outpath = str(out_path) + "prediction_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.clf()
 
@@ -271,7 +273,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     ax6.tick_params(axis='both', labelsize=20)
     plt.tight_layout(pad=1.5)
 
-    outpath = str(out_path) + "prediction_{}.png".format(i)
+    outpath = str(out_path) + "prediction_{}.{}".format(i, plot_mode)
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     return real_pred, imag_pred, real_truth, imag_truth
 
@@ -328,7 +330,7 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     ax2.legend(loc="best")
     plt.tight_layout(pad=1.5)
 
-    outpath = str(out_path) + "fft_pred_{}.png".format(i)
+    outpath = str(out_path) + "fft_pred_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
@@ -410,7 +412,7 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
 
     ax1.legend(loc="best")
     ax2.legend(loc="best")
-    outpath = str(out_path) + "diff/difference_{}.png".format(i)
+    outpath = str(out_path) + "diff/difference_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
     plt.clf()
@@ -930,7 +932,7 @@ def blob_detection(i, img_pred, img_truth, out_path):
     make_axes_nice(fig, ax1, im1, r"Prediction")
     make_axes_nice(fig, ax2, im2, r"Truth")
 
-    outpath = str(out_path) + "blob/blob_detection_{}.png".format(i)
+    outpath = str(out_path) + "blob/blob_detection_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
 
