@@ -930,7 +930,7 @@ def blob_detection(i, img_pred, img_truth, out_path):
     make_axes_nice(fig, ax1, im1, r"Prediction")
     make_axes_nice(fig, ax2, im2, r"Truth")
 
-    outpath = str(out_path) + "blob/blob_detection_{}.pdf".format(i)
+    outpath = str(out_path) + "blob/blob_detection_{}.png".format(i)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
 
