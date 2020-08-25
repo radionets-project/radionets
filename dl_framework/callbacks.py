@@ -135,8 +135,22 @@ class Recorder(Callback):
         plt.tight_layout()
 
     def plot_loss(self, log=True):
-        plt.plot(self.train_losses, label="train loss")
-        plt.plot(self.valid_losses, label="valid loss")
+        import matplotlib as mpl
+
+        # make nice Latex friendly plots
+        mpl.use("pgf")
+        mpl.rcParams.update(
+            {
+                "font.size": 12,
+                "font.family": "sans-serif",
+                "text.usetex": True,
+                "pgf.rcfonts": False,
+                "pgf.texsystem": "lualatex",
+            }
+        )
+
+        plt.plot(self.train_losses, label="training loss")
+        plt.plot(self.valid_losses, label="validation loss")
         if log:
             plt.yscale("log")
         plt.xlabel(r"Number of Epochs")
