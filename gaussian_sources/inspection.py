@@ -405,7 +405,6 @@ def plot_dr(i, img_pred, img_truth, sensitivity, out_path):
 
     plt.clf()
 
-    hist_difference(i, img_pred, img_truth, out_path)
     return dynamic_range
 
 
@@ -451,6 +450,8 @@ def plot_difference(i, img_pred, img_truth, out_path):
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
     plt.clf()
+
+    hist_difference(i, img_pred, img_truth, out_path)
 
     return msssim
 
