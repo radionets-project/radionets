@@ -9,6 +9,7 @@ from gaussian_sources.inspection import (
     visualize_fft,
     open_csv,
     plot_difference,
+    plot_dr,
     save_indices_and_data,
     blob_detection,
 )
@@ -21,6 +22,7 @@ from gaussian_sources.inspection import (
 @click.option("-diff", type=bool, required=False)
 @click.option("-sensitivity", type=float, required=False)
 @click.option("-blob", type=bool, required=False)
+@click.option("-dr", type=bool, required=False)
 @click.option("-log", type=bool, required=False)
 @click.option("-index", type=int, required=False)
 @click.option("-num", type=int, required=False)
@@ -31,6 +33,7 @@ def main(
     diff=False,
     sensitivity=1e-6,
     blob=False,
+    dr=False,
     index=None,
     log=False,
     num=None,
@@ -79,11 +82,14 @@ def main(
                 )
 
                 if diff:
-                    dynamic_range, msssim = plot_difference(
+                    msssim = plot_difference(i, ifft_pred, ifft_truth, out_path)
+                    msssims.append(msssim)
+
+                if dr:
+                    dynamic_range = plot_dr(
                         i, ifft_pred, ifft_truth, sensitivity, out_path
                     )
                     dynamic_ranges.append(dynamic_range)
-                    msssims.append(msssim)
 
                 if blob:
                     blob_detection(i, ifft_pred, ifft_truth, out_path)
@@ -92,7 +98,13 @@ def main(
                 visualize_without_fourier(i, img_input, img_pred, img_truth, out_path)
 
                 if diff:
-                    dynamic_range, msssim = plot_difference(
+                    msssim = plot_difference(
+                        i, img_pred.reshape(64, 64), img_truth.reshape(64, 64), out_path
+                    )
+                    msssims.append(msssim)
+
+                if dr:
+                    dynamic_range = plot_dr(
                         i,
                         img_pred.reshape(64, 64),
                         img_truth.reshape(64, 64),
@@ -100,7 +112,6 @@ def main(
                         out_path,
                     )
                     dynamic_ranges.append(dynamic_range)
-                    msssims.append(msssim)
 
                 if blob:
                     blob_detection(
@@ -110,7 +121,7 @@ def main(
                         out_path,
                     )
 
-        outpath = str(out_path) + "diff/dynamic_ranges.csv"
+        outpath = str(out_path) + "dynamic_range/dynamic_ranges.csv"
         save_indices_and_data(indices, dynamic_ranges, outpath)
         outpath = str(out_path) + "diff/msssims.csv"
         save_indices_and_data(indices, msssims, outpath)
