@@ -320,15 +320,15 @@ def test_mask():
     """
     Test mask for filter tests
     """
-    mask = np.ones((63, 63))
-    mask[19, 30] = 0
-    mask[23, 23] = 0
-    mask[30, 19] = 0
-    mask[43, 32] = 0
-    mask[39, 39] = 0
-    mask[32, 43] = 0
-    mask[33:35, 33:35] = 0
-    mask[28:30, 28:30] = 0
+    mask = np.ones((2, 63, 63))
+    mask[:, 19, 30] = 0
+    mask[:, 23, 23] = 0
+    mask[:, 30, 19] = 0
+    mask[:, 43, 32] = 0
+    mask[:, 39, 39] = 0
+    mask[:, 32, 43] = 0
+    mask[:, 33:35, 33:35] = 0
+    mask[:, 28:30, 28:30] = 0
     return mask
 
 
