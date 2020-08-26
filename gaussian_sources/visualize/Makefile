@@ -7,11 +7,12 @@ save_predictions: ./pred_save
 build/visualize_predictions_done:
 	mkdir -p ${out_path}
 	mkdir -p ${out_path}diff/
+	mkdir -p ${out_path}dynamic_range/
 	mkdir -p ${out_path}blob/
 	python visualize_predictions.py \
 	${out_path} \
 	-fourier ${fourier} -amp_phase ${amp_phase} -diff ${diff} \
-	-sensitivity ${sensitivity} -blob ${blob} ${mode}
+	-dr ${dr} -sensitivity ${sensitivity} -blob ${blob} ${mode}
 
 ./pred_save:
 	mkdir -p ${out_path}
