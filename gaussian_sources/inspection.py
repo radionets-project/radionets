@@ -19,7 +19,7 @@ mpl.rcParams.update(
     }
 )
 
-plot_mode = "png"
+plot_mode = "pdf"
 
 
 def open_csv(path, mode):
@@ -335,7 +335,7 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
-def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
+def plot_dr(i, img_pred, img_truth, sensitivity, out_path):
     """Create a subplot with the prediction, the truth and the difference.
     Also computes the dynamic range for the prediction and the truth. Last,
     calculates the quotient between these two values. If one RMS value in one corner of
@@ -394,31 +394,65 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
 
     im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
-    # scale all images to the same magnitude
-    if img_truth.max() < 0.099999:
-        magnitude = int(np.round(np.abs(np.log10(img_truth.max()))))
-        # print(magnitude, img_pred.max(), img_truth.max())
-        img_pred = img_pred * 10 ** magnitude
-        img_truth = img_truth * 10 ** magnitude
-    # print(img_pred.max(), img_truth.max())
-
-    tensor_pred = torch.tensor(np.float32(img_pred)).unsqueeze(0).unsqueeze(1)
-    tensor_truth = torch.tensor(np.float32(img_truth)).unsqueeze(0).unsqueeze(1)
-    msssim = pytorch_msssim.msssim(tensor_pred, tensor_truth, normalize="None")
-
     make_axes_nice(fig, ax1, im1, r"Prediction: {}".format(np.round(dr_pred, 4)))
-    make_axes_nice(fig, ax2, im2, r"DR: {}".format(dynamic_range))
-    make_axes_nice(fig, ax3, im3, r"MS-SSIM: {}".format(msssim))
+    make_axes_nice(fig, ax2, im2, r"Truth: {}".format(np.round(dr_truth, 4)))
+    make_axes_nice(fig, ax3, im3, r"MS-SSIM: {}".format(dynamic_range))
 
     ax1.legend(loc="best")
     ax2.legend(loc="best")
-    outpath = str(out_path) + "diff/difference_{}.{}".format(i, plot_mode)
+    outpath = str(out_path) + "dynamic_range/dr_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
     plt.clf()
 
     hist_difference(i, img_pred, img_truth, out_path)
-    return dynamic_range, msssim
+    return dynamic_range
+
+
+def plot_difference(i, img_pred, img_truth, out_path):
+    """Plot only the difference
+
+
+    Parameters
+    ----------
+    i : int
+        number of picture
+    img_pred : ndarray
+        image of prediction
+    img_truth : ndarray
+        image of truth
+    out_path : str
+        Output path as defined in makerc
+
+    Returns
+    -------
+    float
+        Quotient between the dynamic range sof truth and prediction
+    """
+    plt.clf()
+    fig = plt.figure()
+    ax = plt.gca()
+    # scale all images to the same magnitude
+    if img_truth.max() < 0.099999:
+        magnitude = int(np.round(np.abs(np.log10(img_truth.max()))))
+        img_pred = img_pred * 10 ** magnitude
+        img_truth = img_truth * 10 ** magnitude
+
+    tensor_pred = torch.tensor(np.float32(img_pred)).unsqueeze(0).unsqueeze(1)
+    tensor_truth = torch.tensor(np.float32(img_truth)).unsqueeze(0).unsqueeze(1)
+    msssim = pytorch_msssim.msssim(tensor_pred, tensor_truth, normalize="None")
+
+    im = ax.imshow(np.abs(img_pred - img_truth))
+    make_axes_nice(fig, ax, im, r"MS-SSIM: {}".format(msssim))
+
+    ax.set_xlabel(r"Pixel")
+    ax.set_ylabel(r"Pixel")
+    outpath = str(out_path) + "diff/difference_{}.{}".format(i, plot_mode)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+
+    plt.clf()
+
+    return msssim
 
 
 def plot_off_regions(ax, mode, img_size, num):
