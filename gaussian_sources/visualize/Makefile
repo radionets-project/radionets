@@ -3,6 +3,7 @@ all: save_predictions visualize_predictions
 
 visualize_predictions: build/visualize_predictions_done
 save_predictions: ./pred_save
+msssim: ./mean_msssim
 
 build/visualize_predictions_done:
 	mkdir -p ${out_path}
@@ -18,6 +19,11 @@ build/visualize_predictions_done:
 	mkdir -p ${out_path}
 	python save_predictions.py ${data} ${data}/${norm_path} \
 	${arch} ${path_model} ${out_path} -fourier ${fourier} -separate ${separate} ${mode}
+
+./mean_msssim:
+	mkdir -p ${out_path}
+	python mean_msssim.py ${data} ${data}/${norm_path} \
+	${arch} ${path_model} ${out_path} -fourier ${fourier}
 
 clean:
 	rm -rf ${out_path}
