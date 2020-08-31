@@ -28,7 +28,6 @@ def check_outpath(outpath, data_format):
     """
     path = Path(outpath)
     exists = path.exists()
-    print(data_format)
     if exists is True:
         fft = {p for p in path.rglob("*fft*." + str(data_format)) if p.is_file()}
         samp = {p for p in path.rglob("*sampled*." + str(data_format)) if p.is_file()}
@@ -63,26 +62,35 @@ def check_outpath(outpath, data_format):
 
 def read_config(config):
     sim_conf = {}
-    sim_conf['out_path'] = config["paths"]["out_path"]
+    sim_conf["out_path"] = config["paths"]["out_path"]
     if config["mnist"]["simulate"]:
         click.echo("Create fft_images from mnist data set!")
 
         sim_conf["type"] = "mnist"
         sim_conf["resource"] = config["mnist"]["resource"]
-    # else:
-    #     click.echo("Create fft_images from simulated data set!")
+    if config["gaussians"]["simulate"]:
+        click.echo("Create fft_images from gaussian data set!")
 
-    #     points = config["pointsources"]["simulate"]
-    #     if points:
-    #         num_sources_points = config["pointsources"]["num_sources"]
+        sim_conf["type"] = "gaussians"
+        if config["gaussians"]["pointsources"]:
+            sim_conf["num_pointsources"] = config["gaussians"]["num_pointsources"]
+            click.echo("Adding pointsources.")
+        else:
+            sim_conf["num_pointsources"] = None
 
-    #     pointg = config["pointlike_gaussians"]["simulate"]
-    #     if pointg:
-    #         num_sources_pointg = config["pointlike_gaussians"]["num_sources"]
+        if config["gaussians"]["pointlike_gaussians"]:
+            sim_conf["num_pointlike_gaussians"] = config["gaussians"][
+                "num_pointlike_gaussians"
+            ]
+            click.echo("Adding pointlike gaussians.")
+        else:
+            sim_conf["num_pointlike_gaussians"] = None
 
-    #     extendedg = config["extended_gaussians"]["simulate"]
-    #     if extendedg:
-    #         num_components = config["pointlike_gaussians"]["num_components"]
+        if config["gaussians"]["extended_gaussians"]:
+            sim_conf["num_components"] = config["gaussians"]["num_components"]
+            click.echo("Adding extended gaussian sources.")
+        else:
+            sim_conf["num_components"] = None
 
     sim_conf["num_bundles"] = config["image_options"]["num_bundles"]
     sim_conf["bundle_size"] = config["image_options"]["bundle_size"]
@@ -155,11 +163,14 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
         rescaled input image
     """
     y = resize(
-        bundle.swapaxes(0, 2), (pixel, pixel), anti_aliasing=True, mode="constant",
+        bundle.swapaxes(0, 2),
+        (pixel, pixel),
+        anti_aliasing=True,
+        mode="constant",
     ).swapaxes(2, 0)
     y_prep = y.copy()
     if noise:
         y_prep = add_noise(y_prep)
     x = np.fft.fftshift(np.fft.fft2(y_prep))
-    path = adjust_outpath(path, "/fft_bundle_" + option)
+    path = adjust_outpath(path, "/fft_mnist_bundle_" + option)
     save_fft_pair(path, x, y)
