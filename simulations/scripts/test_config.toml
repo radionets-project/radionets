@@ -7,19 +7,16 @@ out_path = "./build"
 data_format = "h5"
 
 [mnist]
-simulate = true
+simulate = false
 resource = "../../resources/mnist.pkl.gz"
 
-[pointsources]
-simulate = false
-num_sources = 20
-
-[pointlike_gaussians]
-simulate = false
-num_sources = 20
-
-[extended_gaussians]
-simulate = false
+[gaussians]
+simulate = true
+pointsources = false
+num_pointsources = 20
+pointlike_gaussians = true
+num_pointlike_gaussians = 20
+extended_gaussians = true
 num_components = [4, 10]
 
 
