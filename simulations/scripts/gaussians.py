@@ -1,8 +1,9 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
+from scipy import ndimage
 
-# import matplotlib.pyplot as plt
-# from matplotlib.colors import LogNorm
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 
 def simulate_gaussian_sources(
@@ -33,9 +34,9 @@ def simulate_gaussian_sources(
     if noise:
         bundle_noised = add_noise(bundle)
 
-    # plt.imshow(bundle[0], norm=LogNorm())
-    # plt.colorbar()
-    # plt.show()
+    plt.imshow(bundle[0], norm=LogNorm())
+    plt.colorbar()
+    plt.show()
 
 
 def create_grid(pixel, bundle_size):
@@ -343,9 +344,10 @@ def create_gauss(img, N, sources, spherical):
     # img = [img]
     mx = np.random.randint(1, 63, size=(N, sources))
     my = np.random.randint(1, 63, size=(N, sources))
+    amp = (np.random.randint(0, 100, size=(N)) * np.random.random()) / 1e2
 
     if spherical:
-        sx = np.random.randint(1, 15, size=(N, sources))
+        sx = np.random.randint(1, 15, size=(N, sources)) / 10
         sy = sx
     else:
         sx = np.random.randint(1, 15, size=(N, sources))
@@ -354,7 +356,7 @@ def create_gauss(img, N, sources, spherical):
 
     for i in range(N):
         for j in range(sources):
-            g = gauss(mx[i, j], my[i, j], sx[i, j], sy[i, j])
+            g = gauss(mx[i, j], my[i, j], sx[i, j], sy[i, j], amp[i])
             if spherical:
                 img[i] += g
             else:
@@ -372,15 +374,14 @@ def create_gauss(img, N, sources, spherical):
 
 
 def gauss_pointsources(img, num_img, sources):
-    # img = np.zeros((num_img, 64, 64))
-    # img = [img]
     mx = np.random.randint(0, 63, size=(num_img, sources))
     my = np.random.randint(0, 63, size=(num_img, sources))
-    sigma = 0.5
+    amp = (np.random.randint(0, 100, size=(num_img)) * np.random.random()) / 1e2
+    sigma = 0.05
     for i in range(num_img):
         targets = np.random.randint(2, sources + 1)
         for j in range(targets):
-            g = gauss(mx[i, j], my[i, j], sigma, sigma)
+            g = gauss(mx[i, j], my[i, j], sigma, sigma, amp[i])
             img[i] += g
     return np.array(img)
 
