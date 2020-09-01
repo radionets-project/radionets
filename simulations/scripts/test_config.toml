@@ -12,16 +12,18 @@ resource = "../../resources/mnist.pkl.gz"
 
 [gaussians]
 simulate = true
-pointsources = false
-num_pointsources = 20
+pointsources = true
+num_pointsources = 10
 pointlike_gaussians = true
-num_pointlike_gaussians = 20
+num_pointlike_gaussians = 5
 extended_gaussians = true
 num_components = [4, 10]
 
 
 [image_options]
-num_bundles = 1
+bundles_train = 100
+bundles_valid = 20
+bundles_test = 5
 bundle_size = 500
 img_size = 63
 noise = false
