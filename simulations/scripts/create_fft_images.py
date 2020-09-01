@@ -20,13 +20,22 @@ def create_fft_images(sim_conf):
             noise=sim_conf["noise"],
         )
     if sim_conf["type"] == "gaussians":
-        simulate_gaussian_sources(
-            out_path=sim_conf["out_path"],
-            num_bundles=sim_conf["num_bundles"],
-            bundle_size=sim_conf["bundle_size"],
-            img_size=sim_conf["img_size"],
-            num_comp_ext=sim_conf["num_components"],
-            num_pointlike=sim_conf["num_pointlike_gaussians"],
-            num_pointsources=sim_conf["num_pointsources"],
-            noise=sim_conf["noise"],
-        )
+        for opt in ["train", "valid", "test"]:
+            simulate_gaussian_sources(
+                out_path=sim_conf["out_path"],
+                option=opt,
+                num_bundles=sim_conf["bundles_" + str(opt)],
+                bundle_size=sim_conf["bundle_size"],
+                img_size=sim_conf["img_size"],
+                num_comp_ext=sim_conf["num_components"],
+                num_pointlike=sim_conf["num_pointlike_gaussians"],
+                num_pointsources=sim_conf["num_pointsources"],
+                noise=sim_conf["noise"],
+            )
+
+
+def sample_fft_images(sim_config):
+    """
+    check for fft files
+    keep fft_files?
+    """
