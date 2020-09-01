@@ -27,5 +27,6 @@ def create_fft_images(sim_conf):
             img_size=sim_conf["img_size"],
             num_comp_ext=sim_conf["num_components"],
             num_pointlike=sim_conf["num_pointlike_gaussians"],
+            num_pointsources=sim_conf["num_pointsources"],
             noise=sim_conf["noise"],
         )
