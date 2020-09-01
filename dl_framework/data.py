@@ -114,6 +114,8 @@ class h5_dataset:
 
                 data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
+            if data.shape[1] == 2:
+                raise ValueError("Two channeled data is used despite Fourier being False. Set Fourier to True!")
             if len(i) == 1:
                 data_channel = data.reshape(data.shape[-1] ** 2)
             else:

@@ -30,14 +30,16 @@ def test_visualize_without_fourier():
 
     build = "tests/build/"
     build_diff = "tests/build/diff"
+    build_dr = "tests/build/dynamic_range"
     build_blob = "tests/build/blob"
     Path(build_diff).mkdir(parents=True, exist_ok=True)
+    Path(build_dr).mkdir(parents=True, exist_ok=True)
     Path(build_blob).mkdir(parents=True, exist_ok=True)
 
     img_input, img_pred, img_truth = (
-        test_ds[0][0].reshape(-1),
-        test_ds[1][1].reshape(-1),
-        test_ds[2][1].reshape(-1),
+        test_ds[0][0].reshape(-1).numpy(),
+        test_ds[1][1].reshape(-1).numpy(),
+        test_ds[2][1].reshape(-1).numpy(),
     )
     i = 0
 
@@ -95,21 +97,22 @@ def test_compute_fft():
     return ifft_pred, ifft_truth
 
 
-def test_hist_difference():
-    from gaussian_sources.inspection import hist_difference
+# def test_hist_difference():
+#     from gaussian_sources.inspection import hist_difference
 
-    test_ds = test_load_data()
+#     test_ds = test_load_data()
 
-    img_pred, img_truth = (
-        test_ds[0][1].numpy(),
-        test_ds[1][1].numpy(),
-    )
-    build = "tests/build/"
+#     img_pred, img_truth = (
+#         test_ds[0][1].numpy(),
+#         test_ds[1][1].numpy(),
+#     )
+#     build = "tests/build/"
 
-    assert hist_difference(0, img_pred, img_truth, build) is None
+#     assert hist_difference(0, img_pred, img_truth, build) is None
 
 
 def test_plot_difference():
+    import numpy as np
     from gaussian_sources.inspection import plot_difference
 
     test_ds = test_load_data()
@@ -120,8 +123,28 @@ def test_plot_difference():
         test_ds[0][1].numpy(),
         test_ds[1][1].numpy(),
     )
-    dr_fourier = plot_difference(0, ifft_pred, ifft_truth, 1e-6, build)
-    dr_wo_fourier = plot_difference(
+    msssim_fourier = plot_difference(0, ifft_pred, ifft_truth, build)
+    msssim_wo_fourier = plot_difference(
+        0, img_pred.reshape(63, 63), img_truth.reshape(63, 63), build
+    )
+
+    assert msssim_fourier.numpy().dtype == np.float32
+    assert msssim_wo_fourier.numpy().dtype == np.float32
+
+
+def test_plot_dynamic_range():
+    from gaussian_sources.inspection import plot_dr
+
+    test_ds = test_load_data()
+
+    build = "tests/build/"
+    ifft_pred, ifft_truth = test_compute_fft()
+    img_pred, img_truth = (
+        test_ds[0][1].numpy(),
+        test_ds[1][1].numpy(),
+    )
+    dr_fourier = plot_dr(0, ifft_pred, ifft_truth, 1e-6, build)
+    dr_wo_fourier = plot_dr(
         0, img_pred.reshape(63, 63), img_truth.reshape(63, 63), 1e-6, build
     )
 

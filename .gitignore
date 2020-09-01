@@ -33,6 +33,7 @@ __pycache__/
 *.jpg
 *.pdf
 *.gif
+*.png
 
 # make
 *_done

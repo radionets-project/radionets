@@ -108,18 +108,12 @@ def main(
     # Define model name for recording in LoggerCallback
     model_name = model_path.split("models/")[-1].split("/")[0]
 
-    cbfs = [
-        Recorder,
-        partial(SaveCallback, model_path=model_path),
-    ]
-
     # Define learner
     learn = define_learner(
         data,
         arch,
         norm,
         loss_func,
-        cbfs=cbfs,
         lr=lr,
         model_name=model_name,
         model_path=model_path,
