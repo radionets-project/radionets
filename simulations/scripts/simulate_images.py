@@ -24,7 +24,8 @@ def main(configuration_path):
     # declare source options
     sim_conf = read_config(config)
 
-    print(sim_conf)
+    click.echo("\n Simulation config:")
+    print(sim_conf, "\n")
 
     # start simulations
     if sim_fft is True:
@@ -33,28 +34,7 @@ def main(configuration_path):
 
     if sim_sampled is True:
         click.echo("Start sampling fft_files!")
-
-    # save simulations
-
-
-"""
-block 1
-check if out_path exists -> create directory
-check if out_path is empty -> overwrite old simulations?
-keep fft_files?
-
-block 2
-configure simulation options
-mnist (need resource) / gaussian sources / pointsources
-
-block 3
-simulate source images
-fft
-sample
-
-block 4
-save simulated images in bundles to out_path
-"""
+        sample_fft_images(sim_conf)
 
 
 if __name__ == "__main__":
