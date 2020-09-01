@@ -1,13 +1,14 @@
 import numpy as np
+from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
 from scipy import ndimage
-
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
+from dl_framework.data import save_fft_pair
+from simulations.scripts.utils import adjust_outpath
 
 
 def simulate_gaussian_sources(
     out_path,
+    option,
     num_bundles,
     bundle_size,
     img_size,
@@ -16,27 +17,28 @@ def simulate_gaussian_sources(
     num_pointsources,
     noise,
 ):
-    grid = create_grid(img_size, bundle_size)
-    ext_gaussian = 0
-    pointlike = 0
-    pointsource = 0
+    for i in tqdm(range(num_bundles)):
+        grid = create_grid(img_size, bundle_size)
+        ext_gaussian = 0
+        pointlike = 0
+        pointsource = 0
 
-    if num_comp_ext is not None:
-        ext_gaussian = create_ext_gauss_bundle(grid)
-    if num_pointlike is not None:
-        pointlike = create_gauss(grid[:, 0], bundle_size, num_pointlike, True)
-    if num_pointsources is not None:
-        pointsource = gauss_pointsources(grid[:, 0], bundle_size, num_pointsources)
+        if num_comp_ext is not None:
+            ext_gaussian = create_ext_gauss_bundle(grid)
+        if num_pointlike is not None:
+            pointlike = create_gauss(grid[:, 0], bundle_size, num_pointlike, True)
+        if num_pointsources is not None:
+            pointsource = gauss_pointsources(grid[:, 0], bundle_size, num_pointsources)
 
-    bundle = ext_gaussian + pointlike + pointsource
-    print(bundle.shape)
+        bundle = ext_gaussian + pointlike + pointsource
+        images = bundle.copy()
 
-    if noise:
-        bundle_noised = add_noise(bundle)
+        if noise:
+            images = add_noise(images)
 
-    plt.imshow(bundle[0], norm=LogNorm())
-    plt.colorbar()
-    plt.show()
+        bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
+        path = adjust_outpath(out_path, "/fft_gs_bundle_" + option)
+        save_fft_pair(path, bundle_fft, bundle)
 
 
 def create_grid(pixel, bundle_size):
