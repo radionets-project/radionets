@@ -69,7 +69,7 @@ def read_config(config):
         sim_conf["type"] = "mnist"
         sim_conf["resource"] = config["mnist"]["resource"]
     if config["gaussians"]["simulate"]:
-        click.echo("Create fft_images from gaussian data set!")
+        click.echo("Create fft_images from gaussian data set! \n")
 
         sim_conf["type"] = "gaussians"
         if config["gaussians"]["pointsources"]:
@@ -92,7 +92,9 @@ def read_config(config):
         else:
             sim_conf["num_components"] = None
 
-    sim_conf["num_bundles"] = config["image_options"]["num_bundles"]
+    sim_conf["bundles_train"] = config["image_options"]["bundles_train"]
+    sim_conf["bundles_valid"] = config["image_options"]["bundles_valid"]
+    sim_conf["bundles_test"] = config["image_options"]["bundles_test"]
     sim_conf["bundle_size"] = config["image_options"]["bundle_size"]
     sim_conf["img_size"] = config["image_options"]["img_size"]
     sim_conf["noise"] = config["image_options"]["noise"]
