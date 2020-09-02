@@ -3,7 +3,7 @@
 title = "Simulation configuration"
 
 [paths]
-data_path = "./build"
+data_path = "./build/"
 data_format = "h5"
 
 [mnist]
@@ -38,3 +38,4 @@ lat = 50
 steps = 50
 antenna_config_path = "../layouts/vlba.txt"
 compressed = false
+keep_fft_files = true
