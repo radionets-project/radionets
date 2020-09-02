@@ -47,7 +47,7 @@ def sample_frequencies(
                     size=size,
                     specific_mask=False,
                 )
-            out = data_path + f"/fft_samp_" + path.name.split("_")[-1]
+            out = data_path + f"/samp_" + path.name.split("_")[-1]
 
             if fourier:
                 if compressed:
