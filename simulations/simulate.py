@@ -1,6 +1,8 @@
 from simulations.mnist import mnist_fft
 from simulations.gaussians import simulate_gaussian_sources
 from simulations.sampling import sample_frequencies
+import click
+from pathlib import Path
 
 
 def create_fft_images(sim_conf):
@@ -52,3 +54,14 @@ def sample_fft_images(sim_conf):
         fourier=sim_conf["fourier"],
         compressed=sim_conf["compressed"],
     )
+    if sim_conf["keep_fft_files"] is not True:
+        if click.confirm("Do you really want to delete the fft_files?", abort=False):
+            fft = {
+                p
+                for p in Path(sim_conf["data_path"]).rglob(
+                    "*fft*." + str(sim_conf["data_format"])
+                )
+                if p.is_file()
+            }
+            print(fft)
+            [p.unlink() for p in fft]
