@@ -42,7 +42,10 @@ def sample_frequencies(
                 )
             else:
                 fft_samp = sample_freqs(
-                    fft_scaled.copy(), antenna_config_path, size=size, specific_mask=False
+                    fft_scaled.copy(),
+                    antenna_config_path,
+                    size=size,
+                    specific_mask=False,
                 )
             out = data_path + f"/fft_samp_" + path.name.split("_")[-1]
 
