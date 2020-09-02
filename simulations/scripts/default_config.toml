@@ -3,7 +3,7 @@
 title = "Simulation configuration"
 
 [paths]
-out_path = "./build"
+data_path = "./build"
 data_format = "h5"
 
 [mnist]

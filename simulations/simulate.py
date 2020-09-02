@@ -14,8 +14,8 @@ def create_fft_images(sim_conf):
     """
     if sim_conf["type"] == "mnist":
         mnist_fft(
-            data_path=sim_conf["resource"],
-            out_path=sim_conf["out_path"],
+            resource_path=sim_conf["resource"],
+            data_path=sim_conf["data_path"],
             size=sim_conf["img_size"],
             bundle_size=sim_conf["bundle_size"],
             noise=sim_conf["noise"],
@@ -23,7 +23,7 @@ def create_fft_images(sim_conf):
     if sim_conf["type"] == "gaussians":
         for opt in ["train", "valid", "test"]:
             simulate_gaussian_sources(
-                out_path=sim_conf["out_path"],
+                data_path=sim_conf["data_path"],
                 option=opt,
                 num_bundles=sim_conf["bundles_" + str(opt)],
                 bundle_size=sim_conf["bundle_size"],
@@ -41,7 +41,7 @@ def sample_fft_images(sim_conf):
     keep fft_files?
     """
     sample_frequencies(
-        data_path=sim_conf["out_path"],
+        data_path=sim_conf["data_path"],
         amp_phase=sim_conf["amp_phase"],
         real_imag=sim_conf["real_imag"],
         specific_mask=sim_conf["specific_mask"],

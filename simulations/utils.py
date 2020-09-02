@@ -71,7 +71,7 @@ def check_outpath(outpath, data_format):
 
 def read_config(config):
     sim_conf = {}
-    sim_conf["out_path"] = config["paths"]["out_path"]
+    sim_conf["data_path"] = config["paths"]["data_path"]
     if config["mnist"]["simulate"]:
         click.echo("Create fft_images from mnist data set!")
 

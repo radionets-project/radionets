@@ -16,9 +16,9 @@ def main(configuration_path):
     config = toml.load(configuration_path)
 
     # check out path and look for existing files
-    out_path = config["paths"]["out_path"]
+    data_path = config["paths"]["data_path"]
     sim_fft, sim_sampled = check_outpath(
-        out_path, data_format=config["paths"]["data_format"]
+        data_path, data_format=config["paths"]["data_format"]
     )
 
     # declare source options
