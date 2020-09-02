@@ -183,6 +183,16 @@ def open_bundle(path):
     return bundle
 
 
+def open_fft_bundle(path):
+    """
+    open radio galaxy bundles created in first analysis step
+    """
+    f = h5py.File(path, "r")
+    x = np.array(f["x"])
+    y = np.array(f["y"])
+    return x, y
+
+
 def get_bundles(path):
     """
     returns list of bundle paths located in a directory
