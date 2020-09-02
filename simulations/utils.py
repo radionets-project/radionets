@@ -42,6 +42,7 @@ def check_outpath(outpath, data_format):
             if click.confirm("Do you really want to overwrite the files?", abort=False):
                 click.echo("Overwriting old fft_files!")
                 [p.unlink() for p in fft]
+                [p.unlink() for p in samp]
                 sim_fft = True
                 sim_sampled = True
                 return sim_fft, sim_sampled
@@ -72,6 +73,7 @@ def check_outpath(outpath, data_format):
 def read_config(config):
     sim_conf = {}
     sim_conf["data_path"] = config["paths"]["data_path"]
+    sim_conf["data_format"] = config["paths"]["data_format"]
     if config["mnist"]["simulate"]:
         click.echo("Create fft_images from mnist data set!")
 
@@ -117,6 +119,7 @@ def read_config(config):
     sim_conf["steps"] = config["sampling_options"]["steps"]
     sim_conf["fourier"] = config["sampling_options"]["fourier"]
     sim_conf["compressed"] = config["sampling_options"]["compressed"]
+    sim_conf["keep_fft_files"] = config["sampling_options"]["keep_fft_files"]
     return sim_conf
 
 
