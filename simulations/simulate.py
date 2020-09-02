@@ -15,7 +15,7 @@ def create_fft_images(sim_conf):
     if sim_conf["type"] == "mnist":
         mnist_fft(
             resource_path=sim_conf["resource"],
-            data_path=sim_conf["data_path"],
+            out_path=sim_conf["data_path"],
             size=sim_conf["img_size"],
             bundle_size=sim_conf["bundle_size"],
             noise=sim_conf["noise"],
