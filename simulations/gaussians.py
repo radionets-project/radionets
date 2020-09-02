@@ -3,7 +3,7 @@ from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
 from scipy import ndimage
 from dl_framework.data import save_fft_pair
-from simulations.scripts.utils import adjust_outpath
+from simulations.utils import adjust_outpath, add_noise
 
 
 def simulate_gaussian_sources(
@@ -392,52 +392,3 @@ def gauss(mx, my, sx, sy, amp=0.01):
     x = np.arange(63)[None].astype(np.float)
     y = x.T
     return amp * np.exp(-((y - my) ** 2) / sy).dot(np.exp(-((x - mx) ** 2) / sx))
-
-
-# adding noise
-
-
-def get_noise(image, scale, mean=0, std=1):
-    """
-    Calculate random noise values for all image pixels.
-
-    Parameters
-    ----------
-    image: 2darray
-        2d image
-    scale: float
-        scaling factor to increase noise
-    mean: float
-        mean of noise values
-    std: float
-        standard deviation of noise values
-
-    Returns
-    -------
-    out: ndarray
-        array with noise values in image shape
-    """
-    return np.random.normal(mean, std, size=image.shape) * scale
-
-
-def add_noise(bundle):
-    """
-    Used for adding noise and plotting the original and noised picture,
-    if asked. Using 0.05 * max(image) as scaling factor.
-
-    Parameters
-    ----------
-    bundle: path
-        path to hdf5 bundle file
-    preview: bool
-        enable/disable showing 10 preview images
-
-    Returns
-    -------
-    bundle_noised hdf5_file
-        bundle with noised images
-    """
-    bundle_noised = np.array(
-        [img + get_noise(img, (img.max() * 0.05)) for img in bundle]
-    )
-    return bundle_noised

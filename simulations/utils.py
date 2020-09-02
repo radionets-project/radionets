@@ -3,10 +3,16 @@ import click
 import gzip
 import pickle
 import os
+import sys
+import re
 import numpy as np
 from skimage.transform import resize
-from simulations.gaussian_simulations import add_noise
-from dl_framework.data import save_fft_pair
+from dl_framework.data import (
+    save_fft_pair,
+    get_bundles,
+    split_amp_phase,
+    split_real_imag,
+)
 
 
 def check_outpath(outpath, data_format):
@@ -30,27 +36,30 @@ def check_outpath(outpath, data_format):
     exists = path.exists()
     if exists is True:
         fft = {p for p in path.rglob("*fft*." + str(data_format)) if p.is_file()}
-        samp = {p for p in path.rglob("*sampled*." + str(data_format)) if p.is_file()}
+        samp = {p for p in path.rglob("*samp*." + str(data_format)) if p.is_file()}
         if fft:
             click.echo("Found existing fft_files!")
             if click.confirm("Do you really want to overwrite the files?", abort=False):
                 click.echo("Overwriting old fft_files!")
                 [p.unlink() for p in fft]
                 sim_fft = True
+                sim_sampled = True
+                return sim_fft, sim_sampled
             else:
                 click.echo("Using old fft_files!")
                 sim_fft = False
         else:
             sim_fft = True
         if samp:
-            click.echo("Found existing sampled_files!")
+            click.echo("Found existing samp_files!")
             if click.confirm("Do you really want to overwrite the files?", abort=False):
-                click.echo("Overwriting old sampled_files!")
+                click.echo("Overwriting old samp_files!")
                 [p.unlink() for p in samp]
                 sim_sampled = True
             else:
                 click.echo("No new images sampled!")
                 sim_sampled = False
+                sys.exit()
         else:
             sim_sampled = True
     else:
@@ -98,6 +107,16 @@ def read_config(config):
     sim_conf["bundle_size"] = config["image_options"]["bundle_size"]
     sim_conf["img_size"] = config["image_options"]["img_size"]
     sim_conf["noise"] = config["image_options"]["noise"]
+
+    sim_conf["amp_phase"] = config["sampling_options"]["amp_phase"]
+    sim_conf["real_imag"] = config["sampling_options"]["real_imag"]
+    sim_conf["antenna_config_path"] = config["sampling_options"]["antenna_config_path"]
+    sim_conf["specific_mask"] = config["sampling_options"]["specific_mask"]
+    sim_conf["lon"] = config["sampling_options"]["lon"]
+    sim_conf["lat"] = config["sampling_options"]["lat"]
+    sim_conf["steps"] = config["sampling_options"]["steps"]
+    sim_conf["fourier"] = config["sampling_options"]["fourier"]
+    sim_conf["compressed"] = config["sampling_options"]["compressed"]
     return sim_conf
 
 
@@ -176,3 +195,73 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
     x = np.fft.fftshift(np.fft.fft2(y_prep))
     path = adjust_outpath(path, "/fft_mnist_bundle_" + option)
     save_fft_pair(path, x, y)
+
+
+def get_fft_bundle_paths(data_path, mode):
+    bundles = get_bundles(data_path)
+    bundle_paths = [
+        path for path in bundles if re.findall("bundle_{}".format(mode), path.name)
+    ]
+    return bundle_paths
+
+
+def prepare_fft_images(fft_images, amp_phase, real_imag):
+    if amp_phase:
+        amp, phase = split_amp_phase(fft_images)
+        amp = (np.log10(amp + 1e-10) / 10) + 1
+
+        # Test new masking for 511 Pixel pictures
+        if amp.shape[1] == 511:
+            mask = amp > 0.1
+            phase[~mask] = 0
+        fft_scaled = np.stack((amp, phase), axis=1)
+    else:
+        real, imag = split_real_imag(fft_images)
+        fft_scaled = np.stack((real, imag), axis=1)
+    return fft_scaled
+
+
+def get_noise(image, scale, mean=0, std=1):
+    """
+    Calculate random noise values for all image pixels.
+
+    Parameters
+    ----------
+    image: 2darray
+        2d image
+    scale: float
+        scaling factor to increase noise
+    mean: float
+        mean of noise values
+    std: float
+        standard deviation of noise values
+
+    Returns
+    -------
+    out: ndarray
+        array with noise values in image shape
+    """
+    return np.random.normal(mean, std, size=image.shape) * scale
+
+
+def add_noise(bundle):
+    """
+    Used for adding noise and plotting the original and noised picture,
+    if asked. Using 0.05 * max(image) as scaling factor.
+
+    Parameters
+    ----------
+    bundle: path
+        path to hdf5 bundle file
+    preview: bool
+        enable/disable showing 10 preview images
+
+    Returns
+    -------
+    bundle_noised hdf5_file
+        bundle with noised images
+    """
+    bundle_noised = np.array(
+        [img + get_noise(img, (img.max() * 0.05)) for img in bundle]
+    )
+    return bundle_noised

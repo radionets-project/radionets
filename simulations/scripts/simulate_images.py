@@ -1,7 +1,7 @@
 import click
 import toml
-from create_fft_images import create_fft_images
-from simulations.scripts.utils import check_outpath, read_config
+from simulations.simulate import create_fft_images, sample_fft_images
+from simulations.utils import check_outpath, read_config
 
 
 @click.command()

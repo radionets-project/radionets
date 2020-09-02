@@ -1,5 +1,6 @@
-from simulations.scripts.mnist import mnist_fft
-from simulations.scripts.gaussians import simulate_gaussian_sources
+from simulations.mnist import mnist_fft
+from simulations.gaussians import simulate_gaussian_sources
+from simulations.sampling import sample_frequencies
 
 
 def create_fft_images(sim_conf):
@@ -34,8 +35,20 @@ def create_fft_images(sim_conf):
             )
 
 
-def sample_fft_images(sim_config):
+def sample_fft_images(sim_conf):
     """
     check for fft files
     keep fft_files?
     """
+    sample_frequencies(
+        data_path=sim_conf["out_path"],
+        amp_phase=sim_conf["amp_phase"],
+        real_imag=sim_conf["real_imag"],
+        specific_mask=sim_conf["specific_mask"],
+        antenna_config_path=sim_conf["antenna_config_path"],
+        lon=sim_conf["lon"],
+        lat=sim_conf["lat"],
+        steps=sim_conf["steps"],
+        fourier=sim_conf["fourier"],
+        compressed=sim_conf["compressed"],
+    )

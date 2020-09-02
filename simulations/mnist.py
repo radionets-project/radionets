@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from simulations.scripts.utils import open_mnist, prepare_mnist_bundles
+from simulations.utils import open_mnist, prepare_mnist_bundles
 
 
 def mnist_fft(data_path, out_path, size, bundle_size, noise=False):
