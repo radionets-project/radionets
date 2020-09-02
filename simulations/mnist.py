@@ -23,7 +23,7 @@ def mnist_fft(resource_path, out_path, size, bundle_size, noise=False):
     noise: bool
         if true: images are noised before fft
     """
-    train_x, valid_x = open_mnist(out_path)
+    train_x, valid_x = open_mnist(resource_path)
 
     print("\nCreating train set.\n")
     bundles_train = train_x.reshape(
