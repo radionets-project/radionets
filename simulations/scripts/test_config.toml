@@ -1,0 +1,29 @@
+# This is a TOML document.
+
+title = "Simulation configuration"
+
+[paths]
+out_path = "./build"
+data_format = "h5"
+
+[mnist]
+simulate = false
+resource = "../../resources/mnist.pkl.gz"
+
+[gaussians]
+simulate = true
+pointsources = true
+num_pointsources = 10
+pointlike_gaussians = true
+num_pointlike_gaussians = 5
+extended_gaussians = true
+num_components = [4, 10]
+
+
+[image_options]
+bundles_train = 100
+bundles_valid = 20
+bundles_test = 5
+bundle_size = 500
+img_size = 63
+noise = false

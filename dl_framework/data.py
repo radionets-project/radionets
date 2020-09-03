@@ -10,19 +10,25 @@ def normalize(x, m, s):
     return (x - m) / s
 
 
-def do_normalisation(x, norm):
+def do_normalisation(x, norm, pointsource=False):
     """
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
     if len(x.shape) == 3:
         x = x.unsqueeze(0)
-    train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
-    train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
-    train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
-    train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).double()
-    x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
-    x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
+    if pointsource is True:
+        train_mean = torch.tensor(norm['train_mean'].values[0]).float()
+        train_std = torch.tensor(norm['train_std'].values[0]).float()
+        x = normalize(x, train_mean, train_std)
+    else:
+        train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
+        train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
+        train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
+        train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).double()
+        x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
+        x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
+
     assert not torch.isinf(x).any()
     return x
 
@@ -108,6 +114,8 @@ class h5_dataset:
 
                 data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
+            if data.shape[1] == 2:
+                raise ValueError("Two channeled data is used despite Fourier being False. Set Fourier to True!")
             if len(i) == 1:
                 data_channel = data.reshape(data.shape[-1] ** 2)
             else:

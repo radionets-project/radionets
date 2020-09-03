@@ -27,7 +27,7 @@ def cnn():
                 kerner size, stride, padding
     """
     arch = nn.Sequential(
-        *conv(2, 4, (3, 3), 2, 1),
+        *conv(1, 4, (3, 3), 2, 1),
         *conv(4, 8, (3, 3), 2, 1),
         *conv(8, 16, (3, 3), 2, 1),
         nn.MaxPool2d((3, 3)),
@@ -56,7 +56,98 @@ def small():
     return arch
 
 
+class UNet(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.dconv_down1 = nn.Sequential(*double_conv(1, 4))
+        self.dconv_down2 = nn.Sequential(*double_conv(4, 8))
+        self.dconv_down3 = nn.Sequential(*double_conv(8, 16))
+        self.dconv_down4 = nn.Sequential(*double_conv(16, 32))
+        self.dconv_down5 = nn.Sequential(*double_conv(32, 64))
+
+        self.maxpool = nn.MaxPool2d(2)
+        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+
+        self.dconv_up4 = nn.Sequential(*double_conv(32 + 64, 32))
+        self.dconv_up3 = nn.Sequential(*double_conv(16 + 32, 16))
+        self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8))
+        self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4))
+
+        self.conv_last = nn.Conv2d(4, 1, 1)
+        self.flatten = Lambda(flatten)
+
+    def forward(self, x):
+        conv1 = self.dconv_down1(x)
+        x = self.maxpool(conv1)
+
+        conv2 = self.dconv_down2(x)
+        x = self.maxpool(conv2)
+
+        conv3 = self.dconv_down3(x)
+        x = self.maxpool(conv3)
+
+        conv4 = self.dconv_down4(x)
+        x = self.maxpool(conv4)
+
+        x = self.dconv_down5(x)
+
+        x = self.upsample(x)
+        x = torch.cat([x, conv4], dim=1)
+
+        x = self.dconv_up4(x)
+
+        x = self.upsample(x)
+        x = torch.cat([x, conv3], dim=1)
+
+        x = self.dconv_up3(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv2], dim=1)
+
+        x = self.dconv_up2(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv1], dim=1)
+
+        x = self.dconv_up1(x)
+
+        x = self.conv_last(x)
+
+        out = self.flatten(x)
+
+        return out
+
+
 def autoencoder():
+    arch = nn.Sequential(
+        *conv(1, 4, (3, 3), 2, 1),
+        *conv(4, 8, (3, 3), 2, 1),
+        *conv(8, 16, (3, 3), 2, 1),
+        nn.MaxPool2d((3, 3)),
+        *conv(16, 32, (2, 2), 2, 1),
+        *conv(32, 64, (2, 2), 2, 1),
+        nn.MaxPool2d((2, 2)),
+        nn.ConvTranspose2d(64, 32, (3, 3), 2, 1, 1),
+        nn.BatchNorm2d(32),
+        GeneralRelu(leak=0.1, sub=0.4),
+        nn.ConvTranspose2d(32, 16, (3, 3), 2, 1, 1),
+        nn.BatchNorm2d(16),
+        GeneralRelu(leak=0.1, sub=0.4),
+        nn.ConvTranspose2d(16, 16, (3, 3), 2, 1, 1),
+        nn.BatchNorm2d(16),
+        GeneralRelu(leak=0.1, sub=0.4),
+        nn.ConvTranspose2d(16, 8, (3, 3), 2, 1, 1),
+        nn.BatchNorm2d(8),
+        GeneralRelu(leak=0.1, sub=0.4),
+        nn.ConvTranspose2d(8, 4, (3, 3), 2, 1, 1),
+        nn.BatchNorm2d(4),
+        GeneralRelu(leak=0.1, sub=0.4),
+        nn.ConvTranspose2d(4, 1, (3, 3), 2, 1, 1),
+        Lambda(flatten),
+    )
+    return arch
+
+
+def autoencoder_two_channel():
     arch = nn.Sequential(
         *conv(2, 4, (3, 3), 2, 1),
         *conv(4, 8, (3, 3), 2, 1),
@@ -557,10 +648,10 @@ class filter_deep(nn.Module):
         )
 
         self.conv4_amp = nn.Sequential(
-             *conv_amp(1, 4, (5, 5), 1, 3, 2)
+             *conv_amp(1, 4, (5, 5), 1, 4, 2)
         )
         self.conv4_phase = nn.Sequential(
-             *conv_phase(1, 4, (5, 5), 1, 3, 2, add=1-pi)
+             *conv_phase(1, 4, (5, 5), 1, 4, 2, add=1-pi)
         )
         self.conv5_amp = nn.Sequential(
              *conv_amp(4, 8, (5, 5), 1, 2, 1)
@@ -569,10 +660,10 @@ class filter_deep(nn.Module):
              *conv_phase(4, 8, (5, 5), 1, 2, 1, add=1-pi)
         )
         self.conv6_amp = nn.Sequential(
-             *conv_amp(8, 12, (3, 3), 1, 3, 2)
+             *conv_amp(8, 12, (3, 3), 1, 2, 2)
         )
         self.conv6_phase = nn.Sequential(
-             *conv_phase(8, 12, (3, 3), 1, 3, 2, add=1-pi)
+             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
         )
         self.conv7_amp = nn.Sequential(
              *conv_amp(12, 16, (3, 3), 1, 1, 1)
@@ -710,13 +801,13 @@ class filter_deep_amp(nn.Module):
         )
 
         self.conv4_amp = nn.Sequential(
-             *conv_amp(1, 4, (5, 5), 1, 3, 2)
+             *conv_amp(1, 4, (5, 5), 1, 4, 2)
         )
         self.conv5_amp = nn.Sequential(
              *conv_amp(4, 8, (5, 5), 1, 2, 1)
         )
         self.conv6_amp = nn.Sequential(
-             *conv_amp(8, 12, (3, 3), 1, 3, 2)
+             *conv_amp(8, 12, (3, 3), 1, 2, 2)
         )
         self.conv7_amp = nn.Sequential(
              *conv_amp(12, 16, (3, 3), 1, 1, 1)
@@ -787,51 +878,51 @@ class filter_deep_phase(nn.Module):
     def __init__(self, img_size):
         super().__init__()
         self.conv1_phase = nn.Sequential(
-            *conv_phase(1, 4, (23, 23), 1, 11, 1, add=-2.1415)
+            *conv_phase(1, 4, (23, 23), 1, 11, 1, add=1-pi)
         )
         self.conv2_phase = nn.Sequential(
-             *conv_phase(4, 8, (21, 21), 1, 10, 1, add=-2.1415)
+             *conv_phase(4, 8, (21, 21), 1, 10, 1, add=1-pi)
         )
         self.conv3_phase = nn.Sequential(
-             *conv_phase(8, 12, (17, 17), 1, 8, 1, add=-2.1415)
+             *conv_phase(8, 12, (17, 17), 1, 8, 1, add=1-pi)
         )
         self.conv_con1_phase = nn.Sequential(
             LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            GeneralELU(-2.1415),
+            GeneralELU(1-pi),
         )
 
         self.conv4_phase = nn.Sequential(
-             *conv_phase(1, 4, (5, 5), 1, 3, 2, add=-2.1415)
+             *conv_phase(1, 4, (5, 5), 1, 4, 2, add=1-pi)
         )
         self.conv5_phase = nn.Sequential(
-             *conv_phase(4, 8, (5, 5), 1, 2, 1, add=-2.1415)
+             *conv_phase(4, 8, (5, 5), 1, 2, 1, add=1-pi)
         )
         self.conv6_phase = nn.Sequential(
-             *conv_phase(8, 12, (3, 3), 1, 3, 2, add=-2.1415)
+             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
         )
         self.conv7_phase = nn.Sequential(
-             *conv_phase(12, 16, (3, 3), 1, 1, 1, add=-2.1415)
+             *conv_phase(12, 16, (3, 3), 1, 1, 1, add=1-pi)
         )
         self.conv_con2_phase = nn.Sequential(
             LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            GeneralELU(-2.1415),
+            GeneralELU(1-pi),
         )
 
         self.conv8_phase = nn.Sequential(
-             *conv_phase(1, 4, (3, 3), 1, 1, 1, add=-2.1415)
+             *conv_phase(1, 4, (3, 3), 1, 1, 1, add=1-pi)
         )
         self.conv9_phase = nn.Sequential(
-             *conv_phase(4, 8, (3, 3), 1, 1, 1, add=-2.1415)
+             *conv_phase(4, 8, (3, 3), 1, 1, 1, add=1-pi)
         )
         self.conv10_phase = nn.Sequential(
-             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=-2.1415)
+             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
         )
         self.conv_con3_phase = nn.Sequential(
             LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            GeneralELU(-2.1415),
+            GeneralELU(1-pi),
         )
         self.symmetry_imag = Lambda(partial(symmetry, mode='imag'))
 
