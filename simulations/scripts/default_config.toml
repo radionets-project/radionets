@@ -3,7 +3,7 @@
 title = "Simulation configuration"
 
 [paths]
-out_path = "./build"
+data_path = "./build/"
 data_format = "h5"
 
 [mnist]
@@ -12,11 +12,11 @@ resource = "../../resources/mnist.pkl.gz"
 
 [gaussians]
 simulate = true
-pointsources = true
+pointsources = false
 num_pointsources = 10
 pointlike_gaussians = true
 num_pointlike_gaussians = 5
-extended_gaussians = true
+extended_gaussians = false
 num_components = [4, 10]
 
 
@@ -27,3 +27,15 @@ bundles_test = 5
 bundle_size = 500
 img_size = 63
 noise = false
+
+[sampling_options]
+amp_phase = true
+real_imag = false
+fourier = true
+specific_mask = true
+lon = -80
+lat = 50
+steps = 50
+antenna_config_path = "../layouts/vlba.txt"
+compressed = false
+keep_fft_files = true

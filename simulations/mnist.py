@@ -1,8 +1,8 @@
 from tqdm import tqdm
-from simulations.scripts.utils import open_mnist, prepare_mnist_bundles
+from simulations.utils import open_mnist, prepare_mnist_bundles
 
 
-def mnist_fft(data_path, out_path, size, bundle_size, noise=False):
+def mnist_fft(resource_path, out_path, size, bundle_size, noise=False):
     """
     Load MNIST dataset, split it into bundles, resize and compute fft.
     Bundles are saved to hdf5 files.
@@ -23,7 +23,7 @@ def mnist_fft(data_path, out_path, size, bundle_size, noise=False):
     noise: bool
         if true: images are noised before fft
     """
-    train_x, valid_x = open_mnist(data_path)
+    train_x, valid_x = open_mnist(resource_path)
 
     print("\nCreating train set.\n")
     bundles_train = train_x.reshape(
