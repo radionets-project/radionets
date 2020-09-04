@@ -27,6 +27,7 @@ setup(
         "scikit-image==0.16.2",
         "pandas==0.25.3",
         "requests",
+        "toml",
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
