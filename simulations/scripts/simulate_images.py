@@ -18,7 +18,9 @@ def main(configuration_path):
     # check out path and look for existing files
     data_path = config["paths"]["data_path"]
     sim_fft, sim_sampled = check_outpath(
-        data_path, data_format=config["paths"]["data_format"]
+        data_path,
+        data_format=config["paths"]["data_format"],
+        batch_mode=config["mode"]["batch_mode"],
     )
 
     # declare source options
