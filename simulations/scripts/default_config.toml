@@ -2,6 +2,9 @@
 
 title = "Simulation configuration"
 
+[mode]
+batch_mode = false
+
 [paths]
 data_path = "./build/"
 data_format = "h5"
