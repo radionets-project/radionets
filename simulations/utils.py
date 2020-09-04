@@ -46,7 +46,9 @@ def check_outpath(outpath, data_format, batch_mode=False):
                 sim_fft = True
                 sim_sampled = True
                 return sim_fft, sim_sampled
-            elif click.confirm("Do you really want to overwrite the files?", abort=False):
+            elif click.confirm(
+                "Do you really want to overwrite the files?", abort=False
+            ):
                 click.echo("Overwriting old fft_files!")
                 [p.unlink() for p in fft]
                 [p.unlink() for p in samp]
@@ -64,7 +66,9 @@ def check_outpath(outpath, data_format, batch_mode=False):
                 click.echo("Overwriting old samp_files!")
                 [p.unlink() for p in samp]
                 sim_sampled = True
-            elif click.confirm("Do you really want to overwrite the files?", abort=False):
+            elif click.confirm(
+                "Do you really want to overwrite the files?", abort=False
+            ):
                 click.echo("Overwriting old samp_files!")
                 [p.unlink() for p in samp]
                 sim_sampled = True
