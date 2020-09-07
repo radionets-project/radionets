@@ -4,24 +4,32 @@
 
 Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct (image) calibrated observations with convolutional neural networks. 
 This repository is build up as a python package. After cloning you can install it with
-`pip install .` after navigating to the folder.
-While installing you may experience some problems with cartopy. In this case you have to install a proj and a geos library before:
+`pip install .` after navigating to the folder. We advise you to create a clean conda environment first.
+While installing you may experience some problems with cartopy as it has dependencies with geos and proj which can not be handled by pip.
+To successfully install cartopy you have to install geos and proj with conda:
 ```
-sudo apt-get -y install libgeos-dev
-sudo apt-get -y install libproj-dev
-```
-When you still have problems installing cartopy you can try the version on conda-forge:
-```
-conda install --channel conda-forge cartopy
+conda install geos pyproj
 ```
 
 At the moment the repository covers the following blocks:
 
 ## dl_framework
 
+'''
+explain structure, idea and functionality
+'''
+
 Framework used to create and train neural networks. Most of it can be found in [Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html). Check it out for more information including a nice tutorial about deep learning.
 
 ## simulations
+
+'''
+At the end one simulation block with all kind of sources: MNIST and Gaussian sources, which are split into point, pointlike and extended
+
+overview of settings and possibilities
+details and example images in simulations directory
+example to run the code
+'''
 
 Functions to simulate and illustrate radio interferometric observations.
 
@@ -46,20 +54,25 @@ The different steps for an example analysis are:
 3. calc_normalization: calculate normalization factors to normalize train and valid dataset
 4. cnn_training: train the convolutional neural network, many options are available here
 
-## pointsources
+## Evaluation
 
-Simulation of pointsource delta peaks. Reconstruction with UNet architectures. Different functions to 
-evaluate the reconstruction results.
+'''
+evaluate training process with different approaches
 
-## gauss
+ms-ssim
+blob-detection
+'''
 
-Simulation of pointlike gauss sources. Reconstruction with UNet architectures. Different functions to 
-evaluate the reconstruction results.
-
-## Versions used
+## Versions used and tested
 
 * Python 3.7.5
 * pyTorch 1.2.0
+* torchvision 0.4.0
+* cuda V10.1.243
+
+* Python 3.7.5
+* pyTorch 1.5.0
+* torchvision 0.6.0
 * cuda V10.1.243
 
 A detailed view of all versions used can be found in setup.py.
