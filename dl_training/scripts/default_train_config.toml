@@ -5,8 +5,9 @@ title = "Train configuration"
 [paths]
 data_path = "./build/"
 
-[data]
+[general]
 fourier = true
+arch_name = "filter_deep"
 
 [hypers]
 batch_size = 64
