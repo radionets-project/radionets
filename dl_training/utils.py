@@ -1,3 +1,5 @@
+import click
+from pathlib import Path
 from dl_framework.data import load_data, DataBunch, get_dls
 
 
@@ -18,9 +20,21 @@ def read_config(config):
 
     sim_conf["bs"] = config["hypers"]["batch_size"]
 
-    sim_conf["fourier"] = config["data"]["fourier"]
+    sim_conf["fourier"] = config["general"]["fourier"]
+    sim_conf["arch_name"] = config["general"]["arch_name"]
     return sim_conf
 
 
-def check_outpath():
+def check_outpath(model_path):
+    path = Path(model_path)
+    exists = path.exists()
+    print(exists)
+    if exists:
+        if click.confirm(
+            "Do you really want to overwrite existing model?", abort=False
+        ):
+            click.echo("Overwriting existing model!")
+            path.unlink()
+        else:
+            continue
     return None
