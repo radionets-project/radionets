@@ -1,0 +1,12 @@
+# This is a TOML document.
+
+title = "Train configuration"
+
+[paths]
+data_path = "./build/"
+
+[data]
+fourier = true
+
+[hypers]
+batch_size = 64
