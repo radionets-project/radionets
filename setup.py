@@ -35,6 +35,7 @@ setup(
     entry_points={
         "console_scripts": [
             "radionets_simulations = simulations.scripts.simulate_images:main",
+            "radionets_training = dl_training.scripts.start_training:main",
         ],
     },
     classifiers=[
