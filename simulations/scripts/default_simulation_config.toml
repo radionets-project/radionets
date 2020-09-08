@@ -17,9 +17,9 @@ resource = "../../resources/mnist.pkl.gz"
 simulate = true
 pointsources = false
 num_pointsources = 10
-pointlike_gaussians = true
+pointlike_gaussians = false
 num_pointlike_gaussians = 5
-extended_gaussians = false
+extended_gaussians = true
 num_components = [4, 10]
 
 
@@ -39,6 +39,6 @@ specific_mask = true
 lon = -80
 lat = 50
 steps = 50
-antenna_config_path = "../layouts/vlba.txt"
+antenna_config_path = "../radionets/simulations/layouts/vlba.txt"
 compressed = false
 keep_fft_files = true
