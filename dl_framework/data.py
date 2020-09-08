@@ -255,14 +255,6 @@ def load_data(data_path, mode, fourier=False):
         dataset containing x and y images
     """
     bundle_paths = get_bundles(data_path)
-    data = [path for path in bundle_paths if re.findall("fft_samp_" + mode, path.name)]
-    # this is necessary for the reason of different names for data files in mnist
-    # and gaussian sources
-    if data == []:
-        data = [
-            path
-            for path in bundle_paths
-            if re.findall("fft_bundle_samp_" + mode, path.name)
-        ]
+    data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
     ds = h5_dataset(data, tar_fourier=fourier)
     return ds
