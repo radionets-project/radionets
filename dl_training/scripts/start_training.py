@@ -1,6 +1,6 @@
 import click
 import toml
-from dl_training.utils import read_config, check_outpath, create_databunch
+from dl_training.utils import read_config, check_outpath, create_databunch, define_arch
 
 
 @click.command()
@@ -18,7 +18,7 @@ def main(configuration_path):
     print(train_conf, "\n")
 
     # check out path and look for existing files
-    # check_outpath(train_conf)
+    check_outpath(train_conf)
 
     # create databunch
     data = create_databunch(
@@ -27,12 +27,12 @@ def main(configuration_path):
         batch_size=train_conf["bs"],
     )
 
-    print(data)
+    # get image size
+    train_conf["image_size"] = data.train_ds[0][0][0].shape[1]
+    print(train_conf["image_size"])
 
-"""
-1) load data
-
-"""
+    # define architecture
+    arch = define_arch(arch_name)
 
 
 if __name__ == "__main__":
