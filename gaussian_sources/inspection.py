@@ -233,6 +233,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
 
     a = check_vmin_vmax(inp_real)
+    # 511: [200:325]
     im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
     make_axes_nice2(fig, ax1, im1, r"Amplitude Input")
 
@@ -1057,6 +1058,8 @@ def check_vmin_vmax(inp):
 
 def calc_jet_angle(image):
     image = image.copy()
+    # 40 für 127 Pixel
+    # 150 für 511 Pixel
     image[image < 0] = 0
     image[0:20] = 0
     image[43:63] = 0
@@ -1064,19 +1067,23 @@ def calc_jet_angle(image):
     image[:, 43:63] = 0
     # only use brightest pixel
     image[image < image.max() * 0.4] = 0
-    pix_x, pix_y, image = im_to_array_value_rune(image)
+    pix_x, pix_y, image_clone = im_to_array_value_rune(image.copy())
 
-    cog_x = np.average(pix_x, weights=image)
-    cog_y = np.average(pix_y, weights=image)
+    cog_x = np.average(pix_x, weights=image_clone)
+    cog_y = np.average(pix_y, weights=image_clone)
 
     delta_x = pix_x - cog_x
     delta_y = pix_y - cog_y
 
-    cov = np.cov(delta_x, delta_y, aweights=image, ddof=1)
+    cov = np.cov(delta_x, delta_y, aweights=image_clone, ddof=1)
     values, vectors = np.linalg.eigh(cov)
     psi_torch = np.arctan(vectors[1, 1] / vectors[0, 1])
     m = np.tan(np.pi / 2 - psi_torch)
-    n = cog_y - m * cog_x
+    max_x, max_y = np.where(image == image.max())
+    if (image.shape == (64, 64)) and (max_x != [32] or max_y != [32]):
+        print("Calculated maximum not in the center: ", max_x, max_y)
+        max_x, max_y = [32], [32]
+    n = torch.tensor(max_y) - m * torch.tensor(max_x)
     alpha = (psi_torch) * 180 / np.pi
     return m, n, alpha
 
