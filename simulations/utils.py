@@ -7,12 +7,16 @@ import sys
 import re
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from skimage.transform import resize
 from dl_framework.data import (
     save_fft_pair,
+    open_fft_pair,
+    open_fft_pair_npz,
     get_bundles,
     split_amp_phase,
     split_real_imag,
+    mean_and_std,
 )
 
 
@@ -287,45 +291,39 @@ def add_noise(bundle):
 
 
 def calc_norm(sim_conf):
-    bundle_paths = get_bundles(sim_conf["data_path"])
-    bundle_paths = [
-        path for path in bundle_paths if re.findall("samp_train", path.name)
-    ]
-    print(bundle_paths)
     bundle_paths = get_fft_bundle_paths(sim_conf["data_path"], "samp", "train")
-    print(bundle_paths)
 
+    # create empty arrays
+    means_amp = np.array([])
+    stds_amp = np.array([])
+    means_imag = np.array([])
+    stds_imag = np.array([])
 
-    # means_amp = np.array([])
-    # stds_amp = np.array([])
-    # means_imag = np.array([])
-    # stds_imag = np.array([])
+    for path in tqdm(bundle_paths):
+        # distinguish between compressed (.npz) and not compressed (.h5) files
+        if re.search(".npz", str(path)):
+            x, _ = open_fft_pair_npz(path)
+        else:
+            x, _ = open_fft_pair(path)
+        x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
+        mean_amp, std_amp = mean_and_std(x_amp)
+        mean_imag, std_imag = mean_and_std(x_imag)
+        means_amp = np.append(mean_amp, means_amp)
+        means_imag = np.append(mean_imag, means_imag)
+        stds_amp = np.append(std_amp, stds_amp)
+        stds_imag = np.append(std_imag, stds_imag)
 
-    # for path in tqdm(bundle_paths):
-    #     # distinguish between compressed (.npz) and not compressed (.h5) files
-    #     if re.search(".npz", str(path)):
-    #         x, _ = open_fft_pair_npz(path)
-    #     else:
-    #         x, _ = open_fft_pair(path)
-    #     x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
-    #     mean_amp, std_amp = mean_and_std(x_amp)
-    #     mean_imag, std_imag = mean_and_std(x_imag)
-    #     means_amp = np.append(mean_amp, means_amp)
-    #     means_imag = np.append(mean_imag, means_imag)
-    #     stds_amp = np.append(std_amp, stds_amp)
-    #     stds_imag = np.append(std_imag, stds_imag)
+    mean_amp = means_amp.mean()
+    std_amp = stds_amp.mean()
+    mean_imag = means_imag.mean()
+    std_imag = stds_imag.mean()
 
-    # mean_amp = means_amp.mean()
-    # std_amp = stds_amp.mean()
-    # mean_imag = means_imag.mean()
-    # std_imag = stds_imag.mean()
+    d = {
+        "train_mean_c0": [mean_amp],
+        "train_std_c0": [std_amp],
+        "train_mean_c1": [mean_imag],
+        "train_std_c1": [std_imag],
+    }
 
-    # d = {
-    #     "train_mean_c0": [mean_amp],
-    #     "train_std_c0": [std_amp],
-    #     "train_mean_c1": [mean_imag],
-    #     "train_std_c1": [std_imag],
-    # }
-
-    # df = pd.DataFrame(data=d)
-    # df.to_csv(out_path, index=False)
+    df = pd.DataFrame(data=d)
+    df.to_csv(sim_conf["data_path"] + "/norm_factors.csv", index=False)
