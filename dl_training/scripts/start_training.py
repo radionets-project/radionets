@@ -34,7 +34,23 @@ def main(configuration_path):
     arch = define_arch(
         arch_name=train_conf["arch_name"], img_size=train_conf["image_size"]
     )
-    print(arch)
+    
+    # define_learner
+    learner = define_learner(
+        data,
+        arch,
+        train_conf,
+    )
+
+    # load pretrained model
+    if train_conf["pretrained"]:
+        load_pre_model(learn, pretrained_model)
+
+    # Train the model, except interrupt
+    try:
+        learn.fit(num_epochs)
+    except KeyboardInterrupt:
+        pop_interrupt()
 
 
 if __name__ == "__main__":
