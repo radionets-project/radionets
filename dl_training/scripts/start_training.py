@@ -31,7 +31,9 @@ def main(configuration_path):
     train_conf["image_size"] = data.train_ds[0][0][0].shape[1]
 
     # define architecture
-    arch = define_arch(arch_name=train_conf["arch_name"], img_size=train_conf["image_size"])
+    arch = define_arch(
+        arch_name=train_conf["arch_name"], img_size=train_conf["image_size"]
+    )
     print(arch)
 
 
