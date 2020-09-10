@@ -4,6 +4,7 @@ title = "Train configuration"
 
 [paths]
 data_path = "./build/"
+model_path = "./build/models/test.model"
 
 [general]
 fourier = true
