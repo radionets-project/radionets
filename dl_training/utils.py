@@ -1,6 +1,7 @@
 import click
 from pathlib import Path
 from dl_framework.data import load_data, DataBunch, get_dls
+import dl_framework.architectures as architecture
 
 
 def create_databunch(data_path, fourier, batch_size):
@@ -15,26 +16,37 @@ def create_databunch(data_path, fourier, batch_size):
 
 
 def read_config(config):
-    sim_conf = {}
-    sim_conf["data_path"] = config["paths"]["data_path"]
+    train_conf = {}
+    train_conf["data_path"] = config["paths"]["data_path"]
+    train_conf["model_path"] = config["paths"]["model_path"]
 
-    sim_conf["bs"] = config["hypers"]["batch_size"]
+    train_conf["bs"] = config["hypers"]["batch_size"]
 
-    sim_conf["fourier"] = config["general"]["fourier"]
-    sim_conf["arch_name"] = config["general"]["arch_name"]
-    return sim_conf
+    train_conf["fourier"] = config["general"]["fourier"]
+    train_conf["arch_name"] = config["general"]["arch_name"]
+    return train_conf
 
 
 def check_outpath(model_path):
     path = Path(model_path)
     exists = path.exists()
-    print(exists)
     if exists:
         if click.confirm(
-            "Do you really want to overwrite existing model?", abort=False
+            "Do you really want to overwrite existing model file?", abort=False
         ):
-            click.echo("Overwriting existing model!")
+            click.echo("Overwriting existing model file!")
             path.unlink()
-        else:
-            continue
+
     return None
+
+
+def define_arch(arch_name, img_size):
+    if (
+        arch_name == "filter_deep"
+        or arch_name == "filter_deep_amp"
+        or arch_name == "filter_deep_phase"
+    ):
+        arch = getattr(architecture, arch_name)(img_size)
+    else:
+        arch = getattr(architecture, arch_name)()
+    return arch
