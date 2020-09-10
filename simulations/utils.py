@@ -216,10 +216,10 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
     save_fft_pair(path, x, y)
 
 
-def get_fft_bundle_paths(data_path, type, mode):
+def get_fft_bundle_paths(data_path, ftype, mode):
     bundles = get_bundles(data_path)
     bundle_paths = [
-        path for path in bundles if re.findall(f"{type}_{mode}", path.name)
+        path for path in bundles if re.findall(f"{ftype}_{mode}", path.name)
     ]
     return bundle_paths
 
