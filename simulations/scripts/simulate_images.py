@@ -37,6 +37,7 @@ def main(configuration_path):
     if sim_sampled is True:
         click.echo("Start sampling fft_files!")
         sample_fft_images(sim_conf)
+        click.echo("\n Calculating normalization factors.")
         calc_norm(sim_conf)
 
 
