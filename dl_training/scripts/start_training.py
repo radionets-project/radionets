@@ -18,7 +18,7 @@ def main(configuration_path):
     print(train_conf, "\n")
 
     # check out path and look for existing files
-    check_outpath(train_conf)
+    check_outpath(train_conf["model_path"])
 
     # create databunch
     data = create_databunch(
@@ -29,10 +29,10 @@ def main(configuration_path):
 
     # get image size
     train_conf["image_size"] = data.train_ds[0][0][0].shape[1]
-    print(train_conf["image_size"])
 
     # define architecture
-    arch = define_arch(arch_name)
+    arch = define_arch(arch_name=train_conf["arch_name"], img_size=train_conf["image_size"])
+    print(arch)
 
 
 if __name__ == "__main__":
