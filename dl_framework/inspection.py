@@ -1,23 +1,30 @@
 import torch
+import os
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 import matplotlib as mpl
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
-from dl_framework.data import do_normalisation
+from dl_framework.data import do_normalisation, load_data
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
+from simulations.utils import adjust_outpath
+from pathlib import Path
+from gaussian_sources.inspection import visualize_with_fourier
+
 
 # make nice Latex friendly plots
-mpl.use("pgf")
-mpl.rcParams.update(
-    {
-        "font.size": 12,
-        "font.family": "sans-serif",
-        "text.usetex": True,
-        "pgf.rcfonts": False,
-        "pgf.texsystem": "lualatex",
-    }
-)
+# mpl.use("pgf")
+# mpl.rcParams.update(
+#     {
+#         "font.size": 12,
+#         "font.family": "sans-serif",
+#         "text.usetex": True,
+#         "pgf.rcfonts": False,
+#         "pgf.texsystem": "lualatex",
+#     }
+# )
 
 
 def load_pretrained_model(arch_name, model_path):
@@ -63,7 +70,9 @@ def get_images(test_ds, num_images, norm_path):
     """
     rand = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[rand][0]
-    norm = pd.read_csv(norm_path)
+    norm = "none"
+    if norm_path != "none":
+        norm = pd.read_csv(norm_path)
     img_test = do_normalisation(img_test, norm)
     img_true = test_ds[rand][1]
     if num_images == 1:
@@ -134,7 +143,7 @@ def plot_loss(learn, model_path):
     print("\nPlotting Loss for: {}\n".format(name_model))
     learn.recorder.plot_loss()
     plt.title(r"{}".format(name_model.replace("_", " ")))
-    plt.savefig("{}_loss.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(f"{save_path}_loss.pdf", bbox_inches="tight", pad_inches=0.01)
     plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)
 
@@ -186,3 +195,75 @@ def plot_lr_loss(learn, arch_name, out_path, skip_last):
     learn.recorder_lr_find.plot(skip_last, save=True)
     plt.savefig(out_path + "/lr_loss.pdf", bbox_inches="tight", pad_inches=0.01)
     mpl.rcParams.update(mpl.rcParamsDefault)
+
+
+def plot_results(inp, pred, truth, model_path, save=False):
+    """
+    Plot input images, prediction and true image.
+    Parameters
+    ----------
+    inp: n 2d arrays with 2 channel
+        input images
+    pred: n 2d arrays
+        predicted images
+    truth:n 2d arrays
+        true images
+    """
+    for i in tqdm(range(len(inp))):
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
+
+        real = inp[i][0]
+        im1 = ax1.imshow(real, cmap="RdBu", vmin=-real.max(), vmax=real.max())
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax1.set_title(r"Real Input")
+        fig.colorbar(im1, cax=cax, orientation="vertical")
+
+        imag = inp[i][1]
+        im2 = ax2.imshow(imag, cmap="RdBu", vmin=-imag.max(), vmax=imag.max())
+        divider = make_axes_locatable(ax2)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax2.set_title(r"Imag Input")
+        fig.colorbar(im2, cax=cax, orientation="vertical")
+
+        pre = pred[i]
+        im3 = ax3.imshow(pre, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax3.set_title(r"Prediction")
+        fig.colorbar(im3, cax=cax, orientation="vertical")
+
+        true = truth[i]
+        im4 = ax4.imshow(true, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
+        divider = make_axes_locatable(ax4)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax4.set_title(r"Truth")
+        fig.colorbar(im4, cax=cax, orientation="vertical")
+
+        plt.tight_layout()
+
+        if save:
+            out = model_path/"predictions/"
+            out.mkdir(parents=True, exist_ok=True)
+
+            out_path = adjust_outpath(out, "/prediction", form="pdf")
+            plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def create_inspection_plots(learn, train_conf):
+    test_ds = load_data(train_conf["data_path"], "test", fourier=train_conf["fourier"])
+    img_test, img_true = get_images(test_ds, 5, train_conf["norm_path"])
+    pred = eval_model(img_test.cuda(), learn.model)
+    model_path = train_conf["model_path"]
+    out_path = Path(model_path).parent
+    if train_conf["fourier"]:
+        for i in range(len(img_test)):
+            visualize_with_fourier(i, img_test[i], pred[i], img_true[i], amp_phase=True, out_path=out_path)
+    else:
+        plot_results(
+            img_test.cpu(),
+            reshape_2d(pred.cpu()),
+            reshape_2d(img_true),
+            out_path,
+            save=True,
+        )
