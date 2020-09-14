@@ -9,7 +9,7 @@ import sys
 from functools import partial
 from dl_framework.loss_functions import (
     init_feature_loss,
-    my_loss,
+    loss_amp,
     loss_phase,
     loss_msssim,
     loss_mse_msssim,
