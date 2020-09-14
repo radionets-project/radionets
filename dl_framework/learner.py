@@ -1,5 +1,5 @@
 from dl_framework.utils import listify, param_getter
-from dl_framework.callbacks import TrainEvalCallback
+from dl_framework.callbacks import TrainEvalCallback, normalize_tfm
 import torch
 from dl_framework.optimizer import sgd_opt
 import torch.nn as nn
@@ -197,7 +197,7 @@ def define_learner(
     lr = train_conf["lr"]
     if train_conf["norm_path"] != "none":
         cbfs.extend([
-            partial(BatchTransformXCallback, train_conf["norm_path"]),
+            partial(BatchTransformXCallback, normalize_tfm(train_conf["norm_path"])),
         ])
     if not test:
         cbfs.extend([
