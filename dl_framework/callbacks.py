@@ -5,7 +5,7 @@ from re import sub
 import matplotlib.pyplot as plt
 import pandas as pd
 from dl_framework.data import do_normalisation
-# from dl_framework.logger import make_notifier
+from dl_framework.logger import make_notifier
 from dl_framework.model import save_model
 
 
