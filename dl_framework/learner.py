@@ -9,6 +9,7 @@ import sys
 from functools import partial
 from dl_framework.loss_functions import (
     init_feature_loss,
+    my_loss,
     loss_amp,
     loss_phase,
     loss_msssim,
@@ -183,22 +184,22 @@ def get_learner(
 def define_learner(
     data,
     arch,
-    norm,
-    loss_func,
+    train_conf,
+    # max_iter=400,
+    # max_lr=1e-1,
+    # min_lr=1e-6,
     cbfs=[],
-    lr=1e-3,
-    model_name='',
-    model_path='',
-    max_iter=400,
-    max_lr=1e-1,
-    min_lr=1e-6,
     test=False,
     lr_find=False,
-    opt_func=torch.optim.Adam,
+    # opt_func=torch.optim.Adam,
 ):
-    cbfs.extend([
-        # partial(BatchTransformXCallback, norm),
-    ])
+    model_path = train_conf["model_path"]
+    model_name = model_path.split("models/")[-1].split("/")[0]
+    lr = train_conf["lr"]
+    if train_conf["norm_path"] != "none":
+        cbfs.extend([
+            partial(BatchTransformXCallback, train_conf["norm_path"]),
+        ])
     if not test:
         cbfs.extend([
             CudaCallback,
@@ -211,16 +212,19 @@ def define_learner(
         ])
     if not test and not lr_find:
         cbfs.extend([
-            partial(LoggerCallback, model_name=model_name), 
+            partial(LoggerCallback, model_name=model_name),
             data_aug,
         ])
 
+    loss_func = train_conf["loss_func"]
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
     elif loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
+    elif loss_func == "my_loss":
+        loss_func = my_loss
     elif loss_func == "loss_amp":
         loss_func = loss_amp
     elif loss_func == "loss_phase":
