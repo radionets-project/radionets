@@ -1,8 +1,16 @@
 import click
 import toml
-from dl_training.utils import read_config, check_outpath, create_databunch, define_arch, pop_interrupt
+from dl_training.utils import (
+    read_config,
+    check_outpath,
+    create_databunch,
+    define_arch,
+    pop_interrupt,
+    end_training,
+)
 from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
+from dl_framework.inspection import create_inspection_plots
 
 
 @click.command()
@@ -52,7 +60,12 @@ def main(configuration_path):
     try:
         learn.fit(train_conf["num_epochs"])
     except KeyboardInterrupt:
-        pop_interrupt()
+        pop_interrupt(learn, train_conf)
+
+    end_training(learn, train_conf)
+
+    if train_conf["inspection"]:
+        create_inspection_plots(learn, train_conf)
 
 
 if __name__ == "__main__":
