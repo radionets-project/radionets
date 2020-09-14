@@ -5,6 +5,7 @@ from dl_framework.data import load_data, DataBunch, get_dls
 import dl_framework.architectures as architecture
 from dl_framework.inspection import plot_loss
 from dl_framework.model import save_model
+from dl_framework.inspection import create_inspection_plots
 
 
 def create_databunch(data_path, fourier, batch_size):
@@ -32,6 +33,7 @@ def read_config(config):
     train_conf["arch_name"] = config["general"]["arch_name"]
     train_conf["loss_func"] = config["general"]["loss_func"]
     train_conf["num_epochs"] = config["general"]["num_epochs"]
+    train_conf["inspection"] = config["general"]["inspection"]
     return train_conf
 
 
@@ -60,30 +62,29 @@ def define_arch(arch_name, img_size):
     return arch
 
 
-def pop_interrupt(learn, model_path):
-    print("\nKeyboardInterrupt, do you wanna save the model: yes-(y), no-(n)")
-    save = str(input())
-    if save == "y":
-        # saving the model if asked
+def pop_interrupt(learn, train_conf):
+    if click.confirm(
+        "KeyboardInterrupt, do you want to save the model?", abort=False
+    ):
+        model_path = train_conf["model_path"]
+        # save model
         print("Saving the model after epoch {}".format(learn.epoch))
         save_model(learn, model_path)
 
-        # Plot loss
+        # plot loss
         plot_loss(learn, model_path)
 
         # Plot input, prediction and true image if asked
-        # if inspection is True:
-        #     test_ds = load_data(data_path, "test", fourier=False)
-        #     img_test, img_true = get_images(test_ds, 5, norm_path)
-        #     pred = eval_model(img_test, learn.model)
-        #     out_path = Path(model_path).parent
-        #     plot_results(
-        #         img_test,
-        #         reshape_2d(pred),
-        #         reshape_2d(img_true),
-        #         out_path,
-        #         save=True,
-            # )
+        if train_conf["inspection"]:
+            create_inspection_plots(learn, train_conf)
     else:
         print("Stopping after epoch {}".format(learn.epoch))
     sys.exit(1)
+
+
+def end_training(learn, train_conf):
+    # Save model
+    save_model(learn, train_conf["model_path"])
+
+    # Plot loss
+    plot_loss(learn, train_conf["model_path"])
