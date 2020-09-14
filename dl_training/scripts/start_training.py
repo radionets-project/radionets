@@ -1,6 +1,8 @@
 import click
 import toml
-from dl_training.utils import read_config, check_outpath, create_databunch, define_arch
+from dl_training.utils import read_config, check_outpath, create_databunch, define_arch, pop_interrupt
+from dl_framework.learner import define_learner
+from dl_framework.model import load_pre_model
 
 
 @click.command()
@@ -34,21 +36,21 @@ def main(configuration_path):
     arch = define_arch(
         arch_name=train_conf["arch_name"], img_size=train_conf["image_size"]
     )
-    
+
     # define_learner
-    learner = define_learner(
+    learn = define_learner(
         data,
         arch,
         train_conf,
     )
 
     # load pretrained model
-    if train_conf["pretrained"]:
-        load_pre_model(learn, pretrained_model)
+    if train_conf["pre_model"] != "none":
+        load_pre_model(learn, train_conf["pre_model"])
 
     # Train the model, except interrupt
     try:
-        learn.fit(num_epochs)
+        learn.fit(train_conf["num_epochs"])
     except KeyboardInterrupt:
         pop_interrupt()
 
