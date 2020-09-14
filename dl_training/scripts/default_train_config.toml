@@ -5,10 +5,15 @@ title = "Train configuration"
 [paths]
 data_path = "./build/"
 model_path = "./build/models/test.model"
+pre_model = "none"
+norm_path = "none"
 
 [general]
 fourier = true
 arch_name = "filter_deep"
+loss_func = "mse"
+num_epochs = 5
 
 [hypers]
 batch_size = 64
+lr = 1e-3
