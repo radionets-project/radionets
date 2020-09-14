@@ -10,7 +10,6 @@ from functools import partial
 from dl_framework.loss_functions import (
     init_feature_loss,
     my_loss,
-    loss_amp,
     loss_phase,
     loss_msssim,
     loss_mse_msssim,
@@ -223,8 +222,6 @@ def define_learner(
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
-    elif loss_func == "my_loss":
-        loss_func = my_loss
     elif loss_func == "loss_amp":
         loss_func = loss_amp
     elif loss_func == "loss_phase":
