@@ -28,7 +28,7 @@ def main(configuration_path):
     print(train_conf, "\n")
 
     # check out path and look for existing files
-    check_outpath(train_conf["model_path"])
+    check_outpath(train_conf["model_path"], train_conf)
 
     # create databunch
     data = create_databunch(
