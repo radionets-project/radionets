@@ -13,6 +13,7 @@ pointsources/data*
 #test data
 */test_data
 test_data
+simulations/data/
 
 #evaluation results
 */results
