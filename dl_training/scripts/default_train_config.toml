@@ -2,11 +2,15 @@
 
 title = "Train configuration"
 
+[mode]
+batch_mode = false
+telegram_logger = true
+
 [paths]
 data_path = "./build/"
 model_path = "./build/test_model/test.model"
 pre_model = "none"
-norm_path = "./build/norm_factors.csv"
+norm_path = "none"
 
 [general]
 fourier = true
