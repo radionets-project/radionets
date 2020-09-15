@@ -211,8 +211,11 @@ def define_learner(
         ])
     if not test and not lr_find:
         cbfs.extend([
+            # data_aug,
+        ])
+    if train_conf["telegram_logger"]:
+        cbfs.extend([
             partial(LoggerCallback, model_name=model_name),
-            data_aug,
         ])
 
     loss_func = train_conf["loss_func"]
