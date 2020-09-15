@@ -5,7 +5,7 @@ from re import sub
 import matplotlib.pyplot as plt
 import pandas as pd
 from dl_framework.data import do_normalisation
-# from dl_framework.logger import make_notifier
+from dl_framework.logger import make_notifier
 from dl_framework.model import save_model
 
 
@@ -135,19 +135,19 @@ class Recorder(Callback):
         plt.tight_layout()
 
     def plot_loss(self, log=True):
-        import matplotlib as mpl
+        # import matplotlib as mpl
 
-        # make nice Latex friendly plots
-        mpl.use("pgf")
-        mpl.rcParams.update(
-            {
-                "font.size": 12,
-                "font.family": "sans-serif",
-                "text.usetex": True,
-                "pgf.rcfonts": False,
-                "pgf.texsystem": "lualatex",
-            }
-        )
+        # # make nice Latex friendly plots
+        # mpl.use("pgf")
+        # mpl.rcParams.update(
+        #     {
+        #         "font.size": 12,
+        #         "font.family": "sans-serif",
+        #         "text.usetex": True,
+        #         "pgf.rcfonts": False,
+        #         "pgf.texsystem": "lualatex",
+        #     }
+        # )
 
         plt.plot(self.train_losses, label="training loss")
         plt.plot(self.valid_losses, label="validation loss")

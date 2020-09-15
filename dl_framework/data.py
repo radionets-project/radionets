@@ -17,10 +17,12 @@ def do_normalisation(x, norm, pointsource=False):
     """
     if len(x.shape) == 3:
         x = x.unsqueeze(0)
-    if pointsource is True:
-        train_mean = torch.tensor(norm['train_mean'].values[0]).float()
-        train_std = torch.tensor(norm['train_std'].values[0]).float()
-        x = normalize(x, train_mean, train_std)
+    if norm == "none":
+        return x
+    # if pointsource is True:
+    #     train_mean = torch.tensor(norm['train_mean'].values[0]).float()
+    #     train_std = torch.tensor(norm['train_std'].values[0]).float()
+    #     x = normalize(x, train_mean, train_std)
     else:
         train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
         train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
@@ -255,14 +257,6 @@ def load_data(data_path, mode, fourier=False):
         dataset containing x and y images
     """
     bundle_paths = get_bundles(data_path)
-    data = [path for path in bundle_paths if re.findall("fft_samp_" + mode, path.name)]
-    # this is necessary for the reason of different names for data files in mnist
-    # and gaussian sources
-    if data == []:
-        data = [
-            path
-            for path in bundle_paths
-            if re.findall("fft_bundle_samp_" + mode, path.name)
-        ]
+    data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
     ds = h5_dataset(data, tar_fourier=fourier)
     return ds

@@ -6,16 +6,21 @@ import os
 import sys
 import re
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
 from skimage.transform import resize
 from dl_framework.data import (
     save_fft_pair,
+    open_fft_pair,
+    open_fft_pair_npz,
     get_bundles,
     split_amp_phase,
     split_real_imag,
+    mean_and_std,
 )
 
 
-def check_outpath(outpath, data_format):
+def check_outpath(outpath, data_format, batch_mode=False):
     """
     Check if outpath exists. Check for existing fft_files and sampled-files.
     Ask to overwrite or reuse existing files.
@@ -39,7 +44,16 @@ def check_outpath(outpath, data_format):
         samp = {p for p in path.rglob("*samp*." + str(data_format)) if p.is_file()}
         if fft:
             click.echo("Found existing fft_files!")
-            if click.confirm("Do you really want to overwrite the files?", abort=False):
+            if batch_mode:
+                click.echo("Overwriting old fft_files!")
+                [p.unlink() for p in fft]
+                [p.unlink() for p in samp]
+                sim_fft = True
+                sim_sampled = True
+                return sim_fft, sim_sampled
+            elif click.confirm(
+                "Do you really want to overwrite the files?", abort=False
+            ):
                 click.echo("Overwriting old fft_files!")
                 [p.unlink() for p in fft]
                 [p.unlink() for p in samp]
@@ -53,7 +67,13 @@ def check_outpath(outpath, data_format):
             sim_fft = True
         if samp:
             click.echo("Found existing samp_files!")
-            if click.confirm("Do you really want to overwrite the files?", abort=False):
+            if batch_mode:
+                click.echo("Overwriting old samp_files!")
+                [p.unlink() for p in samp]
+                sim_sampled = True
+            elif click.confirm(
+                "Do you really want to overwrite the files?", abort=False
+            ):
                 click.echo("Overwriting old samp_files!")
                 [p.unlink() for p in samp]
                 sim_sampled = True
@@ -196,14 +216,14 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
     if noise:
         y_prep = add_noise(y_prep)
     x = np.fft.fftshift(np.fft.fft2(y_prep))
-    path = adjust_outpath(path, "/fft_mnist_bundle_" + option)
+    path = adjust_outpath(path, "/fft_" + option)
     save_fft_pair(path, x, y)
 
 
-def get_fft_bundle_paths(data_path, mode):
+def get_fft_bundle_paths(data_path, ftype, mode):
     bundles = get_bundles(data_path)
     bundle_paths = [
-        path for path in bundles if re.findall("bundle_{}".format(mode), path.name)
+        path for path in bundles if re.findall(f"{ftype}_{mode}", path.name)
     ]
     return bundle_paths
 
@@ -268,3 +288,42 @@ def add_noise(bundle):
         [img + get_noise(img, (img.max() * 0.05)) for img in bundle]
     )
     return bundle_noised
+
+
+def calc_norm(sim_conf):
+    bundle_paths = get_fft_bundle_paths(sim_conf["data_path"], "samp", "train")
+
+    # create empty arrays
+    means_amp = np.array([])
+    stds_amp = np.array([])
+    means_imag = np.array([])
+    stds_imag = np.array([])
+
+    for path in tqdm(bundle_paths):
+        # distinguish between compressed (.npz) and not compressed (.h5) files
+        if re.search(".npz", str(path)):
+            x, _ = open_fft_pair_npz(path)
+        else:
+            x, _ = open_fft_pair(path)
+        x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
+        mean_amp, std_amp = mean_and_std(x_amp)
+        mean_imag, std_imag = mean_and_std(x_imag)
+        means_amp = np.append(mean_amp, means_amp)
+        means_imag = np.append(mean_imag, means_imag)
+        stds_amp = np.append(std_amp, stds_amp)
+        stds_imag = np.append(std_imag, stds_imag)
+
+    mean_amp = means_amp.mean()
+    std_amp = stds_amp.mean()
+    mean_imag = means_imag.mean()
+    std_imag = stds_imag.mean()
+
+    d = {
+        "train_mean_c0": [mean_amp],
+        "train_std_c0": [std_amp],
+        "train_mean_c1": [mean_imag],
+        "train_std_c1": [std_imag],
+    }
+
+    df = pd.DataFrame(data=d)
+    df.to_csv(sim_conf["data_path"] + "/norm_factors.csv", index=False)

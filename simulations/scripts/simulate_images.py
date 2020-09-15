@@ -1,7 +1,7 @@
 import click
 import toml
 from simulations.simulate import create_fft_images, sample_fft_images
-from simulations.utils import check_outpath, read_config
+from simulations.utils import check_outpath, read_config, calc_norm
 
 
 @click.command()
@@ -18,7 +18,9 @@ def main(configuration_path):
     # check out path and look for existing files
     data_path = config["paths"]["data_path"]
     sim_fft, sim_sampled = check_outpath(
-        data_path, data_format=config["paths"]["data_format"]
+        data_path,
+        data_format=config["paths"]["data_format"],
+        batch_mode=config["mode"]["batch_mode"],
     )
 
     # declare source options
@@ -35,6 +37,8 @@ def main(configuration_path):
     if sim_sampled is True:
         click.echo("Start sampling fft_files!")
         sample_fft_images(sim_conf)
+        click.echo("\n Calculating normalization factors.")
+        calc_norm(sim_conf)
 
 
 if __name__ == "__main__":

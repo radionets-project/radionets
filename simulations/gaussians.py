@@ -37,7 +37,7 @@ def simulate_gaussian_sources(
             images = add_noise(images)
 
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
-        path = adjust_outpath(data_path, "/fft_gs_bundle_" + option)
+        path = adjust_outpath(data_path, "/fft_" + option)
         save_fft_pair(path, bundle_fft, bundle)
 
 

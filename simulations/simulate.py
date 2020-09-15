@@ -63,5 +63,4 @@ def sample_fft_images(sim_conf):
                 )
                 if p.is_file()
             }
-            print(fft)
             [p.unlink() for p in fft]

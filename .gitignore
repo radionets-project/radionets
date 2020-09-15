@@ -3,10 +3,7 @@
 *.ipynb
 
 # data
-mnist_cnn/data*
-gaussian_sources/data*
-gauss/data*
-pointsources/data*
+*/data*
 *.uvf
 *.h5
 
