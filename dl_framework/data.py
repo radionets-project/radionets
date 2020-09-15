@@ -17,10 +17,12 @@ def do_normalisation(x, norm, pointsource=False):
     """
     if len(x.shape) == 3:
         x = x.unsqueeze(0)
-    if pointsource is True:
-        train_mean = torch.tensor(norm['train_mean'].values[0]).float()
-        train_std = torch.tensor(norm['train_std'].values[0]).float()
-        x = normalize(x, train_mean, train_std)
+    if norm == "none":
+        return x
+    # if pointsource is True:
+    #     train_mean = torch.tensor(norm['train_mean'].values[0]).float()
+    #     train_std = torch.tensor(norm['train_std'].values[0]).float()
+    #     x = normalize(x, train_mean, train_std)
     else:
         train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
         train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
