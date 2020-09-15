@@ -26,6 +26,9 @@ def read_config(config):
     train_conf["pre_model"] = config["paths"]["pre_model"]
     train_conf["norm_path"] = config["paths"]["norm_path"]
 
+    train_conf["batch_mode"] = config["mode"]["batch_mode"]
+    train_conf["telegram_logger"] = config["mode"]["telegram_logger"]
+
     train_conf["bs"] = config["hypers"]["batch_size"]
     train_conf["lr"] = config["hypers"]["lr"]
 
@@ -37,15 +40,19 @@ def read_config(config):
     return train_conf
 
 
-def check_outpath(model_path):
+def check_outpath(model_path, train_conf):
     path = Path(model_path)
     exists = path.exists()
     if exists:
-        if click.confirm(
-            "Do you really want to overwrite existing model file?", abort=False
-        ):
+        if train_conf["batch_mode"]:
             click.echo("Overwriting existing model file!")
             path.unlink()
+        else:
+            if click.confirm(
+                "Do you really want to overwrite existing model file?", abort=False
+            ):
+                click.echo("Overwriting existing model file!")
+                path.unlink()
 
     return None
 
