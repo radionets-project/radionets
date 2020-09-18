@@ -13,6 +13,8 @@ class Lambda(nn.Module):
     def forward(self, x):
         return self.func(x)
 
+def reshape(x):
+    return x.reshape(-1,2,63,63)
 
 def fft(x):
     """

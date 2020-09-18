@@ -16,10 +16,18 @@ from dl_framework.model import (
     GeneralELU,
     conv_phase,
     conv_amp,
+    reshape
 )
 from functools import partial
 from math import pi
 
+def test():
+    arch = nn.Sequential(
+	Lambda(flatten),
+	nn.Linear(7938,7938),
+	Lambda(reshape)
+    )
+    return arch
 
 def cnn():
     """
