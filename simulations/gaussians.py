@@ -41,6 +41,7 @@ def simulate_gaussian_sources(
         save_fft_pair(path, bundle_fft, bundle)
 
 
+
 def create_grid(pixel, bundle_size):
     """
     Creates a square 2d grid.
@@ -346,7 +347,7 @@ def create_gauss(img, N, sources, spherical):
     # img = [img]
     mx = np.random.randint(1, 63, size=(N, sources))
     my = np.random.randint(1, 63, size=(N, sources))
-    amp = (np.random.randint(0, 100, size=(N)) * np.random.random()) / 1e2
+    amp = (np.random.randint(0.001, 100, size=(N)) * np.random.random(0.5, 1)) / 1e2
 
     if spherical:
         sx = np.random.randint(1, 15, size=(N, sources)) / 10
