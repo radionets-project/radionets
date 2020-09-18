@@ -17,9 +17,9 @@ resource = "../../resources/mnist.pkl.gz"
 simulate = true
 pointsources = false
 num_pointsources = 10
-pointlike_gaussians = false
+pointlike_gaussians = true
 num_pointlike_gaussians = 5
-extended_gaussians = true
+extended_gaussians = false
 num_components = [4, 10]
 
 
