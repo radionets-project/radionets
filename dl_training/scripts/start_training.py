@@ -24,7 +24,7 @@ def main(configuration_path):
     config = toml.load(configuration_path)
     train_conf = read_config(config)
 
-    click.echo("\n Simulation config:")
+    click.echo("\n Train config:")
     print(train_conf, "\n")
 
     # check out path and look for existing files
