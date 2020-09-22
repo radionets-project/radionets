@@ -203,7 +203,6 @@ def get_bundles(path):
     bundles = np.array([x for x in data_path.iterdir()])
     return bundles
 
-
 def save_fft_pair(path, x, y, name_x="x", name_y="y"):
     """
     write fft_pairs created in second analysis step to h5 file
@@ -211,6 +210,20 @@ def save_fft_pair(path, x, y, name_x="x", name_y="y"):
     with h5py.File(path, "w") as hf:
         hf.create_dataset(name_x, data=x)
         hf.create_dataset(name_y, data=y)
+        hf.close()
+
+def save_fft_pair_list(path, x, y, z, name_x="x", name_y="y", name_z="z"):
+    """
+    write fft_pairs created in second analysis step to h5 file with source
+    list.
+    """
+    with h5py.File(path, "w") as hf:
+        hf.create_dataset(name_x, data=x)
+        hf.create_dataset(name_y, data=y)
+        try:
+            hf.create_dataset(name_z, data=z)
+        except TypeError:
+            pass
         hf.close()
 
 

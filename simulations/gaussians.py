@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
 from scipy import ndimage
-from dl_framework.data import save_fft_pair
+from dl_framework.data import save_fft_pair, save_fft_pair_list
 from simulations.utils import adjust_outpath, add_noise
 
 
@@ -16,19 +16,24 @@ def simulate_gaussian_sources(
     num_pointlike,
     num_pointsources,
     noise,
+    source_list
 ):
     for i in tqdm(range(num_bundles)):
         grid = create_grid(img_size, bundle_size)
         ext_gaussian = 0
         pointlike = 0
         pointsource = 0
+        list_sources = 0
 
         if num_comp_ext is not None:
             ext_gaussian = create_ext_gauss_bundle(grid)
         if num_pointlike is not None:
-            pointlike = create_gauss(grid[:, 0], bundle_size, num_pointlike, True)
+            pointlike = create_gauss(grid[:, 0], bundle_size, num_pointlike, True, source_list)
         if num_pointsources is not None:
             pointsource = gauss_pointsources(grid[:, 0], bundle_size, num_pointsources)
+        if source_list:
+            list_sources = pointlike[1]
+            pointlike = pointlike[0]
 
         bundle = ext_gaussian + pointlike + pointsource
         images = bundle.copy()
@@ -38,7 +43,7 @@ def simulate_gaussian_sources(
 
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
         path = adjust_outpath(data_path, "/fft_" + option)
-        save_fft_pair(path, bundle_fft, bundle)
+        save_fft_pair_list(path, bundle_fft, bundle, list_sources)
 
 
 
@@ -343,11 +348,11 @@ def create_ext_gauss_bundle(grid):
 # pointlike gaussians
 
 
-def create_gauss(img, N, sources, spherical):
+def create_gauss(img, N, sources, spherical, source_list):
     # img = [img]
     mx = np.random.randint(1, 63, size=(N, sources))
     my = np.random.randint(1, 63, size=(N, sources))
-    amp = (np.random.randint(0.001, 100, size=(N)) * np.random.random(0.5, 1)) / 1e2
+    amp = (np.random.randint(0.001, 100, size=(N)) *1/10* np.random.randint(5, 10)) / 1e2
 
     if spherical:
         sx = np.random.randint(1, 15, size=(N, sources)) / 10
@@ -356,10 +361,12 @@ def create_gauss(img, N, sources, spherical):
         sx = np.random.randint(1, 15, size=(N, sources))
         sy = np.random.randint(1, 15, size=(N, sources))
         theta = np.random.randint(0, 360, size=(N, sources))
-
+    
+    s = np.zeros((N,sources,5))
     for i in range(N):
         for j in range(sources):
             g = gauss(mx[i, j], my[i, j], sx[i, j], sy[i, j], amp[i])
+            s[i,j] = np.array([mx[i,j],my[i,j],sx[i,j],sy[i,j],amp[i]])
             if spherical:
                 img[i] += g
             else:
@@ -370,7 +377,10 @@ def create_gauss(img, N, sources, spherical):
                 imgR = ndimage.rotate(imgP, theta[i, j], reshape=False)
                 imgC = imgR[padY[0] : -padY[1], padX[0] : -padX[1]]
                 img[i] += imgC
-    return img
+    if source_list:
+        return img, s
+    else:
+        return img
 
 
 # pointsources
