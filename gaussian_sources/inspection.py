@@ -11,7 +11,7 @@ import pytorch_msssim
 mpl.use("pgf")
 mpl.rcParams.update(
     {
-        "font.size": 12,
+        "font.size": 14,
         "font.family": "sans-serif",
         "text.usetex": True,
         "pgf.rcfonts": False,
@@ -200,10 +200,11 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     ax2.legend(loc="best")
     make_axes_nice(fig, ax2, im2, r"Truth")
 
-    ax1.set_ylabel(r"Pixel")
+    ax1.set_ylabel(r"Pixels")
     # ax3.set_ylabel(r"Pixel")
-    ax1.set_xlabel(r"Pixel")
-    ax2.set_xlabel(r"Pixel")
+    ax1.set_xlabel(r"Pixels")
+    ax2.set_xlabel(r"Pixels")
+    plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + "prediction_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
@@ -261,11 +262,11 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
     make_axes_nice2(fig, ax6, im6, r"Phase Truth", True)
 
-    ax1.set_ylabel(r"Pixel", fontsize=20)
-    ax4.set_ylabel(r"Pixel", fontsize=20)
-    ax4.set_xlabel(r"Pixel", fontsize=20)
-    ax5.set_xlabel(r"Pixel", fontsize=20)
-    ax6.set_xlabel(r"Pixel", fontsize=20)
+    ax1.set_ylabel(r"Pixels", fontsize=20)
+    ax4.set_ylabel(r"Pixels", fontsize=20)
+    ax4.set_xlabel(r"Pixels", fontsize=20)
+    ax5.set_xlabel(r"Pixels", fontsize=20)
+    ax6.set_xlabel(r"Pixels", fontsize=20)
     ax1.tick_params(axis='both', labelsize=20)
     ax2.tick_params(axis='both', labelsize=20)
     ax3.tick_params(axis='both', labelsize=20)
@@ -311,7 +312,7 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
 
     m_truth, n_truth, alpha_truth = calc_jet_angle(np.abs(ifft_truth))
     m_pred, n_pred, alpha_pred = calc_jet_angle(np.abs(ifft_pred))
-    x_space = torch.arange(0, 63, 1)
+    x_space = torch.arange(0, 511, 1)
 
     # plotting
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
@@ -324,9 +325,9 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     make_axes_nice(fig, ax1, im1, r"FFT Prediction")
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
 
-    ax1.set_ylabel(r"Pixel")
-    ax1.set_xlabel(r"Pixel")
-    ax2.set_xlabel(r"Pixel")
+    ax1.set_ylabel(r"Pixels")
+    ax1.set_xlabel(r"Pixels")
+    ax2.set_xlabel(r"Pixels")
     ax1.legend(loc="best")
     ax2.legend(loc="best")
     plt.tight_layout(pad=1.5)
@@ -445,8 +446,8 @@ def plot_difference(i, img_pred, img_truth, out_path):
     im = ax.imshow(np.abs(img_pred - img_truth))
     make_axes_nice(fig, ax, im, r"MS-SSIM: {}".format(msssim))
 
-    ax.set_xlabel(r"Pixel")
-    ax.set_ylabel(r"Pixel")
+    ax.set_xlabel(r"Pixels")
+    ax.set_ylabel(r"Pixels")
     outpath = str(out_path) + "diff/difference_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
