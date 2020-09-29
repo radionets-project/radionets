@@ -20,11 +20,11 @@ def create_rot_mat(alpha):
     rot_mat: 2darray
         2d rotation matrix
     """
-    rot_mat = np.array([[np.cos(alpha), np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
+    rot_mat = np.array([[np.cos(alpha), -np.sin(alpha)], [np.sin(alpha), np.cos(alpha)]])
     return rot_mat
 
 
-def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot=0, center=None):
+def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot, center=None):
     """
     Adds a gaussian component to a 2d grid.
 
@@ -37,9 +37,9 @@ def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot=0, center=None):
     flux: float
         peak amplitude of component
     x_fwhm: float
-        full-width-half-maximum in x direction
+        full-width-half-maximum in x direction (sigma_x)
     y_fwhm: float
-        full-width-half-maximum in y direction
+        full-width-half-maximum in y direction (sigma_y)
     rot: int
         rotation of component in degree
     center: 2darray
@@ -55,7 +55,6 @@ def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot=0, center=None):
     else:
         rot_mat = create_rot_mat(np.deg2rad(rot))
         x_0, y_0 = ((center - len(x) // 2) @ rot_mat) + len(x) // 2
-
     gauss = flux * np.exp(
         -((x_0 - x) ** 2 / (2 * (x_fwhm) ** 2) + (y_0 - y) ** 2 / (2 * (y_fwhm) ** 2))
     )
@@ -213,7 +212,7 @@ def gauss_paramters():
         0 for one-sided and 1 for two-sided jets
     """
     # random number of components between 4 and 9
-    comps = np.random.randint(4, 7)  # decrease for smaller images
+    comps = 9 # np.random.randint(4, 7)  # decrease for smaller images
 
     # start amplitude between 10 and 1e-3
     amp_start = (np.random.randint(0, 100) * np.random.random()) / 10

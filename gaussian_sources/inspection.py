@@ -1,10 +1,23 @@
 import numpy as np
-import matplotlib
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import torch
 import pandas as pd
 from skimage.feature import blob_log
 from math import sqrt
+import pytorch_msssim
+
+# make nice Latex friendly plots
+# mpl.use("pgf")
+# mpl.rcParams.update(
+#     {
+#         "font.size": 12,
+#         "font.family": "sans-serif",
+#         "text.usetex": True,
+#         "pgf.rcfonts": False,
+#         "pgf.texsystem": "lualatex",
+#     }
+# )
 
 
 def open_csv(path, mode):
@@ -124,7 +137,7 @@ def plot_loss(learn, model_path, log=True):
     # to prevent the localhost error from happening
     # first change the backende and second turn off
     # the interactive mode
-    matplotlib.use("Agg")
+    mpl.use("Agg")
     plt.ioff()
     name_model = model_path.split("/")[-1].split(".")[0]
     save_path = model_path.split(".model")[0]
@@ -132,20 +145,20 @@ def plot_loss(learn, model_path, log=True):
     learn.recorder.plot_loss()
     plt.title(r"{}".format(name_model))
     plt.savefig("{}_loss.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    mpl.rcParams.update(mpl.rcParamsDefault)
 
 
 def plot_lr_loss(learn, arch_name, skip_last):
     # to prevent the localhost error from happening
     # first change the backende and second turn off
     # the interactive mode
-    matplotlib.use("Agg")
+    mpl.use("Agg")
     plt.ioff()
     print("\nPlotting Lr vs Loss for architecture: {}\n".format(arch_name))
     learn.recorder_lr_find.plot(skip_last, save=True)
     # plt.yscale('log')
     plt.savefig("./models/lr_loss.pdf", bbox_inches="tight", pad_inches=0.01)
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+    mpl.rcParams.update(mpl.rcParamsDefault)
 
 
 def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
@@ -162,8 +175,12 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     img_pred = reshape_split(img_pred)
     img_truth = reshape_split(img_truth)
 
+    m_truth, n_truth, alpha_truth = calc_jet_angle(img_truth)
+    m_pred, n_pred, alpha_pred = calc_jet_angle(img_pred)
+    x_space = torch.arange(0, 63, 1)
+
     # plotting
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8), sharex=True, sharey=True)
 
     im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-inp_real.max(), vmax=inp_real.max())
     make_axes_nice(fig, ax1, im1, r"Real Input")
@@ -171,16 +188,24 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     im2 = ax2.imshow(inp_imag, cmap="RdBu", vmin=-inp_imag.max(), vmax=inp_imag.max())
     make_axes_nice(fig, ax2, im2, r"Imaginary Input")
 
-    im3 = ax3.imshow(img_pred)
+    ax3.plot(x_space, m_truth*x_space + n_truth, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_truth, 3)))
+    im3 = ax3.imshow(img_pred, zorder=0)
+    ax3.legend(loc="best")
     make_axes_nice(fig, ax3, im3, r"Prediction")
 
-    im4 = ax4.imshow(img_truth)
+    ax4.plot(x_space, m_pred*x_space + n_pred, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_pred, 3)))
+    im4 = ax4.imshow(img_truth, zorder=0)
+    ax4.legend(loc="best")
     make_axes_nice(fig, ax4, im4, r"Truth")
+
+    ax1.set_ylabel(r"Pixel")
+    ax3.set_ylabel(r"Pixel")
+    ax3.set_xlabel(r"Pixel")
+    ax4.set_xlabel(r"Pixel")
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.clf()
-    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
 
 
 def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_path):
@@ -203,29 +228,48 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
         real_truth = 10 ** (10 * real_truth - 10) - 1e-10
 
     # plotting
-    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10))
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
 
-    im1 = ax1.imshow(inp_real, cmap="RdBu")
-    make_axes_nice(fig, ax1, im1, r"Amplitude Input")
+    a = check_vmin_vmax(inp_real)
+    im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
+    make_axes_nice(fig, ax1, im1, r"Real Input")
 
+    a = check_vmin_vmax(real_pred)
     im2 = ax2.imshow(
-        real_pred, cmap="RdBu", vmin=real_truth.min(), vmax=real_truth.max()
+        real_pred, cmap="RdBu", vmin=-a, vmax=a
     )
-    make_axes_nice(fig, ax2, im2, r"Amplitude Prediction")
+    make_axes_nice(fig, ax2, im2, r"Real Prediction")
 
-    im3 = ax3.imshow(real_truth, cmap="RdBu")
-    make_axes_nice(fig, ax3, im3, r"Amplitude Truth")
+    a = check_vmin_vmax(real_truth)
+    im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
+    make_axes_nice(fig, ax3, im3, r"Real Truth")
 
-    im4 = ax4.imshow(inp_imag, cmap="RdBu")
-    make_axes_nice(fig, ax4, im4, r"Phase Input")
+    a = check_vmin_vmax(inp_imag)
+    im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
+    make_axes_nice(fig, ax4, im4, r"Imaginary Input")
 
+    a = check_vmin_vmax(imag_pred)
     im5 = ax5.imshow(
-        imag_pred, cmap="RdBu", vmin=imag_truth.min(), vmax=imag_truth.max()
+        imag_pred, cmap="RdBu", vmin=-a, vmax=a
     )
-    make_axes_nice(fig, ax5, im5, r"Phase Prediction")
+    make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
 
-    im6 = ax6.imshow(imag_truth, cmap="RdBu")
-    make_axes_nice(fig, ax6, im6, r"Phase Truth")
+    a = check_vmin_vmax(imag_truth)
+    im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-a, vmax=a)
+    make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
+
+    ax1.set_ylabel(r"Pixel", fontsize=20)
+    ax4.set_ylabel(r"Pixel", fontsize=20)
+    ax4.set_xlabel(r"Pixel", fontsize=20)
+    ax5.set_xlabel(r"Pixel", fontsize=20)
+    ax6.set_xlabel(r"Pixel", fontsize=20)
+    ax1.tick_params(axis='both', labelsize=20)
+    ax2.tick_params(axis='both', labelsize=20)
+    ax3.tick_params(axis='both', labelsize=20)
+    ax4.tick_params(axis='both', labelsize=20)
+    ax5.tick_params(axis='both', labelsize=20)
+    ax6.tick_params(axis='both', labelsize=20)
+    plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + "prediction_{}.png".format(i)
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
@@ -262,14 +306,27 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     # inverse fourier transform for truth
     ifft_truth = np.fft.ifft2(compl_truth)
 
-    # plotting
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
+    m_truth, n_truth, alpha_truth = calc_jet_angle(np.abs(ifft_truth))
+    m_pred, n_pred, alpha_pred = calc_jet_angle(np.abs(ifft_pred))
+    x_space = torch.arange(0, 63, 1)
 
+    # plotting
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
+
+    ax1.plot(x_space, m_pred*x_space + n_pred, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_pred, 3)))
     im1 = ax1.imshow(np.abs(ifft_pred))
+    ax2.plot(x_space, m_truth*x_space + n_truth, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_truth, 3)))
     im2 = ax2.imshow(np.abs(ifft_truth))
 
     make_axes_nice(fig, ax1, im1, r"FFT Prediction")
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
+
+    ax1.set_ylabel(r"Pixel")
+    ax1.set_xlabel(r"Pixel")
+    ax2.set_xlabel(r"Pixel")
+    ax1.legend(loc="best")
+    ax2.legend(loc="best")
+    plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + "fft_pred_{}.png".format(i)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
@@ -335,9 +392,21 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
 
     im3 = ax3.imshow(np.abs(img_pred - img_truth))
 
+    # scale all images to the same magnitude
+    if img_truth.max() < 0.099999:
+        magnitude = int(np.round(np.abs(np.log10(img_truth.max()))))
+        # print(magnitude, img_pred.max(), img_truth.max())
+        img_pred = img_pred * 10 ** magnitude
+        img_truth = img_truth * 10 ** magnitude
+    # print(img_pred.max(), img_truth.max())
+
+    tensor_pred = torch.tensor(np.float32(img_pred)).unsqueeze(0).unsqueeze(1)
+    tensor_truth = torch.tensor(np.float32(img_truth)).unsqueeze(0).unsqueeze(1)
+    msssim = pytorch_msssim.msssim(tensor_pred, tensor_truth, normalize="None")
+
     make_axes_nice(fig, ax1, im1, r"Prediction: {}".format(np.round(dr_pred, 4)))
-    make_axes_nice(fig, ax2, im2, r"Truth: {}".format(np.round(dr_truth, 4)))
-    make_axes_nice(fig, ax3, im3, r"DR: {}".format(dynamic_range))
+    make_axes_nice(fig, ax2, im2, r"DR: {}".format(dynamic_range))
+    make_axes_nice(fig, ax3, im3, r"MS-SSIM: {}".format(msssim))
 
     ax1.legend(loc="best")
     ax2.legend(loc="best")
@@ -347,7 +416,7 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
     plt.clf()
 
     hist_difference(i, img_pred, img_truth, out_path)
-    return dynamic_range
+    return dynamic_range, msssim
 
 
 def plot_off_regions(ax, mode, img_size, num):
@@ -865,6 +934,33 @@ def blob_detection(i, img_pred, img_truth, out_path):
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
 
+def make_axes_nice2(fig, ax, im, title):
+    """Create nice colorbars for every axis in a subplot
+
+    Parameters
+    ----------
+    fig : figure object
+        current figure
+    ax : axis object
+        current axis
+    im : ndarray
+        plotted image
+    title : str
+        title of subplot
+    """
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    ax.set_title(title, fontsize=20)
+    cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+    cbar.set_label("Intensity / a.u.", size=20)
+    cbar.ax.tick_params(labelsize=20)
+    cbar.ax.yaxis.get_offset_text().set_fontsize(20)
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.update_ticks()
+
+
 def make_axes_nice(fig, ax, im, title):
     """Create nice colorbars for every axis in a subplot
 
@@ -885,5 +981,83 @@ def make_axes_nice(fig, ax, im, title):
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title(title)
     cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+    cbar.set_label("Intensity / a.u.")
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
+
+
+def check_vmin_vmax(inp):
+    """
+    Check wether the absolute of the maxmimum or the minimum is bigger.
+    If the minimum is bigger, return value with minus. Otherwise return
+    maximum.
+
+    Parameters
+    ----------
+    inp : float
+        input image
+
+    Returns
+    -------
+    float
+        negative minimal or maximal value
+    """
+    if np.abs(inp.min()) > np.abs(inp.max()):
+        a = -inp.min()
+    else:
+        a = inp.max()
+    return a
+
+
+def calc_jet_angle(image):
+    image = image.copy()
+    image[image < 0] = 0
+    image[0:20] = 0
+    image[43:63] = 0
+    image[:, 0:20] = 0
+    image[:, 43:63] = 0
+    # only use brightest pixel
+    image[image < image.max() * 0.4] = 0
+    pix_x, pix_y, image = im_to_array_value_rune(image)
+
+    cog_x = np.average(pix_x, weights=image)
+    cog_y = np.average(pix_y, weights=image)
+
+    delta_x = pix_x - cog_x
+    delta_y = pix_y - cog_y
+
+    cov = np.cov(delta_x, delta_y, aweights=image, ddof=1)
+    values, vectors = np.linalg.eigh(cov)
+    psi_torch = np.arctan(vectors[1, 1] / vectors[0, 1])
+    m = np.tan(np.pi / 2 - psi_torch)
+    n = cog_y - m * cog_x
+    alpha = (psi_torch) * 180 / np.pi
+    return m, n, alpha
+
+
+def im_to_array_value_rune(image):
+    '''
+    Transforms the image to an array of pixel coordinates and the containt
+    intensity
+    Parameters
+    ----------
+    image: Image or 2DArray (N, M)
+            Image to be transformed
+    Returns
+    -------
+    x_coords: Numpy 1Darray (N*M, 1)
+            Contains the x-pixel-position of every pixel in the image
+    y_coords: Numpy 1Darray (N*M, 1)
+            Contains the y-pixel-position of every pixel in the image
+    value: Numpy 1Darray (N*M, 1)
+            Contains the image-value corresponding to every x-y-pair
+    '''
+    x_coords = []
+    y_coords = []
+    value = []
+    for x in range(image.shape[0]):
+        for y in range(image.shape[1]):
+            x_coords.append(x)
+            y_coords.append(y)
+            value.append(image[x, y])
+    return np.asarray(x_coords), np.asarray(y_coords), np.asarray(value)

@@ -26,8 +26,8 @@ ${data}/fft_samp_train0.h5:
 		-amp_phase ${amp_phase} \
 		-noise ${noise} \
 		-preview ${preview} \
-		-specific_mask False \
-		-compressed True\
+		-specific_mask True\
+		-compressed False\
 		-lon -80 \
 		-lat 50 \
 		-steps 50

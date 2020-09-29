@@ -200,11 +200,11 @@ def define_learner(
             partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
             partial(SaveCallback, model_path=model_path),
         ])
-    if not test and not lr_find:
-        cbfs.extend([
-            partial(LoggerCallback, model_name=model_name), 
-            data_aug,
-        ])
+    # if not test and not lr_find:
+    #     cbfs.extend([
+    #         partial(LoggerCallback, model_name=model_name), 
+    #         data_aug,
+    #     ])
 
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()

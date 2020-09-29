@@ -52,6 +52,7 @@ def main(
     tagg train and valid in filename
     """
     modes = ["train", "valid", "test"]
+    print(lon, lat)
 
     for mode in modes:
         print(f"Sampling {mode} data set.")
@@ -85,27 +86,19 @@ def main(
 
             copy = bundle_fft.copy()
             if specific_mask is True:
-                bundle_samp = np.array(
-                    [
-                        sample_freqs(
-                            img,
-                            antenna_config_path,
-                            size,
-                            lon,
-                            lat,
-                            steps,
-                            plot=False,
-                            test=False,
-                        )
-                        for img in copy
-                    ]
+                bundle_samp = sample_freqs(
+                    copy,
+                    antenna_config_path,
+                    size,
+                    lon,
+                    lat,
+                    steps,
+                    plot=False,
+                    test=False,
                 )
             else:
-                bundle_samp = np.array(
-                    [
-                        sample_freqs(img, antenna_config_path, size=size)
-                        for img in copy
-                    ]
+                bundle_samp = sample_freqs(
+                    copy, antenna_config_path, size=size, specific_mask=False
                 )
             out = out_path + path.name.split("_")[-1]
             if fourier:
