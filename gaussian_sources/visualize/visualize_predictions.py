@@ -90,6 +90,7 @@ def main(
                         i, ifft_pred, ifft_truth, sensitivity, out_path
                     )
                     dynamic_ranges.append(dynamic_range)
+                    msssims.append(msssim)
 
                 if blob:
                     blob_detection(i, ifft_pred, ifft_truth, out_path)
@@ -112,6 +113,7 @@ def main(
                         out_path,
                     )
                     dynamic_ranges.append(dynamic_range)
+                    msssims.append(msssim)
 
                 if blob:
                     blob_detection(

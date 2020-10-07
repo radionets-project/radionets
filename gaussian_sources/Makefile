@@ -19,18 +19,18 @@ find_lr: ./lr_find
 # 		${num_bundles_train} ${num_bundles_valid} ${num_bundles_test} \
 # 		${num_img} ${size_img} ${data}
 
-# ${data}/fft_samp_train0.h5:
-# 		python create_fft_pairs.py \
-# 		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
-# 		-fourier ${fourier} \
-# 		-amp_phase ${amp_phase} \
-# 		-noise ${noise} \
-# 		-preview ${preview} \
-# 		-specific_mask False \
-# 		-compressed False\
-# 		-lon -80 \
-# 		-lat 50 \
-# 		-steps 50
+${data}/fft_samp_train0.h5:
+		python create_fft_pairs.py \
+		${data} ${data}/fft_samp_ ../simulations/layouts/vlba.txt \
+		-fourier ${fourier} \
+		-amp_phase ${amp_phase} \
+		-noise ${noise} \
+		-preview ${preview} \
+		-specific_mask True\
+		-compressed False\
+		-lon -80 \
+		-lat 50 \
+		-steps 50
 
 # ${data}/normalization_factors.csv:
 # 		python calculate_normalization.py\

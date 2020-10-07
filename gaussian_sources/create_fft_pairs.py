@@ -52,6 +52,7 @@ def main(
     tagg train and valid in filename
     """
     modes = ["train", "valid", "test"]
+    print(lon, lat)
 
     for mode in modes:
         print(f"Sampling {mode} data set.")

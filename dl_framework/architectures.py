@@ -16,18 +16,18 @@ from dl_framework.model import (
     GeneralELU,
     conv_phase,
     conv_amp,
-    reshape
+    reshape,
+    vaild_gauss_bs,
+    euler,
 )
 from functools import partial
 from math import pi
 
+
 def test():
-    arch = nn.Sequential(
-	Lambda(flatten),
-	nn.Linear(7938,7938),
-	Lambda(reshape)
-    )
+    arch = nn.Sequential(Lambda(flatten), nn.Linear(7938, 7938), Lambda(reshape))
     return arch
+
 
 def cnn():
     """
@@ -59,7 +59,10 @@ def small():
                 kerner size, stride, padding
     """
     arch = nn.Sequential(
-        Lambda(flatten), Lambda(fft), Lambda(flatten), nn.Linear(8192, 4096),
+        Lambda(flatten),
+        Lambda(fft),
+        Lambda(flatten),
+        nn.Linear(8192, 4096),
     )
     return arch
 
@@ -182,11 +185,21 @@ class UNet_fft(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.dconv_down1 = nn.Sequential(*double_conv(2, 4, (3, 3), 1, 1),)
-        self.dconv_down2 = nn.Sequential(*double_conv(4, 8, (3, 3), 1, 1),)
-        self.dconv_down3 = nn.Sequential(*double_conv(8, 16, (3, 3), 1, 1),)
-        self.dconv_down4 = nn.Sequential(*double_conv(16, 32, (3, 3), 1, 1),)
-        self.dconv_down5 = nn.Sequential(*double_conv(32, 64, (3, 3), 1, 1),)
+        self.dconv_down1 = nn.Sequential(
+            *double_conv(2, 4, (3, 3), 1, 1),
+        )
+        self.dconv_down2 = nn.Sequential(
+            *double_conv(4, 8, (3, 3), 1, 1),
+        )
+        self.dconv_down3 = nn.Sequential(
+            *double_conv(8, 16, (3, 3), 1, 1),
+        )
+        self.dconv_down4 = nn.Sequential(
+            *double_conv(16, 32, (3, 3), 1, 1),
+        )
+        self.dconv_down5 = nn.Sequential(
+            *double_conv(32, 64, (3, 3), 1, 1),
+        )
 
         self.maxpool = nn.MaxPool2d(2)
         self.upsample1 = nn.Upsample(size=7, mode="bilinear", align_corners=True)
@@ -194,10 +207,18 @@ class UNet_fft(nn.Module):
         self.upsample3 = nn.Upsample(size=31, mode="bilinear", align_corners=True)
         self.upsample4 = nn.Upsample(size=63, mode="bilinear", align_corners=True)
 
-        self.dconv_up4 = nn.Sequential(*double_conv(32 + 64, 32, (3, 3), 1, 1),)
-        self.dconv_up3 = nn.Sequential(*double_conv(16 + 32, 16, (3, 3), 1, 1),)
-        self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
-        self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
+        self.dconv_up4 = nn.Sequential(
+            *double_conv(32 + 64, 32, (3, 3), 1, 1),
+        )
+        self.dconv_up3 = nn.Sequential(
+            *double_conv(16 + 32, 16, (3, 3), 1, 1),
+        )
+        self.dconv_up2 = nn.Sequential(
+            *double_conv(8 + 16, 8, (3, 3), 1, 1),
+        )
+        self.dconv_up1 = nn.Sequential(
+            *double_conv(4 + 8, 4, (3, 3), 1, 1),
+        )
 
         self.conv_last = nn.Conv2d(4, 2, 1)
         self.flatten = Lambda(flatten)
@@ -241,11 +262,21 @@ class UNet_denoise(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.dconv_down1 = nn.Sequential(*double_conv(2, 4, (3, 3), 1, 1),)
-        self.dconv_down2 = nn.Sequential(*double_conv(4, 8, (3, 3), 1, 1),)
-        self.dconv_down3 = nn.Sequential(*double_conv(8, 16, (3, 3), 1, 1),)
-        self.dconv_down4 = nn.Sequential(*double_conv(16, 32, (3, 3), 1, 1),)
-        self.dconv_down5 = nn.Sequential(*double_conv(32, 64, (3, 3), 1, 1),)
+        self.dconv_down1 = nn.Sequential(
+            *double_conv(2, 4, (3, 3), 1, 1),
+        )
+        self.dconv_down2 = nn.Sequential(
+            *double_conv(4, 8, (3, 3), 1, 1),
+        )
+        self.dconv_down3 = nn.Sequential(
+            *double_conv(8, 16, (3, 3), 1, 1),
+        )
+        self.dconv_down4 = nn.Sequential(
+            *double_conv(16, 32, (3, 3), 1, 1),
+        )
+        self.dconv_down5 = nn.Sequential(
+            *double_conv(32, 64, (3, 3), 1, 1),
+        )
 
         self.maxpool = nn.MaxPool2d(2)
         self.upsample1 = nn.Upsample(size=7, mode="bilinear", align_corners=True)
@@ -253,10 +284,18 @@ class UNet_denoise(nn.Module):
         self.upsample3 = nn.Upsample(size=31, mode="bilinear", align_corners=True)
         self.upsample4 = nn.Upsample(size=63, mode="bilinear", align_corners=True)
 
-        self.dconv_up4 = nn.Sequential(*double_conv(32 + 64, 32, (3, 3), 1, 1),)
-        self.dconv_up3 = nn.Sequential(*double_conv(16 + 32, 16, (3, 3), 1, 1),)
-        self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
-        self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
+        self.dconv_up4 = nn.Sequential(
+            *double_conv(32 + 64, 32, (3, 3), 1, 1),
+        )
+        self.dconv_up3 = nn.Sequential(
+            *double_conv(16 + 32, 16, (3, 3), 1, 1),
+        )
+        self.dconv_up2 = nn.Sequential(
+            *double_conv(8 + 16, 8, (3, 3), 1, 1),
+        )
+        self.dconv_up1 = nn.Sequential(
+            *double_conv(4 + 8, 4, (3, 3), 1, 1),
+        )
 
         self.conv_last = nn.Conv2d(4, 2, 1)
         self.flatten = Lambda(flatten)
@@ -301,11 +340,21 @@ class UNet_fourier(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.dconv_down1 = nn.Sequential(*double_conv(2, 4, (3, 3), 1, 1),)
-        self.dconv_down2 = nn.Sequential(*double_conv(4, 8, (3, 3), 1, 1),)
-        self.dconv_down3 = nn.Sequential(*double_conv(8, 16, (3, 3), 1, 1),)
-        self.dconv_down4 = nn.Sequential(*double_conv(16, 32, (3, 3), 1, 1),)
-        self.dconv_down5 = nn.Sequential(*double_conv(32, 64, (3, 3), 1, 1),)
+        self.dconv_down1 = nn.Sequential(
+            *double_conv(2, 4, (3, 3), 1, 1),
+        )
+        self.dconv_down2 = nn.Sequential(
+            *double_conv(4, 8, (3, 3), 1, 1),
+        )
+        self.dconv_down3 = nn.Sequential(
+            *double_conv(8, 16, (3, 3), 1, 1),
+        )
+        self.dconv_down4 = nn.Sequential(
+            *double_conv(16, 32, (3, 3), 1, 1),
+        )
+        self.dconv_down5 = nn.Sequential(
+            *double_conv(32, 64, (3, 3), 1, 1),
+        )
 
         self.maxpool = nn.MaxPool2d(2)
         self.upsample1 = nn.Upsample(size=7, mode="bilinear", align_corners=True)
@@ -313,10 +362,18 @@ class UNet_fourier(nn.Module):
         self.upsample3 = nn.Upsample(size=31, mode="bilinear", align_corners=True)
         self.upsample4 = nn.Upsample(size=63, mode="bilinear", align_corners=True)
 
-        self.dconv_up4 = nn.Sequential(*double_conv(32 + 64, 32, (3, 3), 1, 1),)
-        self.dconv_up3 = nn.Sequential(*double_conv(16 + 32, 16, (3, 3), 1, 1),)
-        self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
-        self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
+        self.dconv_up4 = nn.Sequential(
+            *double_conv(32 + 64, 32, (3, 3), 1, 1),
+        )
+        self.dconv_up3 = nn.Sequential(
+            *double_conv(16 + 32, 16, (3, 3), 1, 1),
+        )
+        self.dconv_up2 = nn.Sequential(
+            *double_conv(8 + 16, 8, (3, 3), 1, 1),
+        )
+        self.dconv_up1 = nn.Sequential(
+            *double_conv(4 + 8, 4, (3, 3), 1, 1),
+        )
 
         self.conv_last = nn.Conv2d(4, 2, 1)
         self.linear = nn.Linear(8192, 4096)
@@ -355,17 +412,35 @@ class UNet_fourier(nn.Module):
 class UNet_denoise_64(nn.Module):
     def __init__(self):
         super().__init__()
-        self.dconv_down1 = nn.Sequential(*double_conv(2, 4, (3, 3), 1, 1),)
-        self.dconv_down2 = nn.Sequential(*double_conv(4, 8, (3, 3), 1, 1),)
-        self.dconv_down3 = nn.Sequential(*double_conv(8, 16, (3, 3), 1, 1),)
-        self.dconv_down4 = nn.Sequential(*double_conv(16, 32, (3, 3), 1, 1),)
-        self.dconv_down5 = nn.Sequential(*double_conv(32, 64, (3, 3), 1, 1),)
+        self.dconv_down1 = nn.Sequential(
+            *double_conv(2, 4, (3, 3), 1, 1),
+        )
+        self.dconv_down2 = nn.Sequential(
+            *double_conv(4, 8, (3, 3), 1, 1),
+        )
+        self.dconv_down3 = nn.Sequential(
+            *double_conv(8, 16, (3, 3), 1, 1),
+        )
+        self.dconv_down4 = nn.Sequential(
+            *double_conv(16, 32, (3, 3), 1, 1),
+        )
+        self.dconv_down5 = nn.Sequential(
+            *double_conv(32, 64, (3, 3), 1, 1),
+        )
         self.maxpool = nn.MaxPool2d(2)
         self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
-        self.dconv_up4 = nn.Sequential(*double_conv(32 + 64, 32, (3, 3), 1, 1),)
-        self.dconv_up3 = nn.Sequential(*double_conv(16 + 32, 16, (3, 3), 1, 1),)
-        self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8, (3, 3), 1, 1),)
-        self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4, (3, 3), 1, 1),)
+        self.dconv_up4 = nn.Sequential(
+            *double_conv(32 + 64, 32, (3, 3), 1, 1),
+        )
+        self.dconv_up3 = nn.Sequential(
+            *double_conv(16 + 32, 16, (3, 3), 1, 1),
+        )
+        self.dconv_up2 = nn.Sequential(
+            *double_conv(8 + 16, 8, (3, 3), 1, 1),
+        )
+        self.dconv_up1 = nn.Sequential(
+            *double_conv(4 + 8, 4, (3, 3), 1, 1),
+        )
         self.conv_last = nn.Conv2d(4, 2, 1)
         self.flatten = Lambda(flatten)
         self.linear = nn.Linear(8192, 4096)
@@ -615,7 +690,7 @@ class filter(nn.Module):
         x[:, 0][inp[:, 0] != 0] = inp[:, 0][inp[:, 0] != 0]
         #  x[:, 0][inp[:, 0] == 0] += 1
         x0 = self.symmetry(x[:, 0]).reshape(-1, 1, 63, 63)
-        x[:, 1][inp[:, 0] == 0] += (1e-5 + 1)
+        x[:, 1][inp[:, 0] == 0] += 1e-5 + 1
         x[:, 1][inp[:, 0] != 0] = 1e-8
         x = self.elu(x)
         x1 = self.symmetry(x[:, 1]).reshape(-1, 1, 63, 63)
@@ -623,26 +698,184 @@ class filter(nn.Module):
         return out
 
 
+class filter_deep_amp(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        self.conv1_amp = nn.Sequential(*conv_amp(1, 4, (23, 23), 1, 11, 1))
+        self.conv2_amp = nn.Sequential(*conv_amp(4, 8, (21, 21), 1, 10, 1))
+        self.conv3_amp = nn.Sequential(*conv_amp(8, 12, (17, 17), 1, 8, 1))
+        self.conv_con1_amp = nn.Sequential(
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+        )
+
+        self.conv4_amp = nn.Sequential(*conv_amp(1, 4, (5, 5), 1, 4, 2))
+        self.conv5_amp = nn.Sequential(*conv_amp(4, 8, (5, 5), 1, 2, 1))
+        self.conv6_amp = nn.Sequential(*conv_amp(8, 12, (3, 3), 1, 2, 2))
+        self.conv7_amp = nn.Sequential(*conv_amp(12, 16, (3, 3), 1, 1, 1))
+        self.conv_con2_amp = nn.Sequential(
+            LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+        )
+
+        self.conv8_amp = nn.Sequential(*conv_amp(1, 4, (3, 3), 1, 1, 1))
+        self.conv9_amp = nn.Sequential(*conv_amp(4, 8, (3, 3), 1, 1, 1))
+        self.conv10_amp = nn.Sequential(*conv_amp(8, 12, (3, 3), 1, 2, 2))
+        self.conv_con3_amp = nn.Sequential(
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            nn.ReLU(),
+        )
+        self.symmetry_real = Lambda(symmetry)
+
+    def forward(self, x):
+        inp = x.clone()
+        amp = x[:, 0, :].unsqueeze(1)
+
+        # First block
+        amp = self.conv1_amp(amp)
+
+        amp = self.conv2_amp(amp)
+
+        amp = self.conv3_amp(amp)
+
+        amp = self.conv_con1_amp(amp)
+
+        # Second block
+        amp = self.conv4_amp(amp)
+
+        amp = self.conv5_amp(amp)
+
+        amp = self.conv6_amp(amp)
+
+        amp = self.conv7_amp(amp)
+
+        amp = self.conv_con2_amp(amp)
+
+        # Third block
+        amp = self.conv8_amp(amp)
+
+        amp = self.conv9_amp(amp)
+
+        amp = self.conv10_amp(amp)
+
+        amp = self.conv_con3_amp(amp)
+
+        inp_amp = inp[:, 0].unsqueeze(1)
+        x0 = self.symmetry_real(amp).reshape(-1, 1, amp.shape[2], amp.shape[2])
+        x0[inp_amp != 0] = inp_amp[inp_amp != 0]
+
+        return x0
+
+
+class filter_deep_phase(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        self.conv1_phase = nn.Sequential(
+            *conv_phase(1, 4, (23, 23), 1, 11, 1, add=-2.1415)
+        )
+        self.conv2_phase = nn.Sequential(
+            *conv_phase(4, 8, (21, 21), 1, 10, 1, add=-2.1415)
+        )
+        self.conv3_phase = nn.Sequential(
+            *conv_phase(8, 12, (17, 17), 1, 8, 1, add=-2.1415)
+        )
+        self.conv_con1_phase = nn.Sequential(
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(-2.1415),
+        )
+
+        self.conv4_phase = nn.Sequential(
+            *conv_phase(1, 4, (5, 5), 1, 3, 2, add=-2.1415)
+        )
+        self.conv5_phase = nn.Sequential(
+            *conv_phase(4, 8, (5, 5), 1, 2, 1, add=-2.1415)
+        )
+        self.conv6_phase = nn.Sequential(
+            *conv_phase(8, 12, (3, 3), 1, 3, 2, add=-2.1415)
+        )
+        self.conv7_phase = nn.Sequential(
+            *conv_phase(12, 16, (3, 3), 1, 1, 1, add=-2.1415)
+        )
+        self.conv_con2_phase = nn.Sequential(
+            LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(-2.1415),
+        )
+
+        self.conv8_phase = nn.Sequential(
+            *conv_phase(1, 4, (3, 3), 1, 1, 1, add=-2.1415)
+        )
+        self.conv9_phase = nn.Sequential(
+            *conv_phase(4, 8, (3, 3), 1, 1, 1, add=-2.1415)
+        )
+        self.conv10_phase = nn.Sequential(
+            *conv_phase(8, 12, (3, 3), 1, 2, 2, add=-2.1415)
+        )
+        self.conv_con3_phase = nn.Sequential(
+            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
+            nn.BatchNorm2d(1),
+            GeneralELU(-2.1415),
+        )
+        self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
+
+    def forward(self, x):
+        inp = x.clone()
+        phase = x[:, 1, :].unsqueeze(1)
+
+        # First block
+        phase = self.conv1_phase(phase)
+
+        phase = self.conv2_phase(phase)
+
+        phase = self.conv3_phase(phase)
+
+        phase = self.conv_con1_phase(phase)
+
+        # Second block
+        phase = self.conv4_phase(phase)
+
+        phase = self.conv5_phase(phase)
+
+        phase = self.conv6_phase(phase)
+
+        phase = self.conv7_phase(phase)
+
+        phase = self.conv_con2_phase(phase)
+
+        # Third block
+        phase = self.conv8_phase(phase)
+
+        phase = self.conv9_phase(phase)
+
+        phase = self.conv10_phase(phase)
+
+        phase = self.conv_con3_phase(phase)
+
+        inp_phase = inp[:, 1].unsqueeze(1)
+
+        x1 = self.symmetry_imag(phase).reshape(-1, 1, phase.shape[2], phase.shape[2])
+        x1[inp_phase != 0] = inp_phase[inp_phase != 0]
+        return x1
+
+
 class filter_deep(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        self.conv1_amp = nn.Sequential(
-            *conv_amp(1, 4, (23, 23), 1, 11, 1)
-        )
+        self.conv1_amp = nn.Sequential(*conv_amp(1, 4, (23, 23), 1, 11, 1))
         self.conv1_phase = nn.Sequential(
-            *conv_phase(1, 4, (23, 23), 1, 11, 1, add=1-pi)
+            *conv_phase(1, 4, (23, 23), 1, 11, 1, add=1 - pi)
         )
-        self.conv2_amp = nn.Sequential(
-             *conv_amp(4, 8, (21, 21), 1, 10, 1)
-        )
+        self.conv2_amp = nn.Sequential(*conv_amp(4, 8, (21, 21), 1, 10, 1))
         self.conv2_phase = nn.Sequential(
-             *conv_phase(4, 8, (21, 21), 1, 10, 1, add=1-pi)
+            *conv_phase(4, 8, (21, 21), 1, 10, 1, add=1 - pi)
         )
-        self.conv3_amp = nn.Sequential(
-             *conv_amp(8, 12, (17, 17), 1, 8, 1)
-        )
+        self.conv3_amp = nn.Sequential(*conv_amp(8, 12, (17, 17), 1, 8, 1))
         self.conv3_phase = nn.Sequential(
-             *conv_phase(8, 12, (17, 17), 1, 8, 1, add=1-pi)
+            *conv_phase(8, 12, (17, 17), 1, 8, 1, add=1 - pi)
         )
         self.conv_con1_amp = nn.Sequential(
             LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
@@ -652,32 +885,20 @@ class filter_deep(nn.Module):
         self.conv_con1_phase = nn.Sequential(
             LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            GeneralELU(1-pi),
+            GeneralELU(1 - pi),
         )
 
-        self.conv4_amp = nn.Sequential(
-             *conv_amp(1, 4, (5, 5), 1, 4, 2)
-        )
-        self.conv4_phase = nn.Sequential(
-             *conv_phase(1, 4, (5, 5), 1, 4, 2, add=1-pi)
-        )
-        self.conv5_amp = nn.Sequential(
-             *conv_amp(4, 8, (5, 5), 1, 2, 1)
-        )
-        self.conv5_phase = nn.Sequential(
-             *conv_phase(4, 8, (5, 5), 1, 2, 1, add=1-pi)
-        )
-        self.conv6_amp = nn.Sequential(
-             *conv_amp(8, 12, (3, 3), 1, 2, 2)
-        )
+        self.conv4_amp = nn.Sequential(*conv_amp(1, 4, (5, 5), 1, 3, 2))
+        self.conv4_phase = nn.Sequential(*conv_phase(1, 4, (5, 5), 1, 3, 2, add=1 - pi))
+        self.conv5_amp = nn.Sequential(*conv_amp(4, 8, (5, 5), 1, 2, 1))
+        self.conv5_phase = nn.Sequential(*conv_phase(4, 8, (5, 5), 1, 2, 1, add=1 - pi))
+        self.conv6_amp = nn.Sequential(*conv_amp(8, 12, (3, 3), 1, 3, 2))
         self.conv6_phase = nn.Sequential(
-             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
+            *conv_phase(8, 12, (3, 3), 1, 3, 2, add=1 - pi)
         )
-        self.conv7_amp = nn.Sequential(
-             *conv_amp(12, 16, (3, 3), 1, 1, 1)
-        )
+        self.conv7_amp = nn.Sequential(*conv_amp(12, 16, (3, 3), 1, 1, 1))
         self.conv7_phase = nn.Sequential(
-             *conv_phase(12, 16, (3, 3), 1, 1, 1, add=1-pi)
+            *conv_phase(12, 16, (3, 3), 1, 1, 1, add=1 - pi)
         )
         self.conv_con2_amp = nn.Sequential(
             LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
@@ -687,32 +908,20 @@ class filter_deep(nn.Module):
         self.conv_con2_phase = nn.Sequential(
             LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            GeneralELU(1-pi),
+            GeneralELU(1 - pi),
         )
 
-        self.conv8_amp = nn.Sequential(
-             *conv_amp(1, 4, (3, 3), 1, 1, 1)
-        )
-        self.conv8_phase = nn.Sequential(
-             *conv_phase(1, 4, (3, 3), 1, 1, 1, add=1-pi)
-        )
-        self.conv9_amp = nn.Sequential(
-             *conv_amp(4, 8, (3, 3), 1, 1, 1)
-        )
-        self.conv9_phase = nn.Sequential(
-             *conv_phase(4, 8, (3, 3), 1, 1, 1, add=1-pi)
-        )
-        self.conv10_amp = nn.Sequential(
-             *conv_amp(8, 12, (3, 3), 1, 2, 2)
-        )
+        self.conv8_amp = nn.Sequential(*conv_amp(1, 4, (3, 3), 1, 1, 1))
+        self.conv8_phase = nn.Sequential(*conv_phase(1, 4, (3, 3), 1, 1, 1, add=1 - pi))
+        self.conv9_amp = nn.Sequential(*conv_amp(4, 8, (3, 3), 1, 1, 1))
+        self.conv9_phase = nn.Sequential(*conv_phase(4, 8, (3, 3), 1, 1, 1, add=1 - pi))
+        self.conv10_amp = nn.Sequential(*conv_amp(8, 12, (3, 3), 1, 2, 2))
         self.conv10_phase = nn.Sequential(
-             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
+            *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1 - pi)
         )
-        self.conv11_amp = nn.Sequential(
-             *conv_amp(12, 20, (3, 3), 1, 1, 1)
-        )
+        self.conv11_amp = nn.Sequential(*conv_amp(12, 20, (3, 3), 1, 1, 1))
         self.conv11_phase = nn.Sequential(
-             *conv_phase(12, 20, (3, 3), 1, 1, 1, add=1-pi)
+            *conv_phase(12, 20, (3, 3), 1, 1, 1, add=1 - pi)
         )
         self.conv_con3_amp = nn.Sequential(
             LocallyConnected2d(20, 1, img_size, 1, stride=1, bias=False),
@@ -722,10 +931,17 @@ class filter_deep(nn.Module):
         self.conv_con3_phase = nn.Sequential(
             LocallyConnected2d(20, 1, img_size, 1, stride=1, bias=False),
             nn.BatchNorm2d(1),
-            GeneralELU(1-pi),
+            GeneralELU(1 - pi),
         )
         self.symmetry_real = Lambda(symmetry)
-        self.symmetry_imag = Lambda(partial(symmetry, mode='imag'))
+        self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
+        self.flatten = Lambda(flatten)
+        self.fully_connected = nn.Linear(3969, 54)
+        self.vaild_gauss_bs = Lambda(vaild_gauss_bs)
+        self.Relu = nn.ReLU()
+        self.fft = Lambda(fft)
+        self.euler = Lambda(euler)
+        self.shape = Lambda(shape)
 
     def forward(self, x):
         inp = x.clone()
@@ -781,194 +997,23 @@ class filter_deep(nn.Module):
         inp_amp = inp[:, 0].unsqueeze(1)
         inp_phase = inp[:, 1].unsqueeze(1)
         # phase = phase + inp[:, 1].unsqueeze(1)
-        x0 = self.symmetry_real(amp).reshape(-1, 1, amp.shape[2], amp.shape[2])
+        x0 = self.symmetry_real(amp).reshape(-1, 1, amp.shape[2], amp.shape[2])  # amp
         x0[inp_amp != 0] = inp_amp[inp_amp != 0]
+        x0 = torch.exp(10 * x0 - 10) - 1e-10
 
-        x1 = self.symmetry_imag(phase).reshape(-1, 1, phase.shape[2], phase.shape[2])
+        x1 = self.symmetry_imag(phase).reshape(
+            -1, 1, phase.shape[2], phase.shape[2]
+        )  # phase
         x1[inp_phase != 0] = inp_phase[inp_phase != 0]
+
         comb = torch.cat([x0, x1], dim=1)
+        comb = self.flatten(comb)
+        comb = self.euler(comb)
+        comb = self.flatten(comb)
+        comb = self.fft(comb)
+        comb = self.flatten(comb)
+        comb = torch.sqrt(comb[:, 0:3969] ** 2 + comb[:, 3969:] ** 2)
+        comb = self.fully_connected(comb)
+        comb = self.vaild_gauss_bs(comb).reshape(-1, 3969)
+        # comb = self.Relu(comb)
         return comb
-
-
-class filter_deep_amp(nn.Module):
-    def __init__(self, img_size):
-        super().__init__()
-        self.conv1_amp = nn.Sequential(
-            *conv_amp(1, 4, (23, 23), 1, 11, 1)
-        )
-        self.conv2_amp = nn.Sequential(
-             *conv_amp(4, 8, (21, 21), 1, 10, 1)
-        )
-        self.conv3_amp = nn.Sequential(
-             *conv_amp(8, 12, (17, 17), 1, 8, 1)
-        )
-        self.conv_con1_amp = nn.Sequential(
-            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
-            nn.BatchNorm2d(1),
-            nn.ReLU(),
-        )
-
-        self.conv4_amp = nn.Sequential(
-             *conv_amp(1, 4, (5, 5), 1, 4, 2)
-        )
-        self.conv5_amp = nn.Sequential(
-             *conv_amp(4, 8, (5, 5), 1, 2, 1)
-        )
-        self.conv6_amp = nn.Sequential(
-             *conv_amp(8, 12, (3, 3), 1, 2, 2)
-        )
-        self.conv7_amp = nn.Sequential(
-             *conv_amp(12, 16, (3, 3), 1, 1, 1)
-        )
-        self.conv_con2_amp = nn.Sequential(
-            LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
-            nn.BatchNorm2d(1),
-            nn.ReLU(),
-        )
-
-        self.conv8_amp = nn.Sequential(
-             *conv_amp(1, 4, (3, 3), 1, 1, 1)
-        )
-        self.conv9_amp = nn.Sequential(
-             *conv_amp(4, 8, (3, 3), 1, 1, 1)
-        )
-        self.conv10_amp = nn.Sequential(
-             *conv_amp(8, 12, (3, 3), 1, 2, 2)
-        )
-        self.conv_con3_amp = nn.Sequential(
-            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
-            nn.BatchNorm2d(1),
-            nn.ReLU(),
-        )
-        self.symmetry_real = Lambda(symmetry)
-
-    def forward(self, x):
-        inp = x.clone()
-        amp = x[:, 0, :].unsqueeze(1)
-
-        # First block
-        amp = self.conv1_amp(amp)
-
-        amp = self.conv2_amp(amp)
-
-        amp = self.conv3_amp(amp)
-
-        amp = self.conv_con1_amp(amp)
-
-        # Second block
-        amp = self.conv4_amp(amp)
-
-        amp = self.conv5_amp(amp)
-
-        amp = self.conv6_amp(amp)
-
-        amp = self.conv7_amp(amp)
-
-        amp = self.conv_con2_amp(amp)
-
-        # Third block
-        amp = self.conv8_amp(amp)
-
-        amp = self.conv9_amp(amp)
-
-        amp = self.conv10_amp(amp)
-
-        amp = self.conv_con3_amp(amp)
-
-        inp_amp = inp[:, 0].unsqueeze(1)
-        x0 = self.symmetry_real(amp).reshape(-1, 1, amp.shape[2], amp.shape[2])
-        x0[inp_amp != 0] = inp_amp[inp_amp != 0]
-
-        return x0
-
-
-class filter_deep_phase(nn.Module):
-    def __init__(self, img_size):
-        super().__init__()
-        self.conv1_phase = nn.Sequential(
-            *conv_phase(1, 4, (23, 23), 1, 11, 1, add=1-pi)
-        )
-        self.conv2_phase = nn.Sequential(
-             *conv_phase(4, 8, (21, 21), 1, 10, 1, add=1-pi)
-        )
-        self.conv3_phase = nn.Sequential(
-             *conv_phase(8, 12, (17, 17), 1, 8, 1, add=1-pi)
-        )
-        self.conv_con1_phase = nn.Sequential(
-            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
-            nn.BatchNorm2d(1),
-            GeneralELU(1-pi),
-        )
-
-        self.conv4_phase = nn.Sequential(
-             *conv_phase(1, 4, (5, 5), 1, 4, 2, add=1-pi)
-        )
-        self.conv5_phase = nn.Sequential(
-             *conv_phase(4, 8, (5, 5), 1, 2, 1, add=1-pi)
-        )
-        self.conv6_phase = nn.Sequential(
-             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
-        )
-        self.conv7_phase = nn.Sequential(
-             *conv_phase(12, 16, (3, 3), 1, 1, 1, add=1-pi)
-        )
-        self.conv_con2_phase = nn.Sequential(
-            LocallyConnected2d(16, 1, img_size, 1, stride=1, bias=False),
-            nn.BatchNorm2d(1),
-            GeneralELU(1-pi),
-        )
-
-        self.conv8_phase = nn.Sequential(
-             *conv_phase(1, 4, (3, 3), 1, 1, 1, add=1-pi)
-        )
-        self.conv9_phase = nn.Sequential(
-             *conv_phase(4, 8, (3, 3), 1, 1, 1, add=1-pi)
-        )
-        self.conv10_phase = nn.Sequential(
-             *conv_phase(8, 12, (3, 3), 1, 2, 2, add=1-pi)
-        )
-        self.conv_con3_phase = nn.Sequential(
-            LocallyConnected2d(12, 1, img_size, 1, stride=1, bias=False),
-            nn.BatchNorm2d(1),
-            GeneralELU(1-pi),
-        )
-        self.symmetry_imag = Lambda(partial(symmetry, mode='imag'))
-
-    def forward(self, x):
-        inp = x.clone()
-        phase = x[:, 1, :].unsqueeze(1)
-
-        # First block
-        phase = self.conv1_phase(phase)
-
-        phase = self.conv2_phase(phase)
-
-        phase = self.conv3_phase(phase)
-
-        phase = self.conv_con1_phase(phase)
-
-        # Second block
-        phase = self.conv4_phase(phase)
-
-        phase = self.conv5_phase(phase)
-
-        phase = self.conv6_phase(phase)
-
-        phase = self.conv7_phase(phase)
-
-        phase = self.conv_con2_phase(phase)
-
-        # Third block
-        phase = self.conv8_phase(phase)
-
-        phase = self.conv9_phase(phase)
-
-        phase = self.conv10_phase(phase)
-
-        phase = self.conv_con3_phase(phase)
-
-        inp_phase = inp[:, 1].unsqueeze(1)
-
-        x1 = self.symmetry_imag(phase).reshape(-1, 1, phase.shape[2], phase.shape[2])
-        x1[inp_phase != 0] = inp_phase[inp_phase != 0]
-        return x1
