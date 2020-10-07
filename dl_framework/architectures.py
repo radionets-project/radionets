@@ -801,7 +801,8 @@ class filter_deep(nn.Module):
         self.symmetry_real = Lambda(symmetry)
         self.symmetry_imag = Lambda(partial(symmetry, mode='imag'))
         self.flatten = Lambda(flatten)
-        self.fully_connected = nn.Linear(3969, 54)
+        #self.fully_connected = nn.Linear(3969, 54)
+        self.fully_connected = nn.Linear(7938, 54)
         self.vaild_gauss_bs = Lambda(vaild_gauss_bs)
         self.Relu = nn.ReLU()
         self.fft = Lambda(fft)
@@ -864,18 +865,18 @@ class filter_deep(nn.Module):
         # phase = phase + inp[:, 1].unsqueeze(1)
         x0 = self.symmetry_real(amp).reshape(-1, 1, amp.shape[2], amp.shape[2]) #amp
         x0[inp_amp != 0] = inp_amp[inp_amp != 0]
-        x0 = torch.exp(10* x0 -10) - 1e-10 
+        #x0 = torch.exp(10* x0 -10) - 1e-10 
 
         x1 = self.symmetry_imag(phase).reshape(-1, 1, phase.shape[2], phase.shape[2]) #phase
         x1[inp_phase != 0] = inp_phase[inp_phase != 0]
 
         comb = torch.cat([x0, x1], dim=1)
         comb = self.flatten(comb)
-        comb = self.euler(comb)
-        comb = self.flatten(comb)
-        comb = self.fft(comb)
-        comb = self.flatten(comb)
-        comb = torch.sqrt(comb[:, 0:3969]**2 + comb[:, 3969:]**2)
+        #comb = self.euler(comb)
+        #comb = self.flatten(comb)
+        #comb = self.fft(comb)
+        #comb = self.flatten(comb)
+        #comb = torch.sqrt(comb[:, 0:3969]**2 + comb[:, 3969:]**2)
         comb = self.fully_connected(comb)
         comb = self.vaild_gauss_bs(comb).reshape(-1, 3969)
         #comb = self.Relu(comb)

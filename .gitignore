@@ -42,3 +42,5 @@ mnist_cnn/old
 .coverage
 
 dist/
+
+gaussian_sources/models/
