@@ -70,7 +70,7 @@ class h5_dataset:
     def __getitem__(self, i):
         if self.source_list:
             x = self.open_image("x", i)
-            z = self.open_image("z", i)
+            y = self.open_image("z", i)
         else:
             x = self.open_image("x", i)
             y = self.open_image("y", i)
