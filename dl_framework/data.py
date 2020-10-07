@@ -48,7 +48,7 @@ class Dataset:
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier, amp_phase=None):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False):
         """
         Save the bundle paths and the number of bundles in one file.
         """
@@ -56,6 +56,7 @@ class h5_dataset:
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
         self.tar_fourier = tar_fourier
         self.amp_phase = amp_phase
+        self.source_list = source_list
 
     def __call__(self):
         return print("This is the h5_dataset class.")
@@ -67,8 +68,12 @@ class h5_dataset:
         return len(self.bundles) * self.num_img
 
     def __getitem__(self, i):
-        x = self.open_image("x", i)
-        y = self.open_image("y", i)
+        if self.source_list:
+            x = self.open_image("x", i)
+            z = self.open_image("z", i)
+        else:
+            x = self.open_image("x", i)
+            y = self.open_image("y", i)
         return x, y
 
     def open_bundle(self, bundle_path, var):
@@ -116,12 +121,15 @@ class h5_dataset:
 
                 data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
-            if data.shape[1] == 2:
-                raise ValueError("Two channeled data is used despite Fourier being False. Set Fourier to True!")
-            if len(i) == 1:
-                data_channel = data.reshape(data.shape[-1] ** 2)
+            if self.source_list:
+                data_channel = data
             else:
-                data_channel = data.reshape(-1, data.shape[-1] ** 2)
+                if data.shape[1] == 2:
+                    raise ValueError("Two channeled data is used despite Fourier being False. Set Fourier to True!")
+                if len(i) == 1:
+                    data_channel = data.reshape(data.shape[-1] ** 2)
+                else:
+                    data_channel = data.reshape(-1, data.shape[-1] ** 2)
         return data_channel.float()
 
 
