@@ -10,19 +10,27 @@ def normalize(x, m, s):
     return (x - m) / s
 
 
-def do_normalisation(x, norm):
+def do_normalisation(x, norm, pointsource=False):
     """
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
     if len(x.shape) == 3:
         x = x.unsqueeze(0)
-    train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
-    train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
-    train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
-    train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).double()
-    x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
-    x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
+    if norm == "none":
+        return x
+    # if pointsource is True:
+    #     train_mean = torch.tensor(norm['train_mean'].values[0]).float()
+    #     train_std = torch.tensor(norm['train_std'].values[0]).float()
+    #     x = normalize(x, train_mean, train_std)
+    else:
+        train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
+        train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
+        train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
+        train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).double()
+        x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
+        x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
+
     assert not torch.isinf(x).any()
     return x
 
@@ -40,7 +48,7 @@ class Dataset:
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier, amp_phase=None):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False):
         """
         Save the bundle paths and the number of bundles in one file.
         """
@@ -48,6 +56,7 @@ class h5_dataset:
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
         self.tar_fourier = tar_fourier
         self.amp_phase = amp_phase
+        self.source_list = source_list
 
     def __call__(self):
         return print("This is the h5_dataset class.")
@@ -59,8 +68,12 @@ class h5_dataset:
         return len(self.bundles) * self.num_img
 
     def __getitem__(self, i):
-        x = self.open_image("x", i)
-        y = self.open_image("y", i)
+        if self.source_list:
+            x = self.open_image("x", i)
+            z = self.open_image("z", i)
+        else:
+            x = self.open_image("x", i)
+            y = self.open_image("y", i)
         return x, y
 
     def open_bundle(self, bundle_path, var):
@@ -108,10 +121,15 @@ class h5_dataset:
 
                 data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
-            if len(i) == 1:
-                data_channel = data.reshape(data.shape[-1] ** 2)
+            if self.source_list:
+                data_channel = data
             else:
-                data_channel = data.reshape(-1, data.shape[-1] ** 2)
+                if data.shape[1] == 2:
+                    raise ValueError("Two channeled data is used despite Fourier being False. Set Fourier to True!")
+                if len(i) == 1:
+                    data_channel = data.reshape(data.shape[-1] ** 2)
+                else:
+                    data_channel = data.reshape(-1, data.shape[-1] ** 2)
         return data_channel.float()
 
 
@@ -175,6 +193,16 @@ def open_bundle(path):
     return bundle
 
 
+def open_fft_bundle(path):
+    """
+    open radio galaxy bundles created in first analysis step
+    """
+    f = h5py.File(path, "r")
+    x = np.array(f["x"])
+    y = np.array(f["y"])
+    return x, y
+
+
 def get_bundles(path):
     """
     returns list of bundle paths located in a directory
@@ -183,7 +211,6 @@ def get_bundles(path):
     bundles = np.array([x for x in data_path.iterdir()])
     return bundles
 
-
 def save_fft_pair(path, x, y, name_x="x", name_y="y"):
     """
     write fft_pairs created in second analysis step to h5 file
@@ -191,6 +218,20 @@ def save_fft_pair(path, x, y, name_x="x", name_y="y"):
     with h5py.File(path, "w") as hf:
         hf.create_dataset(name_x, data=x)
         hf.create_dataset(name_y, data=y)
+        hf.close()
+
+def save_fft_pair_list(path, x, y, z, name_x="x", name_y="y", name_z="z"):
+    """
+    write fft_pairs created in second analysis step to h5 file with source
+    list.
+    """
+    with h5py.File(path, "w") as hf:
+        hf.create_dataset(name_x, data=x)
+        hf.create_dataset(name_y, data=y)
+        try:
+            hf.create_dataset(name_z, data=z)
+        except TypeError:
+            pass
         hf.close()
 
 
@@ -237,14 +278,6 @@ def load_data(data_path, mode, fourier=False):
         dataset containing x and y images
     """
     bundle_paths = get_bundles(data_path)
-    data = [path for path in bundle_paths if re.findall("fft_samp_" + mode, path.name)]
-    # this is necessary for the reason of different names for data files in mnist
-    # and gaussian sources
-    if data == []:
-        data = [
-            path
-            for path in bundle_paths
-            if re.findall("fft_bundle_samp_" + mode, path.name)
-        ]
+    data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
     ds = h5_dataset(data, tar_fourier=fourier)
     return ds

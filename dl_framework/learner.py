@@ -1,5 +1,5 @@
 from dl_framework.utils import listify, param_getter
-from dl_framework.callbacks import TrainEvalCallback
+from dl_framework.callbacks import TrainEvalCallback, normalize_tfm
 import torch
 from dl_framework.optimizer import sgd_opt
 import torch.nn as nn
@@ -7,7 +7,17 @@ from dl_framework.model import init_cnn
 from tqdm import tqdm
 import sys
 from functools import partial
-from dl_framework.loss_functions import init_feature_loss, loss_amp, loss_phase
+from dl_framework.loss_functions import (
+    init_feature_loss,
+    splitted_mse,
+    loss_amp,
+    loss_phase,
+    loss_msssim,
+    loss_mse_msssim,
+    loss_mse_msssim_phase,
+    loss_mse_msssim_amp,
+    loss_msssim_amp,
+)
 from dl_framework.callbacks import (
     AvgStatsCallback,
     BatchTransformXCallback,
@@ -174,22 +184,22 @@ def get_learner(
 def define_learner(
     data,
     arch,
-    norm,
-    loss_func,
+    train_conf,
+    # max_iter=400,
+    # max_lr=1e-1,
+    # min_lr=1e-6,
     cbfs=[],
-    lr=1e-3,
-    model_name='',
-    model_path='',
-    max_iter=400,
-    max_lr=1e-1,
-    min_lr=1e-6,
     test=False,
     lr_find=False,
-    opt_func=torch.optim.Adam,
+    # opt_func=torch.optim.Adam,
 ):
-    cbfs.extend([
-        # partial(BatchTransformXCallback, norm),
-    ])
+    model_path = train_conf["model_path"]
+    model_name = model_path.split("models/")[-1].split("/")[0]
+    lr = train_conf["lr"]
+    if train_conf["norm_path"] != "none":
+        cbfs.extend([
+            partial(BatchTransformXCallback, normalize_tfm(train_conf["norm_path"])),
+        ])
     if not test:
         cbfs.extend([
             CudaCallback,
@@ -200,24 +210,40 @@ def define_learner(
             partial(AvgStatsCallback, metrics=[nn.MSELoss(), nn.L1Loss()]),
             partial(SaveCallback, model_path=model_path),
         ])
-    # if not test and not lr_find:
-    #     cbfs.extend([
-    #         partial(LoggerCallback, model_name=model_name), 
-    #         data_aug,
-    #     ])
+    if not test and not lr_find:
+        cbfs.extend([
+            # data_aug,
+        ])
+    if train_conf["telegram_logger"]:
+        cbfs.extend([
+            partial(LoggerCallback, model_name=model_name),
+        ])
 
+    loss_func = train_conf["loss_func"]
     if loss_func == "feature_loss":
         loss_func = init_feature_loss()
     elif loss_func == "l1":
         loss_func = nn.L1Loss()
     elif loss_func == "mse":
         loss_func = nn.MSELoss()
+    elif loss_func == "splitted_mse":
+        loss_func = splitted_mse
     elif loss_func == "loss_amp":
         loss_func = loss_amp
     elif loss_func == "loss_phase":
         loss_func = loss_phase
+    elif loss_func == "msssim":
+        loss_func = loss_msssim
+    elif loss_func == "mse_msssim":
+        loss_func = loss_mse_msssim
+    elif loss_func == "mse_msssim_phase":
+        loss_func = loss_mse_msssim_phase
+    elif loss_func == "mse_msssim_amp":
+        loss_func = loss_mse_msssim_amp
+    elif loss_func == "msssim_amp":
+        loss_func = loss_msssim_amp
     else:
-        print("\n No matching loss function! Exiting. \n")
+        print("\n No matching loss function or architecture! Exiting. \n")
         sys.exit(1)
 
     # Combine model and data in learner

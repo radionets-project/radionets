@@ -7,7 +7,7 @@ from skimage.feature import blob_log
 from math import sqrt
 import pytorch_msssim
 
-# make nice Latex friendly plots
+# # make nice Latex friendly plots
 # mpl.use("pgf")
 # mpl.rcParams.update(
 #     {
@@ -18,6 +18,8 @@ import pytorch_msssim
 #         "pgf.texsystem": "lualatex",
 #     }
 # )
+
+plot_mode = "pdf"
 
 
 def open_csv(path, mode):
@@ -180,30 +182,30 @@ def visualize_without_fourier(i, img_input, img_pred, img_truth, out_path):
     x_space = torch.arange(0, 63, 1)
 
     # plotting
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8), sharex=True, sharey=True)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharex=True, sharey=True)
 
-    im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-inp_real.max(), vmax=inp_real.max())
-    make_axes_nice(fig, ax1, im1, r"Real Input")
+    # im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-inp_real.max(), vmax=inp_real.max())
+    # make_axes_nice(fig, ax1, im1, r"Real Input")
 
-    im2 = ax2.imshow(inp_imag, cmap="RdBu", vmin=-inp_imag.max(), vmax=inp_imag.max())
-    make_axes_nice(fig, ax2, im2, r"Imaginary Input")
+    # im2 = ax2.imshow(inp_imag, cmap="RdBu", vmin=-inp_imag.max(), vmax=inp_imag.max())
+    # make_axes_nice(fig, ax2, im2, r"Imaginary Input")
 
-    ax3.plot(x_space, m_truth*x_space + n_truth, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_truth, 3)))
-    im3 = ax3.imshow(img_pred, zorder=0)
-    ax3.legend(loc="best")
-    make_axes_nice(fig, ax3, im3, r"Prediction")
+    ax1.plot(x_space, m_truth*x_space + n_truth, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_truth, 1)))
+    im1 = ax1.imshow(img_pred, zorder=0, vmax=img_truth.max())
+    ax1.legend(loc="best")
+    make_axes_nice(fig, ax1, im1, r"Prediction")
 
-    ax4.plot(x_space, m_pred*x_space + n_pred, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_pred, 3)))
-    im4 = ax4.imshow(img_truth, zorder=0)
-    ax4.legend(loc="best")
-    make_axes_nice(fig, ax4, im4, r"Truth")
+    ax2.plot(x_space, m_pred*x_space + n_pred, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_pred, 3)))
+    im2 = ax2.imshow(img_truth, zorder=0)
+    ax2.legend(loc="best")
+    make_axes_nice(fig, ax2, im2, r"Truth")
 
     ax1.set_ylabel(r"Pixel")
-    ax3.set_ylabel(r"Pixel")
-    ax3.set_xlabel(r"Pixel")
-    ax4.set_xlabel(r"Pixel")
+    # ax3.set_ylabel(r"Pixel")
+    ax1.set_xlabel(r"Pixel")
+    ax2.set_xlabel(r"Pixel")
 
-    outpath = str(out_path) + "prediction_{}.png".format(i)
+    outpath = str(out_path) + "prediction_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.clf()
 
@@ -232,31 +234,31 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
 
     a = check_vmin_vmax(inp_real)
     im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice(fig, ax1, im1, r"Real Input")
+    make_axes_nice2(fig, ax1, im1, r"Amplitude Input")
 
-    a = check_vmin_vmax(real_pred)
+    a = check_vmin_vmax(real_truth)
     im2 = ax2.imshow(
         real_pred, cmap="RdBu", vmin=-a, vmax=a
     )
-    make_axes_nice(fig, ax2, im2, r"Real Prediction")
+    make_axes_nice2(fig, ax2, im2, r"Amplitude Prediction")
 
     a = check_vmin_vmax(real_truth)
     im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice(fig, ax3, im3, r"Real Truth")
+    make_axes_nice2(fig, ax3, im3, r"Amplitude Truth")
 
     a = check_vmin_vmax(inp_imag)
     im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice(fig, ax4, im4, r"Imaginary Input")
-
-    a = check_vmin_vmax(imag_pred)
-    im5 = ax5.imshow(
-        imag_pred, cmap="RdBu", vmin=-a, vmax=a
-    )
-    make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
+    make_axes_nice2(fig, ax4, im4, r"Phase Input")
 
     a = check_vmin_vmax(imag_truth)
-    im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
+    im5 = ax5.imshow(
+        imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi
+    )
+    make_axes_nice2(fig, ax5, im5, r"Phase Prediction", True)
+
+    a = check_vmin_vmax(imag_truth)
+    im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+    make_axes_nice2(fig, ax6, im6, r"Phase Truth", True)
 
     ax1.set_ylabel(r"Pixel", fontsize=20)
     ax4.set_ylabel(r"Pixel", fontsize=20)
@@ -271,7 +273,7 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     ax6.tick_params(axis='both', labelsize=20)
     plt.tight_layout(pad=1.5)
 
-    outpath = str(out_path) + "prediction_{}.png".format(i)
+    outpath = str(out_path) + "prediction_{}.{}".format(i, plot_mode)
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     return real_pred, imag_pred, real_truth, imag_truth
 
@@ -314,7 +316,7 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
 
     ax1.plot(x_space, m_pred*x_space + n_pred, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_pred, 3)))
-    im1 = ax1.imshow(np.abs(ifft_pred))
+    im1 = ax1.imshow(np.abs(ifft_pred), vmax=np.abs(ifft_truth).max())
     ax2.plot(x_space, m_truth*x_space + n_truth, 'r-', alpha=0.5, label=r"$\alpha = {}$".format(np.round(alpha_truth, 3)))
     im2 = ax2.imshow(np.abs(ifft_truth))
 
@@ -328,12 +330,12 @@ def visualize_fft(i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, ou
     ax2.legend(loc="best")
     plt.tight_layout(pad=1.5)
 
-    outpath = str(out_path) + "fft_pred_{}.png".format(i)
+    outpath = str(out_path) + "fft_pred_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
-def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
+def plot_dr(i, img_pred, img_truth, sensitivity, out_path):
     """Create a subplot with the prediction, the truth and the difference.
     Also computes the dynamic range for the prediction and the truth. Last,
     calculates the quotient between these two values. If one RMS value in one corner of
@@ -405,18 +407,65 @@ def plot_difference(i, img_pred, img_truth, sensitivity, out_path):
     msssim = pytorch_msssim.msssim(tensor_pred, tensor_truth, normalize="None")
 
     make_axes_nice(fig, ax1, im1, r"Prediction: {}".format(np.round(dr_pred, 4)))
-    make_axes_nice(fig, ax2, im2, r"DR: {}".format(dynamic_range))
-    make_axes_nice(fig, ax3, im3, r"MS-SSIM: {}".format(msssim))
+    make_axes_nice(fig, ax2, im2, r"Truth: {}".format(np.round(dr_truth, 4)))
+    make_axes_nice(fig, ax3, im3, r"MS-SSIM: {}".format(dynamic_range))
 
     ax1.legend(loc="best")
     ax2.legend(loc="best")
-    outpath = str(out_path) + "diff/difference_{}.png".format(i)
+    outpath = str(out_path) + "dynamic_range/dr_{}.{}".format(i, plot_mode)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+
+    plt.clf()
+
+    return dynamic_range
+
+
+def plot_difference(i, img_pred, img_truth, out_path):
+    """Plot only the difference
+
+
+    Parameters
+    ----------
+    i : int
+        number of picture
+    img_pred : ndarray
+        image of prediction
+    img_truth : ndarray
+        image of truth
+    out_path : str
+        Output path as defined in makerc
+
+    Returns
+    -------
+    float
+        Quotient between the dynamic range sof truth and prediction
+    """
+    plt.clf()
+    fig = plt.figure()
+    ax = plt.gca()
+    # scale all images to the same magnitude
+    if img_truth.max() < 0.099999:
+        magnitude = int(np.round(np.abs(np.log10(img_truth.max()))))
+        img_pred = img_pred * 10 ** magnitude
+        img_truth = img_truth * 10 ** magnitude
+
+    tensor_pred = torch.tensor(np.float32(img_pred)).unsqueeze(0).unsqueeze(1)
+    tensor_truth = torch.tensor(np.float32(img_truth)).unsqueeze(0).unsqueeze(1)
+    msssim = pytorch_msssim.msssim(tensor_pred, tensor_truth, normalize="None")
+
+    im = ax.imshow(np.abs(img_pred - img_truth))
+    make_axes_nice(fig, ax, im, r"MS-SSIM: {}".format(msssim))
+
+    ax.set_xlabel(r"Pixel")
+    ax.set_ylabel(r"Pixel")
+    outpath = str(out_path) + "diff/difference_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
     plt.clf()
 
     hist_difference(i, img_pred, img_truth, out_path)
-    return dynamic_range, msssim
+
+    return msssim
 
 
 def plot_off_regions(ax, mode, img_size, num):
@@ -921,7 +970,7 @@ def blob_detection(i, img_pred, img_truth, out_path):
     blobs_log_truth[:, 2] = blobs_log_truth[:, 2] * sqrt(2)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
-    im1 = ax1.imshow(img_pred)
+    im1 = ax1.imshow(img_pred, vmax=img_truth.max())
     im2 = ax2.imshow(img_truth)
 
     plot_blobs(blobs_log, ax1)
@@ -930,12 +979,13 @@ def blob_detection(i, img_pred, img_truth, out_path):
     make_axes_nice(fig, ax1, im1, r"Prediction")
     make_axes_nice(fig, ax2, im2, r"Truth")
 
-    outpath = str(out_path) + "blob/blob_detection_{}.png".format(i)
+    outpath = str(out_path) + "blob/blob_detection_{}.{}".format(i, plot_mode)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
 
-def make_axes_nice2(fig, ax, im, title):
-    """Create nice colorbars for every axis in a subplot
+def make_axes_nice2(fig, ax, im, title, phase=False):
+    """Create nice colorbars with bigger label size for every axis in a subplot.
+    Also use ticks for the phase.
 
     Parameters
     ----------
@@ -953,12 +1003,20 @@ def make_axes_nice2(fig, ax, im, title):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title(title, fontsize=20)
-    cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+
+    if phase:
+        cbar = fig.colorbar(im, cax=cax, orientation="vertical", ticks=[-np.pi, 0, np.pi])
+    else:
+        cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+
     cbar.set_label("Intensity / a.u.", size=20)
     cbar.ax.tick_params(labelsize=20)
     cbar.ax.yaxis.get_offset_text().set_fontsize(20)
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
+    if phase:
+        # set ticks for colorbar
+        cbar.ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
 
 
 def make_axes_nice(fig, ax, im, title):

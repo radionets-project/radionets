@@ -1,9 +1,141 @@
 import numpy as np
-from scipy.ndimage import gaussian_filter
-from dl_framework.data import save_bundle
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.ndimage import gaussian_filter
+from scipy import ndimage
+from dl_framework.data import save_fft_pair, save_fft_pair_list
+from simulations.utils import adjust_outpath, add_noise
+
+
+def simulate_gaussian_sources(
+    data_path,
+    option,
+    num_bundles,
+    bundle_size,
+    img_size,
+    num_comp_ext,
+    num_pointlike,
+    num_pointsources,
+    noise,
+    source_list
+):
+    for i in tqdm(range(num_bundles)):
+        grid = create_grid(img_size, bundle_size)
+        ext_gaussian = 0
+        pointlike = 0
+        pointsource = 0
+        list_sources = 0
+
+        if num_comp_ext is not None:
+            ext_gaussian = create_ext_gauss_bundle(grid)
+        if num_pointlike is not None:
+            pointlike = create_gauss(grid[:, 0], bundle_size, num_pointlike, True, source_list)
+        if num_pointsources is not None:
+            pointsource = gauss_pointsources(grid[:, 0], bundle_size, num_pointsources)
+        if source_list:
+            list_sources = pointlike[1]
+            pointlike = pointlike[0]
+
+        bundle = ext_gaussian + pointlike + pointsource
+        images = bundle.copy()
+
+        if noise:
+            images = add_noise(images)
+
+        bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
+        path = adjust_outpath(data_path, "/fft_" + option)
+        save_fft_pair_list(path, bundle_fft, bundle, list_sources)
+
+
+
+def create_grid(pixel, bundle_size):
+    """
+    Creates a square 2d grid.
+
+    Parameters
+    ----------
+    pixel: int
+        number of pixel in x and y
+
+    Returns
+    -------
+    grid: ndarray
+        2d grid with 1e-10 pixels, X meshgrid, Y meshgrid
+    """
+    x = np.linspace(0, pixel - 1, num=pixel)
+    y = np.linspace(0, pixel - 1, num=pixel)
+    X, Y = np.meshgrid(x, y)
+    grid = np.array([np.zeros(X.shape) + 1e-10, X, Y])
+    grid = np.repeat(
+        grid[None, :, :, :],
+        bundle_size,
+        axis=0,
+    )
+    return grid
+
+
+# draw random parameters for extended gaussian sources
+
+
+def gauss_paramters():
+    """
+    Generate a random set of Gaussian parameters.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    comps: int
+        Number of components
+    amp: float
+        Amplitude of the core component
+    x: array
+        x positions of components
+    y: array
+        y positions of components
+    sig_x:
+        standard deviation in x
+    sig_y:
+        standard deviation in y
+    rot: int
+        rotation in degree
+    sides: int
+        0 for one-sided and 1 for two-sided jets
+    """
+    # random number of components between 4 and 9
+    comps = np.random.randint(4, 7)  # decrease for smaller images
+
+    # start amplitude between 10 and 1e-3
+    amp_start = (np.random.randint(0, 100) * np.random.random()) / 10
+    # if start amp is 0, draw a new number
+    while amp_start == 0:
+        amp_start = (np.random.randint(0, 100) * np.random.random()) / 10
+    # logarithmic decrease to outer components
+    amp = np.array([amp_start / np.exp(i) for i in range(comps)])
+
+    # linear distance bestween the components
+    x = np.arange(0, comps) * 5
+    y = np.zeros(comps)
+
+    # extension of components
+    # random start value between 1 - 0.375 and 1 - 0
+    # linear distance between components
+    # distances scaled by factor between 0.25 and 0.5
+    # randomnized for each sigma
+    off1 = (np.random.random() + 0.5) / 4
+    off2 = (np.random.random() + 0.5) / 4
+    fac1 = (np.random.random() + 1) / 4
+    fac2 = (np.random.random() + 1) / 4
+    sig_x = (np.arange(1, comps + 1) - off1) * fac1
+    sig_y = (np.arange(1, comps + 1) - off2) * fac2
+
+    # jet rotation
+    rot = np.random.randint(0, 360)
+    # jet one- or two-sided
+    sides = np.random.randint(0, 2)
+
+    return comps, amp, x, y, sig_x, sig_y, rot, sides
 
 
 def create_rot_mat(alpha):
@@ -61,27 +193,6 @@ def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot, center=None):
     return gauss
 
 
-def create_grid(pixel):
-    """
-    Creates a square 2d grid.
-
-    Parameters
-    ----------
-    pixel: int
-        number of pixel in x and y
-
-    Returns
-    -------
-    grid: ndarray
-        2d grid with 1e-10 pixels, X meshgrid, Y meshgrid
-    """
-    x = np.linspace(0, pixel - 1, num=pixel)
-    y = np.linspace(0, pixel - 1, num=pixel)
-    X, Y = np.meshgrid(x, y)
-    grid = np.array([np.zeros(X.shape) + 1e-10, X, Y])
-    return grid
-
-
 def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
     """
     Takes a grid and adds n Gaussian component relative to the center.
@@ -112,7 +223,15 @@ def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
     X = grid[1]
     Y = grid[2]
     gaussian = grid[0]
-    gaussian += gaussian_component(X, Y, amp, sig_x, sig_y, rot, center=cent,)
+    gaussian += gaussian_component(
+        X,
+        Y,
+        amp,
+        sig_x,
+        sig_y,
+        rot,
+        center=cent,
+    )
 
     return gaussian
 
@@ -248,20 +367,20 @@ def gauss_paramters():
 
 def gaussian_source(img_size):
     """
-    Creates grid, random Gaussian source parameters and returns an image
+    Creates random Gaussian source parameters and returns an image
     of a Gaussian source.
 
     Parameters
     ----------
-    img_size: int
-       number of pixel in x and y
+    grid: nd array
+        array holding 2d grid and axis for one image
 
     Returns
     -------
     s: 2darray
        Image containing a simulated Gaussian source.
     """
-    grid = create_grid(img_size)
+    # grid = create_grid(img_size)
     comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
     s = create_gaussian_source(
         grid, comps, amp, x, y, sig_x, sig_y, rot, sides, blur=True
@@ -269,136 +388,46 @@ def gaussian_source(img_size):
     return s
 
 
-def create_bundle(img_size, bundle_size):
+def create_ext_gauss_bundle(grid):
     """
     Creates a bundle of Gaussian sources.
 
     Parameters
     ----------
-    img_size: int
-        pixel size of the image
-    bundle_size: int
-        number of images in the bundle
+    grid: nd array
+        array holding 2d grid and axis for whole bundle
 
     Returns
     -------
     bundle ndarray
         bundle of Gaussian sources
     """
-    bundle = np.array([gaussian_source(img_size) for i in range(bundle_size)])
+    bundle = np.array([gaussian_source(g) for g in grid])
     return bundle
 
 
-def create_n_bundles(num_bundles, bundle_size, img_size, out_path):
-    """
-    Creates n bundles of Gaussian sources and saves each to hdf5 file.
-
-    Parameters
-    ----------
-    num_bundles: int
-        number of bundles to be created
-    bundle_size: int
-        number of sources in one bundle
-    img_size: int
-        pixel size of the image
-    out_path: str
-        path to save bundle
-
-    Returns
-    -------
-    None
-    """
-    for j in tqdm(range(num_bundles)):
-        bundle = create_bundle(img_size, bundle_size)
-        save_bundle(out_path, bundle, j)
+# pointlike gaussians
 
 
-def get_noise(image, scale, mean=0, std=1):
-    """
-    Calculate random noise values for all image pixels.
-
-    Parameters
-    ----------
-    image: 2darray
-        2d image
-    scale: float
-        scaling factor to increase noise
-    mean: float
-        mean of noise values
-    std: float
-        standard deviation of noise values
-
-    Returns
-    -------
-    out: ndarray
-        array with noise values in image shape
-    """
-    return np.random.normal(mean, std, size=image.shape) * scale
-
-
-def add_noise(bundle, preview=False, num=1):
-    """
-    Used for adding noise and plotting the original and noised picture,
-    if asked. Using 0.05 * max(image) as scaling factor.
-
-    Parameters
-    ----------
-    bundle: path
-        path to hdf5 bundle file
-    preview: bool
-        enable/disable showing 10 preview images
-
-    Returns
-    -------
-    bundle_noised hdf5_file
-        bundle with noised images
-    """
-    bundle_noised = np.array(
-        [img + get_noise(img, (img.max() * 0.05)) for img in bundle]
-    )
-
-    if preview:
-        for i in range(num):
-            fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True)
-
-            ax1.set_title(r"Original")
-            im1 = ax1.imshow(bundle[i])
-            divider = make_axes_locatable(ax1)
-            cax = divider.append_axes("right", size="5%", pad=0.05)
-            fig.colorbar(im1, cax=cax, orientation="vertical")
-
-            ax2.set_title(r"Noised")
-            im2 = ax2.imshow(bundle_noised[i])
-            divider = make_axes_locatable(ax2)
-            cax = divider.append_axes("right", size="5%", pad=0.05)
-            fig.colorbar(im2, cax=cax, orientation="vertical")
-            plt.show()
-
-    return bundle_noised
-
-
-def gauss(mx, my, sx, sy):
-    x = np.arange(64)[None].astype(np.float)
-    y = x.T
-    return np.exp(-((y - my) ** 2) / sy).dot(np.exp(-((x - mx) ** 2) / sx))
-
-
-def create_gauss(N, sources, spherical):
-    img = np.zeros((N, 64, 64))
-    mx = np.random.randint(1, 64, size=(N, sources))
-    my = np.random.randint(1, 64, size=(N, sources))
+def create_gauss(img, N, sources, spherical, source_list):
+    # img = [img]
+    mx = np.random.randint(1, 63, size=(N, sources))
+    my = np.random.randint(1, 63, size=(N, sources))
+    amp = (np.random.randint(0.001, 100, size=(N)) *1/10* np.random.randint(5, 10)) / 1e2
 
     if spherical:
-        sx = np.random.randint(1, 15, size=(N, sources))
+        sx = np.random.randint(1, 15, size=(N, sources)) / 10
         sy = sx
     else:
         sx = np.random.randint(1, 15, size=(N, sources))
         sy = np.random.randint(1, 15, size=(N, sources))
         theta = np.random.randint(0, 360, size=(N, sources))
-
+    
+    s = np.zeros((N,sources,5))
     for i in range(N):
         for j in range(sources):
-            g = gauss(mx[i, j], my[i, j], sx[i, j], sy[i, j])
+            g = gauss(mx[i, j], my[i, j], sx[i, j], sy[i, j], amp[i])
+            s[i,j] = np.array([mx[i,j],my[i,j],sx[i,j],sy[i,j],amp[i]])
             if spherical:
                 img[i] += g
             else:
@@ -409,17 +438,29 @@ def create_gauss(N, sources, spherical):
                 imgR = ndimage.rotate(imgP, theta[i, j], reshape=False)
                 imgC = imgR[padY[0] : -padY[1], padX[0] : -padX[1]]
                 img[i] += imgC
-    return img
+    if source_list:
+        return img, s
+    else:
+        return img
 
 
-def gauss_pointsources(num_img, sources):
-    img = np.zeros((num_img, 64, 64))
-    mx = np.random.randint(0, 64, size=(num_img, sources))
-    my = np.random.randint(0, 64, size=(num_img, sources))
-    sigma = 0.5
+# pointsources
+
+
+def gauss_pointsources(img, num_img, sources):
+    mx = np.random.randint(0, 63, size=(num_img, sources))
+    my = np.random.randint(0, 63, size=(num_img, sources))
+    amp = (np.random.randint(0, 100, size=(num_img)) * np.random.random()) / 1e2
+    sigma = 0.05
     for i in range(num_img):
         targets = np.random.randint(2, sources + 1)
         for j in range(targets):
-            g = gauss(mx[i, j], my[i, j], sigma, sigma)
-            img[i] += g + 1e-10
-    return img
+            g = gauss(mx[i, j], my[i, j], sigma, sigma, amp[i])
+            img[i] += g
+    return np.array(img)
+
+
+def gauss(mx, my, sx, sy, amp=0.01):
+    x = np.arange(63)[None].astype(np.float)
+    y = x.T
+    return amp * np.exp(-((y - my) ** 2) / sy).dot(np.exp(-((x - mx) ** 2) / sx))

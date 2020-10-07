@@ -21,7 +21,7 @@ At the moment the repository covers the following blocks:
 
 Framework used to create and train neural networks. Most of it can be found in [Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html). Check it out for more information including a nice tutorial about deep learning.
 
-## sampling
+## simulations
 
 Functions to simulate and illustrate radio interferometric observations.
 
@@ -45,6 +45,16 @@ The different steps for an example analysis are:
 2. mnist_samp: sample the Fourier space with simulated (uv)-coverages
 3. calc_normalization: calculate normalization factors to normalize train and valid dataset
 4. cnn_training: train the convolutional neural network, many options are available here
+
+## pointsources
+
+Simulation of pointsource delta peaks. Reconstruction with UNet architectures. Different functions to 
+evaluate the reconstruction results.
+
+## gauss
+
+Simulation of pointlike gauss sources. Reconstruction with UNet architectures. Different functions to 
+evaluate the reconstruction results.
 
 ## Versions used
 

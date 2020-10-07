@@ -3,10 +3,18 @@
 *.ipynb
 
 # data
-mnist_cnn/data*
-simulations/gaussian_sources
-gaussian_sources/data*
+*/data*
 *.uvf
+*.h5
+
+#test data
+*/test_data
+test_data
+simulations/data/
+
+#evaluation results
+*/results
+results/
 simulations/test_data/
 
 # cache
@@ -15,10 +23,15 @@ __pycache__/
 # model
 *.model
 
+#slurm
+*.slurm
+*.log
+
 # images
 *.jpg
 *.pdf
 *.gif
+*.png
 
 # make
 *_done
