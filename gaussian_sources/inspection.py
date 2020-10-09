@@ -1081,9 +1081,12 @@ def calc_jet_angle(image):
     psi_torch = np.arctan(vectors[1, 1] / vectors[0, 1])
     m = np.tan(np.pi / 2 - psi_torch)
     max_x, max_y = np.where(image == image.max())
+
+    # dummy solution for 64x64 pixels images, when maximum is not in center
     if (image.shape == (64, 64)) and (max_x != [32] or max_y != [32]):
         print("Calculated maximum not in the center: ", max_x, max_y)
         max_x, max_y = [32], [32]
+
     n = torch.tensor(max_y) - m * torch.tensor(max_x)
     alpha = (psi_torch) * 180 / np.pi
     return m, n, alpha
