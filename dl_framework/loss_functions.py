@@ -5,6 +5,7 @@ from torchvision.models import vgg16_bn
 from dl_framework.utils import children
 import torch.nn.functional as F
 import pytorch_msssim
+from dl_framework.regularization import inv_fft, calc_jet_angle, rot, calc_spec
 
 
 class FeatureLoss(nn.Module):
@@ -136,6 +137,70 @@ def splitted_mse(x, y):
     print(tar_real.shape)
 
     return loss_real + loss_imag
+
+
+def regularization(pred_phase, img_true):
+    real_amp_re = img_true[:, 0].reshape(-1, 63 ** 2)
+    real_phase_re = img_true[:, 1].reshape(-1, 63 ** 2)
+    pred_phase_re = pred_phase[:, 0].reshape(-1, 63 ** 2)
+
+    img_pred = inv_fft(real_amp_re, pred_phase_re)
+    img_true = inv_fft(real_amp_re, real_phase_re)
+
+    m_true, n_true, alpha_true = calc_jet_angle(img_true)
+
+    img_rot_pred = rot(img_pred, alpha_true)
+    s_pred = calc_spec(img_rot_pred)
+    img_rot_true = rot(img_true, alpha_true)
+    s_true = calc_spec(img_rot_true)
+
+    img_rot_pred_cj = rot(img_pred, alpha_true-90)
+    s_pred_cj = calc_spec(img_rot_pred_cj)
+    img_rot_true_cj = rot(img_true, alpha_true-90)
+    s_true_cj = calc_spec(img_rot_true_cj)
+
+    loss_1 = (((s_pred - s_true) ** 2).sum(axis=0)).mean()
+    #print(loss_1)
+    #loss_2 = (((s_pred_cj - s_true_cj) ** 2).sum(axis=0)).mean()
+    #print(loss_2)
+    loss = loss_1 #+ loss_2
+    print(loss)
+    return loss
+
+
+def my_loss(x, y):
+    img_true = y.clone()
+    y = y[:, 1].unsqueeze(1)
+    assert y.shape == x.shape
+    loss = (((x - y)).pow(2)).mean()
+    print(loss)
+    # final_loss = loss * 10 + regularization(x, img_true) / 100
+    # print(final_loss)
+    print('')
+    return loss
+
+
+def likelihood(x, y):
+    y = y[:, 0]
+    inp = x[:, 2]
+    unc = x[:, 1][inp == 0]
+    y_pred = x[:, 0][inp == 0]
+    y = y[inp == 0]
+    loss = (2 * torch.log(unc) + ((y - y_pred).pow(2) / unc.pow(2))).mean()
+    assert unc.shape == y_pred.shape == y.shape
+    return loss
+
+
+def likelihood_phase(x, y):
+    y = y[:, 1]
+    inp = x[:, 2]
+    unc = x[:, 1][inp == 0]
+    assert len(unc[unc <= 0]) == 0
+    y_pred = x[:, 0][inp == 0]
+    y = y[inp == 0]
+    loss = (2 * torch.log(unc) + ((y - y_pred).pow(2) / unc.pow(2))).mean()
+    assert unc.shape == y_pred.shape == y.shape
+    return loss
 
 
 def loss_amp(x, y):
@@ -276,7 +341,8 @@ def loss_mse_msssim_phase(x, y):
 
 
 def loss_mse_msssim_amp(x, y):
-    """Combine MSE and MS-SSIM loss for amp
+    print('hi')
+        norm = pd.read_csv(norm_path)    """Combine MSE and MS-SSIM loss for amp
 
     Parameters
     ----------

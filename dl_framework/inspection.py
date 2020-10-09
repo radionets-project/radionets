@@ -1,4 +1,5 @@
-import torch
+    print('hi')
+        norm = pd.read_csv(norm_path)import torch
 import os
 import numpy as np
 import pandas as pd
@@ -48,7 +49,7 @@ def load_pretrained_model(arch_name, model_path):
     return arch
 
 
-def get_images(test_ds, num_images, norm_path):
+def get_images(test_ds, num_images, norm_path=None):
     """
     Get n random test and truth images.
 
@@ -59,7 +60,7 @@ def get_images(test_ds, num_images, norm_path):
     num_images: int
         number of test images
     norm_path: str
-        path to normalization factors
+        path to normalization factors, if None: no normalization is applied
 
     Returns
     -------
@@ -75,6 +76,7 @@ def get_images(test_ds, num_images, norm_path):
         norm = pd.read_csv(norm_path)
     img_test = do_normalisation(img_test, norm)
     img_true = test_ds[rand][1]
+    # print(img_true.shape)
     if num_images == 1:
         img_test = img_test.unsqueeze(0)
         img_true = img_true.unsqueeze(0)
@@ -100,9 +102,10 @@ def eval_model(img, model):
     if len(img.shape) == (3):
         img = img.unsqueeze(0)
     model.eval()
+    model.cuda()
     with torch.no_grad():
-        pred = model(img.float())
-    return pred
+        pred = model(img.float().cuda())
+    return pred.cpu()
 
 
 def reshape_2d(array):
@@ -123,7 +126,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def plot_loss(learn, model_path):
+def plot_loss(learn, model_path, log):
     """
     Plot train and valid loss of model.
 

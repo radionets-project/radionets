@@ -13,6 +13,7 @@ from dl_framework.model import (
     LocallyConnected2d,
     symmetry,
     shape,
+    phase_range,
     GeneralELU,
     conv_phase,
     conv_amp,
@@ -702,6 +703,7 @@ class filter_deep_amp(nn.Module):
     def __init__(self, img_size):
         super().__init__()
         self.conv1_amp = nn.Sequential(*conv_amp(1, 4, (23, 23), 1, 11, 1))
+        norm = pd.read_csv(norm_path)
         self.conv2_amp = nn.Sequential(*conv_amp(4, 8, (21, 21), 1, 10, 1))
         self.conv3_amp = nn.Sequential(*conv_amp(8, 12, (17, 17), 1, 8, 1))
         self.conv_con1_amp = nn.Sequential(
@@ -731,10 +733,10 @@ class filter_deep_amp(nn.Module):
         self.symmetry_real = Lambda(symmetry)
 
     def forward(self, x):
+        x = x[:, 0].unsqueeze(1)
         inp = x.clone()
         amp = x[:, 0, :].unsqueeze(1)
 
-        # First block
         amp = self.conv1_amp(amp)
 
         amp = self.conv2_amp(amp)
@@ -993,27 +995,380 @@ class filter_deep(nn.Module):
         amp = self.conv_con3_amp(amp)
         phase = self.conv_con3_phase(phase)
 
-        # amp = amp + inp[:, 0].unsqueeze(1)
-        inp_amp = inp[:, 0].unsqueeze(1)
-        inp_phase = inp[:, 1].unsqueeze(1)
-        # phase = phase + inp[:, 1].unsqueeze(1)
-        x0 = self.symmetry_real(amp).reshape(-1, 1, amp.shape[2], amp.shape[2])  # amp
-        x0[inp_amp != 0] = inp_amp[inp_amp != 0]
-        x0 = torch.exp(10 * x0 - 10) - 1e-10
+        phase = phase + inp[:, 1].unsqueeze(1)
+        x1 = self.symmetry_imag(phase).reshape(-1, 1, 63, 63)
+        return x1
 
-        x1 = self.symmetry_imag(phase).reshape(
-            -1, 1, phase.shape[2], phase.shape[2]
-        )  # phase
-        x1[inp_phase != 0] = inp_phase[inp_phase != 0]
 
-        comb = torch.cat([x0, x1], dim=1)
-        comb = self.flatten(comb)
-        comb = self.euler(comb)
-        comb = self.flatten(comb)
-        comb = self.fft(comb)
-        comb = self.flatten(comb)
-        comb = torch.sqrt(comb[:, 0:3969] ** 2 + comb[:, 3969:] ** 2)
-        comb = self.fully_connected(comb)
-        comb = self.vaild_gauss_bs(comb).reshape(-1, 3969)
-        # comb = self.Relu(comb)
-        return comb
+from dl_framework.uncertainty_arch import (
+    block_1_a,
+    block_2_a,
+    block_3_a,
+    block_1_a_unc,
+    block_2_a_unc,
+    block_3_a_unc,
+)
+
+
+class filter_deep_amp_unc(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.block1 = block_1_a()
+        self.block2 = block_2_a()
+        self.block3 = block_3_a()
+        self.block1_unc = block_1_a_unc()
+        self.block2_unc = block_2_a_unc()
+        self.block3_unc = block_3_a_unc()
+        self.symmetry = Lambda(symmetry)
+        self.elu = GeneralELU(add=+1)
+        self.elu_unc = GeneralELU(add=+1 + 1e-5)
+
+    def forward(self, x):
+        x = x[:, 0].unsqueeze(1)
+        inp = x.clone()
+
+        # Blocks to predict amp
+        x0 = self.block1(x)
+        x0 = self.block2(x0)
+        x0 = self.block3(x0)
+
+        # x0 = x0.clone()
+        # x0 = x0 + inp
+        x0 = self.symmetry(x0[:, 0]).reshape(-1, 1, 63, 63)
+        # x0 = self.elu(x0)
+        x0[inp != 0] = inp[inp != 0]
+
+        # Blocks to predict uncertainty
+        x1 = self.block1_unc(x)
+        x1 = self.block2_unc(x1)
+        x1 = self.block3_unc(x1)
+
+        # x1 = x1.clone()
+        x1 = self.symmetry(x1[:, 0]).reshape(-1, 1, 63, 63)
+        # x1 = self.elu_unc(x1)
+        x1[inp != 0] = 1e-8
+
+        out = torch.cat([x0, x1, inp], dim=1)
+        return out
+
+
+from dl_framework.uncertainty_arch import (
+    block_1_p,
+    block_2_p,
+    block_3_p,
+    block_4_p,
+    bridge,
+    block_1_p_unc,
+    block_2_p_unc,
+    block_3_p_unc,
+)
+
+
+class filter_deep_phase_unc(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.block1 = block_1_p()
+        self.block2 = block_2_p()
+        self.block3 = block_3_p()
+        self.block4 = block_4_p()
+        self.bridge = bridge()
+        self.block1_unc = block_1_p_unc()
+        self.block2_unc = block_2_p_unc()
+        self.block3_unc = block_3_p_unc()
+        self.symmetry = Lambda(partial(symmetry, mode="imag"))
+        self.symmetry_unc = Lambda(symmetry)
+        self.elu_phase = GeneralELU(add=-(pi - 1), maxv=pi)
+        self.elu = GeneralELU(add=+(1e-5))
+        self.phase_range = Lambda(phase_range)
+
+    def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
+        inp = x.clone()
+
+        # Blocks to predict phase
+        x0 = self.block1(x)
+        b2 = self.block2(x0)
+        b3 = self.block3(x0)
+        x0 = self.bridge(torch.cat([inp, b2, b3], dim=1))
+        x0 = self.block4(x0)
+
+        x0 = x0.clone()
+        x0 = x0 + inp
+        # x0 = self.phase_range(x0)
+        x0[inp != 0] = inp[inp != 0]
+        x0 = self.symmetry(x0[:, 0]).reshape(-1, 1, 63, 63)
+        # x0 = self.elu_phase(x0)
+
+        # Blocks to predict uncertainty
+        x1 = self.block1_unc(x)
+        x1 = self.block2_unc(x1)
+        x1 = self.block3_unc(x1)
+
+        x1 = self.symmetry_unc(x1[:, 0]).reshape(-1, 1, 63, 63)
+        x1[inp != 0] = 1e-8
+
+        out = torch.cat([x0, x1, inp], dim=1)
+        return out
+
+
+from dl_framework.model import split_parts, combine_parts, compress_image, expand_image
+from dl_framework.uncertainty_arch import (
+    block_1_p_32,
+    block_2_p_32,
+    block_1_p_31,
+    block_2_p_31,
+)
+
+
+def Sin(x):
+    return pi * torch.sin(x)
+
+
+class phase_parts(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.block1 = block_1_p()
+        self.block2 = block_2_p()
+        self.block3 = block_3_p()
+        self.bridge = bridge()
+        # self.part1_block1 = block_1_p_32()
+        # self.part1_block2 = block_2_p_32()
+        # self.part2_block1 = block_1_p_32()
+        # self.part2_block2 = block_2_p_32()
+        # self.part3_block1 = block_1_p_32()
+        # self.part3_block2 = block_2_p_32()
+        # self.part4_block1 = block_1_p_32()
+        # self.part4_block2 = block_2_p_32()
+        self.split_parts = Lambda(split_parts)
+        self.compress = Lambda(compress_image)
+        self.expand = Lambda(expand_image)
+        self.flatten = Lambda(flatten_with_channel)
+        self.lin1_1 = nn.Linear(256, 256)
+        self.lin1_3 = nn.Linear(256, 256)
+        self.lin2_1 = nn.Linear(256, 256)
+        self.lin2_2 = nn.Linear(256, 256)
+        self.lin2_3 = nn.Linear(256, 256)
+        self.lin2_4 = nn.Linear(256, 256)
+        self.lin3_1 = nn.Linear(256, 256)
+        self.lin3_2 = nn.Linear(256, 256)
+        self.lin4_1 = nn.Linear(256, 256)
+        self.lin4_2 = nn.Linear(256, 256)
+        self.lin1_1_2 = nn.Linear(256, 256)
+        self.lin1_3_2 = nn.Linear(256, 256)
+        self.lin2_1_2 = nn.Linear(256, 256)
+        self.lin2_2_2 = nn.Linear(256, 256)
+        self.lin2_3_2 = nn.Linear(256, 256)
+        self.lin2_4_2 = nn.Linear(256, 256)
+        self.lin3_1_2 = nn.Linear(256, 256)
+        self.lin3_2_2 = nn.Linear(256, 256)
+        self.lin4_1_2 = nn.Linear(256, 256)
+        self.lin4_2_2 = nn.Linear(256, 256)
+        self.combine_parts = Lambda(combine_parts)
+        self.symmetry = Lambda(partial(symmetry, mode="imag"))
+        self.elu = GeneralELU(add=-(pi - 1), maxv=pi)
+        self.sin = Sin
+
+    def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
+        inp = x.clone()
+        bs = x.shape[0]
+
+        x0 = self.block1(x)
+        b2 = self.block2(x0)
+        b3 = self.block3(b2)
+
+        # part1, part2, part3, part4 = self.split_parts(x)
+
+        # # part1
+        # part1 = self.part1_block1(part1)
+        # part1 = self.part1_block2(part1)
+
+        # # part2
+        # part2 = self.part2_block1(part2)
+        # part2 = self.part2_block2(part2)
+
+        # # part3
+        # part3 = self.part3_block1(part3)
+        # part3 = self.part3_block2(part3)
+
+        # # part4
+        # part4 = self.part4_block1(part4)
+        # part4 = self.part4_block2(part4)
+
+        # # combine
+        # phase = self.combine_parts([part1, part2, part3, part4, (bs, 1, 63, 63), True])
+
+        # Linear actions
+        (
+            part1_1,
+            part1_3,
+            part2_1,
+            part2_2,
+            part2_3,
+            part2_4,
+            part3_1,
+            part3_2,
+            part4_1,
+            part4_2,
+        ) = self.compress(b3)
+
+        part1_1 = self.elu(
+            self.lin1_1_2(self.elu(self.lin1_1(self.flatten(part1_1)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+        part1_3 = self.elu(
+            self.lin1_3_2(self.elu(self.lin1_3(self.flatten(part1_3)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+
+        part2_1 = self.elu(
+            self.lin2_1_2(self.elu(self.lin2_1(self.flatten(part2_1)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+        part2_2 = self.elu(
+            self.lin2_2_2(self.elu(self.lin2_2(self.flatten(part2_2)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+        part2_3 = self.elu(
+            self.lin2_3_2(self.elu(self.lin2_3(self.flatten(part2_3)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+        part2_4 = self.elu(
+            self.lin2_4_2(self.elu(self.lin2_4(self.flatten(part2_4)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+
+        part3_1 = self.elu(
+            self.lin3_1_2(self.elu(self.lin3_1(self.flatten(part3_1)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+        part3_2 = self.elu(
+            self.lin3_2_2(self.elu(self.lin3_2(self.flatten(part3_2)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+
+        part4_1 = self.elu(
+            self.lin4_1_2(self.elu(self.lin4_1(self.flatten(part4_1)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+        part4_2 = self.elu(
+            self.lin4_2_2(self.elu(self.lin4_2(self.flatten(part4_2)))).reshape(
+                bs, -1, 16, 16
+            )
+        )
+
+        p = self.expand(
+            [
+                part1_1,
+                part1_3,
+                part2_1,
+                part2_2,
+                part2_3,
+                part2_4,
+                part3_1,
+                part3_2,
+                part4_1,
+                part4_2,
+            ]
+        )
+
+        phase = self.bridge(torch.cat([b3, p], dim=1))
+
+        # Residuum
+        phase = phase + inp
+        phase = self.elu(phase)
+        # phase = phase_range(phase)
+        # assert phase.max() <= pi
+        # assert phase.min() >= -pi
+        phase = self.symmetry(phase[:, 0]).reshape(-1, 1, 63, 63)
+        return phase
+
+
+class phase_parts_3d(nn.Module):
+    def init(self):
+        super().init()
+        self.part1_block1 = block_1_p_32()
+        self.part1_block2 = block_2_p_32()
+        self.part1_1 = local_block()
+        self.part1_local = local_p_32()
+        self.part2_block1 = block_1_p_32()
+        self.part2_block2 = block_2_p_32()
+        self.part2_1 = local_block()
+        self.part2_local = local_p_32()
+        self.part3_block1 = block_1_p_32()
+        self.part3_block2 = block_2_p_32()
+        self.part3_1 = local_block()
+        self.part3_local = local_p_32()
+        self.part4_block1 = block_1_p_32()
+        self.part4_block2 = block_2_p_32()
+        self.part4_1 = local_block()
+        self.part4_local = local_p_32()
+        self.conv_3d_12 = nn.Conv3d(1, 12, 3, 1, 1, 1)
+        self.conv_3d_34 = nn.Conv3d(1, 12, 3, 1, 1, 1)
+        self.split_parts = Lambda(split_parts)
+        self.combine_parts = Lambda(combine_parts)
+        self.symmetry = Lambda(partial(symmetry, mode="imag"))
+
+    def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
+        inp = x.clone()
+        bs = x.shape[0]
+
+        part1, part2, part3, part4 = self.split_parts(x)
+
+        # part1
+        part1 = self.part1_block1(part1)
+        part1 = self.part1_block2(part1)
+        p1 = self.part1_1(part1)
+
+        # part2
+        part2 = self.part2_block1(part2)
+        part2 = self.part2_block2(part2)
+        p2 = self.part2_1(part2)
+
+        p1 = p1.unsqueeze(2)
+        p2 = p2.unsqueeze(2)
+        part12 = torch.cat([p1, p2], dim=2)
+        part12 = self.conv_3d_12(part12)
+        part12 = part12.reshape(bs, 24, 32, 32)
+
+        part1 = torch.cat([part1, part12], dim=1)
+        part1 = self.part1_local(part1)
+        part2 = torch.cat([part2, part12], dim=1)
+        part2 = self.part2_local(part2)
+
+        # part3
+        part3 = self.part3_block1(part3)
+        part3 = self.part3_block2(part3)
+        p3 = self.part3_1(part3)
+
+        # part4
+        part4 = self.part4_block1(part4)
+        part4 = self.part4_block2(part4)
+        p4 = self.part4_1(part4)
+
+        p3 = p3.unsqueeze(2)
+        p4 = p4.unsqueeze(2)
+        part34 = torch.cat([p3, p4], dim=2)
+        part34 = self.conv_3d_34(part34)
+        part34 = part34.reshape(bs, 24, 32, 32)
+
+        part3 = torch.cat([part3, part34], dim=1)
+        part3 = self.part3_local(part1)
+        part4 = torch.cat([part4, part34], dim=1)
+        part4 = self.part4_local(part4)
+
+        # combine
+        phase = self.combine_parts([part1, part2, part3, part4, (bs, 1, 63, 63)])
+        phase = phase + inp
+        phase = self.symmetry(phase[:, 0]).reshape(-1, 1, 63, 63)
+        return phase

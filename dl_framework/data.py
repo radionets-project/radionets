@@ -223,7 +223,8 @@ def save_fft_pair(path, x, y, name_x="x", name_y="y"):
 def save_fft_pair_list(path, x, y, z, name_x="x", name_y="y", name_z="z"):
     """
     write fft_pairs created in second analysis step to h5 file with source
-    list.
+    list.    print('hi')
+        norm = pd.read_csv(norm_path)
     """
     with h5py.File(path, "w") as hf:
         hf.create_dataset(name_x, data=x)

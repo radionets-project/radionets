@@ -39,7 +39,7 @@ def main(data_path, model_path, arch, fourier=True):
 
     # Plot loss
     plot_lr(learn, model_path)
-    plot_loss(learn, model_path)
+    plot_loss(learn, model_path, log=True)
 
 
 if __name__ == "__main__":

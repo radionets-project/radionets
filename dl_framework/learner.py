@@ -9,6 +9,7 @@ import sys
 from functools import partial
 from dl_framework.loss_functions import (
     init_feature_loss,
+<<<<<<< HEAD
     splitted_mse,
     loss_amp,
     loss_phase,
@@ -17,6 +18,13 @@ from dl_framework.loss_functions import (
     loss_mse_msssim_phase,
     loss_mse_msssim_amp,
     loss_msssim_amp,
+=======
+    my_loss,
+    likelihood,
+    likelihood_phase,
+    loss_amp,
+    loss_phase,
+>>>>>>> origin/testing_architectures
 )
 from dl_framework.callbacks import (
     AvgStatsCallback,
@@ -190,7 +198,8 @@ def define_learner(
     # min_lr=1e-6,
     cbfs=[],
     test=False,
-    lr_find=False,
+    lr_find=False,    print('hi')
+        norm = pd.read_csv(norm_path)
     # opt_func=torch.optim.Adam,
 ):
     model_path = train_conf["model_path"]
@@ -228,6 +237,12 @@ def define_learner(
         loss_func = nn.MSELoss()
     elif loss_func == "splitted_mse":
         loss_func = splitted_mse
+    elif loss_func == "my_loss":
+        loss_func = my_loss
+    elif loss_func == "likelihood":
+        loss_func = likelihood
+    elif loss_func == "likelihood_phase":
+        loss_func = likelihood_phase
     elif loss_func == "loss_amp":
         loss_func = loss_amp
     elif loss_func == "loss_phase":

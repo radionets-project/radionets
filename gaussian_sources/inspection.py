@@ -142,9 +142,9 @@ def plot_loss(learn, model_path, log=True):
     mpl.use("Agg")
     plt.ioff()
     name_model = model_path.split("/")[-1].split(".")[0]
-    save_path = model_path.split(".model")[0]
+    save_path = model_path.split('.model')[0]
+    learn.recorder.plot_loss(log=log)
     print("\nPlotting Loss for: {}\n".format(name_model))
-    learn.recorder.plot_loss()
     plt.title(r"{}".format(name_model))
     plt.savefig("{}_loss.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
     mpl.rcParams.update(mpl.rcParamsDefault)

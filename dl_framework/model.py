@@ -2,8 +2,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
-from math import sqrt
 from pathlib import Path
+from math import sqrt, pi
 
 
 class Lambda(nn.Module):
@@ -16,6 +16,144 @@ class Lambda(nn.Module):
 
 def reshape(x):
     return x.reshape(-1,2,63,63)
+
+def compress_image(img):
+    part1, part2, part3, part4 = split_parts(img, pad=True)
+
+    part1_1, _, part1_3, _ = split_parts(part1, pad=False)
+    part2_1, part2_2, part2_3, part2_4 = split_parts(part2, pad=False)
+    part3_1, part3_2, _, _ = split_parts(part3, pad=False)
+    part4_1, part4_2, _, _ = split_parts(part4, pad=False)
+
+    return (
+        part1_1,
+        part1_3,
+        part2_1,
+        part2_2,
+        part2_3,
+        part2_4,
+        part3_1,
+        part3_2,
+        part4_1,
+        part4_2,
+    )
+
+
+def expand_image(params):
+    (
+        part1_1,
+        part1_3,
+        part2_1,
+        part2_2,
+        part2_3,
+        part2_4,
+        part3_1,
+        part3_2,
+        part4_1,
+        part4_2,
+    ) = (
+        params[0],
+        params[1],
+        params[2],
+        params[3],
+        params[4],
+        params[5],
+        params[6],
+        params[7],
+        params[8],
+        params[9],
+    )
+    bs = part1_1.shape[0]
+    part1 = combine_parts(
+        [
+            part1_1,
+            -torch.rot90(part1_1, 2, dims=(2, 3)),
+            part1_3,
+            -torch.rot90(part1_3, 2, dims=(2, 3)),
+            (bs, 1, 32, 32),
+            False
+        ]
+    )
+
+    part2 = combine_parts([part2_1, part2_2, part2_3, part2_4, (bs, 1, 32, 32), False])
+
+    part3 = combine_parts(
+        [
+            part3_1,
+            part3_2,
+            F.pad(
+                input=-torch.rot90(part3_2[:, :, :, :-1], 2, dims=(2, 3)),
+                pad=(0, 1, 0, 0),
+                mode="constant",
+                value=0,
+            ),
+            -torch.rot90(part3_1, 2, dims=(2, 3)),
+            (bs, 1, 32, 32),
+            False
+        ]
+    )
+
+    part4 = combine_parts(
+        [
+            part4_1,
+            part4_2,
+            -torch.rot90(part4_1, 2, dims=(2, 3)),
+            F.pad(
+                input=-torch.rot90(part4_2[:, :, :-1, :], 2, dims=(2, 3)),
+                pad=(0, 0, 0, 1),
+                mode="constant",
+                value=0,
+            ),
+            (bs, 1, 32, 32),
+            False
+        ]
+    )
+
+    img = combine_parts([part1, part2, part3, part4, (bs, 1, 63, 63), True])
+    return img
+
+
+def split_parts(img, pad=True):
+    t_img = img.clone()
+    part1 = t_img[:, 0, 0::2, 0::2]
+    part2 = t_img[:, 0, 1::2, 1::2]
+    part3 = t_img[:, 0, 0::2, 1::2]
+    part4 = t_img[:, 0, 1::2, 0::2]
+    if pad:
+        #print("Padding done.")
+        part2 = F.pad(input=part2, pad=(0, 1, 0, 1), mode="constant", value=0)
+        part3 = F.pad(input=part3, pad=(0, 1, 0, 0), mode="constant", value=0)
+        part4 = F.pad(input=part4, pad=(0, 0, 0, 1), mode="constant", value=0)
+    return (
+        part1.unsqueeze(1),
+        part2.unsqueeze(1),
+        part3.unsqueeze(1),
+        part4.unsqueeze(1),
+    )
+
+
+def combine_parts(params):
+    part1, part2, part3, part4, img_size, final = (
+        params[0],
+        params[1],
+        params[2],
+        params[3],
+        params[4],
+        params[5],
+    )
+    comb = torch.zeros(img_size).cuda()
+    if final is True:
+        comb[:, :, 0::2, 0::2] = part1
+        comb[:, :, 1::2, 1::2] = part2[:, :, :-1, :-1]
+        comb[:, :, 0::2, 1::2] = part3[:, :, :, :-1]
+        comb[:, :, 1::2, 0::2] = part4[:, :, :-1, :]
+    else:
+        comb[:, :, 0::2, 0::2] = part1
+        comb[:, :, 1::2, 1::2] = part2
+        comb[:, :, 0::2, 1::2] = part3
+        comb[:, :, 1::2, 0::2] = part4
+    return comb
+
 
 def fft(x):
     """
@@ -45,8 +183,8 @@ def euler(x):
     arr_amp = x[:, 0:img_size]
     arr_phase = x[:, img_size:]
 
-    arr_real = arr_amp * torch.cos(arr_phase)
-    arr_imag = arr_amp * torch.sin(arr_phase)
+    arr_real = (10 ** (10 * (arr_amp - 1)) - 1e-10) * torch.cos(arr_phase)
+    arr_imag = (10 ** (10 * (arr_amp - 1)) - 1e-10) * torch.sin(arr_phase)
 
     arr = torch.stack((arr_real, arr_imag), dim=-1).permute(0, 2, 1)
     return arr
@@ -90,6 +228,18 @@ def symmetry(x, mode="real"):
     return torch.rot90(x, 3, dims=(1, 2))
 
 
+def phase_range(phase):
+    # if isinstance(phase, float):
+    #     phase = torch.tensor([phase])
+    mult = phase / pi
+    mult[mult <= 1] = 0
+    mult[mult % 2 <= 1] -= 1
+    mult = torch.round(mult / 2)
+    mult[(phase / pi > 1) & (mult == 0)] = 1
+    phase = phase - mult * 2 * pi
+    return phase
+
+
 class GeneralRelu(nn.Module):
     def __init__(self, leak=None, sub=None, maxv=None):
         super().__init__()
@@ -107,16 +257,17 @@ class GeneralRelu(nn.Module):
 
 
 class GeneralELU(nn.Module):
-    def __init__(
-        self, add=None,
-    ):
+    def __init__(self, add=None, maxv=None):
         super().__init__()
         self.add = add
+        self.maxv = maxv
 
     def forward(self, x):
         x = F.elu(x)
         if self.add is not None:
             x = x + self.add
+        if self.maxv is not None:
+            x.clamp_max_(self.maxv)
         return x
 
 
@@ -221,7 +372,8 @@ def conv_amp(ni, nc, ks, stride, padding, dilation):
         ),
     )
     bn = (nn.BatchNorm2d(nc),)
-    act = nn.ReLU()
+    print('hi')
+        norm = pd.read_csv(norm_path)    act = nn.ReLU()
     layers = [*conv, *bn, act]
     return layers
 
