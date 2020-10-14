@@ -14,8 +14,10 @@ class Lambda(nn.Module):
     def forward(self, x):
         return self.func(x)
 
+
 def reshape(x):
-    return x.reshape(-1,2,63,63)
+    return x.reshape(-1, 2, 63, 63)
+
 
 def compress_image(img):
     part1, part2, part3, part4 = split_parts(img, pad=True)
@@ -71,7 +73,7 @@ def expand_image(params):
             part1_3,
             -torch.rot90(part1_3, 2, dims=(2, 3)),
             (bs, 1, 32, 32),
-            False
+            False,
         ]
     )
 
@@ -89,7 +91,7 @@ def expand_image(params):
             ),
             -torch.rot90(part3_1, 2, dims=(2, 3)),
             (bs, 1, 32, 32),
-            False
+            False,
         ]
     )
 
@@ -105,7 +107,7 @@ def expand_image(params):
                 value=0,
             ),
             (bs, 1, 32, 32),
-            False
+            False,
         ]
     )
 
@@ -120,7 +122,7 @@ def split_parts(img, pad=True):
     part3 = t_img[:, 0, 0::2, 1::2]
     part4 = t_img[:, 0, 1::2, 0::2]
     if pad:
-        #print("Padding done.")
+        # print("Padding done.")
         part2 = F.pad(input=part2, pad=(0, 1, 0, 1), mode="constant", value=0)
         part3 = F.pad(input=part3, pad=(0, 1, 0, 0), mode="constant", value=0)
         part4 = F.pad(input=part4, pad=(0, 0, 0, 1), mode="constant", value=0)
@@ -214,8 +216,12 @@ def symmetry(x, mode="real"):
     diag_indices = torch.stack((diag1, diag2))
     grid = torch.tril_indices(x.shape[1], x.shape[1], -1)
 
-    x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),)
-    y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),)
+    x_sym = torch.cat(
+        (grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),
+    )
+    y_sym = torch.cat(
+        (grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),
+    )
     x = torch.rot90(x, 1, dims=(1, 2))
     i = center + (center - x_sym)
     j = center + (center - y_sym)
@@ -447,7 +453,7 @@ def load_pre_model(learn, pre_path, visualize=False, lr_find=False):
     :param pre_path:    string wich contains the path of the model
     :param lr_find:     bool which is True if lr_find is used
     """
-    name_pretrained = pre_path.split("/")[-1].split(".")[0] 
+    name_pretrained = pre_path.split("/")[-1].split(".")[0]
     print("\nLoad pretrained model: {}\n".format(name_pretrained))
 
     if visualize:
@@ -529,11 +535,13 @@ class LocallyConnected2d(nn.Module):
         return out
 
 
-
 def create_rot_mat(alpha):
-    rot_mat = torch.tensor([[torch.cos(alpha), -torch.sin(alpha)], [torch.sin(alpha), torch.cos(alpha)]])
+    rot_mat = torch.tensor(
+        [[torch.cos(alpha), -torch.sin(alpha)], [torch.sin(alpha), torch.cos(alpha)]]
+    )
     rot_mat = rot_mat.cuda()
     return rot_mat
+
 
 def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot, center=None):
     if center is None:
@@ -547,6 +555,7 @@ def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot, center=None):
     gauss = gauss.cuda()
     return gauss
 
+
 def create_grid(pixel):
     x = torch.linspace(0, pixel - 1, steps=pixel)
     y = torch.linspace(0, pixel - 1, steps=pixel)
@@ -555,28 +564,42 @@ def create_grid(pixel):
     Y = Y.cuda()
     X.unsqueeze_(0)
     Y.unsqueeze_(0)
-    mesh = torch.cat((X,Y))
+    mesh = torch.cat((X, Y))
     grid = torch.tensor((torch.zeros(X.shape) + 1e-10))
     grid = grid.cuda()
     grid = torch.cat((grid, mesh))
     return grid
 
-def gauss_valid(params): # setzt aus den einzelen parametern (54) ein bild zusammen
+
+def gauss_valid(params):  # setzt aus den einzelen parametern (54) ein bild zusammen
     gauss_param = torch.split(params, 9)
     grid = create_grid(63)
     source = torch.tensor((grid[0]))
     for i in range(len(gauss_param)):
-        cent = torch.tensor([len(grid[0]) // 2 + gauss_param[1][i], len(grid[0]) // 2 + gauss_param[2][i]])
+        cent = torch.tensor(
+            [
+                len(grid[0]) // 2 + gauss_param[1][i],
+                len(grid[0]) // 2 + gauss_param[2][i],
+            ]
+        )
         cent = cent.cuda()
-        s = gaussian_component(grid[1], grid[2], gauss_param[0][i], gauss_param[3][i], gauss_param[4][i], 
-                rot=gauss_param[5][i], center=cent)
-        source = torch.add(source, s) 
-    return source 
+        s = gaussian_component(
+            grid[1],
+            grid[2],
+            gauss_param[0][i],
+            gauss_param[3][i],
+            gauss_param[4][i],
+            rot=gauss_param[5][i],
+            center=cent,
+        )
+        source = torch.add(source, s)
+    return source
+
 
 def vaild_gauss_bs(in_put):
     for i in range(in_put.shape[0]):
         if i == 0:
-            source = gauss_valid(in_put[i]) # gauss parameter des ersten gausses
+            source = gauss_valid(in_put[i])  # gauss parameter des ersten gausses
             source.unsqueeze_(0)
         else:
             h = gauss_valid(in_put[i])
