@@ -703,7 +703,6 @@ class filter_deep_amp(nn.Module):
     def __init__(self, img_size):
         super().__init__()
         self.conv1_amp = nn.Sequential(*conv_amp(1, 4, (23, 23), 1, 11, 1))
-        norm = pd.read_csv(norm_path)
         self.conv2_amp = nn.Sequential(*conv_amp(4, 8, (21, 21), 1, 10, 1))
         self.conv3_amp = nn.Sequential(*conv_amp(8, 12, (17, 17), 1, 8, 1))
         self.conv_con1_amp = nn.Sequential(
@@ -1087,16 +1086,14 @@ class filter_deep_phase_unc(nn.Module):
 
         # Blocks to predict phase
         x0 = self.block1(x)
-        b2 = self.block2(x0)
-        b3 = self.block3(x0)
-        x0 = self.bridge(torch.cat([inp, b2, b3], dim=1))
-        x0 = self.block4(x0)
+        x0 = self.block2(x0)
+        x0 = self.block3(x0)
 
-        x0 = x0.clone()
-        x0 = x0 + inp
+        # x0 = x0.clone()
+        # x0 = x0 + inp
         # x0 = self.phase_range(x0)
-        x0[inp != 0] = inp[inp != 0]
         x0 = self.symmetry(x0[:, 0]).reshape(-1, 1, 63, 63)
+        x0[inp != 0] = inp[inp != 0]
         # x0 = self.elu_phase(x0)
 
         # Blocks to predict uncertainty
