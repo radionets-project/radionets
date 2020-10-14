@@ -238,9 +238,10 @@ def define_learner(
     if lr_find:
         cbfs.extend(
             [
+                partial(AvgStatsCallback, metrics=[]),
                 partial(
                     LR_Find,
-                    max_iter=train_conf["max_iter"],
+                    max_iter=len(data.train_ds) * 2 // train_conf["bs"],
                     max_lr=train_conf["max_lr"],
                     min_lr=train_conf["min_lr"],
                 ),
