@@ -12,6 +12,7 @@ from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
 from dl_framework.inspection import create_inspection_plots
 from dl_framework.inspection import plot_lr_loss
+from pathlib import Path
 
 
 @click.command()
@@ -109,9 +110,13 @@ def main(configuration_path, mode):
 
         learn.fit(2)
 
+        print(Path(train_conf["model_path"]))
         # save loss plot
         plot_lr_loss(
-            learn, train_conf["arch_name"], train_conf["model_path"], skip_last=5
+            learn,
+            train_conf["arch_name"],
+            (Path(train_conf["model_path"])).parent,
+            skip_last=5,
         )
 
 
