@@ -9,7 +9,6 @@ import sys
 from functools import partial
 from dl_framework.loss_functions import (
     init_feature_loss,
-<<<<<<< HEAD
     splitted_mse,
     loss_amp,
     loss_phase,
@@ -18,13 +17,9 @@ from dl_framework.loss_functions import (
     loss_mse_msssim_phase,
     loss_mse_msssim_amp,
     loss_msssim_amp,
-=======
     my_loss,
     likelihood,
     likelihood_phase,
-    loss_amp,
-    loss_phase,
->>>>>>> origin/testing_architectures
 )
 from dl_framework.callbacks import (
     AvgStatsCallback,
@@ -198,8 +193,7 @@ def define_learner(
     # min_lr=1e-6,
     cbfs=[],
     test=False,
-    lr_find=False,    print('hi')
-        norm = pd.read_csv(norm_path)
+    lr_find=False,
     # opt_func=torch.optim.Adam,
 ):
     model_path = train_conf["model_path"]
