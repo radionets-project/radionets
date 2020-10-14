@@ -372,8 +372,7 @@ def conv_amp(ni, nc, ks, stride, padding, dilation):
         ),
     )
     bn = (nn.BatchNorm2d(nc),)
-    print('hi')
-        norm = pd.read_csv(norm_path)    act = nn.ReLU()
+    act = nn.ReLU()
     layers = [*conv, *bn, act]
     return layers
 
