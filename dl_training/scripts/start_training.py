@@ -110,7 +110,6 @@ def main(configuration_path, mode):
 
         learn.fit(2)
 
-        print(Path(train_conf["model_path"]))
         # save loss plot
         plot_lr_loss(
             learn,
