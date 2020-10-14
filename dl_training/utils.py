@@ -37,6 +37,10 @@ def read_config(config):
     train_conf["loss_func"] = config["general"]["loss_func"]
     train_conf["num_epochs"] = config["general"]["num_epochs"]
     train_conf["inspection"] = config["general"]["inspection"]
+
+    train_conf["max_iter"] = config["lr_find"]["max_iter"]
+    train_conf["max_lr"] = config["lr_find"]["max_lr"]
+    train_conf["min_lr"] = config["lr_find"]["min_lr"]
     return train_conf
 
 

@@ -11,24 +11,43 @@ from dl_training.utils import (
 from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
 from dl_framework.inspection import create_inspection_plots
+from dl_framework.inspection import plot_lr_loss
 
 
 @click.command()
 @click.argument("configuration_path", type=click.Path(exists=True, dir_okay=False))
-def main(configuration_path):
+@click.option(
+    "--mode",
+    type=click.Choice(
+        [
+            "train",
+            "lr_find",
+            "plot_loss",
+        ],
+        case_sensitive=False,
+    ),
+    default="train",
+)
+def main(configuration_path, mode):
     """
     Start DNN training with options specified in configuration file.
 
-    configuration_path: Path to the config toml file
+    Parameters
+    ----------
+    configuration_path: str
+        Path to the configuration toml file
+
+    Modes
+    -----
+    train: start training of deep learning model (default option)
+    lr_find: execute learning rate finder
+    plot_loss: plot losscurve of existing model
     """
     config = toml.load(configuration_path)
     train_conf = read_config(config)
 
     click.echo("\n Train config:")
     print(train_conf, "\n")
-
-    # check out path and look for existing files
-    check_outpath(train_conf["model_path"], train_conf)
 
     # create databunch
     data = create_databunch(
@@ -45,27 +64,55 @@ def main(configuration_path):
         arch_name=train_conf["arch_name"], img_size=train_conf["image_size"]
     )
 
-    # define_learner
-    learn = define_learner(
-        data,
-        arch,
-        train_conf,
-    )
+    if mode == "train":
+        # check out path and look for existing model files
+        check_outpath(train_conf["model_path"], train_conf)
 
-    # load pretrained model
-    if train_conf["pre_model"] != "none":
-        load_pre_model(learn, train_conf["pre_model"])
+        click.echo("Start training of the model.\n")
 
-    # Train the model, except interrupt
-    try:
-        learn.fit(train_conf["num_epochs"])
-    except KeyboardInterrupt:
-        pop_interrupt(learn, train_conf)
+        # define_learner
+        learn = define_learner(
+            data,
+            arch,
+            train_conf,
+        )
 
-    end_training(learn, train_conf)
+        # load pretrained model
+        if train_conf["pre_model"] != "none":
+            load_pre_model(learn, train_conf["pre_model"])
 
-    if train_conf["inspection"]:
-        create_inspection_plots(learn, train_conf)
+        # Train the model, except interrupt
+        try:
+            learn.fit(train_conf["num_epochs"])
+        except KeyboardInterrupt:
+            pop_interrupt(learn, train_conf)
+
+        end_training(learn, train_conf)
+
+        if train_conf["inspection"]:
+            create_inspection_plots(learn, train_conf)
+
+    if mode == "lr_find":
+        click.echo("Start lr_find.\n")
+
+        # define_learner
+        learn = define_learner(
+            data,
+            arch,
+            train_conf,
+            lr_find=True,
+        )
+
+        # load pretrained model
+        if train_conf["pre_model"] != "none":
+            load_pre_model(learn, train_conf["pre_model"], lr_find=True)
+
+        learn.fit(2)
+
+        # save loss plot
+        plot_lr_loss(
+            learn, train_conf["arch_name"], train_conf["model_path"], skip_last=5
+        )
 
 
 if __name__ == "__main__":

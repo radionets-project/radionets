@@ -23,3 +23,8 @@ inspection = false
 [hypers]
 batch_size = 64
 lr = 1e-3
+
+[lr_find]
+max_iter = 1562
+max_lr = 1e-1
+min_lr = 1e-7
