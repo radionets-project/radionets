@@ -1,4 +1,5 @@
 import click
+import sys
 import toml
 from dl_training.utils import (
     read_config,
@@ -10,8 +11,12 @@ from dl_training.utils import (
 )
 from dl_framework.learner import define_learner
 from dl_framework.model import load_pre_model
-from dl_framework.inspection import create_inspection_plots
-from dl_framework.inspection import plot_lr_loss
+from dl_framework.inspection import (
+    create_inspection_plots,
+    plot_lr_loss,
+    plot_loss,
+    plot_lr,
+)
 from pathlib import Path
 
 
@@ -114,9 +119,29 @@ def main(configuration_path, mode):
         plot_lr_loss(
             learn,
             train_conf["arch_name"],
-            (Path(train_conf["model_path"])).parent,
+            Path(train_conf["model_path"]).parent,
             skip_last=5,
         )
+
+    if mode == "plot_loss":
+        click.echo("Start plotting loss.\n")
+
+        # define_learner
+        learn = define_learner(
+            data,
+            arch,
+            train_conf,
+        )
+        # load pretrained model
+        if train_conf["pre_model"] != "none":
+            load_pre_model(learn, train_conf["pre_model"])
+        else:
+            click.echo("No pretrained model was selected.")
+            click.echo("Exiting.\n")
+            sys.exit()
+
+        plot_lr(learn, Path(train_conf["model_path"]))
+        plot_loss(learn, Path(train_conf["model_path"]), log=True)
 
 
 if __name__ == "__main__":
