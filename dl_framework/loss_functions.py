@@ -341,8 +341,7 @@ def loss_mse_msssim_phase(x, y):
 
 
 def loss_mse_msssim_amp(x, y):
-    print('hi')
-        norm = pd.read_csv(norm_path)    """Combine MSE and MS-SSIM loss for amp
+    """Combine MSE and MS-SSIM loss for amp
 
     Parameters
     ----------
