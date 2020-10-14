@@ -139,11 +139,10 @@ def plot_loss(learn, model_path, log):
     # second turn off the interactive mode
     mpl.use("Agg")
     plt.ioff()
-    name_model = model_path.split("/")[-1].split(".")[0]
-    save_path = model_path.split(".model")[0]
-    print("\nPlotting Loss for: {}\n".format(name_model))
+    save_path = model_path.with_suffix("")
+    print(f"\nPlotting Loss for: {model_path.stem}\n")
     learn.recorder.plot_loss()
-    plt.title(r"{}".format(name_model.replace("_", " ")))
+    plt.title(r"{}".format(str(model_path.stem).replace("_", " ")))
     plt.savefig(f"{save_path}_loss.pdf", bbox_inches="tight", pad_inches=0.01)
     plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)
@@ -164,11 +163,10 @@ def plot_lr(learn, model_path):
     # second turn off the interactive mode
     mpl.use("Agg")
     plt.ioff()
-    name_model = model_path.split("/")[-1].split(".")[0]
-    save_path = model_path.split(".model")[0]
-    print("\nPlotting Learning rate for: {}\n".format(name_model))
+    save_path = model_path.with_suffix("")
+    print(f"\nPlotting Learning rate for: {model_path.stem}\n")
     learn.recorder.plot_lr()
-    plt.savefig("{}_lr.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(f"{save_path}_lr.pdf", bbox_inches="tight", pad_inches=0.01)
     plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)
 
