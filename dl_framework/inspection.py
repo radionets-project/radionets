@@ -192,9 +192,9 @@ def plot_lr_loss(learn, arch_name, out_path, skip_last):
     # second turn off the interactive mode
     mpl.use("Agg")
     plt.ioff()
-    print("\nPlotting Lr vs Loss for architecture: {}\n".format(arch_name))
+    print(f"\nPlotting Lr vs Loss for architecture: {arch_name}\n")
     learn.recorder_lr_find.plot(skip_last, save=True)
-    plt.savefig(out_path + "/lr_loss.pdf", bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(out_path / "lr_loss.pdf", bbox_inches="tight", pad_inches=0.01)
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
@@ -244,7 +244,7 @@ def plot_results(inp, pred, truth, model_path, save=False):
         plt.tight_layout()
 
         if save:
-            out = model_path/"predictions/"
+            out = model_path / "predictions/"
             out.mkdir(parents=True, exist_ok=True)
 
             out_path = adjust_outpath(out, "/prediction", form="pdf")
@@ -259,7 +259,9 @@ def create_inspection_plots(learn, train_conf):
     out_path = Path(model_path).parent
     if train_conf["fourier"]:
         for i in range(len(img_test)):
-            visualize_with_fourier(i, img_test[i], pred[i], img_true[i], amp_phase=True, out_path=out_path)
+            visualize_with_fourier(
+                i, img_test[i], pred[i], img_true[i], amp_phase=True, out_path=out_path
+            )
     else:
         plot_results(
             img_test.cpu(),
@@ -291,5 +293,5 @@ def make_axes_nice(fig, ax, im, title):
     ax.set_title(title)
     cbar = fig.colorbar(im, cax=cax, orientation="vertical")
     cbar.set_label("Intensity / a.u.")
-    #cbar.formatter.set_powerlimits((0, 0))
-    #cbar.update_ticks()
+    # cbar.formatter.set_powerlimits((0, 0))
+    # cbar.update_ticks()
