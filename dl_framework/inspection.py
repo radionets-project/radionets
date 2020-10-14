@@ -1,6 +1,4 @@
-    print('hi')
-        norm = pd.read_csv(norm_path)import torch
-import os
+import torch
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -44,7 +42,7 @@ def load_pretrained_model(arch_name, model_path):
     arch: architecture object
         architecture with pretrained weigths
     """
-    arch = getattr(architecture, arch_name)()
+    arch = getattr(architecture, arch_name)(63)
     load_pre_model(arch, model_path, visualize=True)
     return arch
 
@@ -72,7 +70,7 @@ def get_images(test_ds, num_images, norm_path=None):
     rand = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[rand][0]
     norm = "none"
-    if norm_path != "none":
+    if norm_path is not None:
         norm = pd.read_csv(norm_path)
     img_test = do_normalisation(img_test, norm)
     img_true = test_ds[rand][1]
@@ -270,3 +268,28 @@ def create_inspection_plots(learn, train_conf):
             out_path,
             save=True,
         )
+
+
+def make_axes_nice(fig, ax, im, title):
+    """Create nice colorbars for every axis in a subplot
+
+    Parameters
+    ----------
+    fig : figure object
+        current figure
+    ax : axis object
+        current axis
+    im : ndarray
+        plotted image
+    title : str
+        title of subplot
+    """
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    ax.set_title(title)
+    cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+    cbar.set_label("Intensity / a.u.")
+    #cbar.formatter.set_powerlimits((0, 0))
+    #cbar.update_ticks()
