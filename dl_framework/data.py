@@ -97,18 +97,20 @@ class h5_dataset:
         # distinguish between compressed (npz) or not compressed (h5)
         if re.search(".npz", str(self.bundles[bundle[0]])):
             bundle_paths = [
-                np.load(self.bundles[bundle], mmap_mode='r') for bundle in bundle_unique
+                np.load(self.bundles[bundle], mmap_mode="r") for bundle in bundle_unique
             ]
         else:
             bundle_paths = [
-                h5py.File(self.bundles[bundle], 'r') for bundle in bundle_unique
+                h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
             ]
         bundle_paths_str = list(map(str, bundle_paths))
         data = torch.tensor(
             [
                 bund[var][img]
                 for bund, bund_str in zip(bundle_paths, bundle_paths_str)
-                for img in image[bundle == bundle_unique[bundle_paths_str.index(bund_str)]]
+                for img in image[
+                    bundle == bundle_unique[bundle_paths_str.index(bund_str)]
+                ]
             ]
         )
         if var == "x" or self.tar_fourier is True:
@@ -125,7 +127,9 @@ class h5_dataset:
                 data_channel = data
             else:
                 if data.shape[1] == 2:
-                    raise ValueError("Two channeled data is used despite Fourier being False. Set Fourier to True!")
+                    raise ValueError(
+                        "Two channeled data is used despite Fourier being False. Set Fourier to True!"
+                    )
                 if len(i) == 1:
                     data_channel = data.reshape(data.shape[-1] ** 2)
                 else:
@@ -211,6 +215,7 @@ def get_bundles(path):
     bundles = np.array([x for x in data_path.iterdir()])
     return bundles
 
+
 def save_fft_pair(path, x, y, name_x="x", name_y="y"):
     """
     write fft_pairs created in second analysis step to h5 file
@@ -220,11 +225,11 @@ def save_fft_pair(path, x, y, name_x="x", name_y="y"):
         hf.create_dataset(name_y, data=y)
         hf.close()
 
+
 def save_fft_pair_list(path, x, y, z, name_x="x", name_y="y", name_z="z"):
     """
     write fft_pairs created in second analysis step to h5 file with source
-    list.    print('hi')
-        norm = pd.read_csv(norm_path)
+    list.
     """
     with h5py.File(path, "w") as hf:
         hf.create_dataset(name_x, data=x)
