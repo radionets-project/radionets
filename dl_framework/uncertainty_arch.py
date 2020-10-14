@@ -46,7 +46,7 @@ def block_2_p_32():
 
 
 def local_block():
-    layers = [   
+    layers = [
         LocallyConnected2d(24, 1, 32, 1, stride=1, bias=False),
         nn.BatchNorm2d(1),
         GeneralELU(add=-(pi - 1)),
