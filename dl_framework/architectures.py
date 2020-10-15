@@ -908,7 +908,8 @@ class filter_deep(nn.Module):
         self.symmetry_imag = Lambda(partial(symmetry, mode='imag'))
         self.flatten = Lambda(flatten)
         #self.fully_connected = nn.Linear(3969, 54)
-        self.fully_connected = nn.Linear(7938, 54)
+        #self.fully_connected = nn.Linear(7938, 5)
+        self.fully_connected = nn.Linear(7938, 1)
         self.vaild_gauss_bs = Lambda(vaild_gauss_bs)
         self.Relu = nn.ReLU()
         self.fft = Lambda(fft)
@@ -984,6 +985,6 @@ class filter_deep(nn.Module):
         #comb = self.flatten(comb)
         #comb = torch.sqrt(comb[:, 0:3969]**2 + comb[:, 3969:]**2)
         comb = self.fully_connected(comb)
-        comb = self.vaild_gauss_bs(comb).reshape(-1, 3969)
+        #comb = self.vaild_gauss_bs(comb).reshape(-1, 3969)
         #comb = self.Relu(comb)
         return comb

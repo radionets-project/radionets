@@ -10,8 +10,8 @@ setup(
     license="MIT",
     packages=find_packages(),
     install_requires=[
-        'torch==1.2',
-        'torchvision==0.4',
+        'torch==1.6',
+        'torchvision==0.7',
         'numpy==1.17.3',
         'astropy==3.2.3',
         'tqdm==4.36.1',
