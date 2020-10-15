@@ -7,6 +7,8 @@ from dl_framework.model import init_cnn
 from tqdm import tqdm
 import sys
 from functools import partial
+from dl_framework.optimizer import adam_opt
+from dl_framework.param_scheduling import combine_scheds, sched_cos
 from dl_framework.loss_functions import (
     init_feature_loss,
     splitted_mse,
@@ -31,6 +33,7 @@ from dl_framework.callbacks import (
     data_aug,
     LR_Find,
     Recorder_lr_find,
+    ParamScheduler,
 )
 
 
@@ -190,13 +193,9 @@ def define_learner(
     data,
     arch,
     train_conf,
-    # max_iter=400,
-    # max_lr=1e-1,
-    # min_lr=1e-6,
     cbfs=[],
     test=False,
     lr_find=False,
-    # opt_func=torch.optim.Adam,
 ):
     model_path = train_conf["model_path"]
     model_name = model_path.split("models/")[-1].split("/")[0]
@@ -209,6 +208,18 @@ def define_learner(
                 ),
             ]
         )
+    if train_conf["param_scheduling"]:
+        opt_func = adam_opt
+        sched = combine_scheds(
+            [0.3, 0.7],
+            [
+                sched_cos(train_conf["lr_start"], train_conf["lr_max"]),
+                sched_cos(train_conf["lr_max"], train_conf["lr_stop"]),
+            ],
+        )
+        cbfs.extend([partial(ParamScheduler, "lr", sched)])
+    else:
+        opt_func = torch.optim.Adam
     if not test:
         cbfs.extend(
             [
@@ -284,6 +295,6 @@ def define_learner(
 
     # Combine model and data in learner
     learn = get_learner(
-        data, arch, lr=lr, opt_func=torch.optim.Adam, cb_funcs=cbfs, loss_func=loss_func
+        data, arch, lr=lr, opt_func=opt_func, cb_funcs=cbfs, loss_func=loss_func
     )
     return learn
