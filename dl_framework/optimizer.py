@@ -9,11 +9,11 @@ def sgd_step(p, lr, **kwargs):
 
 
 def weight_decay(p, lr, wd, **kwargs):
-    p.data.mul_(1 - lr*wd)
+    p.data.mul_(1 - lr * wd)
     return p
 
 
-weight_decay._defaults = dict(wd=0.)
+weight_decay._defaults = dict(wd=0.0)
 
 
 def l2_reg(p, lr, wd, **kwargs):
@@ -21,7 +21,7 @@ def l2_reg(p, lr, wd, **kwargs):
     return p
 
 
-l2_reg._defaults = dict(wd=0.)
+l2_reg._defaults = dict(wd=0.0)
 
 
 def maybe_update(os, dest, f):
@@ -32,10 +32,10 @@ def maybe_update(os, dest, f):
 
 
 def get_defaults(d):
-    return getattr(d, '_defaults', {})
+    return getattr(d, "_defaults", {})
 
 
-class Optimizer():
+class Optimizer:
     def __init__(self, params, steppers, **defaults):
         self.steppers = listify(steppers)
         maybe_update(self.steppers, defaults, get_defaults)
@@ -47,8 +47,12 @@ class Optimizer():
         self.hypers = [{**defaults} for p in self.param_groups]
 
     def grad_params(self):
-        return [(p, hyper) for pg, hyper in zip(self.param_groups, self.hypers)
-                for p in pg if p.grad is not None]
+        return [
+            (p, hyper)
+            for pg, hyper in zip(self.param_groups, self.hypers)
+            for p in pg
+            if p.grad is not None
+        ]
 
     def zero_grad(self):
         for p, hyper in self.grad_params():
@@ -76,8 +80,7 @@ class StatefulOptimizer(Optimizer):
                 # Create a state for p and call all the statistics to
                 # initialize it.
                 self.state[p] = {}
-                maybe_update(self.stats, self.state[p],
-                             lambda o: o.init_state(p))
+                maybe_update(self.stats, self.state[p], lambda o: o.init_state(p))
             state = self.state[p]
             for stat in self.stats:
                 state = stat.update(p, state, **hyper)
@@ -85,10 +88,14 @@ class StatefulOptimizer(Optimizer):
             self.state[p] = state
 
 
-class Stat():
+class Stat:
     _defaults = {}
-    def init_state(self, p): raise NotImplementedError
-    def update(self, p, state, **kwargs): raise NotImplementedError
+
+    def init_state(self, p):
+        raise NotImplementedError
+
+    def update(self, p, state, **kwargs):
+        raise NotImplementedError
 
 
 def momentum_step(p, lr, grad_avg, **kwargs):
@@ -103,11 +110,11 @@ class AverageGrad(Stat):
         self.dampening = dampening
 
     def init_state(self, p):
-        return {'grad_avg': torch.zeros_like(p.grad.data)}
+        return {"grad_avg": torch.zeros_like(p.grad.data)}
 
     def update(self, p, state, mom, **kwargs):
-        state['mom_damp'] = 1-mom if self.dampening else 1.
-        state['grad_avg'].mul_(mom).add_(state['mom_damp'], p.grad.data)
+        state["mom_damp"] = 1 - mom if self.dampening else 1.0
+        state["grad_avg"].mul_(mom).add_(state["mom_damp"], p.grad.data)
         return state
 
 
@@ -118,33 +125,35 @@ class AverageSqrGrad(Stat):
         self.dampening = dampening
 
     def init_state(self, p):
-        return {'sqr_avg': torch.zeros_like(p.grad.data)}
+        return {"sqr_avg": torch.zeros_like(p.grad.data)}
 
     def update(self, p, state, sqr_mom, **kwargs):
-        state['sqr_damp'] = 1-sqr_mom if self.dampening else 1.
-        state['sqr_avg'].mul_(sqr_mom).addcmul_(state['sqr_damp'], p.grad.data,
-                                                p.grad.data)
+        state["sqr_damp"] = 1 - sqr_mom if self.dampening else 1.0
+        state["sqr_avg"].mul_(sqr_mom).addcmul_(
+            state["sqr_damp"], p.grad.data, p.grad.data
+        )
         return state
 
 
 class StepCount(Stat):
     def init_state(self, p):
-        return {'step': 0}
+        return {"step": 0}
 
     def update(self, p, state, **kwargs):
-        state['step'] += 1
+        state["step"] += 1
         return state
 
 
 def debias(mom, damp, step):
-    return damp * (1 - mom**step) / (1-mom)
+    return damp * (1 - mom ** step) / (1 - mom)
 
 
-def adam_step(p, lr, mom, mom_damp, step, sqr_mom, sqr_damp,
-              grad_avg, sqr_avg, eps, **kwargs):
-    debias1 = debias(mom,     mom_damp, step)
+def adam_step(
+    p, lr, mom, mom_damp, step, sqr_mom, sqr_damp, grad_avg, sqr_avg, eps, **kwargs
+):
+    debias1 = debias(mom, mom_damp, step)
     debias2 = debias(sqr_mom, sqr_damp, step)
-    p.data.addcdiv_(-lr / debias1, grad_avg, (sqr_avg/debias2).sqrt() + eps)
+    p.data.addcdiv_(-lr / debias1, grad_avg, (sqr_avg / debias2).sqrt() + eps)
     return p
 
 
@@ -152,7 +161,9 @@ adam_step._defaults = dict(eps=1e-5)
 
 
 def adam_opt(xtra_step=None, **kwargs):
-    return partial(StatefulOptimizer, steppers=[adam_step,
-                   weight_decay] + listify(xtra_step),
-                   stats=[AverageGrad(dampening=True),
-                   AverageSqrGrad(), StepCount()], **kwargs)
+    return partial(
+        StatefulOptimizer,
+        steppers=[adam_step, weight_decay] + listify(xtra_step),
+        stats=[AverageGrad(dampening=True), AverageSqrGrad(), StepCount()],
+        **kwargs
+    )
