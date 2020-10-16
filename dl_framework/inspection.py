@@ -192,6 +192,7 @@ def plot_lr_loss(learn, arch_name, out_path, skip_last):
     plt.ioff()
     print(f"\nPlotting Lr vs Loss for architecture: {arch_name}\n")
     learn.recorder_lr_find.plot(skip_last, save=True)
+    out_path.mkdir(parents=True, exist_ok=True)
     plt.savefig(out_path / "lr_loss.pdf", bbox_inches="tight", pad_inches=0.01)
     mpl.rcParams.update(mpl.rcParamsDefault)
 
