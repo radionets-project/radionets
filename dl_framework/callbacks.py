@@ -120,7 +120,8 @@ class Recorder(Callback):
     def after_batch(self):
         if not self.in_train:
             return
-        self.lrs.append(self.opt.state_dict()["param_groups"][0]["lr"])
+        print(self.opt.keywords["lr"])
+        self.lrs.append(self.opt.keywords["lr"])
 
     def after_epoch(self):
         self.train_losses.append(self.avg_stats.train_stats.avg_stats[1])
