@@ -2,7 +2,6 @@ from dl_framework.optimizer import sgd_opt
 import torch.nn as nn
 from dl_framework.model import init_cnn
 import sys
-from functools import partial
 from dl_framework.loss_functions import (
     init_feature_loss,
     splitted_mse,
@@ -56,9 +55,7 @@ def define_learner(
     if train_conf["norm_path"] != "none":
         cbfs.extend(
             [
-                partial(
-                    BatchTransformXCallback, normalize_tfm(train_conf["norm_path"])
-                ),
+                BatchTransformXCallback(normalize_tfm(train_conf["norm_path"])),
             ]
         )
     if train_conf["param_scheduling"]:
