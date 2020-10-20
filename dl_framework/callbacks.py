@@ -1,12 +1,12 @@
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 from dl_framework.data import do_normalisation
 from dl_framework.logger import make_notifier
 from dl_framework.model import save_model
 from fastai.callback.core import Callback
 from pathlib import Path
+from fastcore.foundation import L
 
 
 class CancelTrainException(Exception):
@@ -21,88 +21,33 @@ class CancelBatchException(Exception):
     pass
 
 
-class Recorder_lr_find(Callback):
-    """
-    Recorder class for the lr_find. Main difference between the recorder
-    and this class is that the loss is appended after each batch and not
-    after each epoch.
-    """
-
-    def begin_fit(self):
-        self.lrs = []
-        self.losses = []
-
-    def after_batch(self):
-        if not self.training:
-            return
-        # print(self.opt.state_dict()["param_groups"][0])
-        self.lrs.append(self.opt.state_dict()["param_groups"][0]["lr"])
-        self.losses.append(self.loss.detach().cpu())
-
-    def plot(self, skip_last=0, save=False):
-        losses = [o.item() for o in self.losses]
-        n = len(losses) - skip_last
-        plt.plot(self.lrs[:n], losses[:n])
-        plt.xscale("log")
-        plt.xlabel(r"learning rate")
-        plt.ylabel(r"loss")
-        if save is False:
-            plt.show()
-
-
-class LR_Find(Callback):
-    _order = 1
-
-    def __init__(self, max_iter=100, min_lr=1e-6, max_lr=10):
-        """
-        max_iter should be slightly bigger than the number of batches.
-        Only this way maximum and minimum learning rate are set.
-        """
-        self.max_iter = max_iter
-        self.min_lr = min_lr
-        self.max_lr = max_lr
-        self.best_loss = 1e9
-
-    def begin_batch(self):
-        if not self.training:
-            return
-        pos = self.run.n_iter / self.max_iter
-        lr = self.min_lr * (self.max_lr / self.min_lr) ** pos
-        for param_group in self.opt.param_groups:
-            param_group["lr"] = lr
-
-    def after_step(self):
-        if self.n_iter >= self.max_iter or self.loss > self.best_loss * 10:
-            return CancelTrainException
-        if self.loss < self.best_loss:
-            self.best_loss = self.loss
-
-
-class LoggerCallback(Callback):
+class TelegramLoggerCallback(Callback):
     def __init__(self, model_name):
         self.model_name = model_name
 
-    def begin_fit(self):
-        logger = make_notifier()
-        logger.info("Start des Trainings von Modell {}".format(self.model_name))
+    def before_fit(self):
+        tlogger = make_notifier()
+        tlogger.info(f"Start des Trainings von Modell {self.model_name}")
 
     def after_epoch(self):
         if (self.epoch + 1) % 10 == 0:
-            logger = make_notifier()
-            logger.info(
+            tlogger = make_notifier()
+            tlogger.info(
                 "{}: Epoche {}/{} mit Loss {}".format(
                     self.model_name,
                     self.epoch + 1,
-                    self.epochs,
-                    self.avg_stats.valid_stats.avg_stats[1],
+                    self.n_epoch,
+                    L(self.recorder.values[0:]).itemgot(1)[-1],
                 )
             )
 
     def after_fit(self):
-        logger = make_notifier()
-        logger.info(
+        tlogger = make_notifier()
+        tlogger.info(
             "{}: Ende des Trainings nach {} Epochen mit Loss {}".format(
-                self.model_name, self.epoch + 1, self.avg_stats.valid_stats.avg_stats[1]
+                self.model_name,
+                self.epoch + 1,
+                L(self.recorder.values[0:]).itemgot(1)[-1],
             )
         )
 
