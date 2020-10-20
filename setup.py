@@ -10,7 +10,9 @@ setup(
     license="MIT",
     packages=find_packages(),
     install_requires=[
-        "fastai2",
+        "fastai",
+        "fastcore",
+        "kornia",
         "numpy",
         "astropy",
         "tqdm",
