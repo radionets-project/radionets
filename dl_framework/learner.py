@@ -1,4 +1,3 @@
-from dl_framework.optimizer import sgd_opt
 import torch.nn as nn
 from dl_framework.model import init_cnn
 import sys
@@ -32,7 +31,7 @@ from fastai.callback.schedule import ParamScheduler, combined_cos
 
 
 def get_learner(
-    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=sgd_opt, **kwargs
+    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=Adam, **kwargs
 ):
     init_cnn(arch)
     dls = DataLoaders.from_dsets(
