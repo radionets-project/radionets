@@ -564,7 +564,9 @@ def create_grid(pixel):
     X.unsqueeze_(0)
     Y.unsqueeze_(0)
     mesh = torch.cat((X, Y))
-    grid = torch.tensor((torch.zeros(X.shape) + 1e-10))
+    x = torch.zeros(X.shape) + 1e-10
+    # grid = torch.tensor((x))
+    grid = x.clone().detach()
     grid = grid.cuda()
     grid = torch.cat((grid, mesh))
     return grid
@@ -574,6 +576,7 @@ def gauss_valid(params):  # setzt aus den einzelen parametern (54) ein bild zusa
     gauss_param = torch.split(params, 9)
     grid = create_grid(63)
     source = torch.tensor((grid[0]))
+    source = grid.clone().detach()
     for i in range(len(gauss_param)):
         cent = torch.tensor(
             [

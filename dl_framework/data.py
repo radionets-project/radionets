@@ -234,10 +234,7 @@ def save_fft_pair_list(path, x, y, z, name_x="x", name_y="y", name_z="z"):
     with h5py.File(path, "w") as hf:
         hf.create_dataset(name_x, data=x)
         hf.create_dataset(name_y, data=y)
-        try:
-            hf.create_dataset(name_z, data=z)
-        except TypeError:
-            pass
+        hf.create_dataset(name_z, data=z)
         hf.close()
 
 
@@ -265,7 +262,7 @@ def mean_and_std(array):
     return array.mean(), array.std()
 
 
-def load_data(data_path, mode, fourier=False):
+def load_data(data_path, mode, fourier=False, source_list=False):
     """
     Load data set from a directory and return it as h5_dataset.
 
@@ -285,5 +282,5 @@ def load_data(data_path, mode, fourier=False):
     """
     bundle_paths = get_bundles(data_path)
     data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
-    ds = h5_dataset(data, tar_fourier=fourier)
+    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)
     return ds

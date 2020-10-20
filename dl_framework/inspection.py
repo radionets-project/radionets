@@ -70,7 +70,7 @@ def get_images(test_ds, num_images, norm_path=None):
     rand = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[rand][0]
     norm = "none"
-    if norm_path is not None:
+    if norm_path != "none":
         norm = pd.read_csv(norm_path)
     img_test = do_normalisation(img_test, norm)
     img_true = test_ds[rand][1]

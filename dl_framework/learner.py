@@ -15,6 +15,7 @@ from dl_framework.loss_functions import (
     my_loss,
     likelihood,
     likelihood_phase,
+    spe,
 )
 from dl_framework.callbacks import (
     normalize_tfm,
@@ -78,7 +79,7 @@ def define_learner(
         cbfs.extend(
             [
                 SaveTempCallback(model_path=model_path),
-                DataAug,
+                # DataAug,
             ]
         )
     if train_conf["telegram_logger"]:
@@ -117,6 +118,8 @@ def define_learner(
         loss_func = loss_mse_msssim_amp
     elif loss_func == "msssim_amp":
         loss_func = loss_msssim_amp
+    elif loss_func == "spe":
+        loss_func = spe
     else:
         print("\n No matching loss function or architecture! Exiting. \n")
         sys.exit(1)

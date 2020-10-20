@@ -2,8 +2,10 @@ import os
 from tqdm import tqdm
 from numpy import savez_compressed
 from simulations.utils import get_fft_bundle_paths, prepare_fft_images
-from dl_framework.data import open_fft_bundle, save_fft_pair
+from dl_framework.data import open_fft_bundle, save_fft_pair, save_fft_pair_list
 from simulations.uv_simulations import sample_freqs
+import h5py
+import numpy as np
 
 
 def sample_frequencies(
@@ -25,6 +27,8 @@ def sample_frequencies(
 
         for path in tqdm(bundle_paths):
             fft, truth = open_fft_bundle(path)
+            f = h5py.File(path, "r")
+            z = np.array(f["z"])
             size = fft.shape[-1]
 
             fft_scaled = prepare_fft_images(fft.copy(), amp_phase, real_imag)
@@ -56,4 +60,4 @@ def sample_frequencies(
                 else:
                     save_fft_pair(out, fft_samp, fft_scaled)
             else:
-                save_fft_pair(out, fft_samp, truth)
+                save_fft_pair_list(out, fft_samp, truth, z)

@@ -409,3 +409,44 @@ def loss_mse_msssim(x, y):
     )
 
     return loss_amp + loss_phase
+
+def spe(x,y):
+    y = y.squeeze()
+    x = x.squeeze()
+    #y = y[:, 0:2]
+    loss = []
+    value = 0
+    for i in range(len(x)):
+        value += torch.abs(x[i] - y[i])
+        loss.append(value)
+        value = 0
+    loss = sum(loss)/len(x)
+    return loss
+
+def spe_square(x,y):
+    y = y.squeeze()
+    loss = []
+    value = 0
+    for i in range(len(x)):
+        for k in range(1, len(x[0])):
+            if k == 1:
+                value += (x[i][k-1]-y[i][k-1] + x[i][k]-y[i][k])**2
+            else:
+                value += torch.abs(x[i][k]-y[i][k])
+        loss.append(value/len(x[0]))
+        value = 0
+    k = sum(loss)
+    loss = k/len(x)
+    return loss
+
+def spe_(x, y):
+    loss = []
+    value = 0
+    for i in range(len(x)):
+        for k in range(len(x[0])):
+            value += torch.abs(x[i][k]-y[i][k])
+        loss.append(value/len(x[0]))
+        value = 0
+    k = sum(loss)
+    loss = k/len(x)
+    return loss

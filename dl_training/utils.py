@@ -8,10 +8,10 @@ from dl_framework.model import save_model
 from dl_framework.inspection import create_inspection_plots
 
 
-def create_databunch(data_path, fourier, batch_size):
+def create_databunch(data_path, fourier, source_list, batch_size):
     # Load data sets
-    train_ds = load_data(data_path, "train", fourier=fourier)
-    valid_ds = load_data(data_path, "valid", fourier=fourier)
+    train_ds = load_data(data_path, "train", source_list=source_list, fourier=fourier)
+    valid_ds = load_data(data_path, "valid", source_list=source_list, fourier=fourier)
 
     # Create databunch with defined batchsize
     bs = batch_size
@@ -42,6 +42,8 @@ def read_config(config):
     train_conf["lr_start"] = config["param_scheduling"]["lr_start"]
     train_conf["lr_max"] = config["param_scheduling"]["lr_max"]
     train_conf["lr_stop"] = config["param_scheduling"]["lr_stop"]
+
+    train_conf["source_list"] = config["general"]["source_list"]
     return train_conf
 
 
