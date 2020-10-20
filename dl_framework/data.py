@@ -171,10 +171,6 @@ class DataBunch:
         self.c = c
 
     @property
-    def dls(self):
-        return self.train_dl.dataset
-
-    @property
     def train_ds(self):
         return self.train_dl.dataset
 
