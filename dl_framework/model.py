@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 from pathlib import Path
 from math import sqrt, pi
+from fastcore.foundation import L
 
 
 class Lambda(nn.Module):
@@ -480,16 +481,14 @@ def load_pre_model(learn, pre_path, visualize=False, lr_find=False):
 
 def save_model(learn, model_path):
     state = learn.model.state_dict()
-    p = Path(model_path).parent
-    p.mkdir(parents=True, exist_ok=True)
     torch.save(
         {
             "epoch": learn.epoch,
             "model_state_dict": state,
             "optimizer_state_dict": learn.opt.state_dict(),
             "loss": learn.loss,
-            "recorder_train_loss": learn.recorder.train_losses,
-            "recorder_valid_loss": learn.recorder.valid_losses,
+            "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
+            "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
             "recorder_losses": learn.recorder.losses,
             "recorder_lrs": learn.recorder.lrs,
         },
