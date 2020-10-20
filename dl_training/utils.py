@@ -38,9 +38,6 @@ def read_config(config):
     train_conf["num_epochs"] = config["general"]["num_epochs"]
     train_conf["inspection"] = config["general"]["inspection"]
 
-    train_conf["max_lr"] = config["lr_find"]["max_lr"]
-    train_conf["min_lr"] = config["lr_find"]["min_lr"]
-
     train_conf["param_scheduling"] = config["param_scheduling"]["use"]
     train_conf["lr_start"] = config["param_scheduling"]["lr_start"]
     train_conf["lr_max"] = config["param_scheduling"]["lr_max"]
@@ -97,7 +94,7 @@ def pop_interrupt(learn, train_conf):
 
 def end_training(learn, train_conf):
     # Save model
-    save_model(learn, train_conf["model_path"])
+    save_model(learn, Path(train_conf["model_path"]))
 
     # Plot loss
-    plot_loss(learn, train_conf["model_path"])
+    plot_loss(learn, Path(train_conf["model_path"]))
