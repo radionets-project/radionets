@@ -120,8 +120,8 @@ class Recorder(Callback):
     def after_batch(self):
         if not self.in_train:
             return
-        print(self.opt.keywords["lr"])
-        self.lrs.append(self.opt.keywords["lr"])
+        print(self.opt.hypers[-1]["lr"])
+        self.lrs.append(self.opt.hypers[-1]["lr"])
 
     def after_epoch(self):
         self.train_losses.append(self.avg_stats.train_stats.avg_stats[1])

@@ -35,6 +35,8 @@ from dl_framework.callbacks import (
     Recorder_lr_find,
     ParamScheduler,
 )
+from fastai2.optimizer import Adam
+from fastai2.learner import Learner as fai2Learner
 
 
 class CancelTrainException(Exception):
@@ -186,7 +188,10 @@ def get_learner(
     data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=sgd_opt, **kwargs
 ):
     init_cnn(arch)
-    return Learner(arch, data, loss_func, lr=lr, cb_funcs=cb_funcs, opt_func=opt_func)
+    print(data)
+    return fai2Learner(
+        data, arch, loss_func, lr=lr, cb_funcs=cb_funcs, opt_func=opt_func
+    )
 
 
 def define_learner(
@@ -209,7 +214,7 @@ def define_learner(
             ]
         )
     if train_conf["param_scheduling"]:
-        opt_func = adam_opt
+        opt_func = Adam
         sched = combine_scheds(
             [0.3, 0.7],
             [
