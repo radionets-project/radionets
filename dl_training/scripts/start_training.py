@@ -18,6 +18,7 @@ from dl_framework.inspection import (
     plot_lr,
 )
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 
 @click.command()
@@ -106,14 +107,13 @@ def main(configuration_path, mode):
             data,
             arch,
             train_conf,
-            lr_find=True,
         )
 
         # load pretrained model
         if train_conf["pre_model"] != "none":
             load_pre_model(learn, train_conf["pre_model"], lr_find=True)
 
-        learn.fit(2)
+        learn.lr_find()
 
         # save loss plot
         plot_lr_loss(
