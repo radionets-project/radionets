@@ -463,7 +463,6 @@ def load_pre_model(learn, pre_path, visualize=False):
 
     else:
         checkpoint = torch.load(pre_path)
-        print(checkpoint.keys())
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
@@ -477,7 +476,6 @@ def load_pre_model(learn, pre_path, visualize=False):
 
 
 def save_model(learn, model_path):
-    print(model_path)
     torch.save(
         {
             "model": learn.model.state_dict(),
