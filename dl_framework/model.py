@@ -448,13 +448,13 @@ def deconv(ni, nc, ks, stride, padding, out_padding):
     return layers
 
 
-def load_pre_model(learn, pre_path, visualize=False, lr_find=False):
+def load_pre_model(learn, pre_path, visualize=False):
     """
     :param learn:       object of type learner
     :param pre_path:    string wich contains the path of the model
     :param lr_find:     bool which is True if lr_find is used
     """
-    name_pretrained = pre_path.split("/")[-1].split(".")[0]
+    name_pretrained = Path(pre_path).stem
     print("\nLoad pretrained model: {}\n".format(name_pretrained))
 
     if visualize:
@@ -463,30 +463,29 @@ def load_pre_model(learn, pre_path, visualize=False, lr_find=False):
 
     else:
         checkpoint = torch.load(pre_path)
-        learn.model.load_state_dict(checkpoint["model_state_dict"])
-        learn.opt = learn.opt_func(learn.model.parameters(), learn.lr).load_state_dict(
-            checkpoint["optimizer_state_dict"]
-        )
+        print(checkpoint.keys())
+        learn.model.load_state_dict(checkpoint["model"])
+        learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
         learn.loss = checkpoint["loss"]
-        if not lr_find:
-            learn.recorder.train_losses = checkpoint["recorder_train_loss"]
-            learn.recorder.valid_losses = checkpoint["recorder_valid_loss"]
-            learn.recorder.losses = checkpoint["recorder_losses"]
-            learn.recorder.lrs = checkpoint["recorder_lrs"]
-        else:
-            learn.recorder_lr_find.losses = checkpoint["recorder_losses"]
-            learn.recorder_lr_find.lrs = checkpoint["recorder_lrs"]
+        learn.recorder.iters = checkpoint["iters"]
+        learn.recorder.values = checkpoint["vals"]
+        learn.recorder.train_losses = checkpoint["recorder_train_loss"]
+        learn.recorder.valid_losses = checkpoint["recorder_valid_loss"]
+        learn.recorder.losses = checkpoint["recorder_losses"]
+        learn.recorder.lrs = checkpoint["recorder_lrs"]
 
 
 def save_model(learn, model_path):
-    state = learn.model.state_dict()
+    print(model_path)
     torch.save(
         {
+            "model": learn.model.state_dict(),
+            "opt": learn.opt.state_dict(),
             "epoch": learn.epoch,
-            "model_state_dict": state,
-            "optimizer_state_dict": learn.opt.state_dict(),
             "loss": learn.loss,
+            "iters": learn.recorder.iters,
+            "vals": learn.recorder.values,
             "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
             "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
             "recorder_losses": learn.recorder.losses,
