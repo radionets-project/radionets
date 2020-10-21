@@ -197,6 +197,7 @@ def define_learner(
     opt_func=torch.optim.Adam,
 ):
     cbfs.extend([
+        # commented out because of normed and limited input values
         # partial(BatchTransformXCallback, norm),
     ])
     if not test:
