@@ -18,7 +18,6 @@ from dl_framework.inspection import (
     plot_lr,
 )
 from pathlib import Path
-import matplotlib.pyplot as plt
 
 
 @click.command()
@@ -61,7 +60,7 @@ def main(configuration_path, mode):
         data_path=train_conf["data_path"],
         fourier=train_conf["fourier"],
         batch_size=train_conf["bs"],
-        source_list=train_conf["source_list"]
+        source_list=train_conf["source_list"],
     )
 
     # get image size
@@ -87,6 +86,7 @@ def main(configuration_path, mode):
 
         # load pretrained model
         if train_conf["pre_model"] != "none":
+            learn.create_opt()
             load_pre_model(learn, train_conf["pre_model"])
 
         # Train the model, except interrupt
@@ -135,6 +135,7 @@ def main(configuration_path, mode):
         )
         # load pretrained model
         if train_conf["pre_model"] != "none":
+            learn.create_opt()
             load_pre_model(learn, train_conf["pre_model"])
         else:
             click.echo("No pretrained model was selected.")
@@ -142,7 +143,7 @@ def main(configuration_path, mode):
             sys.exit()
 
         plot_lr(learn, Path(train_conf["model_path"]))
-        plot_loss(learn, Path(train_conf["model_path"]), log=True)
+        plot_loss(learn, Path(train_conf["model_path"]))
 
 
 if __name__ == "__main__":
