@@ -134,11 +134,11 @@ def main(configuration_path, mode):
             train_conf,
         )
         # load pretrained model
-        if train_conf["pre_model"] != "none":
+        if Path(train_conf["model_path"]).exists:
             learn.create_opt()
-            load_pre_model(learn, train_conf["pre_model"])
+            load_pre_model(learn, train_conf["model_path"])
         else:
-            click.echo("No pretrained model was selected.")
+            click.echo("Selected model does not exist.")
             click.echo("Exiting.\n")
             sys.exit()
 
