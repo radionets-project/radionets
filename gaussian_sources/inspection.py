@@ -19,7 +19,7 @@ mpl.rcParams.update(
     }
 )
 
-plot_mode = "pdf"
+plot_mode = "png"
 
 
 def open_csv(path, mode):
@@ -236,31 +236,31 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     a = check_vmin_vmax(inp_real)
     # 511: [200:325]
     im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice2(fig, ax1, im1, r"Amplitude Input")
+    make_axes_nice_phase(fig, ax1, im1, r"Amplitude Input")
 
     a = check_vmin_vmax(real_truth)
     im2 = ax2.imshow(
         real_pred, cmap="RdBu", vmin=-a, vmax=a
     )
-    make_axes_nice2(fig, ax2, im2, r"Amplitude Prediction")
+    make_axes_nice_phase(fig, ax2, im2, r"Amplitude Prediction")
 
     a = check_vmin_vmax(real_truth)
     im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice2(fig, ax3, im3, r"Amplitude Truth")
+    make_axes_nice_phase(fig, ax3, im3, r"Amplitude Truth")
 
     a = check_vmin_vmax(inp_imag)
     im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice2(fig, ax4, im4, r"Phase Input")
+    make_axes_nice_phase(fig, ax4, im4, r"Phase Input")
 
     a = check_vmin_vmax(imag_truth)
     im5 = ax5.imshow(
         imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi
     )
-    make_axes_nice2(fig, ax5, im5, r"Phase Prediction", True)
+    make_axes_nice_phase(fig, ax5, im5, r"Phase Prediction", True)
 
     a = check_vmin_vmax(imag_truth)
     im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
-    make_axes_nice2(fig, ax6, im6, r"Phase Truth", True)
+    make_axes_nice_phase(fig, ax6, im6, r"Phase Truth", True)
 
     ax1.set_ylabel(r"Pixels", fontsize=20)
     ax4.set_ylabel(r"Pixels", fontsize=20)
@@ -973,7 +973,7 @@ def blob_detection(i, img_pred, img_truth, out_path):
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
 
-def make_axes_nice2(fig, ax, im, title, phase=False):
+def make_axes_nice_phase(fig, ax, im, title, phase=False):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
 
@@ -1058,16 +1058,30 @@ def check_vmin_vmax(inp):
 
 
 def calc_jet_angle(image):
+    """Caluclate the jet angle from an image created with gaussian sources. This is achieved by a PCA.
+
+    Parameters
+    ----------
+    image : ndarray
+        input image
+
+    Returns
+    -------
+    float
+        slope of the line
+    float
+        intercept of the line
+    float
+        angle between the horizontal axis and the jet axis
+    """
     image = image.copy()
-    # 40 für 127 Pixel
-    # 150 für 511 Pixel
+    # ignore negagive pixels, which can appear in predictions
     image[image < 0] = 0
-    image[0:20] = 0
-    image[43:63] = 0
-    image[:, 0:20] = 0
-    image[:, 43:63] = 0
+
     # only use brightest pixel
     image[image < image.max() * 0.4] = 0
+
+    # start PCA
     pix_x, pix_y, image_clone = im_to_array_value_rune(image.copy())
 
     cog_x = np.average(pix_x, weights=image_clone)
@@ -1080,12 +1094,20 @@ def calc_jet_angle(image):
     values, vectors = np.linalg.eigh(cov)
     psi_torch = np.arctan(vectors[1, 1] / vectors[0, 1])
     m = np.tan(np.pi / 2 - psi_torch)
+    # Use pixel with highest pixel value for the computation of the intercept
     max_x, max_y = np.where(image == image.max())
 
-    # dummy solution for 64x64 pixels images, when maximum is not in center
+    # If the maximum pixel is not in the center of the image: Print the pixels
+    # and manually set them to the center
     if (image.shape == (64, 64)) and (max_x != [32] or max_y != [32]):
         print("Calculated maximum not in the center: ", max_x, max_y)
         max_x, max_y = [32], [32]
+    elif (image.shape == (63, 63)) and (max_x != [31] or max_y != [31]):
+        print("Calculated maximum not in the center: ", max_x, max_y)
+        max_x, max_y = [31], [31]
+    elif (image.shape == (127, 127)) and (max_x != [63] or max_y != [63]):
+        print("Calculated maximum not in the center: ", max_x, max_y)
+        max_x, max_y = [63], [63]
 
     n = torch.tensor(max_y) - m * torch.tensor(max_x)
     alpha = (psi_torch) * 180 / np.pi
