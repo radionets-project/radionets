@@ -11,7 +11,7 @@ if ! command -v lualatex > /dev/null; then
     echo "Downloading texlive and installing"
     # wget http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
     curl -L http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz | tar xz
-    yes I | TEXLIVE_INSTALL_PREFIX=~/tmp/texlive ./install-tl-*/install-tl
+    echo I | TEXLIVE_INSTALL_PREFIX=~/tmp/texlive ./install-tl-*/install-tl
     # tar -xzf install-tl-unx.tar.gz
     # ./install-tl-*/install-tl --profile=./utilities/texlive.profile
     echo "Finished install TexLive"
