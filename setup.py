@@ -4,7 +4,7 @@ setup(
     name="radionets",
     version="0.1.0",
     description="Imaging radio interferometric data with neural networks",
-    url="https://github.com/Kevin2/radionets",_test
+    url="https://github.com/Kevin2/radionets",
     author="Kevin Schmidt, Felix Geyer, Kevin Laudamus",
     author_email="kevin3.schmidt@tu-dortmund.de",
     license="MIT",
@@ -47,7 +47,7 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.7",
-        'Programming Language :: Python :: 3.8',
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3 :: Only",
         "Topic :: Scientific/Engineering :: Astronomy",
         "Topic :: Scientific/Engineering :: Physics",
