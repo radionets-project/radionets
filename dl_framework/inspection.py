@@ -166,7 +166,7 @@ def plot_lr(learn, model_path):
     plt.ioff()
     save_path = model_path.with_suffix("")
     print(f"\nPlotting Learning rate for: {model_path.stem}\n")
-    learn.recorder.plot_lr()
+    plt.plot(learn.recorder.lrs)
     plt.savefig(f"{save_path}_lr.pdf", bbox_inches="tight", pad_inches=0.01)
     plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)
