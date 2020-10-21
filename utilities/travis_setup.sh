@@ -14,7 +14,7 @@ if ! command -v lualatex > /dev/null; then
     TEXLIVE_INSTALL_PREFIX=~/tmp/texlive ./install-tl-*/install-tl
     # tar -xzf install-tl-unx.tar.gz
     # ./install-tl-*/install-tl --profile=./utilities/texlive.profile
-
+    echo "I"
     echo "Finished install TexLive"
 fi
 
