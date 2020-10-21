@@ -18,6 +18,7 @@ fi
 
 echo "Now updating TexLive"
 # update texlive
+luatex
 tlmgr option -- autobackup 0
 tlmgr update --self --all --no-auto-install
 
