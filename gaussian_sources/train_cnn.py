@@ -87,7 +87,7 @@ def main(
         arch == "filter_deep"
         or arch == "filter_deep_amp"
         or arch == "filter_deep_phase"
-        or "filter_deep_variable"
+        or arch == "filter_deep_variable"
     ):
         arch = getattr(architecture, arch)(img_size)
     else:
