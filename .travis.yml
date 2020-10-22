@@ -2,9 +2,15 @@ language: python
 python:
   - "3.7"
 
+# directories:
+#  - "/tmp/texlive"
+#  - "$HOME/.texlive"
+
 before_install:
   - sudo apt-get -y install libgeos-dev
   - sudo apt-get -y install libproj-dev
+  # - travis_wait 45 bash ./utilities/travis_setup.sh
+  # - export PATH="/tmp/texlive/bin/x86_64-linux:$PATH"
 
 install:
   - pip install .
