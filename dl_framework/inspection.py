@@ -7,6 +7,18 @@ from dl_framework.data import do_normalisation
 import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
 
+# make nice Latex friendly plots
+# mpl.use("pgf")
+# mpl.rcParams.update(
+#     {
+#         "font.size": 12,
+#         "font.family": "sans-serif",
+#         "text.usetex": True,
+#         "pgf.rcfonts": False,
+#         "pgf.texsystem": "lualatex",
+#     }
+# )
+
 
 def load_pretrained_model(arch_name, model_path):
     """
@@ -121,7 +133,7 @@ def plot_loss(learn, model_path):
     save_path = model_path.split(".model")[0]
     print("\nPlotting Loss for: {}\n".format(name_model))
     learn.recorder.plot_loss()
-    plt.title(r"{}".format(name_model))
+    plt.title(r"{}".format(name_model.replace("_", " ")))
     plt.savefig("{}_loss.pdf".format(save_path), bbox_inches="tight", pad_inches=0.01)
     plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)

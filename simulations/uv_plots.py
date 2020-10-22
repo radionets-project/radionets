@@ -1,10 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import cartopy.crs as ccrs
 from matplotlib.animation import FuncAnimation
 from matplotlib.animation import PillowWriter
 from simulations.uv_simulations import get_uv_coverage
 from matplotlib.colors import LogNorm
+
+
+# make nice Latex friendly plots
+# mpl.use("pgf")
+# mpl.rcParams.update(
+#     {
+#         "font.size": 12,
+#         "font.family": "sans-serif",
+#         "text.usetex": True,
+#         "pgf.rcfonts": False,
+#         "pgf.texsystem": "lualatex",
+#     }
+# )
 
 
 def plot_uv_coverage(u, v):
@@ -23,8 +37,8 @@ def plot_uv_coverage(u, v):
     None
     """
     plt.plot(u, v, marker="o", linestyle="none", markersize=2, color="#1f77b4")
-    plt.xlabel(r"u / $\lambda$", fontsize=16)
-    plt.ylabel(r"v / $\lambda$", fontsize=16)
+    plt.xlabel(r"u / $\lambda$", fontsize=20)
+    plt.ylabel(r"v / $\lambda$", fontsize=20)
     plt.tight_layout()
 
 
@@ -100,7 +114,7 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
         markersize=15,
         transform=ccrs.Geodetic(),
         zorder=10,
-        label="Source",
+        label="Projected source",
     )
 
     if baselines is True:
@@ -187,7 +201,7 @@ def animate_uv_coverage(source, antenna, filename, fps=5):
     ani.save(str(filename) + ".gif", dpi=80, writer=PillowWriter(fps=fps))
 
 
-def plot_source(img, ft=False, log=False):
+def plot_source(img, ft=False, log=False, ft2=False):
     """
     Visualize a radio source
 
@@ -202,32 +216,58 @@ def plot_source(img, ft=False, log=False):
     -------
     None
     """
-    plt.rcParams.update({"font.size": 18})
+    # plt.rcParams.update({"font.size": 18})
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111)
     if ft is False:
-        img = img
-        ax.set_xlabel("l")
-        ax.set_ylabel("m")
+        img = np.abs(img)
+        ax.set_xlabel("l", fontsize=20)
+        ax.set_ylabel("m", fontsize=20)
         if log is True:
             s = ax.imshow(img, cmap="inferno", norm=LogNorm(vmin=1e-8, vmax=img.max()))
         else:
             s = ax.imshow(img, cmap="inferno")
-        fig.colorbar(s, label="Intensity / a.u.")
+        cbar = fig.colorbar(s, label="Intensity / a.u.")
+        cbar.set_label("Intensity / a.u.", size=20)
+        cbar.ax.tick_params(labelsize=20)
     else:
-        img = np.abs(FT(img))
-        ax.set_xlabel("u")
-        ax.set_ylabel("v")
+        if ft2:
+            img = np.abs(FT2(img))
+        else:
+            img = np.abs(FT(img))
+        ax.set_xlabel("u", fontsize=20)
+        ax.set_ylabel("v", fontsize=20)
         if log is True:
             s = ax.imshow(img, cmap="inferno", norm=LogNorm())
         else:
             s = ax.imshow(img, cmap="inferno")
-        fig.colorbar(s, label="Amplitude / a.u.")
+        cbar = fig.colorbar(s, label="Intensity / a.u.")
+        cbar.set_label("Intensity / a.u.", size=20)
+        cbar.ax.tick_params(labelsize=20)
 
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     ax.xaxis.set_ticks_position("none")
     ax.yaxis.set_ticks_position("none")
+    plt.tight_layout()
+
+
+def plot_mask(fig, mask):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    ax = fig.add_subplot(111)
+    s = plt.imshow(mask.astype(int), cmap="inferno")
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.3)
+    cbar = plt.colorbar(s, cax=cax)
+    cbar.ax.tick_params(labelsize=20)
+
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+    ax.xaxis.set_ticks_position("none")
+    ax.yaxis.set_ticks_position("none")
+    ax.set_xlabel("u", fontsize=20)
+    ax.set_ylabel("v", fontsize=20)
     plt.tight_layout()
 
 
@@ -246,6 +286,23 @@ def FT(img):
         Fourier transform of input array
     """
     return np.fft.fftshift(np.fft.fft2(img))
+
+
+def FT2(img):
+    """
+    Computes the 2d Fourier trafo of an image
+
+    Parameters
+    ----------
+    img: 2darray
+        values of Gaussian source
+
+    Returns
+    -------
+    out: 2darray
+        Fourier transform of input array
+    """
+    return np.fft.ifft2(np.fft.ifftshift(img))
 
 
 def apply_mask(img, mask):

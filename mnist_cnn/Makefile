@@ -23,7 +23,7 @@ find_lr: ./lr_find
 ./data/mnist_fft_done:
 		mkdir -p data/
 		python scripts/create_mnist_fft.py ./../resources/mnist.pkl.gz\
-		./data -size 63 -noise False -bundle_size 500
+		./data -size 64 -noise False -bundle_size 500
 		touch ./data/mnist_fft_done
 
 ./data/mnist_samp_done:
@@ -60,7 +60,7 @@ find_lr: ./lr_find
 		${arch}\
 
 ./lr_find:
-		mkdir -p models/
+		mkdir -p ${path}
 		python scripts/find_lr.py ${data_path}\
 		${arch} ${path} ${lr_type} ${norm_path}\
 		-max_iter ${max_iter} -min_lr ${min_lr}\

@@ -75,15 +75,15 @@ def test_sample_freqs():
 
     ant_config_path = "./simulations/layouts/vlba.txt"
     img = np.ones((2, 63, 63))
-    img_samp = sample_freqs(img, ant_config_path)
+    img_samp = sample_freqs(img, ant_config_path, test=True)
 
     assert img_samp.shape == img.shape
     assert len(img[img == 1]) != len(img_samp[img_samp == 1])
 
-    img_samp, mask = sample_freqs(img, ant_config_path, plot=True)
+    img_samp, mask = sample_freqs(img, ant_config_path, plot=True, test=True)
 
     assert img_samp.shape == img.shape
-    assert mask.shape == img.shape[1:]
+    assert mask.shape == img.shape
 
 
 def test_get_antenna_config():

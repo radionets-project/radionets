@@ -60,7 +60,7 @@ def main(
 
     # load pretrained model
     img_size = test_ds[0][0][0].shape[1]
-    if arch == "filter_deep":
+    if arch == "filter_deep" or "filter_deep_amp":
         arch = getattr(architecture, arch)(img_size)
     else:
         arch = getattr(architecture, arch)()
@@ -70,11 +70,11 @@ def main(
     prediction = eval_model(images, arch).numpy().reshape(num, -1)
 
     if separate:
-        pre_path = "../models/filter_deep_phase/filter_deep_phase.model"
+        pre_path = "../models/fd_diff_mask_msssim_phase/fd_diff_mask_msssim_phase.model"
         arch = "filter_deep_phase"
 
         # load pretrained model
-        arch = getattr(architecture, arch)()
+        arch = getattr(architecture, arch)(img_size)
         load_pre_model(arch, pre_path, visualize=True)
 
         # create predictions
