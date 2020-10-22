@@ -13,6 +13,7 @@ setup(
         "fastai",
         "fastcore",
         "kornia",
+        "pytorch-msssim",
         "numpy",
         "astropy",
         "tqdm",
