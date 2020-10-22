@@ -9,16 +9,16 @@ from matplotlib.colors import LogNorm
 
 
 # make nice Latex friendly plots
-mpl.use("pgf")
-mpl.rcParams.update(
-    {
-        "font.size": 12,
-        "font.family": "sans-serif",
-        "text.usetex": True,
-        "pgf.rcfonts": False,
-        "pgf.texsystem": "lualatex",
-    }
-)
+# mpl.use("pgf")
+# mpl.rcParams.update(
+#     {
+#         "font.size": 12,
+#         "font.family": "sans-serif",
+#         "text.usetex": True,
+#         "pgf.rcfonts": False,
+#         "pgf.texsystem": "lualatex",
+#     }
+# )
 
 
 def plot_uv_coverage(u, v):
