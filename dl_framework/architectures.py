@@ -525,7 +525,7 @@ class filter(nn.Module):
         return out
 
 
-class filter_deep(nn.Module):
+class filter_deep_variable(nn.Module):
     def __init__(self, img_size):
         super().__init__()
 
