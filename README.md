@@ -15,7 +15,7 @@ This repository is build up as a python package. It is recommended to create an 
 ```
 $ conda env create -f environment.yaml
 ```
-Depending on your cuda version you have to specify the cudatoolkit version used by pytorch. If you working on machines with cuda versions < 10.2, please
+Depending on your `cuda` version you have to specify the `cudatoolkit` version used by `pytorch`. If you working on machines with `cuda` versions < 10.2, please
 change the version number in the environment.yml file.
 
 ## Usage
