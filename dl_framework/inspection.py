@@ -8,16 +8,16 @@ import dl_framework.architectures as architecture
 from dl_framework.model import load_pre_model
 
 # make nice Latex friendly plots
-mpl.use("pgf")
-mpl.rcParams.update(
-    {
-        "font.size": 12,
-        "font.family": "sans-serif",
-        "text.usetex": True,
-        "pgf.rcfonts": False,
-        "pgf.texsystem": "lualatex",
-    }
-)
+# mpl.use("pgf")
+# mpl.rcParams.update(
+#     {
+#         "font.size": 12,
+#         "font.family": "sans-serif",
+#         "text.usetex": True,
+#         "pgf.rcfonts": False,
+#         "pgf.texsystem": "lualatex",
+#     }
+# )
 
 
 def load_pretrained_model(arch_name, model_path):

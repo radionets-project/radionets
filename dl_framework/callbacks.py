@@ -138,16 +138,16 @@ class Recorder(Callback):
         import matplotlib as mpl
 
         # make nice Latex friendly plots
-        mpl.use("pgf")
-        mpl.rcParams.update(
-            {
-                "font.size": 12,
-                "font.family": "sans-serif",
-                "text.usetex": True,
-                "pgf.rcfonts": False,
-                "pgf.texsystem": "lualatex",
-            }
-        )
+        # mpl.use("pgf")
+        # mpl.rcParams.update(
+        #     {
+        #         "font.size": 12,
+        #         "font.family": "sans-serif",
+        #         "text.usetex": True,
+        #         "pgf.rcfonts": False,
+        #         "pgf.texsystem": "lualatex",
+        #     }
+        # )
 
         plt.plot(self.train_losses, label="training loss")
         plt.plot(self.valid_losses, label="validation loss")
