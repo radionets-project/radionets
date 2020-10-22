@@ -2,7 +2,7 @@ import sys
 import click
 from pathlib import Path
 from dl_framework.data import load_data, DataBunch, get_dls
-import dl_framework.architectures as architecture
+import dl_framework.architecture as architecture
 from dl_framework.inspection import plot_loss
 from dl_framework.model import save_model
 from dl_framework.inspection import create_inspection_plots
