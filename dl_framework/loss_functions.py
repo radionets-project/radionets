@@ -4,6 +4,7 @@ from dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from dl_framework.utils import children
 import torch.nn.functional as F
+import pytorch_msssim
 
 
 class FeatureLoss(nn.Module):
@@ -139,7 +140,8 @@ def loss_amp(x, y):
     tar = y[:, 0, :].unsqueeze(1)
     assert tar.shape == x.shape
 
-    loss = ((x - tar).pow(2)).mean()
+    mse = nn.MSELoss()
+    loss = mse(x, tar)
 
     return loss
 
@@ -148,6 +150,195 @@ def loss_phase(x, y):
     tar = y[:, 1, :].unsqueeze(1)
     assert tar.shape == x.shape
 
-    loss = ((x - tar).pow(2)).mean()
+    mse = nn.MSELoss()
+    loss = mse(x, tar)
 
     return loss
+
+
+def loss_msssim(x, y):
+    """Loss function with 1 - the value of the MS-SSIM
+
+    Parameters
+    ----------
+    x : tensor
+        output of net
+    y : tensor
+        output of net
+
+    Returns
+    -------
+    float
+        value of 1 - MS-SSIM
+    """
+    inp_real = x[:, 0, :].unsqueeze(1)
+    inp_imag = x[:, 1, :].unsqueeze(1)
+
+    tar_real = y[:, 0, :].unsqueeze(1)
+    tar_imag = y[:, 1, :].unsqueeze(1)
+
+    loss = (
+        1.0
+        - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
+        + 1.0
+        - pytorch_msssim.msssim(inp_imag, tar_imag, normalize="relu")
+    )
+
+    return loss
+
+
+def loss_msssim_diff(x, y):
+    """Loss function with negative value of MS-SSIM
+
+    Parameters
+    ----------
+    x : tensor
+        output of net
+    y : tensor
+        target image
+
+    Returns
+    -------
+    float
+        value of negative MS-SSIM
+    """
+    inp_real = x[:, 0, :].unsqueeze(1)
+    inp_imag = x[:, 1, :].unsqueeze(1)
+
+    tar_real = y[:, 0, :].unsqueeze(1)
+    tar_imag = y[:, 1, :].unsqueeze(1)
+
+    loss = -(
+        pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
+        + pytorch_msssim.msssim(inp_imag, tar_imag, normalize="relu")
+    )
+
+    return loss
+
+
+def loss_msssim_amp(x, y):
+    """Loss function with 1 - the value of the MS-SSIM for amplitude
+
+    Parameters
+    ----------
+    x : tensor
+        output of net
+    y : tensor
+        output of net
+
+    Returns
+    -------
+    float
+        value of 1 - MS-SSIM
+    """
+    inp_real = x
+    tar_real = y[:, 0, :].unsqueeze(1)
+
+    loss = (
+        1.0
+        - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
+    )
+
+    return loss
+
+
+def loss_mse_msssim_phase(x, y):
+    """Combine MSE and MS-SSIM loss for phase
+
+    Parameters
+    ----------
+    x : tensor
+        ouptut of net
+    y : tensor
+        target image
+
+    Returns
+    -------
+    float
+        value of addition of MSE and MS-SSIM
+    """
+
+    tar_phase = y[:, 1, :].unsqueeze(1)
+    inp_phase = x
+
+    loss_mse_phase = nn.MSELoss()
+    loss_mse_phase = loss_mse_phase(inp_phase, tar_phase)
+
+    loss_phase = (
+        loss_mse_phase
+        + 1.0
+        - pytorch_msssim.msssim(inp_phase, tar_phase, normalize="relu")
+    )
+
+    return loss_phase
+
+
+def loss_mse_msssim_amp(x, y):
+    """Combine MSE and MS-SSIM loss for amp
+
+    Parameters
+    ----------
+    x : tensor
+        ouptut of net
+    y : tensor
+        target image
+
+    Returns
+    -------
+    float
+        value of addition of MSE and MS-SSIM
+    """
+
+    tar_amp = y[:, 0, :].unsqueeze(1)
+    inp_amp = x
+
+    loss_mse_amp = nn.MSELoss()
+    loss_mse_amp = loss_mse_amp(inp_amp, tar_amp)
+
+    loss_amp = (
+        loss_mse_amp + 1.0 - pytorch_msssim.msssim(inp_amp, tar_amp, normalize="relu")
+    )
+
+    return loss_amp
+
+
+def loss_mse_msssim(x, y):
+    """Combine MSE and MS-SSIM loss
+
+    Parameters
+    ----------
+    x : tensor
+        output of net
+    y : tensor
+        target image
+
+    Returns
+    -------
+    float
+        value of addition of MSE and MS-SSIM
+    """
+    # Split in amplitude and phase
+    inp_amp = x[:, 0, :].unsqueeze(1)
+    inp_phase = x[:, 1, :].unsqueeze(1)
+
+    tar_amp = y[:, 0, :].unsqueeze(1)
+    tar_phase = y[:, 1, :].unsqueeze(1)
+
+    # calculate mse loss
+    loss_mse_amp = nn.MSELoss()
+    loss_mse_amp = loss_mse_amp(inp_amp, tar_amp)
+
+    loss_mse_phase = nn.MSELoss()
+    loss_mse_phase = loss_mse_phase(inp_phase, tar_phase)
+
+    # add mse loss to MS-SSIM
+    loss_amp = (
+        loss_mse_amp + 1.0 - pytorch_msssim.msssim(inp_amp, tar_amp, normalize="relu")
+    )
+    loss_phase = (
+        loss_mse_phase
+        + 1.0
+        - pytorch_msssim.msssim(inp_phase, tar_phase, normalize="relu")
+    )
+
+    return loss_amp + loss_phase
