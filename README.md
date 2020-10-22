@@ -3,6 +3,14 @@
 ## Imaging Radio Interferometric Data with Neural Networks
 
 Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct calibrated observations with convolutional neural networks to create high resolution images. 
+
+Analysis strategies leading to a reproducible processing and evaluation of data recorded by radio interferometers:
+* Simulation of datasets
+* Training of deep learning models
+* Reconstruction of radio interferometric data
+
+## Installation
+
 This repository is build up as a python package. It is recommended to create an own conda environment to handle the dependencies of the packages. You can create one by running the folliwing command in this repository:
 ```
 $ conda env create -f environment.yaml
@@ -12,54 +20,37 @@ change the version number in the environment.yml file.
 
 ## Usage
 
+For each tasks executables are intstalled to your `PATH`. Each of them take `toml` configuration files as input, to manage data paths and options.
+Simulated data is saved in `hdf5`, trained models are saved as `pickle` files.
 
+* `radionets_simulate <...>`
+  This script is used to simulate radio interferometric datasets for the training of deep learning models.
+* `radionets_training <...>`
+  This script is used to train a model on events with known truth
+  values for the target variable, usually monte carlo simulations.
+* `radionets_evaluation <...>`
+  This script is used to evaluate the performance of the trained deep learning models.
+* `radionets_reconstruction <...>`
+  This script is used to reconstruct radio interferometric data using a trained deep learning model.
 
 
 ## Structure of the Repository
 
 ### dl_framework
 
-The used deep learning framework is based in [pytorch](https://pytorch.org/) and [fastai](https://www.fast.ai/).
-'''
-explain structure, idea and functionality
-'''
+The used deep learning framework is based on [pytorch](https://pytorch.org/) and [fastai](https://www.fast.ai/).
+An introduction to neural networks and an overview of the use of fastai to train deep learning models can be found in [Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html) and [fastbook](https://github.com/fastai/fastbook).
 
-Framework used to create and train neural networks. Most of it can be found in [Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html). Check it out for more information including a nice tutorial about deep learning.
+### dl_training
+
+Functions for handling the different training options.
 
 ### simulations
 
-'''
-At the end one simulation block with all kind of sources: MNIST and Gaussian sources, which are split into point, pointlike and extended
+Functions to simulate and illustrate radio interferometric observations. At the moment simulations based on the MNIST dataset and 
+simulations of Gaussian sources are possible.
 
-overview of settings and possibilities
-details and example images in simulations directory
-example to run the code
-'''
-
-Functions to simulate and illustrate radio interferometric observations.
-
-* Define antenna arrays
-* Calculate baselines
-* Simulate (uv)-coverages
-* Create (uv)-masks
-* Illustrate uv-coverages and baselines for different observations
-
-### mnist_cnn
-
-Feasibility study to test analysis strategies with convolutional neural networks.
-
-* Reconstruct handwritten digits from their sampled Fourier spectrum
-* Simulated VLBA observations used for sampling
-* Simple CNN model for reconstruction and retransformation
-
-All analysis steps can be run using the Makefile inside the mnist_cnn directory.
-The different steps for an example analysis are:
-1. mnist_fft: rescale and create the Fourier transformation of the mnist images
-2. mnist_samp: sample the Fourier space with simulated (uv)-coverages
-3. calc_normalization: calculate normalization factors to normalize train and valid dataset
-4. cnn_training: train the convolutional neural network, many options are available here
-
-### Evaluation
+### evaluation
 
 '''
 evaluate training process with different approaches
