@@ -11,7 +11,7 @@ Analysis strategies leading to a reproducible processing and evaluation of data 
 
 ## Installation
 
-This repository is build up as a python package. It is recommended to create an own conda environment to handle the dependencies of the packages. You can create one by running the folliwing command in this repository:
+This repository is build up as a python package. It is recommended to create an own conda environment to handle the dependencies of the packages. You can create one by running the following command in this repository:
 ```
 $ conda env create -f environment.yaml
 ```
