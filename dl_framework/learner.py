@@ -202,7 +202,7 @@ def define_learner(
         ])
     if not test and not lr_find:
         cbfs.extend([
-            # partial(LoggerCallback, model_name=model_name),
+            partial(LoggerCallback, model_name=model_name),
             data_aug,
         ])
 
