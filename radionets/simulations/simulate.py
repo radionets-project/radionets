@@ -48,7 +48,7 @@ def sample_fft_images(sim_conf):
         amp_phase=sim_conf["amp_phase"],
         real_imag=sim_conf["real_imag"],
         specific_mask=sim_conf["specific_mask"],
-        antenna_config_path=sim_conf["antenna_config_path"],
+        antenna_config=sim_conf["antenna_config"],
         lon=sim_conf["lon"],
         lat=sim_conf["lat"],
         steps=sim_conf["steps"],

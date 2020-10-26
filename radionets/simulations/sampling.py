@@ -19,7 +19,7 @@ def sample_frequencies(
     fourier,
     compressed,
     specific_mask,
-    antenna_config_path,
+    antenna_config,
     lon=None,
     lat=None,
     steps=None,
@@ -40,7 +40,7 @@ def sample_frequencies(
             if specific_mask is True:
                 fft_samp = sample_freqs(
                     fft_scaled.copy(),
-                    antenna_config_path,
+                    antenna_config,
                     size,
                     lon,
                     lat,
@@ -51,7 +51,7 @@ def sample_frequencies(
             else:
                 fft_samp = sample_freqs(
                     fft_scaled.copy(),
-                    antenna_config_path,
+                    antenna_config,
                     size=size,
                     specific_mask=False,
                 )

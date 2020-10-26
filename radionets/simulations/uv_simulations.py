@@ -1,5 +1,6 @@
 import numpy as np
 import astropy.coordinates as ac
+import radionets.simulations.layouts.layouts as layouts
 
 
 class source:
@@ -301,7 +302,7 @@ def get_uv_coverage(source, antenna, iterate=False):
 
 
 def create_mask(u, v, size=63):
-    """ Create 2d mask from a given (uv)-coverage
+    """Create 2d mask from a given (uv)-coverage
 
     u: array of u coordinates
     v: array of v coordinates
@@ -334,7 +335,7 @@ def test_mask():
 
 def sample_freqs(
     img,
-    ant_config_path,
+    ant_config,
     size=63,
     lon=None,
     lat=None,
@@ -351,8 +352,8 @@ def sample_freqs(
     ----------
     img: 2darray
         2d Fourier space
-    ant_config_path: str
-        path to antenna config file
+    ant_config: str
+        name of antenna config
     size: int
         pixel size of input image, default 64x64 pixel
     lon: float
@@ -384,7 +385,8 @@ def sample_freqs(
     if test:
         mask = test_mask()
     else:
-        ant = antenna(*get_antenna_config(ant_config_path))
+        layout = getattr(layouts, ant_config)
+        ant = antenna(*layout())
         if specific_mask is True:
             s = source(lon, lat)
             s.propagate(num_steps=num_steps, multi_pointing=False)
@@ -414,23 +416,3 @@ def sample_freqs(
         return img, mask
     else:
         return img
-
-
-def get_antenna_config(config_path):
-    """
-    Loads antenna config file and returns antenna positions.
-
-    Parameters
-    ----------
-    config_path: str
-        path to antenna config file
-
-    Returns
-    -------
-    ant_pos: ndarray
-        array containing x, y, z positions
-    """
-    config = config_path
-    x, y, z, _, _ = np.genfromtxt(config, unpack=True)
-    ant_pos = np.array([x, y, z])
-    return ant_pos
