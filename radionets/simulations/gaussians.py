@@ -397,7 +397,8 @@ def gauss_pointsources(img, num_img, sources):
     amp = (np.random.randint(0, 100, size=(num_img)) * np.random.random()) / 1e2
     sigma = 0.05
     for i in range(num_img):
-        targets = np.random.randint(2, sources + 1)
+        targets = sources
+        # targets = np.random.randint(2, sources + 1)
         for j in range(targets):
             g = gauss(mx[i, j], my[i, j], sigma, sigma, amp[i])
             img[i] += g
