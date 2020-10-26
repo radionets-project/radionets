@@ -1,11 +1,11 @@
 import sys
 import click
 from pathlib import Path
-from dl_framework.data import load_data, DataBunch, get_dls
-import dl_framework.architecture as architecture
-from dl_framework.inspection import plot_loss
-from dl_framework.model import save_model
-from dl_framework.inspection import create_inspection_plots
+from radionets.dl_framework.data import load_data, DataBunch, get_dls
+import radionets.dl_framework.architecture as architecture
+from radionets.dl_framework.inspection import plot_loss
+from radionets.dl_framework.model import save_model
+from radionets.dl_framework.inspection import create_inspection_plots
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):

@@ -1,7 +1,7 @@
 import click
 import sys
 import toml
-from dl_training.utils import (
+from radionets.dl_training.utils import (
     read_config,
     check_outpath,
     create_databunch,
@@ -9,9 +9,9 @@ from dl_training.utils import (
     pop_interrupt,
     end_training,
 )
-from dl_framework.learner import define_learner
-from dl_framework.model import load_pre_model
-from dl_framework.inspection import (
+from radionets.dl_framework.learner import define_learner
+from radionets.dl_framework.model import load_pre_model
+from radionets.dl_framework.inspection import (
     create_inspection_plots,
     plot_lr_loss,
     plot_loss,
