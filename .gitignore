@@ -7,6 +7,7 @@
 *.uvf
 *.h5
 radionets/simulations/test_data
+examples/example_data/
 
 #evaluation results
 */results
