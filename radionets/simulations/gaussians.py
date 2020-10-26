@@ -359,7 +359,7 @@ def create_gauss(img, N, sources, spherical, source_list):
     ) / 1e2
 
     if spherical:
-        sx = np.random.randint(1, 15, size=(N, sources)) / 10
+        sx = np.random.randint(3, 8, size=(N, sources))
         sy = sx
     else:
         sx = np.random.randint(1, 15, size=(N, sources))
