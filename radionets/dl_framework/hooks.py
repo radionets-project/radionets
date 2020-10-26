@@ -1,9 +1,13 @@
 from functools import partial
-from dl_framework.utils import ListContainer, get_batch, find_modules,\
-                                is_lin_layer
+from radionets.dl_framework.utils import (
+    ListContainer,
+    get_batch,
+    find_modules,
+    is_lin_layer,
+)
 
 
-class Hook():
+class Hook:
     def __init__(self, m, f):
         self.hook = m.register_forward_hook(partial(f, self))
 

@@ -1,24 +1,24 @@
 import re
 from typing import Iterable
-
 import numpy as np
-
 from torch import nn
 
 
-def lin_comb(v1, v2, beta): return beta*v1 + (1-beta)*v2
+def lin_comb(v1, v2, beta):
+    return beta * v1 + (1 - beta) * v2
 
 
-_camel_re1 = re.compile('(.)([A-Z][a-z]+)')
-_camel_re2 = re.compile('([a-z0-9])([A-Z])')
+_camel_re1 = re.compile("(.)([A-Z][a-z]+)")
+_camel_re2 = re.compile("([a-z0-9])([A-Z])")
 
 
 def camel2snake(name):
-    s1 = re.sub(_camel_re1, r'\1_\2', name)
-    return re.sub(_camel_re2, r'\1_\2', s1).lower()
+    s1 = re.sub(_camel_re1, r"\1_\2", name)
+    return re.sub(_camel_re2, r"\1_\2", s1).lower()
 
 
-def is_listy(x): return isinstance(x, (tuple, list))
+def is_listy(x):
+    return isinstance(x, (tuple, list))
 
 
 def listify(o):
@@ -33,13 +33,13 @@ def listify(o):
     return [o]
 
 
-class AvgStats():
+class AvgStats:
     def __init__(self, metrics, in_train):
         self.metrics, self.in_train = listify(metrics), in_train
 
     def reset(self):
-        self.tot_loss, self.count = 0., 0
-        self.tot_mets = [0.] * len(self.metrics)
+        self.tot_loss, self.count = 0.0, 0
+        self.tot_mets = [0.0] * len(self.metrics)
 
     @property
     def all_stats(self):
@@ -63,10 +63,10 @@ class AvgStats():
         i = 0
         for o in self.all_stats:
             if i == 0:
-                stats_list = ['Loss: ', np.round(o/self.count, 7)]
+                stats_list = ["Loss: ", np.round(o / self.count, 7)]
             else:
-                name = str(self.metrics[i-1]).split('()')[0]
-                stats_list += [name, np.round(o/self.count, 7)]
+                name = str(self.metrics[i - 1]).split("()")[0]
+                stats_list += [name, np.round(o / self.count, 7)]
             i += 1
         return stats_list
 
@@ -91,7 +91,7 @@ def get_batch(dl, learn):
     learn.xb, learn.yb = next(iter(dl))
     for cb in learn.cbs:
         cb.set_runner(learn)
-    learn('begin_batch')
+    learn("begin_batch")
     return learn.xb, learn.yb
 
 
@@ -106,14 +106,14 @@ def is_lin_layer(l):
     return isinstance(l, lin_layers)
 
 
-def compose(x, funcs, *args, order_key='_order', **kwargs):
+def compose(x, funcs, *args, order_key="_order", **kwargs):
     key = lambda o: getattr(o, order_key, 0)
     for f in sorted(listify(funcs), key=key):
         x = f(x, **kwargs)
     return x
 
 
-class ListContainer():
+class ListContainer:
     def __init__(self, items):
         self.items = listify(items)
 
@@ -136,13 +136,13 @@ class ListContainer():
         self.items[i] = o
 
     def __delitem__(self, i):
-        del(self.items[i])
+        del self.items[i]
 
     def __repr__(self):
-        res = f'{self.__class__.__name__} \
-                ({len(self)} items)\n{self.items[:10]}'
+        res = f"{self.__class__.__name__} \
+                ({len(self)} items)\n{self.items[:10]}"
         if len(self) > 10:
-            res = res[:-1] + '...]'
+            res = res[:-1] + "...]"
         return res
 
 

@@ -1,6 +1,6 @@
 from torch import nn
 import torch
-from dl_framework.model import (
+from radionets.dl_framework.model import (
     Lambda,
     flatten,
     fft,
@@ -17,7 +17,7 @@ from dl_framework.model import (
 from functools import partial
 from math import pi
 
-from dl_framework.uncertainty_arch import (
+from radionets.dl_framework.uncertainty_arch import (
     block_1_a,
     block_2_a,
     block_3_a,
@@ -26,7 +26,7 @@ from dl_framework.uncertainty_arch import (
     block_3_a_unc,
 )
 
-from dl_framework.uncertainty_arch import (
+from radionets.dl_framework.uncertainty_arch import (
     block_1_p,
     block_2_p,
     block_3_p,

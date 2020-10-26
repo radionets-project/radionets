@@ -1,16 +1,21 @@
 import torch
 from torch import nn
-from dl_framework.hook_fastai import hook_outputs
+from radionets.dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
-from dl_framework.utils import children
+from radionets.dl_framework.utils import children
 import torch.nn.functional as F
 import pytorch_msssim
-from dl_framework.regularization import inv_fft, calc_jet_angle, rot, calc_spec
+from radionets.dl_framework.regularization import (
+    inv_fft,
+    calc_jet_angle,
+    rot,
+    calc_spec,
+)
 
 
 class FeatureLoss(nn.Module):
     def __init__(self, m_feat, base_loss, layer_ids, layer_wgts):
-        """"
+        """ "
         m_feat: enthält das vortrainierte Netz
         loss_features: dort werden alle features gespeichert, deren Loss
         man berechnen will
@@ -28,7 +33,7 @@ class FeatureLoss(nn.Module):
         # )
 
     def make_features(self, x, clone=False):
-        """"
+        """ "
         Hier wird das Objekt x durch das vortrainierte Netz geschickt und somit die
         Aktivierungsfunktionen berechnet. Dies geschieht sowohl einmal für
         die Wahrheit "target" und einmal für die Prediction "input"
@@ -154,16 +159,16 @@ def regularization(pred_phase, img_true):
     img_rot_true = rot(img_true, alpha_true)
     s_true = calc_spec(img_rot_true)
 
-    img_rot_pred_cj = rot(img_pred, alpha_true-90)
+    img_rot_pred_cj = rot(img_pred, alpha_true - 90)
     s_pred_cj = calc_spec(img_rot_pred_cj)
-    img_rot_true_cj = rot(img_true, alpha_true-90)
+    img_rot_true_cj = rot(img_true, alpha_true - 90)
     s_true_cj = calc_spec(img_rot_true_cj)
 
     loss_1 = (((s_pred - s_true) ** 2).sum(axis=0)).mean()
-    #print(loss_1)
-    #loss_2 = (((s_pred_cj - s_true_cj) ** 2).sum(axis=0)).mean()
-    #print(loss_2)
-    loss = loss_1 #+ loss_2
+    # print(loss_1)
+    # loss_2 = (((s_pred_cj - s_true_cj) ** 2).sum(axis=0)).mean()
+    # print(loss_2)
+    loss = loss_1  # + loss_2
     print(loss)
     return loss
 
@@ -176,7 +181,7 @@ def my_loss(x, y):
     print(loss)
     # final_loss = loss * 10 + regularization(x, img_true) / 100
     # print(final_loss)
-    print('')
+    print("")
     return loss
 
 
@@ -301,10 +306,7 @@ def loss_msssim_amp(x, y):
     inp_real = x
     tar_real = y[:, 0, :].unsqueeze(1)
 
-    loss = (
-        1.0
-        - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
-    )
+    loss = 1.0 - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
 
     return loss
 
@@ -410,43 +412,46 @@ def loss_mse_msssim(x, y):
 
     return loss_amp + loss_phase
 
-def spe(x,y):
+
+def spe(x, y):
     y = y.squeeze()
     x = x.squeeze()
-    #y = y[:, 0:2]
+    # y = y[:, 0:2]
     loss = []
     value = 0
     for i in range(len(x)):
         value += torch.abs(x[i] - y[i])
         loss.append(value)
         value = 0
-    loss = sum(loss)/len(x)
+    loss = sum(loss) / len(x)
     return loss
 
-def spe_square(x,y):
+
+def spe_square(x, y):
     y = y.squeeze()
     loss = []
     value = 0
     for i in range(len(x)):
         for k in range(1, len(x[0])):
             if k == 1:
-                value += (x[i][k-1]-y[i][k-1] + x[i][k]-y[i][k])**2
+                value += (x[i][k - 1] - y[i][k - 1] + x[i][k] - y[i][k]) ** 2
             else:
-                value += torch.abs(x[i][k]-y[i][k])
-        loss.append(value/len(x[0]))
+                value += torch.abs(x[i][k] - y[i][k])
+        loss.append(value / len(x[0]))
         value = 0
     k = sum(loss)
-    loss = k/len(x)
+    loss = k / len(x)
     return loss
+
 
 def spe_(x, y):
     loss = []
     value = 0
     for i in range(len(x)):
         for k in range(len(x[0])):
-            value += torch.abs(x[i][k]-y[i][k])
-        loss.append(value/len(x[0]))
+            value += torch.abs(x[i][k] - y[i][k])
+        loss.append(value / len(x[0]))
         value = 0
     k = sum(loss)
-    loss = k/len(x)
+    loss = k / len(x)
     return loss

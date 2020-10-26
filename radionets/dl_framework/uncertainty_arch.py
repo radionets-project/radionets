@@ -1,5 +1,5 @@
 from torch import nn
-from dl_framework.model import GeneralELU, LocallyConnected2d
+from radionets.dl_framework.model import GeneralELU, LocallyConnected2d
 from math import pi
 
 

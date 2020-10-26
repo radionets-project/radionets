@@ -1,7 +1,7 @@
 import torch.nn as nn
-from dl_framework.model import init_cnn
+from radionets.dl_framework.model import init_cnn
 import sys
-from dl_framework.loss_functions import (
+from radionets.dl_framework.loss_functions import (
     init_feature_loss,
     splitted_mse,
     loss_amp,
@@ -16,7 +16,7 @@ from dl_framework.loss_functions import (
     likelihood_phase,
     spe,
 )
-from dl_framework.callbacks import (
+from radionets.dl_framework.callbacks import (
     normalize_tfm,
     BatchTransformXCallback,
     SaveTempCallback,

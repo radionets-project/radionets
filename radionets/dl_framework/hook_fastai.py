@@ -1,5 +1,5 @@
 from torch import nn, Tensor
-from dl_framework.utils import is_listy
+from radionets.dl_framework.utils import is_listy
 
 # ab hier aus dem source code von fastai kopiert
 # https://github.com/fastai/fastai/blob/master/fastai/callbacks/hooks.py#L58

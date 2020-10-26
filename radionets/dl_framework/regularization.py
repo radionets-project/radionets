@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import kornia
 from math import pi
-from dl_framework.model import fft, euler, flatten
+from radionets.dl_framework.model import fft, euler, flatten
 
 
 def bmul(vec, mat, axis=0):

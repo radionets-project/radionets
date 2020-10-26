@@ -1,6 +1,6 @@
 from torch import nn
 import torch
-from dl_framework.model import (
+from radionets.dl_framework.model import (
     conv,
     Lambda,
     flatten,

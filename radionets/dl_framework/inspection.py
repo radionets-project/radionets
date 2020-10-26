@@ -5,10 +5,10 @@ from tqdm import tqdm
 import matplotlib as mpl
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
-from dl_framework.data import do_normalisation, load_data
-import dl_framework.architectures as architecture
-from dl_framework.model import load_pre_model
-from simulations.utils import adjust_outpath
+from radionets.dl_framework.data import do_normalisation, load_data
+import radionets.dl_framework.architectures as architecture
+from radionets.dl_framework.model import load_pre_model
+from radionets.simulations.utils import adjust_outpath
 from pathlib import Path
 
 # from gaussian_sources.inspection import visualize_with_fourier

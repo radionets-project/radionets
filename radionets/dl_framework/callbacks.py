@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 import pandas as pd
-from dl_framework.data import do_normalisation
-from dl_framework.logger import make_notifier
-from dl_framework.model import save_model
+from radionets.dl_framework.data import do_normalisation
+from radionets.dl_framework.logger import make_notifier
+from radionets.dl_framework.model import save_model
 from fastai.callback.core import Callback
 from pathlib import Path
 from fastcore.foundation import L
