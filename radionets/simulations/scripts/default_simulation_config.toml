@@ -42,3 +42,4 @@ steps = 50
 antenna_config_path = "../radionets/simulations/layouts/vlba.txt"
 compressed = false
 keep_fft_files = true
+source_list = false
