@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from simulations.utils import open_mnist, prepare_mnist_bundles
+from radionets.simulations.utils import open_mnist, prepare_mnist_bundles
 
 
 def mnist_fft(resource_path, out_path, size, bundle_size, noise=False):

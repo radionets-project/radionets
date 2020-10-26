@@ -1,6 +1,6 @@
-from simulations.mnist import mnist_fft
-from simulations.gaussians import simulate_gaussian_sources
-from simulations.sampling import sample_frequencies
+from radionets.simulations.mnist import mnist_fft
+from radionets.simulations.gaussians import simulate_gaussian_sources
+from radionets.simulations.sampling import sample_frequencies
 import click
 from pathlib import Path
 
@@ -34,7 +34,7 @@ def create_fft_images(sim_conf):
                 num_pointlike=sim_conf["num_pointlike_gaussians"],
                 num_pointsources=sim_conf["num_pointsources"],
                 noise=sim_conf["noise"],
-		        source_list=sim_conf["source_list"],
+                source_list=sim_conf["source_list"],
             )
 
 

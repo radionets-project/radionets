@@ -2,8 +2,8 @@ import numpy as np
 from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
 from scipy import ndimage
-from dl_framework.data import save_fft_pair, save_fft_pair_list
-from simulations.utils import adjust_outpath, add_noise
+from radionets.dl_framework.data import save_fft_pair, save_fft_pair_list
+from radionets.simulations.utils import adjust_outpath, add_noise
 
 
 def simulate_gaussian_sources(
@@ -307,7 +307,7 @@ def create_gaussian_source(
 
 
 def gaussian_source(grid):
-L(learn.recorder.values[0:]).itemgot(0)    """
+    """
     Creates random Gaussian source parameters and returns an image
     of a Gaussian source.
 
@@ -365,13 +365,13 @@ def create_gauss(img, N, sources, spherical, source_list):
         sx = np.random.randint(1, 15, size=(N, sources))
         sy = np.random.randint(1, 15, size=(N, sources))
         theta = np.random.randint(0, 360, size=(N, sources))
-    
-    s = np.zeros((N,sources,1)) # changed from 5
+
+    s = np.zeros((N, sources, 1))  # changed from 5
     for i in range(N):
         for j in range(sources):
             g = gauss(mx[i, j], my[i, j], sx[i, j], sy[i, j], amp[i])
-            #s[i,j] = np.array([mx[i,j],my[i,j],sx[i,j],sy[i,j],amp[i]])
-            s[i,j] = np.array([mx[i,j]])
+            # s[i,j] = np.array([mx[i,j],my[i,j],sx[i,j],sy[i,j],amp[i]])
+            s[i, j] = np.array([mx[i, j]])
             if spherical:
                 img[i] += g
             else:

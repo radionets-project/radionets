@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 from matplotlib.animation import FuncAnimation
 from matplotlib.animation import PillowWriter
-from simulations.uv_simulations import get_uv_coverage
+from radionets.simulations.uv_simulations import get_uv_coverage
 from matplotlib.colors import LogNorm
 
 

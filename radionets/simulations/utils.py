@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from skimage.transform import resize
-from dl_framework.data import (
+from radionets.dl_framework.data import (
     save_fft_pair,
     open_fft_pair,
     open_fft_pair_npz,

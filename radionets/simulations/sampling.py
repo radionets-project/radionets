@@ -1,9 +1,13 @@
 import os
 from tqdm import tqdm
 from numpy import savez_compressed
-from simulations.utils import get_fft_bundle_paths, prepare_fft_images
-from dl_framework.data import open_fft_bundle, save_fft_pair, save_fft_pair_list
-from simulations.uv_simulations import sample_freqs
+from radionets.simulations.utils import get_fft_bundle_paths, prepare_fft_images
+from radionets.dl_framework.data import (
+    open_fft_bundle,
+    save_fft_pair,
+    save_fft_pair_list,
+)
+from radionets.simulations.uv_simulations import sample_freqs
 import h5py
 import numpy as np
 
