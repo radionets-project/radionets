@@ -138,8 +138,6 @@ def splitted_mse(x, y):
         * 1
         / inp_real.shape[0]
     )
-    print(inp_real.shape)
-    print(tar_real.shape)
 
     return loss_real + loss_imag
 
