@@ -122,3 +122,24 @@ class small_fourier(nn.Module):
         out = self.flatten_with_channel(x)
 
         return out
+
+
+def convs():
+    arch = nn.Sequential(
+        Lambda(flatten),
+        Lambda(fft),
+        *conv(2, 4, (3, 3), 2, 1),
+        *conv(4, 8, (3, 3), 2, 1),
+        *conv(8, 16, (3, 3), 2, 1),
+        Lambda(flatten),
+        nn.Linear(1024, 1024),
+        Lambda(flatten_with_channel),
+        nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+        *conv(16, 8, (3, 3), 1, 1),
+        nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+        *conv(8, 4, (3, 3), 1, 1),
+        nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True),
+        *conv(4, 1, (3, 3), 1, 1),
+        Lambda(flatten),
+    )
+    return arch
