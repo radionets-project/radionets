@@ -33,6 +33,7 @@ Simulated data is saved in `hdf5`, trained models are saved as `pickle` files.
 * `radionets_reconstruction <...>`
   This script is used to reconstruct radio interferometric data using a trained deep learning model.
 
+Default configuration files can be found in the examples directory.
 
 ## Structure of the Repository
 
