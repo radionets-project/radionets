@@ -24,10 +24,6 @@ inspection = false
 batch_size = 64
 lr = 1e-3
 
-[lr_find]
-max_lr = 1e-1
-min_lr = 1e-7
-
 [param_scheduling]
 use = true
 lr_start = 1e-3
