@@ -4,7 +4,7 @@ title = "Train configuration"
 
 [mode]
 batch_mode = false
-telegram_logger = true
+telegram_logger = false
 
 [paths]
 data_path = "./build/"
