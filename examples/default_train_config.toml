@@ -3,12 +3,13 @@
 title = "Train configuration"
 
 [mode]
-batch_mode = false
+batch_mode = true
+gpu = false
 telegram_logger = false
 
 [paths]
-data_path = "./build/"
-model_path = "./build/test_model/test.model"
+data_path = "./example_data/"
+model_path = "./build/example_model/example.model"
 pre_model = "none"
 norm_path = "none"
 
@@ -16,12 +17,12 @@ norm_path = "none"
 fourier = true
 source_list = false
 arch_name = "filter_deep"
-loss_func = "mse"
-num_epochs = 2
+loss_func = "splitted_mse"
+num_epochs = 5
 inspection = false
 
 [hypers]
-batch_size = 64
+batch_size = 100
 lr = 1e-3
 
 [param_scheduling]
