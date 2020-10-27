@@ -68,7 +68,7 @@ def define_learner(
             )
         }
         cbfs.extend([ParamScheduler(sched)])
-    if not test:
+    if train_conf["gpu"]:
         cbfs.extend(
             [
                 CudaCallback,

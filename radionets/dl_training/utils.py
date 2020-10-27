@@ -27,6 +27,7 @@ def read_config(config):
     train_conf["norm_path"] = config["paths"]["norm_path"]
 
     train_conf["batch_mode"] = config["mode"]["batch_mode"]
+    train_conf["gpu"] = config["mode"]["gpu"]
     train_conf["telegram_logger"] = config["mode"]["telegram_logger"]
 
     train_conf["bs"] = config["hypers"]["batch_size"]
