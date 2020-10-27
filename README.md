@@ -23,7 +23,7 @@ change the version number in the environment.yml file.
 For each tasks executables are intstalled to your `PATH`. Each of them take `toml` configuration files as input, to manage data paths and options.
 Simulated data is saved in `hdf5`, trained models are saved as `pickle` files.
 
-* `radionets_simulate <...>`
+* `radionets_simulations <...>`
   This script is used to simulate radio interferometric datasets for the training of deep learning models.
 * `radionets_training <...>`
   This script is used to train a model on events with known truth
