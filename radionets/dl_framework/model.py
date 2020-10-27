@@ -459,7 +459,7 @@ def load_pre_model(learn, pre_path, visualize=False):
 
     if visualize:
         checkpoint = torch.load(pre_path)
-        learn.load_state_dict(checkpoint["model_state_dict"])
+        learn.load_state_dict(checkpoint["model"])
 
     else:
         checkpoint = torch.load(pre_path)
