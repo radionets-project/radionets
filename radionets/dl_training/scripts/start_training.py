@@ -98,7 +98,7 @@ def main(configuration_path, mode):
         end_training(learn, train_conf)
 
         if train_conf["inspection"]:
-            create_inspection_plots(learn, train_conf)
+            create_inspection_plots(learn, train_conf, rand=True)
 
     if mode == "lr_find":
         click.echo("Start lr_find.\n")
