@@ -9,7 +9,7 @@ from radionets.evaluation.utils import (
 )
 
 
-def get_prediction(conf, num_images=None):
+def get_prediction(conf, num_images=None, rand=False):
     test_ds = load_data(
         conf["data_path"],
         mode="test",
@@ -20,16 +20,17 @@ def get_prediction(conf, num_images=None):
     if num_images is None:
         num_images = len(test_ds)
     img_test, img_true = get_images(
-        test_ds, num_images, norm_path=conf["norm_path"], rand=False
+        test_ds, num_images, norm_path=conf["norm_path"], rand=rand
     )
     pred = eval_model(img_test, model)
     return pred, img_test, img_true
 
 
-def create_inspection_plots(learn, train_conf, num_images=3, rand=False):
-    pred, img_test, img_true = get_prediction(train_conf, num_images, rand)
+def create_inspection_plots(train_conf, num_images=3, rand=False):
+    pred, img_test, img_true = get_prediction(train_conf, num_images, rand=rand)
     model_path = train_conf["model_path"]
-    out_path = Path(model_path).parent
+    out_path = Path(model_path).parent / "evaluation/"
+    out_path.mkdir(parents=True, exist_ok=True)
     if train_conf["fourier"]:
         for i in range(len(img_test)):
             visualize_with_fourier(
