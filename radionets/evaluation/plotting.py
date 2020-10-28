@@ -8,7 +8,6 @@ from tqdm import tqdm
 from radionets.evaluation.utils import (
     reshape_2d,
     make_axes_nice,
-    reshape_split,
     check_vmin_vmax,
 )
 
