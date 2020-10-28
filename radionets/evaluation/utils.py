@@ -19,7 +19,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice_phase(fig, ax, im, title, phase=False):
+def make_axes_nice(fig, ax, im, title, phase=False):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
     Parameters
@@ -87,3 +87,24 @@ def reshape_split(img):
         img_imag = img_reshaped[0, 1, :]
 
         return img_real, img_imag
+
+
+def check_vmin_vmax(inp):
+    """
+    Check wether the absolute of the maxmimum or the minimum is bigger.
+    If the minimum is bigger, return value with minus. Otherwise return
+    maximum.
+    Parameters
+    ----------
+    inp : float
+        input image
+    Returns
+    -------
+    float
+        negative minimal or maximal value
+    """
+    if np.abs(inp.min()) > np.abs(inp.max()):
+        a = -inp.min()
+    else:
+        a = inp.max()
+    return a
