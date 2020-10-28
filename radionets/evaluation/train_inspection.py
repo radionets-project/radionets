@@ -1,5 +1,4 @@
 import click
-import torch
 import numpy as np
 from pathlib import Path
 from radionets.dl_framework.data import load_data
@@ -13,6 +12,8 @@ from radionets.evaluation.utils import (
     load_pretrained_model,
     get_images,
     eval_model,
+    calc_jet_angle,
+    get_ifft,
 )
 
 
@@ -78,29 +79,33 @@ def create_source_plots(conf, num_images=3, rand=False):
     if not conf["fourier"]:
         click.echo("\n This is not a fourier dataset.\n")
 
-    if conf["amp_phase"]:
-        pred = pred.numpy()
-        amp_pred = 10 ** (10 * pred[:, 0] - 10) - 1e-10
-        amp_true = 10 ** (10 * img_true[:, 0] - 10) - 1e-10
-
-        a = amp_pred * np.cos(pred[:, 1])
-        b = amp_pred * np.sin(pred[:, 1])
-        compl_pred = a + b * 1j
-
-        a = amp_true * np.cos(img_true[:, 1])
-        b = amp_true * np.sin(img_true[:, 1])
-        compl_truth = a + b * 1j
-    else:
-        compl_pred = pred[:, 0] + pred[:, 1] * 1j
-        compl_truth = img_true[:, 0] + img_true[:, 1] * 1j
+    pred = pred.numpy()
 
     # inverse fourier transformation for prediction
-    ifft_pred = np.abs(np.fft.ifft2(compl_pred))
+    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
     # inverse fourier transform for truth
-    ifft_truth = np.abs(np.fft.ifft2(compl_truth))
+    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
 
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
         visualize_source_reconstruction(pred, truth, out_path, i)
 
     return np.abs(ifft_pred), np.abs(ifft_truth)
+
+
+def evaluate_viewing_angle(conf):
+    pred, img_test, img_true = get_prediction(conf)
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+    print(pred.shape)
+
+    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+    print(ifft_pred.shape)
+
+    m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
+    m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
+
+    print(alpha_pred)
