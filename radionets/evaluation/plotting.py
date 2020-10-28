@@ -3,6 +3,13 @@ import matplotlib.pyplot as plt
 from radionets.dl_framework.inspection import reshape_2d, make_axes_nice
 from matplotlib.colors import LogNorm
 from math import pi
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from radionets.simulations.utils import adjust_outpath
+from tqdm import tqdm
+from radionets.evaluation.utils import make_axes_nice_phase, reshape_split
+
+
+plot_mode = "pdf"
 
 
 def plot_target(h5_dataset, log=False):
@@ -104,3 +111,123 @@ def check_vmin_vmax(inp):
     else:
         a = inp.max()
     return a
+
+
+def plot_results(inp, pred, truth, model_path, save=False):
+    """
+    Plot input images, prediction and true image.
+    Parameters
+    ----------
+    inp: n 2d arrays with 2 channel
+        input images
+    pred: n 2d arrays
+        predicted images
+    truth:n 2d arrays
+        true images
+    """
+    for i in tqdm(range(len(inp))):
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
+
+        real = inp[i][0]
+        im1 = ax1.imshow(real, cmap="RdBu", vmin=-real.max(), vmax=real.max())
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax1.set_title(r"Real Input")
+        fig.colorbar(im1, cax=cax, orientation="vertical")
+
+        imag = inp[i][1]
+        im2 = ax2.imshow(imag, cmap="RdBu", vmin=-imag.max(), vmax=imag.max())
+        divider = make_axes_locatable(ax2)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax2.set_title(r"Imag Input")
+        fig.colorbar(im2, cax=cax, orientation="vertical")
+
+        pre = pred[i]
+        im3 = ax3.imshow(pre, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax3.set_title(r"Prediction")
+        fig.colorbar(im3, cax=cax, orientation="vertical")
+
+        true = truth[i]
+        im4 = ax4.imshow(true, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
+        divider = make_axes_locatable(ax4)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax4.set_title(r"Truth")
+        fig.colorbar(im4, cax=cax, orientation="vertical")
+
+        plt.tight_layout()
+
+        if save:
+            out = model_path / "predictions/"
+            out.mkdir(parents=True, exist_ok=True)
+
+            out_path = adjust_outpath(out, "/prediction", form="pdf")
+            plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_path):
+    """
+    Visualizing, if the target variables are displayed in fourier space.
+    i: Current index given form the loop
+    img_input: current input image as a numpy array in shape (2*img_size^2)
+    img_pred: current prediction image as a numpy array with shape (2*img_size^2)
+    img_truth: current true image as a numpy array with shape (2*img_size^2)
+    out_path: str which contains the output path
+    """
+    # reshaping and splitting in real and imaginary part if necessary
+    inp_real, inp_imag = img_input[0], img_input[1]
+    real_pred, imag_pred = img_pred[0], img_pred[1]
+    real_truth, imag_truth = img_truth[0], img_truth[1]
+
+    if amp_phase:
+        inp_real = 10 ** (10 * inp_real - 10) - 1e-10
+        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
+        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
+
+    # plotting
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
+        2, 3, figsize=(16, 10), sharex=True, sharey=True
+    )
+
+    a = check_vmin_vmax(inp_real)
+    # 511: [200:325]
+    im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
+    make_axes_nice_phase(fig, ax1, im1, r"Amplitude Input")
+
+    a = check_vmin_vmax(real_truth)
+    im2 = ax2.imshow(real_pred, cmap="RdBu", vmin=-a, vmax=a)
+    make_axes_nice_phase(fig, ax2, im2, r"Amplitude Prediction")
+
+    a = check_vmin_vmax(real_truth)
+    im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
+    make_axes_nice_phase(fig, ax3, im3, r"Amplitude Truth")
+
+    a = check_vmin_vmax(inp_imag)
+    im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
+    make_axes_nice_phase(fig, ax4, im4, r"Phase Input")
+
+    a = check_vmin_vmax(imag_truth)
+    im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+    make_axes_nice_phase(fig, ax5, im5, r"Phase Prediction", True)
+
+    a = check_vmin_vmax(imag_truth)
+    im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+    make_axes_nice_phase(fig, ax6, im6, r"Phase Truth", True)
+
+    ax1.set_ylabel(r"Pixels", fontsize=20)
+    ax4.set_ylabel(r"Pixels", fontsize=20)
+    ax4.set_xlabel(r"Pixels", fontsize=20)
+    ax5.set_xlabel(r"Pixels", fontsize=20)
+    ax6.set_xlabel(r"Pixels", fontsize=20)
+    ax1.tick_params(axis="both", labelsize=20)
+    ax2.tick_params(axis="both", labelsize=20)
+    ax3.tick_params(axis="both", labelsize=20)
+    ax4.tick_params(axis="both", labelsize=20)
+    ax5.tick_params(axis="both", labelsize=20)
+    ax6.tick_params(axis="both", labelsize=20)
+    plt.tight_layout(pad=1.5)
+
+    outpath = str(out_path) + "prediction_{}.{}".format(i, plot_mode)
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    return real_pred, imag_pred, real_truth, imag_truth
