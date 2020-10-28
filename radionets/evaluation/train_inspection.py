@@ -27,9 +27,6 @@ def get_prediction(conf, num_images=None):
 
 
 def create_inspection_plots(learn, train_conf, num_images=3, rand=False):
-    # test_ds = load_data(train_conf["data_path"], "test", fourier=train_conf["fourier"])
-    # img_test, img_true = get_images(test_ds, num_images, train_conf["norm_path"])
-    # pred = eval_model(img_test.cuda(), learn.model)
     pred, img_test, img_true = get_prediction(train_conf, num_images, rand)
     model_path = train_conf["model_path"]
     out_path = Path(model_path).parent
