@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from radionets.dl_framework.model import load_pre_model
-from radionets.dl_framework.data import load_data, do_normalisation
+from radionets.dl_framework.data import do_normalisation
 import radionets.dl_framework.architecture as architecture
 import torch
 
@@ -16,6 +16,7 @@ def read_config(config):
     eval_conf["gpu"] = config["mode"]["gpu"]
 
     eval_conf["fourier"] = config["general"]["fourier"]
+    eval_conf["amp_phase"] = config["general"]["amp_phase"]
     eval_conf["arch_name"] = config["general"]["arch_name"]
     eval_conf["source_list"] = config["general"]["source_list"]
 
