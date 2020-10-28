@@ -4,7 +4,7 @@ title = "Train configuration"
 
 [mode]
 batch_mode = true
-gpu = false
+gpu = true
 telegram_logger = false
 
 [paths]
@@ -18,8 +18,8 @@ fourier = true
 source_list = false
 arch_name = "filter_deep"
 loss_func = "splitted_mse"
-num_epochs = 5
-inspection = false
+num_epochs = 10
+inspection = true
 
 [hypers]
 batch_size = 100
@@ -27,6 +27,6 @@ lr = 1e-3
 
 [param_scheduling]
 use = true
-lr_start = 1e-3
-lr_max = 5e-3
-lr_stop = 7e-4
+lr_start = 7e-2
+lr_max = 3e-1
+lr_stop = 5e-2
