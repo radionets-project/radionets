@@ -12,11 +12,11 @@ from radionets.dl_training.utils import (
 from radionets.dl_framework.learner import define_learner
 from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.inspection import (
-    create_inspection_plots,
     plot_lr_loss,
     plot_loss,
     plot_lr,
 )
+from radionets.evaluation.train_inspection import create_inspection_plots
 from pathlib import Path
 
 
