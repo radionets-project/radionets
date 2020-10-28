@@ -20,9 +20,11 @@ def read_config(config):
     eval_conf["arch_name"] = config["general"]["arch_name"]
     eval_conf["source_list"] = config["general"]["source_list"]
 
-    eval_conf["vis_pred"] = config["eval"]["visualize_prediction"]
-    eval_conf["vis_source"] = config["eval"]["visualize_source_reconstruction"]
-    eval_conf["num_images"] = config["eval"]["num_images"]
+    eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
+    eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
+    eval_conf["num_images"] = config["inspection"]["num_images"]
+
+    eval_conf["viewing_angle"] = config["eval"]["evaluate_viewing_angle"]
     return eval_conf
 
 
@@ -62,7 +64,7 @@ def make_axes_nice(fig, ax, im, title, phase=False):
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax.set_title(title, fontsize=20)
+    ax.set_title(title, fontsize=16)
 
     if phase:
         cbar = fig.colorbar(
@@ -71,9 +73,9 @@ def make_axes_nice(fig, ax, im, title, phase=False):
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
 
-    cbar.set_label("Intensity / a.u.", size=20)
-    cbar.ax.tick_params(labelsize=20)
-    cbar.ax.yaxis.get_offset_text().set_fontsize(20)
+    cbar.set_label("Intensity / a.u.", size=16)
+    cbar.ax.tick_params(labelsize=16)
+    cbar.ax.yaxis.get_offset_text().set_fontsize(16)
     cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
     if phase:
@@ -218,3 +220,86 @@ def eval_model(img, model):
     with torch.no_grad():
         pred = model(img.float().cuda())
     return pred.cpu()
+
+
+def calc_jet_angle(image):
+    """Caluclate the jet angle from an image created with gaussian sources. This is achieved by a PCA.
+    Parameters
+    ----------
+    image : ndarray
+        input image
+    Returns
+    -------
+    float
+        slope of the line
+    float
+        intercept of the line
+    float
+        angle between the horizontal axis and the jet axis
+    """
+    image = image.copy()
+    # ignore negagive pixels, which can appear in predictions
+    image[image < 0] = 0
+
+    # only use brightest pixel
+    image[image < image.max() * 0.4] = 0
+
+    # start PCA
+    pix_x, pix_y, image_clone = im_to_array_value_rune(image.copy())
+
+    cog_x = np.average(pix_x, weights=image_clone)
+    cog_y = np.average(pix_y, weights=image_clone)
+
+    delta_x = pix_x - cog_x
+    delta_y = pix_y - cog_y
+
+    cov = np.cov(delta_x, delta_y, aweights=image_clone, ddof=1)
+    values, vectors = np.linalg.eigh(cov)
+    psi_torch = np.arctan(vectors[1, 1] / vectors[0, 1])
+    m = np.tan(np.pi / 2 - psi_torch)
+    # Use pixel with highest pixel value for the computation of the intercept
+    max_x, max_y = np.where(image == image.max())
+
+    # If the maximum pixel is not in the center of the image: Print the pixels
+    # and manually set them to the center
+    if (image.shape == (64, 64)) and (max_x != [32] or max_y != [32]):
+        print("Calculated maximum not in the center: ", max_x, max_y)
+        max_x, max_y = [32], [32]
+    elif (image.shape == (63, 63)) and (max_x != [31] or max_y != [31]):
+        print("Calculated maximum not in the center: ", max_x, max_y)
+        max_x, max_y = [31], [31]
+    elif (image.shape == (127, 127)) and (max_x != [63] or max_y != [63]):
+        print("Calculated maximum not in the center: ", max_x, max_y)
+        max_x, max_y = [63], [63]
+
+    n = torch.tensor(max_y) - m * torch.tensor(max_x)
+    alpha = (psi_torch) * 180 / np.pi
+    return m, n, alpha
+
+
+def im_to_array_value_rune(image):
+    """
+    Transforms the image to an array of pixel coordinates and the containt
+    intensity
+    Parameters
+    ----------
+    image: Image or 2DArray (N, M)
+            Image to be transformed
+    Returns
+    -------
+    x_coords: Numpy 1Darray (N*M, 1)
+            Contains the x-pixel-position of every pixel in the image
+    y_coords: Numpy 1Darray (N*M, 1)
+            Contains the y-pixel-position of every pixel in the image
+    value: Numpy 1Darray (N*M, 1)
+            Contains the image-value corresponding to every x-y-pair
+    """
+    x_coords = []
+    y_coords = []
+    value = []
+    for x in range(image.shape[0]):
+        for y in range(image.shape[1]):
+            x_coords.append(x)
+            y_coords.append(y)
+            value.append(image[x, y])
+    return np.asarray(x_coords), np.asarray(y_coords), np.asarray(value)
