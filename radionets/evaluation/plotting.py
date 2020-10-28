@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -9,6 +10,7 @@ from radionets.evaluation.utils import (
     reshape_2d,
     make_axes_nice,
     check_vmin_vmax,
+    calc_jet_angle,
 )
 
 
@@ -234,3 +236,43 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     return real_pred, imag_pred, real_truth, imag_truth
+
+
+def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
+    m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
+    m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
+    x_space = torch.arange(0, 511, 1)
+
+    # plotting
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 6), sharey=True)
+
+    ax1.plot(
+        x_space,
+        m_pred * x_space + n_pred,
+        "r-",
+        alpha=0.5,
+        label=fr"$\alpha = {np.round(alpha_pred, 3)}$",
+    )
+    im1 = ax1.imshow(np.abs(ifft_pred), vmax=np.abs(ifft_truth).max())
+    ax2.plot(
+        x_space,
+        m_truth * x_space + n_truth,
+        "r-",
+        alpha=0.5,
+        label=fr"$\alpha = {np.round(alpha_truth, 3)}$",
+    )
+    im2 = ax2.imshow(np.abs(ifft_truth))
+
+    make_axes_nice(fig, ax1, im1, r"FFT Prediction")
+    make_axes_nice(fig, ax2, im2, r"FFT Truth")
+
+    ax1.set_ylabel(r"Pixels")
+    ax1.set_xlabel(r"Pixels")
+    ax2.set_xlabel(r"Pixels")
+    ax1.legend(loc="best")
+    ax2.legend(loc="best")
+    plt.tight_layout(pad=1.5)
+
+    outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    return np.abs(ifft_pred), np.abs(ifft_truth)
