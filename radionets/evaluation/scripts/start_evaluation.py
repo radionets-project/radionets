@@ -1,6 +1,7 @@
 import click
 import toml
 from radionets.evaluation.utils import read_config
+from radionets.evaluation.train_inspection import create_inspection_plots
 
 
 @click.command()
@@ -19,3 +20,10 @@ def main(configuration_path):
 
     click.echo("\n Evaluation config:")
     print(eval_conf, "\n")
+
+    if eval_conf["vis_pred"]:
+        create_inspection_plots(
+            eval_conf, num_images=eval_conf["num_images"], rand=False
+        )
+
+    click.echo(f"Created {eval_conf['num_images']} test predictions.")
