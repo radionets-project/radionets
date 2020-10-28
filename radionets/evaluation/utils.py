@@ -245,7 +245,7 @@ def calc_jet_angle(image):
     image[image < image.max() * 0.4] = 0
 
     # start PCA
-    pix_x, pix_y, image_clone = im_to_array_value_rune(image.copy())
+    pix_x, pix_y, image_clone = im_to_array_value(image.copy())
 
     cog_x = np.average(pix_x, weights=image_clone)
     cog_y = np.average(pix_y, weights=image_clone)
@@ -277,14 +277,16 @@ def calc_jet_angle(image):
     return m, n, alpha
 
 
-def im_to_array_value_rune(image):
+def im_to_array_value(image):
     """
     Transforms the image to an array of pixel coordinates and the containt
     intensity
+
     Parameters
     ----------
     image: Image or 2DArray (N, M)
             Image to be transformed
+
     Returns
     -------
     x_coords: Numpy 1Darray (N*M, 1)
@@ -293,16 +295,17 @@ def im_to_array_value_rune(image):
             Contains the y-pixel-position of every pixel in the image
     value: Numpy 1Darray (N*M, 1)
             Contains the image-value corresponding to every x-y-pair
+
     """
-    x_coords = []
-    y_coords = []
-    value = []
-    for x in range(image.shape[0]):
-        for y in range(image.shape[1]):
-            x_coords.append(x)
-            y_coords.append(y)
-            value.append(image[x, y])
-    return np.asarray(x_coords), np.asarray(y_coords), np.asarray(value)
+    num = image.shape[0]
+    pix = image.shape[-1]
+
+    a = torch.arange(0, pix, 1)
+    grid_x, grid_y = torch.meshgrid(a, a)
+    x_coords = torch.cat(num * [grid_x.flatten().unsqueeze(0)])
+    y_coords = torch.cat(num * [grid_y.flatten().unsqueeze(0)])
+    value = image.reshape(-1, pix ** 2)
+    return x_coords, y_coords, value
 
 
 def get_ifft(array, amp_phase=False):
