@@ -3,12 +3,12 @@ from pathlib import Path
 import pandas as pd
 from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.data import load_data, do_normalisation
-import radionets.dl_framework.architectures as architecture
+import radionets.dl_framework.architecture as architecture
 from radionets.evaluation.plotting import visualize_with_fourier, plot_results
 from radionets.evaluation.utils import reshape_2d
 
 
-def load_pretrained_model(arch_name, model_path):
+def load_pretrained_model(arch_name, model_path, img_size=63):
     """
     Load model architecture and pretrained weigths.
 
@@ -24,7 +24,14 @@ def load_pretrained_model(arch_name, model_path):
     arch: architecture object
         architecture with pretrained weigths
     """
-    arch = getattr(architecture, arch_name)(63)
+    if (
+        arch_name == "filter_deep"
+        or arch_name == "filter_deep_amp"
+        or arch_name == "filter_deep_phase"
+    ):
+        arch = getattr(architecture, arch_name)(img_size)
+    else:
+        arch = getattr(architecture, arch_name)()
     load_pre_model(arch, model_path, visualize=True)
     return arch
 
