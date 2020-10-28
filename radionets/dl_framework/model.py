@@ -456,13 +456,12 @@ def load_pre_model(learn, pre_path, visualize=False):
     """
     name_pretrained = Path(pre_path).stem
     print("\nLoad pretrained model: {}\n".format(name_pretrained))
+    checkpoint = torch.load(pre_path)
 
     if visualize:
-        checkpoint = torch.load(pre_path)
-        learn.load_state_dict(checkpoint["model_state_dict"])
+        learn.load_state_dict(checkpoint["model"])
 
     else:
-        checkpoint = torch.load(pre_path)
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
