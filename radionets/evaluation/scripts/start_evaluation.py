@@ -1,7 +1,10 @@
 import click
 import toml
 from radionets.evaluation.utils import read_config
-from radionets.evaluation.train_inspection import create_inspection_plots
+from radionets.evaluation.train_inspection import (
+    create_inspection_plots,
+    create_source_plots,
+)
 
 
 @click.command()
@@ -26,4 +29,9 @@ def main(configuration_path):
             eval_conf, num_images=eval_conf["num_images"], rand=False
         )
 
-    click.echo(f"Created {eval_conf['num_images']} test predictions.")
+        click.echo(f"\nCreated {eval_conf['num_images']} test predictions.\n")
+
+    if eval_conf["vis_source"]:
+        create_source_plots(eval_conf, num_images=eval_conf["num_images"], rand=False)
+
+        click.echo(f"\nCreated {eval_conf['num_images']} source predictions.\n")
