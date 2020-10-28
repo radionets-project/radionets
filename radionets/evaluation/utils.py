@@ -303,3 +303,15 @@ def im_to_array_value_rune(image):
             y_coords.append(y)
             value.append(image[x, y])
     return np.asarray(x_coords), np.asarray(y_coords), np.asarray(value)
+
+
+def get_ifft(array, amp_phase=False):
+    if amp_phase:
+        amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+
+        a = amp * np.cos(array[:, 1])
+        b = amp * np.sin(array[:, 1])
+        compl = a + b * 1j
+    else:
+        compl = array[:, 0] + array[:, 1] * 1j
+    return np.abs(np.fft.ifft2(compl))
