@@ -1,15 +1,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from radionets.dl_framework.inspection import reshape_2d, make_axes_nice
 from matplotlib.colors import LogNorm
 from math import pi
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from radionets.simulations.utils import adjust_outpath
 from tqdm import tqdm
-from radionets.evaluation.utils import make_axes_nice_phase, reshape_split
+from radionets.evaluation.utils import (
+    reshape_2d,
+    make_axes_nice,
+    reshape_split,
+    check_vmin_vmax,
+)
 
 
-plot_mode = "pdf"
+plot_format = "pdf"
 
 
 def plot_target(h5_dataset, log=False):
@@ -92,27 +96,6 @@ def plot_inp_tar(h5_dataset, fourier=False, amp_phase=False):
     fig.tight_layout()
 
 
-def check_vmin_vmax(inp):
-    """
-    Check wether the absolute of the maxmimum or the minimum is bigger.
-    If the minimum is bigger, return value with minus. Otherwise return
-    maximum.
-    Parameters
-    ----------
-    inp : float
-        input image
-    Returns
-    -------
-    float
-        negative minimal or maximal value
-    """
-    if np.abs(inp.min()) > np.abs(inp.max()):
-        a = -inp.min()
-    else:
-        a = inp.max()
-    return a
-
-
 def plot_results(inp, pred, truth, model_path, save=False):
     """
     Plot input images, prediction and true image.
@@ -190,30 +173,51 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
         2, 3, figsize=(16, 10), sharex=True, sharey=True
     )
 
-    a = check_vmin_vmax(inp_real)
-    # 511: [200:325]
-    im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice_phase(fig, ax1, im1, r"Amplitude Input")
+    if amp_phase:
+        im1 = ax1.imshow(inp_real, cmap="inferno")
+        make_axes_nice(fig, ax1, im1, r"Amplitude Input")
 
-    a = check_vmin_vmax(real_truth)
-    im2 = ax2.imshow(real_pred, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice_phase(fig, ax2, im2, r"Amplitude Prediction")
+        im2 = ax2.imshow(real_pred, cmap="inferno")
+        make_axes_nice(fig, ax2, im2, r"Amplitude Prediction")
 
-    a = check_vmin_vmax(real_truth)
-    im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice_phase(fig, ax3, im3, r"Amplitude Truth")
+        im3 = ax3.imshow(real_truth, cmap="inferno")
+        make_axes_nice(fig, ax3, im3, r"Amplitude Truth")
 
-    a = check_vmin_vmax(inp_imag)
-    im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
-    make_axes_nice_phase(fig, ax4, im4, r"Phase Input")
+        a = check_vmin_vmax(inp_imag)
+        im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax4, im4, r"Phase Input", phase=True)
 
-    a = check_vmin_vmax(imag_truth)
-    im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
-    make_axes_nice_phase(fig, ax5, im5, r"Phase Prediction", True)
+        a = check_vmin_vmax(imag_truth)
+        im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax5, im5, r"Phase Prediction", phase=True)
 
-    a = check_vmin_vmax(imag_truth)
-    im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
-    make_axes_nice_phase(fig, ax6, im6, r"Phase Truth", True)
+        a = check_vmin_vmax(imag_truth)
+        im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax6, im6, r"Phase Truth", phase=True)
+    else:
+        a = check_vmin_vmax(inp_real)
+        im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax1, im1, r"Real Input")
+
+        a = check_vmin_vmax(real_truth)
+        im2 = ax2.imshow(real_pred, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax2, im2, r"Real Prediction")
+
+        a = check_vmin_vmax(real_truth)
+        im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax3, im3, r"Real Truth")
+
+        a = check_vmin_vmax(inp_imag)
+        im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax4, im4, r"Imaginary Input")
+
+        a = check_vmin_vmax(imag_truth)
+        im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
+
+        a = check_vmin_vmax(imag_truth)
+        im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
 
     ax1.set_ylabel(r"Pixels", fontsize=20)
     ax4.set_ylabel(r"Pixels", fontsize=20)
@@ -228,6 +232,6 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     ax6.tick_params(axis="both", labelsize=20)
     plt.tight_layout(pad=1.5)
 
-    outpath = str(out_path) + "prediction_{}.{}".format(i, plot_mode)
+    outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     return real_pred, imag_pred, real_truth, imag_truth
