@@ -1,6 +1,6 @@
 # This is a TOML document.
 
-title = "Train configuration"
+title = "Evaluation configuration"
 
 [mode]
 batch_mode = true

@@ -22,7 +22,6 @@ num_pointlike_gaussians = 5
 extended_gaussians = true
 num_components = [4, 10]
 
-
 [image_options]
 bundles_train = 5
 bundles_valid = 1
