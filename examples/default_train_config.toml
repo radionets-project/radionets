@@ -3,7 +3,7 @@
 title = "Train configuration"
 
 [mode]
-batch_mode = true
+quiet = true
 gpu = true
 telegram_logger = false
 

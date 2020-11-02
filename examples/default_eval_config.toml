@@ -3,7 +3,7 @@
 title = "Evaluation configuration"
 
 [mode]
-batch_mode = true
+quiet = true
 gpu = true
 
 [paths]
