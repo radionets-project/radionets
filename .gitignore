@@ -43,3 +43,4 @@ __pycache__/
 .coverage
 dist/
 radionets/dl_framework/values.yaml
+*.csv
