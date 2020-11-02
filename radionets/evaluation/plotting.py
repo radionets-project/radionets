@@ -240,6 +240,8 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
 
 def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
+    print(m_truth)
+    print(n_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
@@ -251,7 +253,7 @@ def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
         m_pred * x_space + n_pred,
         "r-",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_pred, 3)}$",
+        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
     )
     im1 = ax1.imshow(np.abs(ifft_pred), vmax=np.abs(ifft_truth).max())
     ax2.plot(
@@ -259,7 +261,7 @@ def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
         m_truth * x_space + n_truth,
         "r-",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_truth, 3)}$",
+        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
     )
     im2 = ax2.imshow(np.abs(ifft_truth))
 

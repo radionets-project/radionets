@@ -1,4 +1,5 @@
 import click
+import torch
 import numpy as np
 from pathlib import Path
 from radionets.dl_framework.data import load_data
@@ -71,7 +72,7 @@ def create_source_plots(conf, num_images=3, rand=False):
     real_truth: real part of the truth computed in visualize with fourier
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
-    pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
+    pred, _, img_true = get_prediction(conf, num_images, rand=rand)
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
@@ -88,24 +89,23 @@ def create_source_plots(conf, num_images=3, rand=False):
     ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
 
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
-        visualize_source_reconstruction(pred, truth, out_path, i)
+        visualize_source_reconstruction(
+            torch.tensor(pred), torch.tensor(truth), out_path, i
+        )
 
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
 def evaluate_viewing_angle(conf):
-    pred, img_test, img_true = get_prediction(conf)
+    pred, _, img_true = get_prediction(conf)
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
-    print(pred.shape)
 
     ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
     ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
-    print(ifft_pred.shape)
-
-    m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
-    m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
+    m_truth, n_truth, alpha_truth = calc_jet_angle(torch.tensor(ifft_truth))
+    m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
 
     print(alpha_pred)

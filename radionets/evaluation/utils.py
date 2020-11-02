@@ -4,6 +4,7 @@ from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.data import do_normalisation
 import radionets.dl_framework.architecture as architecture
 import torch
+from math import pi
 
 
 def read_config(config):
@@ -222,6 +223,68 @@ def eval_model(img, model):
     return pred.cpu()
 
 
+def bmul(vec, mat, axis=0):
+    """Expand vector for batchwise matrix multiplication.
+    Parameters
+    ----------
+    vec : 2dtensor
+        vector for multiplication
+    mat : 3dtensor
+        matrix for multiplication
+    axis : int, optional
+        batch axis, by default 0
+    Returns
+    -------
+    3dtensor
+        Product of matrix multiplication. (bs, n, m)
+    """
+    mat = mat.transpose(axis, -1)
+    return (mat * vec.expand_as(mat)).transpose(axis, -1)
+
+
+def pca(image):
+    """
+    Compute the major components of an image. The Image is treated as a
+    distribution.
+    Parameters
+    ----------
+    image: Image or 2DArray (N, M)
+            Image to be used as distribution
+    Returns
+    -------
+    cog_x: Skalar
+            X-position of the distributions center of gravity
+    cog_y: Skalar
+            Y-position of the distributions center of gravity
+    psi: Skalar
+            Angle between first mjor component and x-axis
+    """
+    torch.set_printoptions(precision=16)
+
+    pix_x, pix_y, image = im_to_array_value(image)
+
+    print(pix_x.shape)
+
+    cog_x = (torch.sum(pix_x * image, axis=1) / torch.sum(image, axis=1)).unsqueeze(-1)
+    cog_y = (torch.sum(pix_y * image, axis=1) / torch.sum(image, axis=1)).unsqueeze(-1)
+
+    delta_x = pix_x - cog_x
+    delta_y = pix_y - cog_y
+
+    inp = torch.cat([delta_x.unsqueeze(1), delta_y.unsqueeze(1)], dim=1)
+
+    cov_w = bmul(
+        (cog_x - 1 * torch.sum(image * image, axis=1).unsqueeze(-1) / cog_x).squeeze(1),
+        (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
+    )
+
+    eig_vals_torch, eig_vecs_torch = torch.symeig(cov_w, eigenvectors=True)
+
+    psi_torch = torch.atan(eig_vecs_torch[:, 1, 1] / eig_vecs_torch[:, 0, 1])
+
+    return cog_x, cog_y, psi_torch
+
+
 def calc_jet_angle(image):
     """Caluclate the jet angle from an image created with gaussian sources. This is achieved by a PCA.
     Parameters
@@ -237,43 +300,42 @@ def calc_jet_angle(image):
     float
         angle between the horizontal axis and the jet axis
     """
-    image = image.copy()
+    image = image.clone()
     # ignore negagive pixels, which can appear in predictions
-    image[image < 0] = 0
+    # image[image < 0] = 0
+    image = torch.where(image > 0, image, torch.tensor(0).double())
+    import matplotlib.pyplot as plt
+
+    print(image[0])
+    print(image.shape)
+    plt.imshow(image[0])
+    plt.show()
 
     # only use brightest pixel
-    image[image < image.max() * 0.4] = 0
+    max_val = torch.tensor([i.max() * 0.4 for i in image]).unsqueeze(1)
+    print(max_val.shape)
+    image[image < max_val] = 0
+    # image = torch.where(image > 0.4 * image.max(), image, torch.tensor(0).double())
 
-    # start PCA
-    pix_x, pix_y, image_clone = im_to_array_value(image.copy())
+    plt.imshow(image[0])
+    plt.show()
+    print(image[0])
 
-    cog_x = np.average(pix_x, weights=image_clone)
-    cog_y = np.average(pix_y, weights=image_clone)
+    print(image.shape)
+    if len(image.shape) == 2:
+        image = image.unsqueeze(0)
+    print(image.shape)
 
-    delta_x = pix_x - cog_x
-    delta_y = pix_y - cog_y
+    _, _, alpha_pca = pca(image)
+    print("alpha_pca", alpha_pca)
 
-    cov = np.cov(delta_x, delta_y, aweights=image_clone, ddof=1)
-    values, vectors = np.linalg.eigh(cov)
-    psi_torch = np.arctan(vectors[1, 1] / vectors[0, 1])
-    m = np.tan(np.pi / 2 - psi_torch)
     # Use pixel with highest pixel value for the computation of the intercept
-    max_x, max_y = np.where(image == image.max())
+    x_mid = torch.ones(63, 63).shape[0] // 2
+    y_mid = torch.ones(63, 63).shape[1] // 2
 
-    # If the maximum pixel is not in the center of the image: Print the pixels
-    # and manually set them to the center
-    if (image.shape == (64, 64)) and (max_x != [32] or max_y != [32]):
-        print("Calculated maximum not in the center: ", max_x, max_y)
-        max_x, max_y = [32], [32]
-    elif (image.shape == (63, 63)) and (max_x != [31] or max_y != [31]):
-        print("Calculated maximum not in the center: ", max_x, max_y)
-        max_x, max_y = [31], [31]
-    elif (image.shape == (127, 127)) and (max_x != [63] or max_y != [63]):
-        print("Calculated maximum not in the center: ", max_x, max_y)
-        max_x, max_y = [63], [63]
-
-    n = torch.tensor(max_y) - m * torch.tensor(max_x)
-    alpha = (psi_torch) * 180 / np.pi
+    m = torch.tan(pi / 2 - alpha_pca)
+    n = torch.tensor(y_mid) - m * torch.tensor(x_mid)
+    alpha = (alpha_pca) * 180 / pi
     return m, n, alpha
 
 
