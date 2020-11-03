@@ -19,7 +19,7 @@ arch_name = "filter_deep"
 
 [inspection]
 visualize_prediction = false
-visualize_source_reconstruction = true
+visualize_source_reconstruction = false
 num_images = 5
 
 [eval]
