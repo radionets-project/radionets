@@ -114,7 +114,7 @@ def fft_pred(pred, truth, amp_phase=True):
     Parameters
     ----------
     pred: 4D array [1, channel, height, width]
-        prediction von eval_model
+        prediction from eval_model
     truth: 3D array [channel, height, width]
         true image
     amp_phase: Bool
