@@ -4,7 +4,6 @@ from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.data import do_normalisation
 import radionets.dl_framework.architecture as architecture
 import torch
-from math import pi
 
 
 def read_config(config):
@@ -13,7 +12,7 @@ def read_config(config):
     eval_conf["model_path"] = config["paths"]["model_path"]
     eval_conf["norm_path"] = config["paths"]["norm_path"]
 
-    eval_conf["batch_mode"] = config["mode"]["batch_mode"]
+    eval_conf["quiet"] = config["mode"]["quiet"]
     eval_conf["gpu"] = config["mode"]["gpu"]
 
     eval_conf["fourier"] = config["general"]["fourier"]
@@ -221,153 +220,6 @@ def eval_model(img, model):
     with torch.no_grad():
         pred = model(img.float().cuda())
     return pred.cpu()
-
-
-def bmul(vec, mat, axis=0):
-    """Expand vector for batchwise matrix multiplication.
-    Parameters
-    ----------
-    vec : 2dtensor
-        vector for multiplication
-    mat : 3dtensor
-        matrix for multiplication
-    axis : int, optional
-        batch axis, by default 0
-    Returns
-    -------
-    3dtensor
-        Product of matrix multiplication. (bs, n, m)
-    """
-    mat = mat.transpose(axis, -1)
-    return (mat * vec.expand_as(mat)).transpose(axis, -1)
-
-
-def pca(image):
-    """
-    Compute the major components of an image. The Image is treated as a
-    distribution.
-    Parameters
-    ----------
-    image: Image or 2DArray (N, M)
-            Image to be used as distribution
-    Returns
-    -------
-    cog_x: Skalar
-            X-position of the distributions center of gravity
-    cog_y: Skalar
-            Y-position of the distributions center of gravity
-    psi: Skalar
-            Angle between first mjor component and x-axis
-    """
-    torch.set_printoptions(precision=16)
-
-    pix_x, pix_y, image = im_to_array_value(image)
-
-    print(pix_x.shape)
-
-    cog_x = (torch.sum(pix_x * image, axis=1) / torch.sum(image, axis=1)).unsqueeze(-1)
-    cog_y = (torch.sum(pix_y * image, axis=1) / torch.sum(image, axis=1)).unsqueeze(-1)
-
-    delta_x = pix_x - cog_x
-    delta_y = pix_y - cog_y
-
-    inp = torch.cat([delta_x.unsqueeze(1), delta_y.unsqueeze(1)], dim=1)
-
-    cov_w = bmul(
-        (cog_x - 1 * torch.sum(image * image, axis=1).unsqueeze(-1) / cog_x).squeeze(1),
-        (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
-    )
-
-    eig_vals_torch, eig_vecs_torch = torch.symeig(cov_w, eigenvectors=True)
-
-    psi_torch = torch.atan(eig_vecs_torch[:, 1, 1] / eig_vecs_torch[:, 0, 1])
-
-    return cog_x, cog_y, psi_torch
-
-
-def calc_jet_angle(image):
-    """Caluclate the jet angle from an image created with gaussian sources. This is achieved by a PCA.
-    Parameters
-    ----------
-    image : ndarray
-        input image
-    Returns
-    -------
-    float
-        slope of the line
-    float
-        intercept of the line
-    float
-        angle between the horizontal axis and the jet axis
-    """
-    image = image.clone()
-    # ignore negagive pixels, which can appear in predictions
-    # image[image < 0] = 0
-    image = torch.where(image > 0, image, torch.tensor(0).double())
-    import matplotlib.pyplot as plt
-
-    print(image[0])
-    print(image.shape)
-    plt.imshow(image[0])
-    plt.show()
-
-    # only use brightest pixel
-    max_val = torch.tensor([i.max() * 0.4 for i in image]).unsqueeze(1)
-    print(max_val.shape)
-    image[image < max_val] = 0
-    # image = torch.where(image > 0.4 * image.max(), image, torch.tensor(0).double())
-
-    plt.imshow(image[0])
-    plt.show()
-    print(image[0])
-
-    print(image.shape)
-    if len(image.shape) == 2:
-        image = image.unsqueeze(0)
-    print(image.shape)
-
-    _, _, alpha_pca = pca(image)
-    print("alpha_pca", alpha_pca)
-
-    # Use pixel with highest pixel value for the computation of the intercept
-    x_mid = torch.ones(63, 63).shape[0] // 2
-    y_mid = torch.ones(63, 63).shape[1] // 2
-
-    m = torch.tan(pi / 2 - alpha_pca)
-    n = torch.tensor(y_mid) - m * torch.tensor(x_mid)
-    alpha = (alpha_pca) * 180 / pi
-    return m, n, alpha
-
-
-def im_to_array_value(image):
-    """
-    Transforms the image to an array of pixel coordinates and the containt
-    intensity
-
-    Parameters
-    ----------
-    image: Image or 2DArray (N, M)
-            Image to be transformed
-
-    Returns
-    -------
-    x_coords: Numpy 1Darray (N*M, 1)
-            Contains the x-pixel-position of every pixel in the image
-    y_coords: Numpy 1Darray (N*M, 1)
-            Contains the y-pixel-position of every pixel in the image
-    value: Numpy 1Darray (N*M, 1)
-            Contains the image-value corresponding to every x-y-pair
-
-    """
-    num = image.shape[0]
-    pix = image.shape[-1]
-
-    a = torch.arange(0, pix, 1)
-    grid_x, grid_y = torch.meshgrid(a, a)
-    x_coords = torch.cat(num * [grid_x.flatten().unsqueeze(0)])
-    y_coords = torch.cat(num * [grid_y.flatten().unsqueeze(0)])
-    value = image.reshape(-1, pix ** 2)
-    return x_coords, y_coords, value
 
 
 def get_ifft(array, amp_phase=False):
