@@ -10,11 +10,11 @@ from radionets.evaluation.utils import (
     reshape_2d,
     make_axes_nice,
     check_vmin_vmax,
-    calc_jet_angle,
 )
+from radionets.evaluation.jet_angle import calc_jet_angle
 
 
-plot_format = "pdf"
+plot_format = "png"
 
 
 def plot_target(h5_dataset, log=False):
@@ -240,8 +240,6 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
 
 def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
-    print(m_truth)
-    print(n_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
@@ -278,3 +276,35 @@ def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     return np.abs(ifft_pred), np.abs(ifft_truth)
+
+
+def histogram_jet_angles(alpha_truth, alpha_pred, out_path):
+    dif = (alpha_pred - alpha_truth).numpy()
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
+    ax1.hist(
+        dif,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.set_xlabel("Offset / deg")
+    ax1.set_ylabel("Number of sources")
+
+    ax2.hist(
+        dif[(dif > -10) & (dif < 10)],
+        25,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax2.set_xlabel("Offset / deg")
+    ax2.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/jet_offsets.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

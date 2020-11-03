@@ -7,15 +7,16 @@ from radionets.evaluation.plotting import (
     visualize_with_fourier,
     plot_results,
     visualize_source_reconstruction,
+    histogram_jet_angles,
 )
 from radionets.evaluation.utils import (
     reshape_2d,
     load_pretrained_model,
     get_images,
     eval_model,
-    calc_jet_angle,
     get_ifft,
 )
+from radionets.evaluation.jet_angle import calc_jet_angle
 
 
 def get_prediction(conf, num_images=None, rand=False):
@@ -108,4 +109,4 @@ def evaluate_viewing_angle(conf):
     m_truth, n_truth, alpha_truth = calc_jet_angle(torch.tensor(ifft_truth))
     m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
 
-    print(alpha_pred)
+    histogram_jet_angles(alpha_truth, alpha_pred, out_path)
