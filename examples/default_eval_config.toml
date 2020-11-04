@@ -23,4 +23,5 @@ visualize_source_reconstruction = false
 num_images = 5
 
 [eval]
-evaluate_viewing_angle = true
+evaluate_viewing_angle = false
+evaluate_dynamic_range = true
