@@ -20,7 +20,7 @@ def main(configuration_path):
     sim_fft, sim_sampled = check_outpath(
         data_path,
         data_format=config["paths"]["data_format"],
-        batch_mode=config["mode"]["batch_mode"],
+        quiet=config["mode"]["quiet"],
     )
 
     # declare source options

@@ -20,7 +20,7 @@ from radionets.dl_framework.data import (
 )
 
 
-def check_outpath(outpath, data_format, batch_mode=False):
+def check_outpath(outpath, data_format, quiet=False):
     """
     Check if outpath exists. Check for existing fft_files and sampled-files.
     Ask to overwrite or reuse existing files.
@@ -44,7 +44,7 @@ def check_outpath(outpath, data_format, batch_mode=False):
         samp = {p for p in path.rglob("*samp*." + str(data_format)) if p.is_file()}
         if fft:
             click.echo("Found existing fft_files!")
-            if batch_mode:
+            if quiet:
                 click.echo("Overwriting old fft_files!")
                 [p.unlink() for p in fft]
                 [p.unlink() for p in samp]
@@ -67,7 +67,7 @@ def check_outpath(outpath, data_format, batch_mode=False):
             sim_fft = True
         if samp:
             click.echo("Found existing samp_files!")
-            if batch_mode:
+            if quiet:
                 click.echo("Overwriting old samp_files!")
                 [p.unlink() for p in samp]
                 sim_sampled = True

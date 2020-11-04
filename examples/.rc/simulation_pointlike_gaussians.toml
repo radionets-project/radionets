@@ -3,7 +3,7 @@
 title = "Simulation configuration"
 
 [mode]
-batch_mode = true
+quiet = true
 
 [paths]
 data_path = "./example_data/pointlike_gaussians"

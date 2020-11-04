@@ -26,7 +26,7 @@ def read_config(config):
     train_conf["pre_model"] = config["paths"]["pre_model"]
     train_conf["norm_path"] = config["paths"]["norm_path"]
 
-    train_conf["batch_mode"] = config["mode"]["batch_mode"]
+    train_conf["quiet"] = config["mode"]["quiet"]
     train_conf["gpu"] = config["mode"]["gpu"]
     train_conf["telegram_logger"] = config["mode"]["telegram_logger"]
 
@@ -53,7 +53,7 @@ def check_outpath(model_path, train_conf):
     path = Path(model_path)
     exists = path.exists()
     if exists:
-        if train_conf["batch_mode"]:
+        if train_conf["quiet"]:
             click.echo("Overwriting existing model file!")
             path.unlink()
         else:
