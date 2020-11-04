@@ -308,3 +308,50 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path):
 
     outpath = str(out_path) + f"/jet_offsets.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def histogram_dynamic_ranges(dr_truth, dr_pred, out_path):
+    # dif = dr_pred - dr_truth
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
+    ax1.set_title("True Images")
+    ax1.hist(
+        dr_truth,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.set_xlabel("Dynamic range")
+    ax1.set_ylabel("Number of sources")
+
+    ax2.set_title("Predictions")
+    ax2.hist(
+        dr_pred,
+        25,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax2.set_xlabel("Dynamic range")
+    ax2.set_ylabel("Number of sources")
+
+    # plotting differences does not make much sense at the moment
+    # ax3.set_title("Differences")
+    # ax3.hist(
+    #     dif,
+    #     25,
+    #     color="darkorange",
+    #     linewidth=3,
+    #     histtype="step",
+    #     alpha=0.75,
+    # )
+    # ax3.set_xlabel("Dynamic range")
+    # ax3.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/dynamic_ranges.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
