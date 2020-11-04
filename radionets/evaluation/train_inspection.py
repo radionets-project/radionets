@@ -28,12 +28,13 @@ def get_prediction(conf, num_images=None, rand=False):
         fourier=conf["fourier"],
         source_list=conf["source_list"],
     )
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"])
     if num_images is None:
         num_images = len(test_ds)
     img_test, img_true = get_images(
         test_ds, num_images, norm_path=conf["norm_path"], rand=rand
     )
+    img_size = img_test.shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     pred = eval_model(img_test, model)
     return pred, img_test, img_true
 
