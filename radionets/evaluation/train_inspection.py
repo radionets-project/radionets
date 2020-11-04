@@ -8,6 +8,7 @@ from radionets.evaluation.plotting import (
     plot_results,
     visualize_source_reconstruction,
     histogram_jet_angles,
+    histogram_dynamic_ranges,
 )
 from radionets.evaluation.utils import (
     reshape_2d,
@@ -17,6 +18,7 @@ from radionets.evaluation.utils import (
     get_ifft,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
+from radionets.evaluation.dynamic_range import calc_dr
 
 
 def get_prediction(conf, num_images=None, rand=False):
@@ -112,4 +114,15 @@ def evaluate_viewing_angle(conf):
     histogram_jet_angles(alpha_truth, alpha_pred, out_path)
 
 
-def evaluate_dynamic_range():
+def evaluate_dynamic_range(conf):
+    pred, _, img_true = get_prediction(conf)
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+    dr_truth, dr_pred = calc_dr(ifft_truth, ifft_pred)
+
+    histogram_dynamic_ranges(dr_truth, dr_pred, out_path)

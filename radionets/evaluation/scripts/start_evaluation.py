@@ -5,6 +5,7 @@ from radionets.evaluation.train_inspection import (
     create_inspection_plots,
     create_source_plots,
     evaluate_viewing_angle,
+    evaluate_dynamic_range,
 )
 
 
@@ -40,3 +41,7 @@ def main(configuration_path):
     if eval_conf["viewing_angle"]:
         click.echo("\nStart evaluation of viewing angles.\n")
         evaluate_viewing_angle(eval_conf)
+
+    if eval_conf["dynamic_range"]:
+        click.echo("\nStart evaluation of viewing angles.\n")
+        evaluate_dynamic_range(eval_conf)

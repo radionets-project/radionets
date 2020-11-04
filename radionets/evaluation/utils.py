@@ -25,6 +25,7 @@ def read_config(config):
     eval_conf["num_images"] = config["inspection"]["num_images"]
 
     eval_conf["viewing_angle"] = config["eval"]["evaluate_viewing_angle"]
+    eval_conf["dynamic_range"] = config["eval"]["evaluate_dynamic_range"]
     return eval_conf
 
 
