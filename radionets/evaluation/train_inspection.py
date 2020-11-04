@@ -110,3 +110,6 @@ def evaluate_viewing_angle(conf):
     m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
 
     histogram_jet_angles(alpha_truth, alpha_pred, out_path)
+
+
+def evaluate_dynamic_range():
