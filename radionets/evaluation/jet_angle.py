@@ -80,6 +80,7 @@ def calc_jet_angle(image):
         angle between the horizontal axis and the jet axis
     """
     image = image.clone()
+    img_size = image.shape[-1]
     # ignore negagive pixels, which can appear in predictions
     image[image < 0] = 0
 
@@ -90,14 +91,14 @@ def calc_jet_angle(image):
 
     # only use brightest pixel
     max_val = torch.tensor([(i.max() * 0.4) for i in image])
-    max_arr = (torch.ones(63, 63, bs) * max_val).permute(2, 0, 1)
+    max_arr = (torch.ones(img_size, img_size, bs) * max_val).permute(2, 0, 1)
     image[image < max_arr] = 0
 
     _, _, alpha_pca = pca(image)
 
     # Use pixel with highest pixel value for the computation of the intercept
-    x_mid = torch.ones(63, 63).shape[0] // 2
-    y_mid = torch.ones(63, 63).shape[1] // 2
+    x_mid = torch.ones(img_size, img_size).shape[0] // 2
+    y_mid = torch.ones(img_size, img_size).shape[1] // 2
 
     m = torch.tan(pi / 2 - alpha_pca)
     n = torch.tensor(y_mid) - m * torch.tensor(x_mid)
