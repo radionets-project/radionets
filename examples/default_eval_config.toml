@@ -20,7 +20,8 @@ arch_name = "filter_deep"
 [inspection]
 visualize_prediction = false
 visualize_source_reconstruction = false
-num_images = 5
+visualize_dynamic_range = false
+num_images = 18
 
 [eval]
 evaluate_viewing_angle = false
