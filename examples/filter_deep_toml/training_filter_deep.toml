@@ -1,0 +1,33 @@
+# This is a TOML document.
+
+title = "Train configuration"
+
+[mode]
+quiet = false
+telegram_logger = false
+gpu = true
+
+[paths]
+data_path = "./build/normal/"
+model_path = "./build/filter_deep_normal/filter_deep_normal.model"
+pre_model = "none"
+norm_path = "none"
+
+[general]
+fourier = true
+amp_phase = true
+source_list = false
+arch_name = "filter_deep"
+loss_func = "mse"
+num_epochs = 400
+inspection = false
+
+[hypers]
+batch_size = 100
+lr = 2e-3
+
+[param_scheduling]
+use = true
+lr_start = 2e-2
+lr_max = 8e-2
+lr_stop = 3e-1
