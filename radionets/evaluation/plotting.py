@@ -276,7 +276,9 @@ def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i, dr=False
     ax2.set_ylim(0, 63)
 
     if dr:
-        dr_truth, dr_pred, num_boxes, corners = calc_dr(ifft_truth.unsqueeze(0), ifft_pred.unsqueeze(0))
+        dr_truth, dr_pred, num_boxes, corners = calc_dr(
+            ifft_truth.unsqueeze(0), ifft_pred.unsqueeze(0)
+        )
         ax1.plot([], [], " ", label=f"DR: {int(dr_pred[0])}")
         ax2.plot([], [], " ", label=f"DR: {int(dr_truth[0])}")
 
@@ -378,37 +380,37 @@ def plot_box(ax, num_boxes, corners):
     img_size = 63
     if corners[2]:
         ax.axvspan(
-        xmin=0,
-        xmax=size,
-        ymin=(img_size - size) / img_size,
-        ymax=0.99,
-        color="red",
-        fill=False,
-    )
+            xmin=0,
+            xmax=size,
+            ymin=(img_size - size) / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+        )
     if corners[3]:
         ax.axvspan(
-        xmin=img_size - size,
-        xmax=img_size - 1,
-        ymin=(img_size - size) / img_size,
-        ymax=0.99,
-        color="red",
-        fill=False,
-    )
+            xmin=img_size - size,
+            xmax=img_size - 1,
+            ymin=(img_size - size) / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+        )
     if corners[0]:
         ax.axvspan(
-        xmin=0,
-        xmax=size,
-        ymin=0.01,
-        ymax=(size) / img_size,
-        color="red",
-        fill=False,
-    )   
+            xmin=0,
+            xmax=size,
+            ymin=0.01,
+            ymax=(size) / img_size,
+            color="red",
+            fill=False,
+        )
     if corners[1]:
         ax.axvspan(
-        xmin=img_size - size,
-        xmax=img_size -1,
-        ymin=0.01,
-        ymax=(size) / img_size,
-        color="red",
-        fill=False,
-    )
+            xmin=img_size - size,
+            xmax=img_size - 1,
+            ymin=0.01,
+            ymax=(size) / img_size,
+            color="red",
+            fill=False,
+        )
