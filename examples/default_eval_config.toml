@@ -18,10 +18,12 @@ source_list = false
 arch_name = "filter_deep"
 
 [inspection]
-visualize_prediction = false
-visualize_source_reconstruction = false
+visualize_prediction = true
+visualize_source_reconstruction = true
+visualize_dynamic_range = false
+visualize_blobs = true
 num_images = 5
 
 [eval]
 evaluate_viewing_angle = false
-evaluate_dynamic_range = true
+evaluate_dynamic_range = false

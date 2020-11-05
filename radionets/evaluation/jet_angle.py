@@ -79,7 +79,7 @@ def calc_jet_angle(image):
     float
         angle between the horizontal axis and the jet axis
     """
-    image = image.clone()
+    image = torch.tensor(image).clone()
     img_size = image.shape[-1]
     # ignore negagive pixels, which can appear in predictions
     image[image < 0] = 0

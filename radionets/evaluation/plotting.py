@@ -12,6 +12,8 @@ from radionets.evaluation.utils import (
     check_vmin_vmax,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
+from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
+from radionets.evaluation.blob_detection import calc_blobs
 
 
 plot_format = "png"
@@ -238,12 +240,13 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     return real_pred, imag_pred, real_truth, imag_truth
 
 
-def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
+def visualize_source_reconstruction(
+    ifft_pred, ifft_truth, out_path, i, dr=False, blobs=False
+):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
-    # plotting
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 6), sharey=True)
 
     ax1.plot(
@@ -253,7 +256,7 @@ def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
     )
-    im1 = ax1.imshow(np.abs(ifft_pred), vmax=np.abs(ifft_truth).max())
+    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
     ax2.plot(
         x_space,
         m_truth * x_space + n_truth,
@@ -261,7 +264,7 @@ def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
     )
-    im2 = ax2.imshow(np.abs(ifft_truth))
+    im2 = ax2.imshow(ifft_truth)
 
     make_axes_nice(fig, ax1, im1, r"FFT Prediction")
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
@@ -269,11 +272,34 @@ def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i):
     ax1.set_ylabel(r"Pixels")
     ax1.set_xlabel(r"Pixels")
     ax2.set_xlabel(r"Pixels")
+
+    ax1.set_xlim(0, 63)
+    ax1.set_ylim(0, 63)
+    ax2.set_xlim(0, 63)
+    ax2.set_ylim(0, 63)
+
+    if blobs:
+        blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
+        plot_blobs(blobs_pred, ax1)
+        plot_blobs(blobs_truth, ax2)
+
+    if dr:
+        dr_truth, dr_pred, num_boxes, corners = calc_dr(
+            ifft_truth[None, ...], ifft_pred[None, ...]
+        )
+        ax1.plot([], [], " ", label=f"DR: {int(dr_pred[0])}")
+        ax2.plot([], [], " ", label=f"DR: {int(dr_truth[0])}")
+
+        plot_box(ax1, num_boxes, corners[0])
+        plot_box(ax2, num_boxes, corners[0])
+
+        outpath = str(out_path) + f"/fft_dr_{i}.{plot_format}"
+    else:
+        outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
+
     ax1.legend(loc="best")
     ax2.legend(loc="best")
-    plt.tight_layout(pad=1.5)
-
-    outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
+    fig.tight_layout(pad=1.5)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
@@ -355,3 +381,59 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path):
 
     outpath = str(out_path) + f"/dynamic_ranges.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def plot_box(ax, num_boxes, corners):
+    size = get_boxsize(num_boxes)
+    img_size = 63
+    if corners[2]:
+        ax.axvspan(
+            xmin=0,
+            xmax=size,
+            ymin=(img_size - size) / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+        )
+    if corners[3]:
+        ax.axvspan(
+            xmin=img_size - size,
+            xmax=img_size - 1,
+            ymin=(img_size - size) / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+        )
+    if corners[0]:
+        ax.axvspan(
+            xmin=0,
+            xmax=size,
+            ymin=0.01,
+            ymax=(size) / img_size,
+            color="red",
+            fill=False,
+        )
+    if corners[1]:
+        ax.axvspan(
+            xmin=img_size - size,
+            xmax=img_size - 1,
+            ymin=0.01,
+            ymax=(size) / img_size,
+            color="red",
+            fill=False,
+        )
+
+
+def plot_blobs(blobs_log, ax):
+    """Plot the blobs created in sklearn.blob_log
+    Parameters
+    ----------
+    blobs_log : ndarray
+        return values of blob_log
+    ax : axis object
+        plotting axis
+    """
+    for blob in blobs_log:
+        y, x, r = blob
+        c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
+        ax.add_patch(c)
