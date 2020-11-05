@@ -38,6 +38,9 @@ def main(configuration_path):
 
         click.echo(f"\nCreated {eval_conf['num_images']} source predictions.\n")
 
+    if eval_conf["vis_blobs"]:
+        click.echo("\nBlob visualization is enabled for source plots.\n")
+
     if eval_conf["vis_dr"]:
         create_source_plots(eval_conf, num_images=eval_conf["num_images"], rand=False)
 

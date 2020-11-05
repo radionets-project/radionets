@@ -13,6 +13,7 @@ from radionets.evaluation.utils import (
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
+from radionets.evaluation.blob_detection import calc_blobs
 
 
 plot_format = "png"
@@ -239,7 +240,9 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
     return real_pred, imag_pred, real_truth, imag_truth
 
 
-def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i, dr=False):
+def visualize_source_reconstruction(
+    ifft_pred, ifft_truth, out_path, i, dr=False, blobs=False
+):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
@@ -275,9 +278,14 @@ def visualize_source_reconstruction(ifft_pred, ifft_truth, out_path, i, dr=False
     ax2.set_xlim(0, 63)
     ax2.set_ylim(0, 63)
 
+    if blobs:
+        blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
+        plot_blobs(blobs_pred, ax1)
+        plot_blobs(blobs_truth, ax2)
+
     if dr:
         dr_truth, dr_pred, num_boxes, corners = calc_dr(
-            ifft_truth.unsqueeze(0), ifft_pred.unsqueeze(0)
+            ifft_truth[None, ...], ifft_pred[None, ...]
         )
         ax1.plot([], [], " ", label=f"DR: {int(dr_pred[0])}")
         ax2.plot([], [], " ", label=f"DR: {int(dr_truth[0])}")
@@ -414,3 +422,18 @@ def plot_box(ax, num_boxes, corners):
             color="red",
             fill=False,
         )
+
+
+def plot_blobs(blobs_log, ax):
+    """Plot the blobs created in sklearn.blob_log
+    Parameters
+    ----------
+    blobs_log : ndarray
+        return values of blob_log
+    ax : axis object
+        plotting axis
+    """
+    for blob in blobs_log:
+        y, x, r = blob
+        c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
+        ax.add_patch(c)

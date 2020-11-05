@@ -93,11 +93,12 @@ def create_source_plots(conf, num_images=3, rand=False):
 
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
         visualize_source_reconstruction(
-            torch.tensor(pred),
-            torch.tensor(truth),
+            pred,
+            truth,
             out_path,
             i,
             dr=conf["vis_dr"],
+            blobs=conf["vis_blobs"],
         )
 
     return np.abs(ifft_pred), np.abs(ifft_truth)

@@ -23,6 +23,7 @@ def read_config(config):
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
+    eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
     eval_conf["num_images"] = config["inspection"]["num_images"]
 
     eval_conf["viewing_angle"] = config["eval"]["evaluate_viewing_angle"]
