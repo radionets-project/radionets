@@ -43,5 +43,5 @@ def main(configuration_path):
         evaluate_viewing_angle(eval_conf)
 
     if eval_conf["dynamic_range"]:
-        click.echo("\nStart evaluation of viewing angles.\n")
+        click.echo("\nStart evaluation of dynamic ranges.\n")
         evaluate_dynamic_range(eval_conf)

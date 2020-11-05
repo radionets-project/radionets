@@ -126,4 +126,13 @@ def evaluate_dynamic_range(conf):
 
     dr_truth, dr_pred = calc_dr(ifft_truth, ifft_pred)
 
+    click.echo(
+        f"\nMean dynamic range for true source distributions:\
+            {round(dr_truth.mean())}\n"
+    )
+    click.echo(
+        f"\nMean dynamic range for predicted source distributions:\
+            {round(dr_pred.mean())}\n"
+    )
+
     histogram_dynamic_ranges(dr_truth, dr_pred, out_path)
