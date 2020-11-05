@@ -65,7 +65,6 @@ def create_inspection_plots(conf, num_images=3, rand=False):
 
 
 def create_source_plots(conf, num_images=3, rand=False):
-    # (i, real_pred, imag_pred, real_truth, imag_truth, amp_phase, out_path):
     """
     function for visualizing the output of a inverse fourier transform. For now, it is
     necessary to take the absolute of the result of the inverse fourier transform,
@@ -94,7 +93,11 @@ def create_source_plots(conf, num_images=3, rand=False):
 
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
         visualize_source_reconstruction(
-            torch.tensor(pred), torch.tensor(truth), out_path, i
+            torch.tensor(pred),
+            torch.tensor(truth),
+            out_path,
+            i,
+            dr=conf["vis_dr"],
         )
 
     return np.abs(ifft_pred), np.abs(ifft_truth)
@@ -124,7 +127,7 @@ def evaluate_dynamic_range(conf):
     ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
     ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
-    dr_truth, dr_pred = calc_dr(ifft_truth, ifft_pred)
+    dr_truth, dr_pred, _, _ = calc_dr(ifft_truth, ifft_pred)
 
     click.echo(
         f"\nMean dynamic range for true source distributions:\

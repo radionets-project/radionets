@@ -38,6 +38,11 @@ def main(configuration_path):
 
         click.echo(f"\nCreated {eval_conf['num_images']} source predictions.\n")
 
+    if eval_conf["vis_dr"]:
+        create_source_plots(eval_conf, num_images=eval_conf["num_images"], rand=False)
+
+        click.echo(f"\nCreated {eval_conf['num_images']} dynamic range plots.\n")
+
     if eval_conf["viewing_angle"]:
         click.echo("\nStart evaluation of viewing angles.\n")
         evaluate_viewing_angle(eval_conf)

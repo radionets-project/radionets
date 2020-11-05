@@ -3,7 +3,7 @@ import numpy as np
 
 def get_boxsize(num_corners, num_pixel=63):
     factors = np.array([0.3, 0.22, 0.16])
-    size = round(num_pixel * factors[num_corners - 2])
+    size = int(num_pixel * factors[num_corners - 2])
     return size
 
 
@@ -59,13 +59,17 @@ def get_rms(ifft_truth, ifft_pred):
     rms_pred[rms_boxes == 2] = (
         np.sqrt(rms_2_pred[0:4, rms_boxes == 2] ** 2).sum(axis=0) / 2
     )
-    return rms_truth, rms_pred
+    corners = np.ones((rms_4_truth.shape[-1], 4))
+    corners[rms_4_truth.swapaxes(1, 0) == 0] = 0
+    return rms_truth, rms_pred, rms_boxes, corners
 
 
 def calc_dr(ifft_truth, ifft_pred):
-    rms_truth, rms_pred = get_rms(ifft_truth, ifft_pred)
+    # ifft_truth = ifft_truth.numpy()
+    # ifft_pred = ifft_pred.numpy()
+    rms_truth, rms_pred, rms_boxes, corners = get_rms(ifft_truth, ifft_pred)
     peak_vals_truth = ifft_truth.reshape(-1, ifft_truth.shape[-1] ** 2).max(axis=1)
     peak_vals_pred = ifft_pred.reshape(-1, ifft_pred.shape[-1] ** 2).max(axis=1)
     dr_truth = peak_vals_truth / rms_truth
     dr_pred = peak_vals_pred / rms_pred
-    return dr_truth, dr_pred
+    return dr_truth, dr_pred, rms_boxes, corners
