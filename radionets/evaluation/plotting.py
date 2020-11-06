@@ -261,7 +261,7 @@ def visualize_source_reconstruction(
     ax1.plot(
         x_space,
         m_pred * x_space + n_pred,
-        "r-",
+        "w-",
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
     )
@@ -269,7 +269,7 @@ def visualize_source_reconstruction(
     ax2.plot(
         x_space,
         m_truth * x_space + n_truth,
-        "r-",
+        "w-",
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
     )
