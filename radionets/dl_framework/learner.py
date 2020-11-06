@@ -1,21 +1,5 @@
 import torch.nn as nn
 from radionets.dl_framework.model import init_cnn
-import sys
-from radionets.dl_framework.loss_functions import (
-    init_feature_loss,
-    splitted_mse,
-    loss_amp,
-    loss_phase,
-    loss_msssim,
-    loss_mse_msssim,
-    loss_mse_msssim_phase,
-    loss_mse_msssim_amp,
-    loss_msssim_amp,
-    my_loss,
-    likelihood,
-    likelihood_phase,
-    spe,
-)
 from radionets.dl_framework.callbacks import (
     normalize_tfm,
     BatchTransformXCallback,
@@ -28,6 +12,7 @@ from fastai.learner import Learner
 from fastai.data.core import DataLoaders
 from fastai.callback.data import CudaCallback
 from fastai.callback.schedule import ParamScheduler, combined_cos
+import radionets.dl_framework.loss_functions as loss_functions
 
 
 def get_learner(
@@ -88,40 +73,11 @@ def define_learner(
             ]
         )
 
-    loss_func = train_conf["loss_func"]
-    if loss_func == "feature_loss":
-        loss_func = init_feature_loss()
-    elif loss_func == "l1":
-        loss_func = nn.L1Loss()
-    elif loss_func == "mse":
-        loss_func = nn.MSELoss()
-    elif loss_func == "splitted_mse":
-        loss_func = splitted_mse
-    elif loss_func == "my_loss":
-        loss_func = my_loss
-    elif loss_func == "likelihood":
-        loss_func = likelihood
-    elif loss_func == "likelihood_phase":
-        loss_func = likelihood_phase
-    elif loss_func == "loss_amp":
-        loss_func = loss_amp
-    elif loss_func == "loss_phase":
-        loss_func = loss_phase
-    elif loss_func == "msssim":
-        loss_func = loss_msssim
-    elif loss_func == "mse_msssim":
-        loss_func = loss_mse_msssim
-    elif loss_func == "mse_msssim_phase":
-        loss_func = loss_mse_msssim_phase
-    elif loss_func == "mse_msssim_amp":
-        loss_func = loss_mse_msssim_amp
-    elif loss_func == "msssim_amp":
-        loss_func = loss_msssim_amp
-    elif loss_func == "spe":
-        loss_func = spe
+    # get loss func
+    if train_conf["loss_func"] == "feature_loss":
+        loss_func = loss_functions.init_feature_loss()
     else:
-        print("\n No matching loss function or architecture! Exiting. \n")
-        sys.exit(1)
+        loss_func = getattr(loss_functions, train_conf["loss_func"])
 
     # Combine model and data in learner
     learn = get_learner(
