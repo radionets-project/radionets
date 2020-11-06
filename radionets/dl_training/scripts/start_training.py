@@ -122,6 +122,7 @@ def main(configuration_path, mode):
             train_conf["arch_name"],
             Path(train_conf["model_path"]).parent,
             skip_last=5,
+            output_format=train_conf["format"],
         )
 
     if mode == "plot_loss":
@@ -142,8 +143,16 @@ def main(configuration_path, mode):
             click.echo("Exiting.\n")
             sys.exit()
 
-        plot_lr(learn, Path(train_conf["model_path"]))
-        plot_loss(learn, Path(train_conf["model_path"]))
+        plot_lr(
+            learn,
+            Path(train_conf["model_path"]),
+            output_format=train_conf["format"],
+        )
+        plot_loss(
+            learn,
+            Path(train_conf["model_path"]),
+            output_format=train_conf["format"],
+        )
 
 
 if __name__ == "__main__":

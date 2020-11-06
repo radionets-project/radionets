@@ -39,6 +39,8 @@ def read_config(config):
     train_conf["loss_func"] = config["general"]["loss_func"]
     train_conf["num_epochs"] = config["general"]["num_epochs"]
     train_conf["inspection"] = config["general"]["inspection"]
+    train_conf["separate"] = config["general"]["separate"]
+    train_conf["format"] = config["general"]["output_format"]
 
     train_conf["param_scheduling"] = config["param_scheduling"]["use"]
     train_conf["lr_start"] = config["param_scheduling"]["lr_start"]
