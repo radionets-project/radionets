@@ -6,6 +6,7 @@ from radionets.evaluation.train_inspection import (
     create_source_plots,
     evaluate_viewing_angle,
     evaluate_dynamic_range,
+    evaluate_ms_ssim,
 )
 
 
@@ -33,13 +34,16 @@ def main(configuration_path):
 
         click.echo(f"\nCreated {eval_conf['num_images']} test predictions.\n")
 
+    if eval_conf["vis_blobs"]:
+        click.echo("\nBlob visualization is enabled for source plots.\n")
+
+    if eval_conf["vis_ms_ssim"]:
+        click.echo("\nVisualization of ms ssim is enabled for source plots.\n")
+
     if eval_conf["vis_source"]:
         create_source_plots(eval_conf, num_images=eval_conf["num_images"], rand=False)
 
         click.echo(f"\nCreated {eval_conf['num_images']} source predictions.\n")
-
-    if eval_conf["vis_blobs"]:
-        click.echo("\nBlob visualization is enabled for source plots.\n")
 
     if eval_conf["vis_dr"]:
         create_source_plots(eval_conf, num_images=eval_conf["num_images"], rand=False)
@@ -53,3 +57,7 @@ def main(configuration_path):
     if eval_conf["dynamic_range"]:
         click.echo("\nStart evaluation of dynamic ranges.\n")
         evaluate_dynamic_range(eval_conf)
+
+    if eval_conf["ms_ssim"]:
+        click.echo("\nStart evaluation of ms ssim.\n")
+        evaluate_ms_ssim(eval_conf)

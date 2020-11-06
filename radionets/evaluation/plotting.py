@@ -10,10 +10,13 @@ from radionets.evaluation.utils import (
     reshape_2d,
     make_axes_nice,
     check_vmin_vmax,
+    pad_unsqueeze,
+    round_n_digits,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.blob_detection import calc_blobs
+from pytorch_msssim import ms_ssim
 
 
 plot_format = "png"
@@ -241,7 +244,13 @@ def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_pat
 
 
 def visualize_source_reconstruction(
-    ifft_pred, ifft_truth, out_path, i, dr=False, blobs=False
+    ifft_pred,
+    ifft_truth,
+    out_path,
+    i,
+    dr=False,
+    blobs=False,
+    msssim=False,
 ):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
@@ -277,6 +286,13 @@ def visualize_source_reconstruction(
     ax1.set_ylim(0, 63)
     ax2.set_xlim(0, 63)
     ax2.set_ylim(0, 63)
+
+    if msssim:
+        ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth).unsqueeze(0))
+        ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
+        val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
+
+        ax1.plot([], [], " ", label=f"ms ssim: {round_n_digits(val)}")
 
     if blobs:
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
@@ -437,3 +453,22 @@ def plot_blobs(blobs_log, ax):
         y, x, r = blob
         c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
         ax.add_patch(c)
+
+
+def histogram_ms_ssim(msssim, out_path):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.hist(
+        msssim.numpy(),
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.set_xlabel("ms ssim")
+    ax1.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/ms_ssim.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

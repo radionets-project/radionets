@@ -4,6 +4,7 @@ from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.data import do_normalisation
 import radionets.dl_framework.architecture as architecture
 import torch
+import torch.nn.functional as F
 
 
 def read_config(config):
@@ -27,10 +28,12 @@ def read_config(config):
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
     eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
+    eval_conf["vis_ms_ssim"] = config["inspection"]["visualize_ms_ssim"]
     eval_conf["num_images"] = config["inspection"]["num_images"]
 
     eval_conf["viewing_angle"] = config["eval"]["evaluate_viewing_angle"]
     eval_conf["dynamic_range"] = config["eval"]["evaluate_dynamic_range"]
+    eval_conf["ms_ssim"] = config["eval"]["evaluate_ms_ssim"]
     return eval_conf
 
 
@@ -238,3 +241,14 @@ def get_ifft(array, amp_phase=False):
     else:
         compl = array[:, 0] + array[:, 1] * 1j
     return np.abs(np.fft.ifft2(compl))
+
+
+def pad_unsqueeze(tensor):
+    while tensor.shape[-1] < 160:
+        tensor = F.pad(input=tensor, pad=(1, 1, 1, 1), mode="constant", value=0)
+    tensor = tensor.unsqueeze(1)
+    return tensor
+
+
+def round_n_digits(tensor, n_digits=3):
+    return (tensor * 10 ** n_digits).round() / (10 ** n_digits)
