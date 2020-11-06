@@ -4,7 +4,6 @@ from radionets.dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from radionets.dl_framework.utils import children
 import torch.nn.functional as F
-# import pytorch_msssim
 from pytorch_msssim import ms_ssim, MS_SSIM
 from radionets.dl_framework.regularization import (
     inv_fft,
@@ -229,7 +228,7 @@ def loss_phase(x, y):
 
 def loss_new_msssim(x, y):
     msssim_loss = MS_SSIM(data_range=10, channel=2)
-    loss = 1-msssim_loss(x, y)
+    loss = 1 - msssim_loss(x, y)
 
     return loss
 
