@@ -18,4 +18,4 @@ ce_list' into ezaldivar  - bash miniconda.sh -b -p $HOME/miniconda
   - source activate radionets
 
 script:
-- travis_wait 20 py.test --ignore=tests
+- travis_wait 30 py.test --ignore=tests
