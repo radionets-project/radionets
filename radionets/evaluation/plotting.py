@@ -19,9 +19,6 @@ from radionets.evaluation.blob_detection import calc_blobs
 from pytorch_msssim import ms_ssim
 
 
-plot_format = "png"
-
-
 def plot_target(h5_dataset, log=False):
     index = np.random.randint(len(h5_dataset) - 1)
     plt.figure(figsize=(5.78, 3.57))
@@ -102,7 +99,7 @@ def plot_inp_tar(h5_dataset, fourier=False, amp_phase=False):
     fig.tight_layout()
 
 
-def plot_results(inp, pred, truth, model_path, save=False):
+def plot_results(inp, pred, truth, model_path, save=False, plot_format="png"):
     """
     Plot input images, prediction and true image.
     Parameters
@@ -151,11 +148,13 @@ def plot_results(inp, pred, truth, model_path, save=False):
             out = model_path / "predictions/"
             out.mkdir(parents=True, exist_ok=True)
 
-            out_path = adjust_outpath(out, "/prediction", form="pdf")
+            out_path = adjust_outpath(out, "/prediction", form=plot_format)
             plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
-def visualize_with_fourier(i, img_input, img_pred, img_truth, amp_phase, out_path):
+def visualize_with_fourier(
+    i, img_input, img_pred, img_truth, amp_phase, out_path, plot_format="png"
+):
     """
     Visualizing, if the target variables are displayed in fourier space.
     i: Current index given form the loop
@@ -251,6 +250,7 @@ def visualize_source_reconstruction(
     dr=False,
     blobs=False,
     msssim=False,
+    plot_format="png",
 ):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
@@ -287,13 +287,6 @@ def visualize_source_reconstruction(
     ax2.set_xlim(0, 63)
     ax2.set_ylim(0, 63)
 
-    if msssim:
-        ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth).unsqueeze(0))
-        ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
-        val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
-
-        ax1.plot([], [], " ", label=f"ms ssim: {round_n_digits(val)}")
-
     if blobs:
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
         plot_blobs(blobs_pred, ax1)
@@ -310,6 +303,12 @@ def visualize_source_reconstruction(
         plot_box(ax2, num_boxes, corners[0])
 
         outpath = str(out_path) + f"/fft_dr_{i}.{plot_format}"
+    if msssim:
+        ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth).unsqueeze(0))
+        ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
+        val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
+
+        ax1.plot([], [], " ", label=f"ms ssim: {round_n_digits(val)}")
     else:
         outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
@@ -320,7 +319,7 @@ def visualize_source_reconstruction(
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
-def histogram_jet_angles(alpha_truth, alpha_pred, out_path):
+def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
     dif = (alpha_pred - alpha_truth).numpy()
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
@@ -352,7 +351,7 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path):
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
 
 
-def histogram_dynamic_ranges(dr_truth, dr_pred, out_path):
+def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
     # dif = dr_pred - dr_truth
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
@@ -455,7 +454,7 @@ def plot_blobs(blobs_log, ax):
         ax.add_patch(c)
 
 
-def histogram_ms_ssim(msssim, out_path):
+def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         msssim.numpy(),
