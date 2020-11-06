@@ -29,7 +29,9 @@ def main(configuration_path):
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(
-            eval_conf, num_images=eval_conf["num_images"], rand=False
+            eval_conf,
+            num_images=eval_conf["num_images"],
+            rand=eval_conf["random"],
         )
 
         click.echo(f"\nCreated {eval_conf['num_images']} test predictions.\n")
@@ -44,7 +46,9 @@ def main(configuration_path):
         click.echo(f"\nCreated {eval_conf['num_images']} dynamic range plots.\n")
 
     if eval_conf["vis_source"]:
-        create_source_plots(eval_conf, num_images=eval_conf["num_images"], rand=False)
+        create_source_plots(
+            eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
+        )
 
         click.echo(f"\nCreated {eval_conf['num_images']} source predictions.\n")
 

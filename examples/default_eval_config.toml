@@ -28,6 +28,7 @@ visualize_dynamic_range = true
 visualize_blobs = true
 visualize_ms_ssim = true
 num_images = 5
+random = false
 
 [eval]
 evaluate_viewing_angle = true
