@@ -10,7 +10,7 @@ def _exec_notebook(path):
             "--to",
             "notebook",
             "--execute",
-            "--ExecutePreprocessor.timeout=1000",
+            # "--ExecutePreprocessor.timeout=1000",
             "--output",
             fout.name,
             path,
