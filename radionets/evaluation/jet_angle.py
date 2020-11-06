@@ -96,7 +96,6 @@ def calc_jet_angle(image):
 
     _, _, alpha_pca = pca(image)
 
-    # Use pixel with highest pixel value for the computation of the intercept
     x_mid = torch.ones(img_size, img_size).shape[0] // 2
     y_mid = torch.ones(img_size, img_size).shape[1] // 2
 
