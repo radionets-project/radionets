@@ -233,7 +233,7 @@ def evaluate_ms_ssim(conf):
         ]
     )
 
-    click.echo(f"\nCreating ms-ssim histogram.\n")
+    click.echo("\nCreating ms-ssim histogram.\n")
 
     histogram_ms_ssim(
         vals,
