@@ -13,7 +13,7 @@ model_path_2 = "none"
 norm_path = "none"
 
 [general]
-plot_format = "png"
+output_format = "png"
 fourier = true
 amp_phase = true
 source_list = false
