@@ -20,4 +20,4 @@ install:
   - source activate radionets
 
 script:
-- py.test --ignore=tests
+- travis_wait 16 py.test --ignore=tests
