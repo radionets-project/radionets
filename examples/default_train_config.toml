@@ -4,7 +4,7 @@ title = "Train configuration"
 
 [mode]
 quiet = true
-gpu = true
+gpu = false
 telegram_logger = false
 
 [paths]
@@ -19,8 +19,9 @@ amp_phase = true
 source_list = false
 arch_name = "filter_deep"
 loss_func = "splitted_mse"
-num_epochs = 10
+num_epochs = 5
 inspection = true
+output_format = "png"
 
 [hypers]
 batch_size = 100
