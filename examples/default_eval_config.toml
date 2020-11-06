@@ -13,6 +13,7 @@ model_path_2 = "none"
 norm_path = "none"
 
 [general]
+plot_format = "png"
 fourier = true
 amp_phase = true
 source_list = false
@@ -21,14 +22,14 @@ separate = false
 arch_name_2 = "none"
 
 [inspection]
-visualize_prediction = false
-visualize_source_reconstruction = false
-visualize_dynamic_range = false
-visualize_blobs = false
-visualize_ms_ssim = false
+visualize_prediction = true
+visualize_source_reconstruction = true
+visualize_dynamic_range = true
+visualize_blobs = true
+visualize_ms_ssim = true
 num_images = 5
 
 [eval]
-evaluate_viewing_angle = false
-evaluate_dynamic_range = false
+evaluate_viewing_angle = true
+evaluate_dynamic_range = true
 evaluate_ms_ssim = true

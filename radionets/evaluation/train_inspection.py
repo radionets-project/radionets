@@ -96,6 +96,7 @@ def create_inspection_plots(conf, num_images=3, rand=False):
                 img_true[i],
                 amp_phase=conf["amp_phase"],
                 out_path=out_path,
+                plot_format=conf["format"],
             )
     else:
         plot_results(
@@ -104,6 +105,7 @@ def create_inspection_plots(conf, num_images=3, rand=False):
             reshape_2d(img_true),
             out_path,
             save=True,
+            plot_format=conf["format"],
         )
 
 
@@ -146,6 +148,7 @@ def create_source_plots(conf, num_images=3, rand=False):
             dr=conf["vis_dr"],
             blobs=conf["vis_blobs"],
             msssim=conf["vis_ms_ssim"],
+            plot_format=conf["format"],
         )
 
     return np.abs(ifft_pred), np.abs(ifft_truth)
@@ -166,7 +169,12 @@ def evaluate_viewing_angle(conf):
     m_truth, n_truth, alpha_truth = calc_jet_angle(torch.tensor(ifft_truth))
     m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
 
-    histogram_jet_angles(alpha_truth, alpha_pred, out_path)
+    histogram_jet_angles(
+        alpha_truth,
+        alpha_pred,
+        out_path,
+        plot_format=conf["format"],
+    )
 
 
 def evaluate_dynamic_range(conf):
@@ -192,7 +200,12 @@ def evaluate_dynamic_range(conf):
             {round(dr_pred.mean())}\n"
     )
 
-    histogram_dynamic_ranges(dr_truth, dr_pred, out_path)
+    histogram_dynamic_ranges(
+        dr_truth,
+        dr_pred,
+        out_path,
+        plot_format=conf["format"],
+    )
 
 
 def evaluate_ms_ssim(conf):
@@ -222,6 +235,10 @@ def evaluate_ms_ssim(conf):
 
     click.echo(f"\nCreating ms-ssim histogram.\n")
 
-    histogram_ms_ssim(vals, out_path)
+    histogram_ms_ssim(
+        vals,
+        out_path,
+        plot_format=conf["format"],
+    )
 
     click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")

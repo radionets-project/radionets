@@ -17,6 +17,7 @@ def read_config(config):
     eval_conf["quiet"] = config["mode"]["quiet"]
     eval_conf["gpu"] = config["mode"]["gpu"]
 
+    eval_conf["format"] = config["general"]["plot_format"]
     eval_conf["fourier"] = config["general"]["fourier"]
     eval_conf["amp_phase"] = config["general"]["amp_phase"]
     eval_conf["arch_name"] = config["general"]["arch_name"]
