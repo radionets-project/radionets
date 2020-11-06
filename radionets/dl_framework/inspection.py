@@ -11,8 +11,6 @@ from radionets.dl_framework.model import load_pre_model
 from radionets.simulations.utils import adjust_outpath
 from pathlib import Path
 
-# from gaussian_sources.inspection import visualize_with_fourier
-
 
 # make nice Latex friendly plots
 # mpl.use("pgf")
