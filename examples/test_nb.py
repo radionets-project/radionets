@@ -19,6 +19,6 @@ def _exec_notebook(path):
 
 
 def test():
-    _exec_notebook("01_dataset_simulation.ipynb")
-    _exec_notebook("02_model_training.ipynb")
-    _exec_notebook("04_filter_deep.ipynb")
+    _exec_notebook("examples/01_dataset_simulation.ipynb")
+    _exec_notebook("examples/02_model_training.ipynb")
+    _exec_notebook("examples/04_filter_deep.ipynb")
