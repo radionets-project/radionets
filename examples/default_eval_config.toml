@@ -9,6 +9,7 @@ gpu = true
 [paths]
 data_path = "./example_data/"
 model_path = "./build/example_model/example.model"
+model_path_2 = "none"
 norm_path = "none"
 
 [general]
@@ -16,6 +17,8 @@ fourier = true
 amp_phase = true
 source_list = false
 arch_name = "filter_deep"
+separate = false
+arch_name_2 = "none"
 
 [inspection]
 visualize_prediction = true
