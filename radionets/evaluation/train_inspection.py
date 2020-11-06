@@ -16,9 +16,11 @@ from radionets.evaluation.utils import (
     get_images,
     eval_model,
     get_ifft,
+    pad_unsqueeze,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
+from pytorch_msssim import ms_ssim
 
 
 def get_prediction(conf, num_images=None, rand=False):
@@ -99,6 +101,7 @@ def create_source_plots(conf, num_images=3, rand=False):
             i,
             dr=conf["vis_dr"],
             blobs=conf["vis_blobs"],
+            msssim=conf["vis_ms_ssim"],
         )
 
     return np.abs(ifft_pred), np.abs(ifft_truth)
@@ -140,3 +143,26 @@ def evaluate_dynamic_range(conf):
     )
 
     histogram_dynamic_ranges(dr_truth, dr_pred, out_path)
+
+
+def evaluate_ms_ssim(conf):
+    pred, _, img_true = get_prediction(conf)
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+    if ifft_truth.shape[-1] < 160:
+        click.echo(
+            "\nThis is only a placeholder!\
+            Images too small for meaningful ms ssim calculations.\n"
+        )
+
+    ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
+    ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred))
+
+    val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
+
+    click.echo(f"\nThe mean ms-ssim value is {val}\n")
