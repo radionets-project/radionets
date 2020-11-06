@@ -453,3 +453,22 @@ def plot_blobs(blobs_log, ax):
         y, x, r = blob
         c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
         ax.add_patch(c)
+
+
+def histogram_ms_ssim(msssim, out_path):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.hist(
+        msssim.numpy(),
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.set_xlabel("ms ssim")
+    ax1.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/ms_ssim.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

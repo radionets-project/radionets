@@ -22,10 +22,10 @@ arch_name_2 = "none"
 
 [inspection]
 visualize_prediction = false
-visualize_source_reconstruction = true
+visualize_source_reconstruction = false
 visualize_dynamic_range = false
 visualize_blobs = false
-visualize_ms_ssim = true
+visualize_ms_ssim = false
 num_images = 5
 
 [eval]

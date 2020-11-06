@@ -9,6 +9,7 @@ from radionets.evaluation.plotting import (
     visualize_source_reconstruction,
     histogram_jet_angles,
     histogram_dynamic_ranges,
+    histogram_ms_ssim,
 )
 from radionets.evaluation.utils import (
     reshape_2d,
@@ -212,6 +213,15 @@ def evaluate_ms_ssim(conf):
     ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
     ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred))
 
-    val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
+    vals = torch.tensor(
+        [
+            ms_ssim(pred.unsqueeze(0), truth.unsqueeze(0), data_range=truth.max())
+            for pred, truth in zip(ifft_pred, ifft_truth)
+        ]
+    )
 
-    click.echo(f"\nThe mean ms-ssim value is {val}\n")
+    click.echo(f"\nCreating ms-ssim histogram.\n")
+
+    histogram_ms_ssim(vals, out_path)
+
+    click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
