@@ -11,6 +11,7 @@ def read_config(config):
     eval_conf = {}
     eval_conf["data_path"] = config["paths"]["data_path"]
     eval_conf["model_path"] = config["paths"]["model_path"]
+    eval_conf["model_path_2"] = config["paths"]["model_path_2"]
     eval_conf["norm_path"] = config["paths"]["norm_path"]
 
     eval_conf["quiet"] = config["mode"]["quiet"]
@@ -20,6 +21,8 @@ def read_config(config):
     eval_conf["amp_phase"] = config["general"]["amp_phase"]
     eval_conf["arch_name"] = config["general"]["arch_name"]
     eval_conf["source_list"] = config["general"]["source_list"]
+    eval_conf["separate"] = config["general"]["separate"]
+    eval_conf["arch_name_2"] = config["general"]["arch_name_2"]
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]

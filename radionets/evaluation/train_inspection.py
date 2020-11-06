@@ -41,8 +41,48 @@ def get_prediction(conf, num_images=None, rand=False):
     return pred, img_test, img_true
 
 
+def get_separate_prediction(conf, num_images=None, rand=False):
+    """Get predictions for separate architectures.
+
+    Parameters
+    ----------
+    conf : dict
+        contains configurations
+    num_images : int, optional
+        number of evaluation images, by default None
+    rand : bool, optional
+        if true, selects random images, by default False
+
+    Returns
+    -------
+    tuple of torch tensors
+        predictions, input and true images
+    """
+    test_ds = load_data(
+        conf["data_path"],
+        mode="test",
+        fourier=conf["fourier"],
+        source_list=conf["source_list"],
+    )
+    if num_images is None:
+        num_images = len(test_ds)
+    img_test, img_true = get_images(
+        test_ds, num_images, norm_path=conf["norm_path"], rand=rand
+    )
+    img_size = img_test.shape[-1]
+    model_1 = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)
+    pred_1 = eval_model(img_test, model_1)
+    pred_2 = eval_model(img_test, model_2)
+    pred = torch.cat((pred_1, pred_2), dim=1)
+    return pred, img_test, img_true
+
+
 def create_inspection_plots(conf, num_images=3, rand=False):
-    pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
+    if conf["separate"]:
+        pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
+    else:
+        pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation/"
     out_path.mkdir(parents=True, exist_ok=True)
@@ -77,7 +117,10 @@ def create_source_plots(conf, num_images=3, rand=False):
     real_truth: real part of the truth computed in visualize with fourier
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
-    pred, _, img_true = get_prediction(conf, num_images, rand=rand)
+    if conf["separate"]:
+        pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
+    else:
+        pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
@@ -108,7 +151,10 @@ def create_source_plots(conf, num_images=3, rand=False):
 
 
 def evaluate_viewing_angle(conf):
-    pred, _, img_true = get_prediction(conf)
+    if conf["separate"]:
+        pred, img_test, img_true = get_separate_prediction(conf)
+    else:
+        pred, img_test, img_true = get_prediction(conf)
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
@@ -123,7 +169,10 @@ def evaluate_viewing_angle(conf):
 
 
 def evaluate_dynamic_range(conf):
-    pred, _, img_true = get_prediction(conf)
+    if conf["separate"]:
+        pred, img_test, img_true = get_separate_prediction(conf)
+    else:
+        pred, img_test, img_true = get_prediction(conf)
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
