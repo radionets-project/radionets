@@ -302,15 +302,14 @@ def visualize_source_reconstruction(
         plot_box(ax1, num_boxes, corners[0])
         plot_box(ax2, num_boxes, corners[0])
 
-        outpath = str(out_path) + f"/fft_dr_{i}.{plot_format}"
     if msssim:
         ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth).unsqueeze(0))
         ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
         val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
 
         ax1.plot([], [], " ", label=f"ms ssim: {round_n_digits(val)}")
-    else:
-        outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
+
+    outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
     ax1.legend(loc="best")
     ax2.legend(loc="best")
