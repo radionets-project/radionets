@@ -268,9 +268,9 @@ def loss_msssim(x, y):
 
     loss = (
         1.0
-        - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
+        - MS_SSIM(inp_real, tar_real, normalize="relu")
         + 1.0
-        - pytorch_msssim.msssim(inp_imag, tar_imag, normalize="relu")
+        - MS_SSIM(inp_imag, tar_imag, normalize="relu")
     )
 
     return loss
