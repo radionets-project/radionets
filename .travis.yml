@@ -18,4 +18,8 @@ install:
   - source activate radionets
 
 script:
-- ./test.sh
+  # Output something every 10 minutes or Travis kills the job
+  - while sleep 9m; do echo "=====[ $SECONDS seconds still running ]====="; done &
+  - py.test --ignore=tests
+  # Killing background sleep loop
+  - kill %1
