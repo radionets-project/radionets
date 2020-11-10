@@ -1,10 +1,22 @@
 import numpy as np
 import pandas as pd
 from radionets.dl_framework.model import load_pre_model
-from radionets.dl_framework.data import do_normalisation
+from radionets.dl_framework.data import do_normalisation, load_data
 import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
+
+
+def create_databunch(data_path, fourier, source_list, batch_size):
+    # Load data sets
+    test_ds = load_data(
+        data_path, mode="test", fourier=fourier, source_list=source_list,
+    )
+
+    # Create databunch with defined batchsize
+    data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+    return data
 
 
 def read_config(config):
@@ -36,6 +48,7 @@ def read_config(config):
     eval_conf["viewing_angle"] = config["eval"]["evaluate_viewing_angle"]
     eval_conf["dynamic_range"] = config["eval"]["evaluate_dynamic_range"]
     eval_conf["ms_ssim"] = config["eval"]["evaluate_ms_ssim"]
+    eval_conf["batch_size"] = config["eval"]["batch_size"]
     return eval_conf
 
 
