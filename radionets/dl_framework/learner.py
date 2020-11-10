@@ -34,7 +34,7 @@ def define_learner(
     test=False,
 ):
     model_path = train_conf["model_path"]
-    model_name = model_path.split("build/")[-1].split("/")[0]
+    model_name = model_path.split("build/")[-1].split("/")[-1].split("/")[0].split(".")[0]
     lr = train_conf["lr"]
     opt_func = Adam
     if train_conf["norm_path"] != "none":
