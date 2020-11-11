@@ -12,6 +12,7 @@ from radionets.evaluation.plotting import (
     histogram_ms_ssim,
 )
 from radionets.evaluation.utils import (
+    create_databunch,
     reshape_2d,
     load_pretrained_model,
     get_images,
@@ -22,6 +23,7 @@ from radionets.evaluation.utils import (
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
 from pytorch_msssim import ms_ssim
+from tqdm import tqdm
 
 
 def get_prediction(conf, num_images=None, rand=False):
@@ -155,90 +157,149 @@ def create_source_plots(conf, num_images=3, rand=False):
 
 
 def evaluate_viewing_angle(conf):
-    if conf["separate"]:
-        pred, img_test, img_true = get_separate_prediction(conf)
-    else:
-        pred, img_test, img_true = get_prediction(conf)
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
-    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["separate"]:
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
 
-    m_truth, n_truth, alpha_truth = calc_jet_angle(torch.tensor(ifft_truth))
-    m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
+    alpha_truths = []
+    alpha_preds = []
 
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["separate"]:
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        m_truth, n_truth, alpha_truth = calc_jet_angle(torch.tensor(ifft_truth))
+        m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
+
+        alpha_truths.extend(alpha_truth)
+        alpha_preds.extend(alpha_pred)
+
+    alpha_truths = torch.tensor(alpha_truths)
+    alpha_preds = torch.tensor(alpha_preds)
+
+    click.echo("\nCreating histogram of jet angles.\n")
     histogram_jet_angles(
-        alpha_truth,
-        alpha_pred,
-        out_path,
-        plot_format=conf["format"],
+        alpha_truths, alpha_preds, out_path, plot_format=conf["format"],
     )
 
 
 def evaluate_dynamic_range(conf):
-    if conf["separate"]:
-        pred, img_test, img_true = get_separate_prediction(conf)
-    else:
-        pred, img_test, img_true = get_prediction(conf)
+    # create Dataloader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
-    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["separate"]:
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
 
-    dr_truth, dr_pred, _, _ = calc_dr(ifft_truth, ifft_pred)
+    dr_truths = np.array([])
+    dr_preds = np.array([])
+
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["separate"]:
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        dr_truth, dr_pred, _, _ = calc_dr(ifft_truth, ifft_pred)
+        dr_truths = np.append(dr_truths, dr_truth)
+        dr_preds = np.append(dr_preds, dr_pred)
 
     click.echo(
         f"\nMean dynamic range for true source distributions:\
-            {round(dr_truth.mean())}\n"
+            {round(dr_truths.mean())}\n"
     )
     click.echo(
         f"\nMean dynamic range for predicted source distributions:\
-            {round(dr_pred.mean())}\n"
+            {round(dr_preds.mean())}\n"
     )
 
+    click.echo("\nCreating histogram of dynamic ranges.\n")
     histogram_dynamic_ranges(
-        dr_truth,
-        dr_pred,
-        out_path,
-        plot_format=conf["format"],
+        dr_truths, dr_preds, out_path, plot_format=conf["format"],
     )
 
 
 def evaluate_ms_ssim(conf):
-    pred, _, img_true = get_prediction(conf)
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
-    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
-
-    if ifft_truth.shape[-1] < 160:
-        click.echo(
-            "\nThis is only a placeholder!\
-            Images too small for meaningful ms ssim calculations.\n"
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["separate"]:
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
-    ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
-    ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred))
+    vals = []
 
-    vals = torch.tensor(
-        [
-            ms_ssim(pred.unsqueeze(0), truth.unsqueeze(0), data_range=truth.max())
-            for pred, truth in zip(ifft_pred, ifft_truth)
-        ]
-    )
+    if img_size < 160:
+        click.echo(
+            "\nThis is only a placeholder!\
+                Images too small for meaningful ms ssim calculations.\n"
+        )
+
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["separate"]:
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        if img_size < 160:
+            ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
+            ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred))
+
+        vals.extend(
+            [
+                ms_ssim(pred.unsqueeze(0), truth.unsqueeze(0), data_range=truth.max())
+                for pred, truth in zip(ifft_pred, ifft_truth)
+            ]
+        )
 
     click.echo("\nCreating ms-ssim histogram.\n")
-
+    vals = torch.tensor(vals)
     histogram_ms_ssim(
-        vals,
-        out_path,
-        plot_format=conf["format"],
+        vals, out_path, plot_format=conf["format"],
     )
 
     click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")

@@ -21,6 +21,7 @@ arch_name = "filter_deep_phase"
 loss_func = "loss_phase"
 num_epochs = 400
 inspection = false
+output_format = "png"
 
 [hypers]
 batch_size = 100

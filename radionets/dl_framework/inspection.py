@@ -123,7 +123,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def plot_loss(learn, model_path, output_format="png"):
+def plot_loss(learn, model_path, output_format="pdf"):
     """
     Plot train and valid loss of model.
 
