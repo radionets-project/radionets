@@ -472,3 +472,41 @@ def spe_(x, y):
     k = sum(loss)
     loss = k / len(x)
     return loss
+
+
+def list_loss(x, y):
+    y = y.squeeze(1).reshape(-1, 63, 63)
+    y[y == 1e-10] = 0
+
+    grid_x = create_img(x)
+    # grid_y = create_img(y)
+    loss_func = torch.nn.BCELoss()
+
+    # loss_pos = (torch.abs(x[:, 0] - y[:, 0]) + torch.abs(x[:, 1] - y[:, 1])).mean()
+    # loss_pos = ((grid_x * 100 - grid_y * 100).pow(2)).max()
+
+    loss_amp = loss_func(grid_x, y)
+
+    # loss_amp = (grid_x[grid_x != 0] - grid_y[grid_y != 0]).pow(2).mean()
+    # loss_amp = torch.abs(
+    #     grid_y[torch.arange(x.shape[0]), x[:, 0].long(), x[:, 1].long()] - x[:, 2]
+    # ).pow(2).mean()
+    print(x[0])
+    return loss_amp
+
+
+def create_img(params):
+    x = params[:, 0]
+    y = params[:, 1]
+    amp = params[:, 2]
+    coords = torch.stack((x, y), dim=1).squeeze(-1)
+    # print(amp[0])
+
+    bs = x.shape[0]
+    grid = torch.zeros(bs, 63, 63, requires_grad=True).cuda()
+    grid[
+        torch.arange(coords.shape[0]),
+        coords[:, 0].floor().long(),
+        coords[:, 1].floor().long(),
+    ] = 1
+    return grid
