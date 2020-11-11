@@ -1,4 +1,5 @@
 import re
+import torch
 from typing import Iterable
 import numpy as np
 from torch import nn
@@ -186,3 +187,8 @@ def make_padding(kernel_size, stride, dilation):
         appropiate padding size for given parameters
     """
     return -((-kernel_size - (kernel_size-1)*(dilation-1))//stride + 1)//2
+
+
+def _maybe_item(t):
+    t = t.value
+    return t.item() if isinstance(t, torch.Tensor) and t.numel() == 1 else t
