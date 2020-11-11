@@ -285,8 +285,10 @@ def evaluate_ms_ssim(conf):
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
-        ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
-        ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred))
+        if img_size < 160:
+            ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
+            ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred))
+
         vals.extend(
             [
                 ms_ssim(pred.unsqueeze(0), truth.unsqueeze(0), data_range=truth.max())
