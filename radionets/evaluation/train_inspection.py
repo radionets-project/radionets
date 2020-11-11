@@ -205,8 +205,8 @@ def evaluate_dynamic_range(conf):
     img_size = loader.dataset[0][0][0].shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
 
-    dr_truths = []
-    dr_preds = []
+    dr_truths = np.array([])
+    dr_preds = np.array([])
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
@@ -216,23 +216,20 @@ def evaluate_dynamic_range(conf):
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
         dr_truth, dr_pred, _, _ = calc_dr(ifft_truth, ifft_pred)
-        dr_truths.extend(dr_truth)
-        dr_preds.extend(dr_pred)
+        dr_truths = np.append(dr_truths, dr_truth)
+        dr_preds = np.append(dr_preds, dr_pred)
 
-    dr_truth = torch.tensor(dr_truths)
-    dr_pred = torch.tensor(dr_preds)
-    print(dr_truth.shape)
-    # click.echo(
-    #     f"\nMean dynamic range for true source distributions:\
-    #         {round(dr_truth.mean())}\n"
-    # )
-    # click.echo(
-    #     f"\nMean dynamic range for predicted source distributions:\
-    #         {round(dr_pred.mean())}\n"
-    # )
+    click.echo(
+        f"\nMean dynamic range for true source distributions:\
+            {round(dr_truths.mean())}\n"
+    )
+    click.echo(
+        f"\nMean dynamic range for predicted source distributions:\
+            {round(dr_preds.mean())}\n"
+    )
 
     histogram_dynamic_ranges(
-        dr_truth, dr_pred, out_path, plot_format=conf["format"],
+        dr_truths, dr_preds, out_path, plot_format=conf["format"],
     )
 
 
