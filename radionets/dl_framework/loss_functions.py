@@ -477,17 +477,28 @@ def spe_(x, y):
 def list_loss(x, y):
     y = y.squeeze(1).reshape(-1, 63, 63)
     y[y == 1e-10] = 0
+    # y[y != 1e-10] = 1
+
+    # x_coords = x[:, 0]
+    # y_coords = x[:, 1]
+
+    # nums = get_nums(x_coords, y_coords, 64)
+    # pred = pad_dim(x[:, 2].unsqueeze(1).unsqueeze(1), nums)
 
     grid_x = create_img(x)
     # grid_y = create_img(y)
-    loss_func = torch.nn.BCELoss()
+    print(grid_x.shape)
+    # print(grid_y.shape)
+
+    # loss_func = torch.nn.BCELoss()
 
     # loss_pos = (torch.abs(x[:, 0] - y[:, 0]) + torch.abs(x[:, 1] - y[:, 1])).mean()
-    # loss_pos = ((grid_x * 100 - grid_y * 100).pow(2)).max()
+    # loss_pos = ((pred - y).pow(2)).mean()
 
-    loss_amp = loss_func(grid_x, y)
+    # m = nn.Sigmoid()
+    # loss_amp = loss_func(m(pred), y)
 
-    # loss_amp = (grid_x[grid_x != 0] - grid_y[grid_y != 0]).pow(2).mean()
+    loss_amp = (grid_x - y).pow(2).mean()
     # loss_amp = torch.abs(
     #     grid_y[torch.arange(x.shape[0]), x[:, 0].long(), x[:, 1].long()] - x[:, 2]
     # ).pow(2).mean()
@@ -508,5 +519,28 @@ def create_img(params):
         torch.arange(coords.shape[0]),
         coords[:, 0].floor().long(),
         coords[:, 1].floor().long(),
-    ] = 1
+    ] += amp
     return grid
+
+
+def get_nums(x, y, img_size):
+    num_x1 = (img_size - (img_size - x)).unsqueeze(0)
+    num_x2 = (torch.abs(x - img_size) - 1).unsqueeze(0)
+    num_y1 = (img_size - (img_size - y)).unsqueeze(0)
+    num_y2 = (torch.abs(y - img_size) - 1).unsqueeze(0)
+    return torch.cat([num_x1, num_x2, num_y1, num_y2], dim=0)
+
+
+def pad_dim(tensor, nums):
+    tensor_pad = torch.stack(
+        [
+            F.pad(
+                input=tensor[i],
+                pad=(num[0].int(), num[1].int(), num[2].int(), num[3].int()),
+                mode="constant",
+                value=0,
+            )
+            for i, num in enumerate(nums.permute(1, 0))
+        ]
+    )
+    return tensor_pad
