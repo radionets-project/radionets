@@ -32,10 +32,12 @@ def simulate_gaussian_sources(
                 grid[:, 0], bundle_size, num_pointlike, True, source_list
             )
         if num_pointsources is not None:
-            pointsource = gauss_pointsources(grid[:, 0], bundle_size, num_pointsources)
+            pointsource = gauss_pointsources(
+                grid[:, 0], bundle_size, num_pointsources, source_list
+            )
         if source_list:
-            list_sources = pointlike[1]
-            pointlike = pointlike[0]
+            list_sources = pointsource[1]
+            pointsource = pointsource[0]
 
         bundle = ext_gaussian + pointlike + pointsource
         images = bundle.copy()
@@ -391,17 +393,20 @@ def create_gauss(img, N, sources, spherical, source_list):
 # pointsources
 
 
-def gauss_pointsources(img, num_img, sources):
-    mx = np.random.randint(0, 63, size=(num_img, sources))
-    my = np.random.randint(0, 63, size=(num_img, sources))
-    amp = (np.random.randint(0, 100, size=(num_img)) * np.random.random()) / 1e2
-    sigma = 0.05
-    for i in range(num_img):
-        targets = sources
-        # targets = np.random.randint(2, sources + 1)
-        for j in range(targets):
+def gauss_pointsources(img, N, sources, source_list):
+    mx = np.random.randint(0, 63, size=(N, sources))
+    my = np.random.randint(0, 63, size=(N, sources))
+    amp = np.random.randint(1, 10, size=(N))
+    sigma = 0.005
+    s = np.zeros((N, sources, 3))  # changed from 5
+    for i in range(N):
+        for j in range(sources):
             g = gauss(mx[i, j], my[i, j], sigma, sigma, amp[i])
+            s[i, j] = np.array([mx[i, j], my[i, j], amp[i]])
             img[i] += g
+    print(s.shape)
+    if source_list:
+        return img, s[:, 0]
     return np.array(img)
 
 
