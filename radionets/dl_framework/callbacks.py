@@ -4,9 +4,11 @@ import pandas as pd
 from radionets.dl_framework.data import do_normalisation
 from radionets.dl_framework.logger import make_notifier
 from radionets.dl_framework.model import save_model
+from radionets.dl_framework.utils import _maybe_item
 from fastai.callback.core import Callback
 from pathlib import Path
 from fastcore.foundation import L
+import matplotlib.pyplot as plt
 
 
 class TelegramLoggerCallback(Callback):
@@ -38,6 +40,34 @@ class TelegramLoggerCallback(Callback):
                 L(self.recorder.values[0:]).itemgot(1)[-1],
             )
         )
+
+
+class AvgLossCallback(Callback):
+    """Save the same average Loss for training and validation as printed to the terminal.
+
+    Parameters
+    ----------
+    Callback : object
+        Callback class
+    """
+
+    def __init__(self):
+        self.loss_train = []
+        self.loss_valid = []
+
+    def after_train(self):
+        self.loss_train.append(self.recorder._train_mets.map(_maybe_item))
+
+    def after_validate(self):
+        self.loss_valid.append(self.recorder._valid_mets.map(_maybe_item))
+
+    def plot_loss(self):
+        plt.plot(self.loss_train, label="train")
+        plt.plot(self.loss_valid, label="valid")
+        plt.xlabel(r"Number of Epochs")
+        plt.ylabel(r"Loss")
+        plt.legend()
+        plt.tight_layout()
 
 
 class BatchTransformXCallback(Callback):
