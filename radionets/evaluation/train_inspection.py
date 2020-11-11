@@ -157,18 +157,20 @@ def create_source_plots(conf, num_images=3, rand=False):
 
 
 def evaluate_viewing_angle(conf):
-    # if conf["separate"]:
-    #     pred, img_test, img_true = get_separate_prediction(conf)
-    # else:
-    #     pred, img_test, img_true = get_prediction(conf)
+    # create DataLoader
     loader = create_databunch(
         conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
     )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
+
     img_size = loader.dataset[0][0][0].shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["separate"]:
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
 
     alpha_truths = []
     alpha_preds = []
@@ -177,33 +179,43 @@ def evaluate_viewing_angle(conf):
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
         pred = eval_model(img_test, model)
+        if conf["separate"]:
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
         m_truth, n_truth, alpha_truth = calc_jet_angle(torch.tensor(ifft_truth))
         m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
+
         alpha_truths.extend(alpha_truth)
         alpha_preds.extend(alpha_pred)
 
     alpha_truths = torch.tensor(alpha_truths)
     alpha_preds = torch.tensor(alpha_preds)
+
+    click.echo("\nCreating histogram of jet angles.\n")
     histogram_jet_angles(
         alpha_truths, alpha_preds, out_path, plot_format=conf["format"],
     )
 
 
 def evaluate_dynamic_range(conf):
-    # if conf["separate"]:
-    #     pred, img_test, img_true = get_separate_prediction(conf)
-    # else:
-    #     pred, img_test, img_true = get_prediction(conf)
+    # create Dataloader
     loader = create_databunch(
         conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
     )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
+
     img_size = loader.dataset[0][0][0].shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["separate"]:
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
 
     dr_truths = np.array([])
     dr_preds = np.array([])
@@ -212,6 +224,10 @@ def evaluate_dynamic_range(conf):
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
         pred = eval_model(img_test, model)
+        if conf["separate"]:
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
@@ -228,20 +244,27 @@ def evaluate_dynamic_range(conf):
             {round(dr_preds.mean())}\n"
     )
 
+    click.echo("\nCreating histogram of dynamic ranges.\n")
     histogram_dynamic_ranges(
         dr_truths, dr_preds, out_path, plot_format=conf["format"],
     )
 
 
 def evaluate_ms_ssim(conf):
+    # create DataLoader
     loader = create_databunch(
         conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
     )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
+
     img_size = loader.dataset[0][0][0].shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["separate"]:
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
 
     vals = []
 
@@ -255,6 +278,10 @@ def evaluate_ms_ssim(conf):
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
         pred = eval_model(img_test, model)
+        if conf["separate"]:
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
