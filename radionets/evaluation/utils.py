@@ -168,6 +168,7 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
         arch_name == "filter_deep"
         or arch_name == "filter_deep_amp"
         or arch_name == "filter_deep_phase"
+        or arch_name == "filter_deep_list"
     ):
         arch = getattr(architecture, arch_name)(img_size)
     else:
