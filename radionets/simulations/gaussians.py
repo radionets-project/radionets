@@ -406,7 +406,7 @@ def gauss_pointsources(img, N, sources, source_list):
             img[i] += g
     print(s.shape)
     if source_list:
-        return img, s[:, 0]
+        return img, s
     return np.array(img)
 
 
