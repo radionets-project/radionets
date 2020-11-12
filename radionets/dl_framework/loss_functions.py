@@ -11,6 +11,7 @@ from radionets.dl_framework.regularization import (
     rot,
     calc_spec,
 )
+from scipy.optimize import linear_sum_assignment
 
 
 class FeatureLoss(nn.Module):
@@ -475,72 +476,66 @@ def spe_(x, y):
 
 
 def list_loss(x, y):
-    y = y.squeeze(1).reshape(-1, 63, 63)
-    y[y == 1e-10] = 0
-    # y[y != 1e-10] = 1
-
-    # x_coords = x[:, 0]
-    # y_coords = x[:, 1]
-
-    # nums = get_nums(x_coords, y_coords, 64)
-    # pred = pad_dim(x[:, 2].unsqueeze(1).unsqueeze(1), nums)
-
-    grid_x = create_img(x)
-    # grid_y = create_img(y)
-    print(grid_x.shape)
-    # print(grid_y.shape)
-
-    # loss_func = torch.nn.BCELoss()
-
-    # loss_pos = (torch.abs(x[:, 0] - y[:, 0]) + torch.abs(x[:, 1] - y[:, 1])).mean()
-    # loss_pos = ((pred - y).pow(2)).mean()
-
-    # m = nn.Sigmoid()
-    # loss_amp = loss_func(m(pred), y)
-
-    loss_amp = (grid_x - y).pow(2).mean()
-    # loss_amp = torch.abs(
-    #     grid_y[torch.arange(x.shape[0]), x[:, 0].long(), x[:, 1].long()] - x[:, 2]
-    # ).pow(2).mean()
-    print(x[0])
-    return loss_amp
+    y = y.squeeze(1)
+    x_pred = x[:]
+    x_true = y[:, 0:2] / 63
+    m = nn.MSELoss()
+    loss = m(x_pred, x_true)
+    # print(x_pred[0], x_true[0])
+    return loss
 
 
-def create_img(params):
-    x = params[:, 0]
-    y = params[:, 1]
-    amp = params[:, 2]
-    coords = torch.stack((x, y), dim=1).squeeze(-1)
-    # print(amp[0])
+class HungarianMatcher(nn.Module):
+    """
+    Solve assignment Problem.
+    """
 
-    bs = x.shape[0]
-    grid = torch.zeros(bs, 63, 63, requires_grad=True).cuda()
-    grid[
-        torch.arange(coords.shape[0]),
-        coords[:, 0].floor().long(),
-        coords[:, 1].floor().long(),
-    ] += amp
-    return grid
+    def __init__(self):
+        super().__init__()
+
+    @torch.no_grad()
+    def forward(self, outputs, targets):
+
+        assert outputs.shape[-1] is targets.shape[-1]
+
+        C = torch.cdist(targets.to(torch.float64), outputs.to(torch.float64), p=1)
+        C = C.cpu()
+
+        if len(outputs.shape) == 3:
+            bs = outputs.shape[0]
+        else:
+            bs = 1
+            C = C.unsqueeze(0)
+
+        indices = [linear_sum_assignment(C[b]) for b in range(bs)]
+        return [(torch.as_tensor(j), torch.as_tensor(i)) for i, j in indices]
 
 
-def get_nums(x, y, img_size):
-    num_x1 = (img_size - (img_size - x)).unsqueeze(0)
-    num_x2 = (torch.abs(x - img_size) - 1).unsqueeze(0)
-    num_y1 = (img_size - (img_size - y)).unsqueeze(0)
-    num_y2 = (torch.abs(y - img_size) - 1).unsqueeze(0)
-    return torch.cat([num_x1, num_x2, num_y1, num_y2], dim=0)
+def build_matcher():
+    return HungarianMatcher()
 
 
-def pad_dim(tensor, nums):
-    tensor_pad = torch.stack(
-        [
-            F.pad(
-                input=tensor[i],
-                pad=(num[0].int(), num[1].int(), num[2].int(), num[3].int()),
-                mode="constant",
-                value=0,
-            )
-            for i, num in enumerate(nums.permute(1, 0))
-        ]
-    )
-    return tensor_pad
+def pos_loss(x, y):
+    """
+    Permutation Loss for Source-positions list. With hungarian method
+    to solve assignment problem.
+    """
+    out = x.reshape(-1, 3, 2)
+    tar = y[:, 0, :, :2]
+
+    matcher = build_matcher()
+    matches = matcher(out, tar)
+
+    out_ord, _ = zip(*matches)
+
+    ordered = [sort(out[v], out_ord[v]) for v in range(len(out))]
+    out = torch.stack(ordered)
+
+    loss = nn.MSELoss()
+    loss = loss(out, tar)
+
+    return loss
+
+
+def sort(x, permutation):
+    return x[permutation, :]
