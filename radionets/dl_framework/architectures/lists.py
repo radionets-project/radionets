@@ -87,7 +87,7 @@ class filter_deep_list(nn.Module):
         self.symmetry_real = Lambda(symmetry)
         self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
         self.flatten = Lambda(flatten)
-        self.fully_connected = nn.Linear(7938, 3)
+        self.fully_connected = nn.Linear(7938, 2 * 3)
 
     def forward(self, x):
         inp = x.clone()
@@ -151,6 +151,4 @@ class filter_deep_list(nn.Module):
         comb = torch.cat([x0, x1], dim=1)
         comb = self.flatten(comb)
         comb = self.fully_connected(comb)
-        comb[:, 0] += 10
-        comb[:, 1] += 10
-        return torch.abs(comb).clamp(0, 62)
+        return torch.abs(comb).clamp(0, 1)
