@@ -605,3 +605,79 @@ def vaild_gauss_bs(in_put):
             h.unsqueeze_(0)
             source = torch.cat((source, h))
     return source
+
+
+class ResBlock_amp(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni,nf,stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)#nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return F.relu(self.convs(x) + self.idconv(self.pool(x)))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
+            nn.BatchNorm2d(nf),
+            nn.ReLU(),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=1),
+            nn.BatchNorm2d(nf)
+        )
+
+class ResBlock_phase(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni,nf,stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        self.relu = GeneralELU(1-pi)
+
+    def forward(self, x):
+        return self.relu(self.convs(x) + self.idconv(self.pool(x)))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
+            nn.BatchNorm2d(nf),
+            GeneralELU(1-pi),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=1),
+            nn.BatchNorm2d(nf)
+        )
+
+
+class EDSR_amp(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni,nf,stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)#nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=1),
+        )
+
+class EDSR_phase(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni,nf,stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        self.relu = GeneralELU(1-pi)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
+            GeneralELU(1-pi),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=1),
+        )

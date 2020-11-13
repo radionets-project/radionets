@@ -71,6 +71,9 @@ def define_arch(arch_name, img_size):
         or arch_name == "filter_deep_amp"
         or arch_name == "filter_deep_phase"
         or arch_name == "superRes_simple"
+        or arch_name == "superRes_res18"
+        or arch_name == "superRes_res34"
+        or arch_name == "superRes_res18skip"
     ):
         arch = getattr(architecture, arch_name)(img_size)
     else:
