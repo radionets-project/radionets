@@ -453,3 +453,23 @@ def spe_(x, y):
     k = sum(loss)
     loss = k / len(x)
     return loss
+
+def splitted_L1(x, y):
+    inp_real = x[:, 0, :]
+    inp_imag = x[:, 1, :]
+
+    tar_real = y[:, 0, :]
+    tar_imag = y[:, 1, :]
+
+    loss_real = (
+        torch.sum(1 / inp_real.shape[1] * torch.sum(torch.abs(inp_real - tar_real), 1))
+        * 1
+        / inp_real.shape[0]
+    )
+    loss_imag = (
+        torch.sum(1 / inp_imag.shape[1] * torch.sum(torch.abs(inp_imag - tar_imag), 1))
+        * 1
+        / inp_real.shape[0]
+    )
+
+    return loss_real + loss_imag
