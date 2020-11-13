@@ -18,6 +18,7 @@ install:
   - source activate radionets
 
 script:
+# echo something for travis
 - while sleep 540; do echo "=====[ $SECONDS seconds still running ]====="; done &
 - py.test --ignore=tests
 - kill %1
