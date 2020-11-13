@@ -524,14 +524,12 @@ def pos_loss(x, y):
     tar = y[:, 0, :, :2] / 63
 
     matcher = build_matcher()
-    matches = matcher(out, tar)
+    matches = matcher(out[:, :, 0].unsqueeze(-1), tar[:, :, 0].unsqueeze(-1))
 
     out_ord, _ = zip(*matches)
 
     ordered = [sort(out[v], out_ord[v]) for v in range(len(out))]
     out = torch.stack(ordered)
-    # print(out[0])
-    # print(tar[0])
 
     loss = nn.MSELoss()
     loss = loss(out, tar)
