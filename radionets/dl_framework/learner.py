@@ -6,6 +6,7 @@ from radionets.dl_framework.callbacks import (
     SaveTempCallback,
     TelegramLoggerCallback,
     DataAug,
+    AvgLossCallback,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -63,6 +64,7 @@ def define_learner(
         cbfs.extend(
             [
                 SaveTempCallback(model_path=model_path),
+                AvgLossCallback,
                 # DataAug,
             ]
         )

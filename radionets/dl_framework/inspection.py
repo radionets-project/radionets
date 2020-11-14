@@ -140,7 +140,7 @@ def plot_loss(learn, model_path, output_format="pdf"):
     plt.ioff()
     save_path = model_path.with_suffix("")
     print(f"\nPlotting Loss for: {model_path.stem}\n")
-    learn.recorder.plot_loss()
+    learn.avg_loss.plot_loss()
     plt.title(r"{}".format(str(model_path.stem).replace("_", " ")))
     plt.yscale("log")
     plt.savefig(
