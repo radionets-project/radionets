@@ -36,6 +36,8 @@ def sample_frequencies(
             size = fft.shape[-1]
 
             fft_scaled = prepare_fft_images(fft.copy(), amp_phase, real_imag)
+            truth_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in truth])
+            fft_scaled_truth = prepare_fft_images(truth_fft, amp_phase, real_imag)
 
             if specific_mask is True:
                 fft_samp = sample_freqs(
@@ -62,6 +64,6 @@ def sample_frequencies(
                     savez_compressed(out, x=fft_samp, y=fft_scaled)
                     os.remove(path)
                 else:
-                    save_fft_pair(out, fft_samp, fft_scaled)
+                    save_fft_pair(out, fft_samp, fft_scaled_truth)
             else:
                 save_fft_pair_list(out, fft_samp, truth, z)
