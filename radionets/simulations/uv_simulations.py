@@ -3,7 +3,7 @@ import astropy.coordinates as ac
 import radionets.simulations.layouts.layouts as layouts
 
 
-class source:
+class Source:
     """
     Source class that holds longitude and latitude information.
     Can be converted to geocentric coordinates. Position of source
@@ -117,7 +117,7 @@ class source:
         return a[np.mod(np.arange(a.size), n + m) < n]
 
 
-class antenna:
+class Antenna:
     """
     Antenna class that holds information about the geocentric coordinates of the
     radio telescopes. Can be converted to geodetic. All baselines between the

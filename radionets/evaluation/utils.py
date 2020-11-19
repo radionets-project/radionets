@@ -75,23 +75,26 @@ def make_axes_nice(fig, ax, im, title, phase=False):
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax.set_title(title, fontsize=16)
+    ax.set_title(title, fontsize=11)
 
     if phase:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-np.pi, 0, np.pi]
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
 
-    cbar.set_label("Intensity / a.u.", size=16)
-    cbar.ax.tick_params(labelsize=16)
-    cbar.ax.yaxis.get_offset_text().set_fontsize(16)
-    cbar.formatter.set_powerlimits((0, 0))
+    cbar.set_label("Intensity / a.u.", size=11)
+    cbar.ax.tick_params(labelsize=11)
+    cbar.ax.yaxis.get_offset_text().set_fontsize(11)
+    # cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
     if phase:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+        cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
 
 
 def reshape_split(img):
