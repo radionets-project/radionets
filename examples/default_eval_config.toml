@@ -31,6 +31,8 @@ num_images = 5
 random = false
 
 [eval]
+batch_size = 100
 evaluate_viewing_angle = true
 evaluate_dynamic_range = true
 evaluate_ms_ssim = true
+evaluate_mean_diff = true
