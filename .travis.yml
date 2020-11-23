@@ -1,13 +1,24 @@
 language: python
 python:
+  - "3.6"
   - "3.7"
-
-before_install:
-  - sudo apt-get -y install libgeos-dev
-  - sudo apt-get -y install libproj-dev
+  - "3.8"
 
 install:
-  - pip install .
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+  - conda env create -f environment.yml
+  - source activate radionets
 
 script:
-- python setup.py test
+# echo something for travis
+- while sleep 540; do echo "=====[ $SECONDS seconds still running ]====="; done &
+- py.test --ignore=tests
+- kill %1

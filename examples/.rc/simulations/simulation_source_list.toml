@@ -3,10 +3,10 @@
 title = "Simulation configuration"
 
 [mode]
-batch_mode = true
+quiet = true
 
 [paths]
-data_path = "./example_data/mix_gaussians"
+data_path = "./example_data/"
 data_format = "h5"
 
 [mnist]
@@ -15,24 +15,24 @@ resource = "../../resources/mnist.pkl.gz"
 
 [gaussians]
 simulate = true
-pointsources = true
-num_pointsources = 5
-pointlike_gaussians = true
-num_pointlike_gaussians = 3
+pointsources = false
+num_pointsources = 10
+pointlike_gaussians = false
+num_pointlike_gaussians = 5
 extended_gaussians = true
 num_components = [4, 10]
 
 
 [image_options]
-bundles_train = 1
+bundles_train = 5
 bundles_valid = 1
 bundles_test = 1
-bundle_size = 10
+bundle_size = 500
 img_size = 63
 noise = false
 
 [sampling_options]
-fourier = false
+fourier = true
 real_imag = false
 amp_phase = true
 antenna_config = "vlba"

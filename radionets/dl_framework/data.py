@@ -10,19 +10,15 @@ def normalize(x, m, s):
     return (x - m) / s
 
 
-def do_normalisation(x, norm, pointsource=False):
+def do_normalisation(x, norm):
     """
     :param x        Object to be normalized
     :param norm     Pandas Dataframe which includes the normalisation factors
     """
     if len(x.shape) == 3:
         x = x.unsqueeze(0)
-    if norm == "none":
+    if isinstance(norm, str):
         return x
-    # if pointsource is True:
-    #     train_mean = torch.tensor(norm['train_mean'].values[0]).float()
-    #     train_std = torch.tensor(norm['train_std'].values[0]).float()
-    #     x = normalize(x, train_mean, train_std)
     else:
         train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
         train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
@@ -128,7 +124,8 @@ class h5_dataset:
             else:
                 if data.shape[1] == 2:
                     raise ValueError(
-                        "Two channeled data is used despite Fourier being False. Set Fourier to True!"
+                        "Two channeled data is used despite Fourier being False.\
+                            Set Fourier to True!"
                     )
                 if len(i) == 1:
                     data_channel = data.reshape(data.shape[-1] ** 2)

@@ -276,7 +276,7 @@ class GeneralELU(nn.Module):
         if self.maxv is not None:
             x.clamp_max_(self.maxv)
         return x
- 
+
 
 def init_cnn_(m, f):
     if isinstance(m, nn.Conv2d):
@@ -456,13 +456,12 @@ def load_pre_model(learn, pre_path, visualize=False):
     """
     name_pretrained = Path(pre_path).stem
     print("\nLoad pretrained model: {}\n".format(name_pretrained))
+    checkpoint = torch.load(pre_path)
 
     if visualize:
-        checkpoint = torch.load(pre_path)
         learn.load_state_dict(checkpoint["model"])
 
     else:
-        checkpoint = torch.load(pre_path)
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
@@ -610,9 +609,11 @@ def vaild_gauss_bs(in_put):
 class ResBlock_amp(nn.Module):
     def __init__(self, ni, nf, stride=1):
         super().__init__()
-        self.convs = self._conv_block(ni,nf,stride)
+        self.convs = self._conv_block(ni, nf, stride)
         self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
-        self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)#nn.AvgPool2d(8, 2, ceil_mode=True)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
 
     def forward(self, x):
         return F.relu(self.convs(x) + self.idconv(self.pool(x)))
@@ -623,16 +624,17 @@ class ResBlock_amp(nn.Module):
             nn.BatchNorm2d(nf),
             nn.ReLU(),
             nn.Conv2d(nf, nf, 3, stride=1, padding=1),
-            nn.BatchNorm2d(nf)
+            nn.BatchNorm2d(nf),
         )
+
 
 class ResBlock_phase(nn.Module):
     def __init__(self, ni, nf, stride=1):
         super().__init__()
-        self.convs = self._conv_block(ni,nf,stride)
+        self.convs = self._conv_block(ni, nf, stride)
         self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
         self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
-        self.relu = GeneralELU(1-pi)
+        self.relu = GeneralELU(1 - pi)
 
     def forward(self, x):
         return self.relu(self.convs(x) + self.idconv(self.pool(x)))
@@ -641,17 +643,20 @@ class ResBlock_phase(nn.Module):
         return nn.Sequential(
             nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
             nn.BatchNorm2d(nf),
-            GeneralELU(1-pi),
+            GeneralELU(1 - pi),
             nn.Conv2d(nf, nf, 3, stride=1, padding=1),
-            nn.BatchNorm2d(nf)
+            nn.BatchNorm2d(nf),
         )
+
 
 class SRBlock(nn.Module):
     def __init__(self, ni, nf, stride=1):
         super().__init__()
-        self.convs = self._conv_block(ni,nf,stride)
+        self.convs = self._conv_block(ni, nf, stride)
         self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
-        self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)#nn.AvgPool2d(8, 2, ceil_mode=True)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
 
     def forward(self, x):
         return self.convs(x) + self.idconv(self.pool(x))
@@ -662,7 +667,7 @@ class SRBlock(nn.Module):
             nn.BatchNorm2d(nf),
             nn.PReLU(),
             nn.Conv2d(nf, nf, 3, stride=1, padding=1),
-            nn.BatchNorm2d(nf)
+            nn.BatchNorm2d(nf),
         )
 
 class EDSRBaseBlock(nn.Module):

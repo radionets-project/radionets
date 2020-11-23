@@ -1,4 +1,5 @@
 import re
+import torch
 from typing import Iterable
 import numpy as np
 from torch import nn
@@ -149,3 +150,45 @@ class ListContainer:
 def children(m):
     "returns the children of m as a list"
     return list(m.children())
+
+
+def round_odd(x):
+    """Rounds a float to the next higher, odd number and returns an int.
+
+    Parameters
+    ----------
+    x : float
+        value to be rounded
+
+    Returns
+    -------
+    int
+        next higher odd value
+    """
+    return int(np.ceil(x) // 2*2+1)
+
+
+def make_padding(kernel_size, stride, dilation):
+    """Returns the padding size under the condition, that the image size
+    stays the same.
+
+    Parameters
+    ----------
+    kernel_size : int
+        size of the kernel
+    stride : int
+        stride of the convolution
+    dilation : int
+        dilation of the convolution
+
+    Returns
+    -------
+    int
+        appropiate padding size for given parameters
+    """
+    return -((-kernel_size - (kernel_size-1)*(dilation-1))//stride + 1)//2
+
+
+def _maybe_item(t):
+    t = t.value
+    return t.item() if isinstance(t, torch.Tensor) and t.numel() == 1 else t

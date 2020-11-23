@@ -11,8 +11,6 @@ from radionets.dl_framework.model import load_pre_model
 from radionets.simulations.utils import adjust_outpath
 from pathlib import Path
 
-# from gaussian_sources.inspection import visualize_with_fourier
-
 
 # make nice Latex friendly plots
 # mpl.use("pgf")
@@ -168,7 +166,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def plot_loss(learn, model_path):
+def plot_loss(learn, model_path, output_format="pdf"):
     """
     Plot train and valid loss of model.
 
@@ -185,15 +183,17 @@ def plot_loss(learn, model_path):
     plt.ioff()
     save_path = model_path.with_suffix("")
     print(f"\nPlotting Loss for: {model_path.stem}\n")
-    learn.recorder.plot_loss()
+    learn.avg_loss.plot_loss()
     plt.title(r"{}".format(str(model_path.stem).replace("_", " ")))
     plt.yscale("log")
-    plt.savefig(f"{save_path}_loss.pdf", bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(
+        f"{save_path}_loss.{output_format}", bbox_inches="tight", pad_inches=0.01
+    )
     plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def plot_lr(learn, model_path):
+def plot_lr(learn, model_path, output_format="png"):
     """
     Plot learning rate of model.
 
@@ -211,12 +211,12 @@ def plot_lr(learn, model_path):
     save_path = model_path.with_suffix("")
     print(f"\nPlotting Learning rate for: {model_path.stem}\n")
     plt.plot(learn.recorder.lrs)
-    plt.savefig(f"{save_path}_lr.pdf", bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(f"{save_path}_lr.{output_format}", bbox_inches="tight", pad_inches=0.01)
     plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 
-def plot_lr_loss(learn, arch_name, out_path, skip_last):
+def plot_lr_loss(learn, arch_name, out_path, skip_last, output_format="png"):
     """
     Plot loss of learning rate finder.
 
@@ -238,7 +238,9 @@ def plot_lr_loss(learn, arch_name, out_path, skip_last):
     print(f"\nPlotting Lr vs Loss for architecture: {arch_name}\n")
     learn.recorder.plot_lr_find()
     out_path.mkdir(parents=True, exist_ok=True)
-    plt.savefig(out_path / "lr_loss.pdf", bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(
+        out_path / f"lr_loss.{output_format}", bbox_inches="tight", pad_inches=0.01
+    )
     mpl.rcParams.update(mpl.rcParamsDefault)
 
 

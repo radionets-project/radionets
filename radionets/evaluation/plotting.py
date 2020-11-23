@@ -1,8 +1,22 @@
+import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from radionets.dl_framework.inspection import reshape_2d, make_axes_nice
 from matplotlib.colors import LogNorm
 from math import pi
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from radionets.simulations.utils import adjust_outpath
+from tqdm import tqdm
+from radionets.evaluation.utils import (
+    reshape_2d,
+    make_axes_nice,
+    check_vmin_vmax,
+    pad_unsqueeze,
+    round_n_digits,
+)
+from radionets.evaluation.jet_angle import calc_jet_angle
+from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
+from radionets.evaluation.blob_detection import calc_blobs
+from pytorch_msssim import ms_ssim
 
 
 def plot_target(h5_dataset, log=False):
@@ -85,22 +99,374 @@ def plot_inp_tar(h5_dataset, fourier=False, amp_phase=False):
     fig.tight_layout()
 
 
-def check_vmin_vmax(inp):
+def plot_results(inp, pred, truth, model_path, save=False, plot_format="png"):
     """
-    Check wether the absolute of the maxmimum or the minimum is bigger.
-    If the minimum is bigger, return value with minus. Otherwise return
-    maximum.
+    Plot input images, prediction and true image.
     Parameters
     ----------
-    inp : float
-        input image
-    Returns
-    -------
-    float
-        negative minimal or maximal value
+    inp: n 2d arrays with 2 channel
+        input images
+    pred: n 2d arrays
+        predicted images
+    truth:n 2d arrays
+        true images
     """
-    if np.abs(inp.min()) > np.abs(inp.max()):
-        a = -inp.min()
+    for i in tqdm(range(len(inp))):
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
+
+        real = inp[i][0]
+        im1 = ax1.imshow(real, cmap="RdBu", vmin=-real.max(), vmax=real.max())
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax1.set_title(r"Real Input")
+        fig.colorbar(im1, cax=cax, orientation="vertical")
+
+        imag = inp[i][1]
+        im2 = ax2.imshow(imag, cmap="RdBu", vmin=-imag.max(), vmax=imag.max())
+        divider = make_axes_locatable(ax2)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax2.set_title(r"Imag Input")
+        fig.colorbar(im2, cax=cax, orientation="vertical")
+
+        pre = pred[i]
+        im3 = ax3.imshow(pre, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax3.set_title(r"Prediction")
+        fig.colorbar(im3, cax=cax, orientation="vertical")
+
+        true = truth[i]
+        im4 = ax4.imshow(true, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
+        divider = make_axes_locatable(ax4)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax4.set_title(r"Truth")
+        fig.colorbar(im4, cax=cax, orientation="vertical")
+
+        plt.tight_layout()
+
+        if save:
+            out = model_path / "predictions/"
+            out.mkdir(parents=True, exist_ok=True)
+
+            out_path = adjust_outpath(out, "/prediction", form=plot_format)
+            plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def visualize_with_fourier(
+    i, img_input, img_pred, img_truth, amp_phase, out_path, plot_format="png"
+):
+    """
+    Visualizing, if the target variables are displayed in fourier space.
+    i: Current index given form the loop
+    img_input: current input image as a numpy array in shape (2*img_size^2)
+    img_pred: current prediction image as a numpy array with shape (2*img_size^2)
+    img_truth: current true image as a numpy array with shape (2*img_size^2)
+    out_path: str which contains the output path
+    """
+    # reshaping and splitting in real and imaginary part if necessary
+    inp_real, inp_imag = img_input[0], img_input[1]
+    real_pred, imag_pred = img_pred[0], img_pred[1]
+    real_truth, imag_truth = img_truth[0], img_truth[1]
+
+    if amp_phase:
+        inp_real = 10 ** (10 * inp_real - 10) - 1e-10
+        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
+        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
+
+    # plotting
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
+        2, 3, figsize=(16, 10), sharex=True, sharey=True
+    )
+
+    if amp_phase:
+        im1 = ax1.imshow(inp_real, cmap="inferno")
+        make_axes_nice(fig, ax1, im1, r"Amplitude Input")
+
+        im2 = ax2.imshow(real_pred, cmap="inferno")
+        make_axes_nice(fig, ax2, im2, r"Amplitude Prediction")
+
+        im3 = ax3.imshow(real_truth, cmap="inferno")
+        make_axes_nice(fig, ax3, im3, r"Amplitude Truth")
+
+        a = check_vmin_vmax(inp_imag)
+        im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax4, im4, r"Phase Input", phase=True)
+
+        a = check_vmin_vmax(imag_truth)
+        im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax5, im5, r"Phase Prediction", phase=True)
+
+        a = check_vmin_vmax(imag_truth)
+        im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax6, im6, r"Phase Truth", phase=True)
     else:
-        a = inp.max()
-    return a
+        a = check_vmin_vmax(inp_real)
+        im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax1, im1, r"Real Input")
+
+        a = check_vmin_vmax(real_truth)
+        im2 = ax2.imshow(real_pred, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax2, im2, r"Real Prediction")
+
+        a = check_vmin_vmax(real_truth)
+        im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax3, im3, r"Real Truth")
+
+        a = check_vmin_vmax(inp_imag)
+        im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax4, im4, r"Imaginary Input")
+
+        a = check_vmin_vmax(imag_truth)
+        im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
+
+        a = check_vmin_vmax(imag_truth)
+        im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
+
+    ax1.set_ylabel(r"Pixels", fontsize=20)
+    ax4.set_ylabel(r"Pixels", fontsize=20)
+    ax4.set_xlabel(r"Pixels", fontsize=20)
+    ax5.set_xlabel(r"Pixels", fontsize=20)
+    ax6.set_xlabel(r"Pixels", fontsize=20)
+    ax1.tick_params(axis="both", labelsize=20)
+    ax2.tick_params(axis="both", labelsize=20)
+    ax3.tick_params(axis="both", labelsize=20)
+    ax4.tick_params(axis="both", labelsize=20)
+    ax5.tick_params(axis="both", labelsize=20)
+    ax6.tick_params(axis="both", labelsize=20)
+    plt.tight_layout(pad=1.5)
+
+    outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    return real_pred, imag_pred, real_truth, imag_truth
+
+
+def visualize_source_reconstruction(
+    ifft_pred,
+    ifft_truth,
+    out_path,
+    i,
+    dr=False,
+    blobs=False,
+    msssim=False,
+    plot_format="png",
+):
+    m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
+    m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
+    x_space = torch.arange(0, 511, 1)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 6), sharey=True)
+
+    ax1.plot(
+        x_space,
+        m_pred * x_space + n_pred,
+        "w-",
+        alpha=0.5,
+        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
+    )
+    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
+    ax2.plot(
+        x_space,
+        m_truth * x_space + n_truth,
+        "w-",
+        alpha=0.5,
+        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
+    )
+    im2 = ax2.imshow(ifft_truth, cmap="inferno")
+
+    make_axes_nice(fig, ax1, im1, r"FFT Prediction")
+    make_axes_nice(fig, ax2, im2, r"FFT Truth")
+
+    ax1.set_ylabel(r"Pixels")
+    ax1.set_xlabel(r"Pixels")
+    ax2.set_xlabel(r"Pixels")
+
+    ax1.set_xlim(0, 63)
+    ax1.set_ylim(0, 63)
+    ax2.set_xlim(0, 63)
+    ax2.set_ylim(0, 63)
+
+    if blobs:
+        blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
+        plot_blobs(blobs_pred, ax1)
+        plot_blobs(blobs_truth, ax2)
+
+    if dr:
+        dr_truth, dr_pred, num_boxes, corners = calc_dr(
+            ifft_truth[None, ...], ifft_pred[None, ...]
+        )
+        ax1.plot([], [], " ", label=f"DR: {int(dr_pred[0])}")
+        ax2.plot([], [], " ", label=f"DR: {int(dr_truth[0])}")
+
+        plot_box(ax1, num_boxes, corners[0])
+        plot_box(ax2, num_boxes, corners[0])
+
+    if msssim:
+        ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth).unsqueeze(0))
+        ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
+        val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
+
+        ax1.plot([], [], " ", label=f"ms ssim: {round_n_digits(val)}")
+
+    outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
+
+    ax1.legend(loc="best")
+    ax2.legend(loc="best")
+    fig.tight_layout(pad=1.5)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    return np.abs(ifft_pred), np.abs(ifft_truth)
+
+
+def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
+    dif = (alpha_pred - alpha_truth).numpy()
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
+    ax1.hist(
+        dif,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.set_xlabel("Offset / deg")
+    ax1.set_ylabel("Number of sources")
+
+    ax2.hist(
+        dif[(dif > -10) & (dif < 10)],
+        25,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax2.set_xlabel("Offset / deg")
+    ax2.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/jet_offsets.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
+    # dif = dr_pred - dr_truth
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
+    ax1.set_title("True Images")
+    ax1.hist(
+        dr_truth,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.set_xlabel("Dynamic range")
+    ax1.set_ylabel("Number of sources")
+
+    ax2.set_title("Predictions")
+    ax2.hist(
+        dr_pred,
+        25,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax2.set_xlabel("Dynamic range")
+    ax2.set_ylabel("Number of sources")
+
+    # plotting differences does not make much sense at the moment
+    # ax3.set_title("Differences")
+    # ax3.hist(
+    #     dif,
+    #     25,
+    #     color="darkorange",
+    #     linewidth=3,
+    #     histtype="step",
+    #     alpha=0.75,
+    # )
+    # ax3.set_xlabel("Dynamic range")
+    # ax3.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/dynamic_ranges.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def plot_box(ax, num_boxes, corners):
+    size = get_boxsize(num_boxes)
+    img_size = 63
+    if corners[2]:
+        ax.axvspan(
+            xmin=0,
+            xmax=size,
+            ymin=(img_size - size) / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+        )
+    if corners[3]:
+        ax.axvspan(
+            xmin=img_size - size,
+            xmax=img_size - 1,
+            ymin=(img_size - size) / img_size,
+            ymax=0.99,
+            color="red",
+            fill=False,
+        )
+    if corners[0]:
+        ax.axvspan(
+            xmin=0,
+            xmax=size,
+            ymin=0.01,
+            ymax=(size) / img_size,
+            color="red",
+            fill=False,
+        )
+    if corners[1]:
+        ax.axvspan(
+            xmin=img_size - size,
+            xmax=img_size - 1,
+            ymin=0.01,
+            ymax=(size) / img_size,
+            color="red",
+            fill=False,
+        )
+
+
+def plot_blobs(blobs_log, ax):
+    """Plot the blobs created in sklearn.blob_log
+    Parameters
+    ----------
+    blobs_log : ndarray
+        return values of blob_log
+    ax : axis object
+        plotting axis
+    """
+    for blob in blobs_log:
+        y, x, r = blob
+        c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
+        ax.add_patch(c)
+
+
+def histogram_ms_ssim(msssim, out_path, plot_format="png"):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.hist(
+        msssim.numpy(),
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.set_xlabel("ms ssim")
+    ax1.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/ms_ssim.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

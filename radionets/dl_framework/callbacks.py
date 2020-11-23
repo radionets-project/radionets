@@ -4,9 +4,11 @@ import pandas as pd
 from radionets.dl_framework.data import do_normalisation
 from radionets.dl_framework.logger import make_notifier
 from radionets.dl_framework.model import save_model
+from radionets.dl_framework.utils import _maybe_item
 from fastai.callback.core import Callback
 from pathlib import Path
 from fastcore.foundation import L
+import matplotlib.pyplot as plt
 
 
 class TelegramLoggerCallback(Callback):
@@ -40,37 +42,91 @@ class TelegramLoggerCallback(Callback):
         )
 
 
-class BatchTransformXCallback(Callback):
+class AvgLossCallback(Callback):
+    """Save the same average Loss for training and validation as printed to the terminal.
+
+    Parameters
+    ----------
+    Callback : object
+        Callback class
+    """
+
+    def __init__(self):
+        self.loss_train = []
+        self.loss_valid = []
+
+    def after_train(self):
+        self.loss_train.append(self.recorder._train_mets.map(_maybe_item))
+
+    def after_validate(self):
+        self.loss_valid.append(self.recorder._valid_mets.map(_maybe_item))
+
+    def plot_loss(self):
+        plt.plot(self.loss_train, label="train")
+        plt.plot(self.loss_valid, label="valid")
+        plt.xlabel(r"Number of Epochs")
+        plt.ylabel(r"Loss")
+        plt.legend()
+        plt.tight_layout()
+
+
+class NormCallback(Callback):
     _order = 2
 
-    def __init__(self, tfm):
-        self.tfm = tfm
+    def __init__(self, norm_path):
+        self.path = norm_path
 
-    def begin_batch(self):
-        self.run.xb = self.tfm(self.run.xb)
+    def before_batch(self):
+        self.learn.xb = [self.normalize_tfm()]
 
-
-def view_tfm(*size):
-    def _inner(x):
-        """
-        add correct shape (bs, #channels, shape of array)
-        """
-        a = x.view(*((-1,) + size))
-        return a
-
-    return _inner
-
-
-def normalize_tfm(norm_path, pointsources=False):
-    def _inner(x):
-        norm = pd.read_csv(norm_path)
-        a = do_normalisation(x.clone(), norm, pointsources)
-        assert x[:, 0].mean() != a[:, 0].mean()
+    def normalize_tfm(self):
+        norm = pd.read_csv(self.path)
+        a = do_normalisation(self.learn.xb[0].clone(), norm)
+        assert self.learn.xb[0][:, 0].mean() != a[:, 0].mean()
         # mean for imag and phase is approx 0
         # assert x[:, 1].mean() != a[:, 1].mean()
         return a
 
-    return _inner
+
+# class BatchTransformXCallback(Callback):
+#     _order = 2
+
+#     def __init__(self, tfm):
+#         self.tfm = tfm
+
+#     def batch_begin(self):
+#         print("TESTBATCH")
+#         self.run.xb = self.normalize_tfm(self)
+
+#     def normalize_tfm(self):
+#         print(self.path)
+#         norm = pd.read_csv(self.path)
+#         a = do_normalisation(self.run.xb.clone(), norm)
+#         assert self.run.xb[:, 0].mean() != a[:, 0].mean()
+#         # mean for imag and phase is approx 0
+#         # assert x[:, 1].mean() != a[:, 1].mean()
+#         return a
+
+
+# def view_tfm(*size):
+#     def _inner(x):
+#         """
+#         add correct shape (bs, #channels, shape of array)
+#         """
+#         a = x.view(*((-1,) + size))
+#         return a
+
+#     return _inner
+
+
+# def normalize_tfm(self):
+#     print(norm_path)
+#     norm = pd.read_csv(norm_path)
+#     a = do_normalisation(x.clone(), norm)
+#     assert x[:, 0].mean() != a[:, 0].mean()
+#     # mean for imag and phase is approx 0
+#     # assert x[:, 1].mean() != a[:, 1].mean()
+#     return a
 
 
 def zero_imag():

@@ -26,7 +26,7 @@ def read_config(config):
     train_conf["pre_model"] = config["paths"]["pre_model"]
     train_conf["norm_path"] = config["paths"]["norm_path"]
 
-    train_conf["batch_mode"] = config["mode"]["batch_mode"]
+    train_conf["quiet"] = config["mode"]["quiet"]
     train_conf["gpu"] = config["mode"]["gpu"]
     train_conf["telegram_logger"] = config["mode"]["telegram_logger"]
 
@@ -34,10 +34,13 @@ def read_config(config):
     train_conf["lr"] = config["hypers"]["lr"]
 
     train_conf["fourier"] = config["general"]["fourier"]
+    train_conf["amp_phase"] = config["general"]["amp_phase"]
     train_conf["arch_name"] = config["general"]["arch_name"]
     train_conf["loss_func"] = config["general"]["loss_func"]
     train_conf["num_epochs"] = config["general"]["num_epochs"]
     train_conf["inspection"] = config["general"]["inspection"]
+    train_conf["separate"] = False
+    train_conf["format"] = config["general"]["output_format"]
 
     train_conf["param_scheduling"] = config["param_scheduling"]["use"]
     train_conf["lr_start"] = config["param_scheduling"]["lr_start"]
@@ -52,7 +55,7 @@ def check_outpath(model_path, train_conf):
     path = Path(model_path)
     exists = path.exists()
     if exists:
-        if train_conf["batch_mode"]:
+        if train_conf["quiet"]:
             click.echo("Overwriting existing model file!")
             path.unlink()
         else:
@@ -66,18 +69,7 @@ def check_outpath(model_path, train_conf):
 
 
 def define_arch(arch_name, img_size):
-    if (
-        arch_name == "filter_deep"
-        or arch_name == "filter_deep_amp"
-        or arch_name == "filter_deep_phase"
-        or arch_name == "superRes_simple"
-        or arch_name == "superRes_res18"
-        or arch_name == "superRes_res34"
-        or arch_name == "SRResNet"
-        or arch_name == "SRResNet_corr"
-        or arch_name == "EDSRBase"
-        or arch_name == "RDNet"
-    ):
+    if "filter_deep" in arch_name or "resnet" in arch_name:
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()

@@ -3,10 +3,10 @@
 title = "Simulation configuration"
 
 [mode]
-batch_mode = true
+quiet = true
 
 [paths]
-data_path = "./example_data/extended_gaussians"
+data_path = "./example_data/fourier_real"
 data_format = "h5"
 
 [mnist]
@@ -32,9 +32,9 @@ img_size = 63
 noise = false
 
 [sampling_options]
-fourier = false
-real_imag = false
-amp_phase = true
+fourier = true
+real_imag = true
+amp_phase = false
 antenna_config = "vlba"
 specific_mask = true
 lon = -80

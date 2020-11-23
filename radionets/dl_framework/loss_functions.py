@@ -4,7 +4,7 @@ from radionets.dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from radionets.dl_framework.utils import children
 import torch.nn.functional as F
-import pytorch_msssim
+from pytorch_msssim import ms_ssim, MS_SSIM
 from radionets.dl_framework.regularization import (
     inv_fft,
     calc_jet_angle,
@@ -46,8 +46,8 @@ class FeatureLoss(nn.Module):
     def forward(self, input, target):
         # resizing the input, before it gets into the net
         # shape changes from 4096 to 64x64
-        target = target.view(-1, 2, 64, 64)
-        input = input.view(-1, 2, 64, 64)
+        target = target.view(-1, 2, 63, 63)
+        input = input.view(-1, 2, 63, 63)
 
         # create dummy tensor of zeros to add another dimension
         padding_target = torch.zeros(
@@ -107,7 +107,7 @@ def init_feature_loss(
     layer_weights=[5, 15, 2],
 ):
     """
-    method to initialise  the pretrained net, which will be used for the feature loss.
+    method to initialise the pretrained net, which will be used for the feature loss.
     """
     vgg_m = pre_net(True).features.cuda().eval()
     for param in vgg_m.parameters():
@@ -119,6 +119,18 @@ def init_feature_loss(
         vgg_m, pixel_loss, blocks[begin_block:end_block], layer_weights
     )
     return feat_loss
+
+
+def mse(x, y):
+    mse = nn.MSELoss()
+    loss = mse(x, y)
+    return loss
+
+
+def l1(x, y):
+    l1 = nn.L1Loss()
+    loss = l1(x, y)
+    return loss
 
 
 def splitted_mse(x, y):
@@ -222,6 +234,13 @@ def loss_phase(x, y):
 
     mse = nn.MSELoss()
     loss = mse(x, tar)
+
+    return loss
+
+
+def loss_new_msssim(x, y):
+    msssim_loss = MS_SSIM(data_range=10, channel=2)
+    loss = 1 - msssim_loss(x, y)
 
     return loss
 

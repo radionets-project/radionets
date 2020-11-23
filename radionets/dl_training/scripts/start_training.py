@@ -12,11 +12,11 @@ from radionets.dl_training.utils import (
 from radionets.dl_framework.learner import define_learner
 from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.inspection import (
-    create_inspection_plots,
     plot_lr_loss,
     plot_loss,
     plot_lr,
 )
+from radionets.evaluation.train_inspection import create_inspection_plots
 from pathlib import Path
 
 
@@ -98,7 +98,7 @@ def main(configuration_path, mode):
         end_training(learn, train_conf)
 
         if train_conf["inspection"]:
-            create_inspection_plots(learn, train_conf)
+            create_inspection_plots(train_conf, rand=True)
 
     if mode == "lr_find":
         click.echo("Start lr_find.\n")
@@ -122,6 +122,7 @@ def main(configuration_path, mode):
             train_conf["arch_name"],
             Path(train_conf["model_path"]).parent,
             skip_last=5,
+            output_format=train_conf["format"],
         )
 
     if mode == "plot_loss":
@@ -142,8 +143,16 @@ def main(configuration_path, mode):
             click.echo("Exiting.\n")
             sys.exit()
 
-        plot_lr(learn, Path(train_conf["model_path"]))
-        plot_loss(learn, Path(train_conf["model_path"]))
+        plot_lr(
+            learn,
+            Path(train_conf["model_path"]),
+            output_format=train_conf["format"],
+        )
+        plot_loss(
+            learn,
+            Path(train_conf["model_path"]),
+            output_format=train_conf["format"],
+        )
 
 
 if __name__ == "__main__":
