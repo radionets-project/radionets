@@ -664,3 +664,63 @@ class SRBlock(nn.Module):
             nn.Conv2d(nf, nf, 3, stride=1, padding=1),
             nn.BatchNorm2d(nf)
         )
+
+class EDSRBaseBlock(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni,nf,stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)#nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
+            nn.PReLU(),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=1)
+        )
+
+class RDB(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.conv1 = self._conv_block(ni,nf,stride)
+        self.conv2 = self._conv_block(ni+nf,nf,stride)
+        self.conv3 = self._conv_block(ni+2*nf,nf,stride)
+        self.conv4 = self._conv_block(ni+3*nf,nf,stride)
+        self.conv5 = self._conv_block(ni+4*nf,nf,stride)
+        self.conv6 = self._conv_block(ni+5*nf,nf,stride)
+
+        self.convFusion = nn.Conv2d(ni+6*nf, ni, 1, stride=1, padding=0, groups=2, bias=False)
+
+    def forward(self, x):
+        x1_c = self.conv1(x)
+        cat = self._cat_split(x, x1_c)
+        x2_c = self.conv2(cat)
+        cat = self._cat_split(cat, x2_c)
+        x3_c = self.conv3(cat)
+        cat = self._cat_split(cat, x3_c)
+        x4_c = self.conv4(cat)
+        cat = self._cat_split(cat, x4_c)
+        x5_c = self.conv5(cat)
+        cat = self._cat_split(cat, x5_c)
+        x6_c = self.conv6(cat)
+        cat = self._cat_split(cat, x6_c)
+
+
+        return self.convFusion(cat) + x
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1, bias=False),
+            nn.PReLU()
+        )
+    
+    def _cat_split(self, x, y):
+        x1, x2 = torch.chunk(x,2, dim=1)
+        y1, y2 = torch.chunk(y,2, dim=1)
+        return torch.cat((x1,y1,x2,y2), dim=1)
+
+
+

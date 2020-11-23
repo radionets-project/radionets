@@ -7,6 +7,8 @@ from radionets.dl_framework.model import (
     ResBlock_amp,
     ResBlock_phase,
     SRBlock,
+    EDSRBaseBlock,
+    RDB,
 )
 
 
@@ -402,4 +404,94 @@ class SRResNet_corr(nn.Module):
 
         x = self.final(x)
 
+        return x
+
+class EDSRBase(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        self.img_size = img_size
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2)
+        )
+
+        # ResBlock 16
+        self.blocks = nn.Sequential(
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+            EDSRBaseBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2)
+        )
+
+    def forward(self, x):
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        return x
+
+
+class RDNet(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        self.img_size = img_size
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2, bias=False)
+        )
+
+        # ResBlock 6
+        self.block1 = RDB(64, 32)
+        self.block2 = RDB(64, 32)
+        self.block3 = RDB(64, 32)
+        self.block4 = RDB(64, 32)
+        self.block5 = RDB(64, 32)
+        self.block6 = RDB(64, 32)
+        
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(6*64, 64, 1, stride=1, padding=0, bias=False),
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2, bias=False)
+        )
+
+    def forward(self, x):
+        x = self.preBlock(x)
+
+        x1 = self.block1(x)
+        x2 = self.block2(x1)
+        x3 = self.block3(x2)
+        x4 = self.block4(x3)
+        x5 = self.block5(x4)
+        x6 = self.block6(x5)
+
+        x = x + self.postBlock(torch.cat((x1,x2,x3,x4,x5,x6), dim=1))
+        x = self.final(x)
         return x

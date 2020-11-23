@@ -75,6 +75,8 @@ def define_arch(arch_name, img_size):
         or arch_name == "superRes_res34"
         or arch_name == "SRResNet"
         or arch_name == "SRResNet_corr"
+        or arch_name == "EDSRBase"
+        or arch_name == "RDNet"
     ):
         arch = getattr(architecture, arch_name)(img_size)
     else:
