@@ -128,8 +128,8 @@ def fft_pred(pred, truth, amp_phase=True):
     a = pred[:, 0, :, :]
     b = pred[:, 1, :, :]
 
-    a_true = truth[0, :, :]
-    b_true = truth[1, :, :]
+    a_true = truth[:, 0, :, :]
+    b_true = truth[:, 1, :, :]
 
     if amp_phase:
         amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
@@ -147,7 +147,7 @@ def fft_pred(pred, truth, amp_phase=True):
     ifft_pred = np.fft.ifft2(compl_pred)
     ifft_true = np.fft.ifft2(compl_true)
 
-    return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
+    return np.absolute(ifft_pred), np.absolute(ifft_true)
 
 
 def reshape_2d(array):
@@ -339,3 +339,22 @@ def make_axes_nice(fig, ax, im, title):
     cbar.set_label("Intensity / a.u.")
     # cbar.formatter.set_powerlimits((0, 0))
     # cbar.update_ticks()
+
+def psnr(pred, truth):
+    L = [np.amax(t)**2 for t in truth]
+    psnr = [10*np.log10(L[i]/(np.mean((truth[i]-pred[i])**2))) for i in range(len(pred))]
+    return np.mean(psnr)
+
+def ssim(pred,true):
+    mean_pred = [np.mean(p) for p in pred]
+    std_pred = [np.std(p) for p in pred]
+    mean_true = [np.mean(t) for t in true]
+    std_true = [np.std(t) for t in true]
+    cov = [1/(len(pred[i])**2-1)*np.sum((pred[i]-mean_pred[i])*(true[i]-mean_true[i])) for i in range(len(pred))]
+    c1 = [(0.01*np.amax(t))**2 for t in true]
+    c2 = [(0.03*np.amax(t))**2 for t in true]
+    c3 = [c/2 for c in c2]
+    l = [(2*mean_pred[i]*mean_true[i]+c1[i])/(mean_pred[i]**2+mean_true[i]**2+c1[i]) for i in range(len(pred))]
+    c = [(2*std_pred[i]*std_true[i]+c2[i])/(std_pred[i]**2+std_true[i]**2+c2[i]) for i in range(len(pred))]
+    s = [(cov[i]+c3[i])/(std_pred[i]*std_true[i]+c3[i]) for i in range(len(pred))]
+    return np.mean([l[i]*c[i]*s[i] for i in range(len(l))])
