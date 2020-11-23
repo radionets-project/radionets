@@ -358,10 +358,10 @@ class SRResNet(nn.Module):
 
 
 class SRResNet_corr(nn.Module):
-    def __init__(self, img_size):
+    def __init__(self):
         super().__init__()
-        torch.cuda.set_device(1)
-        self.img_size = img_size
+        # torch.cuda.set_device(1)
+        # self.img_size = img_size
 
         self.preBlock = nn.Sequential(
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
@@ -369,14 +369,6 @@ class SRResNet_corr(nn.Module):
 
         # ResBlock 16
         self.blocks = nn.Sequential(
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
             SRBlock(64, 64),
             SRBlock(64, 64),
             SRBlock(64, 64),
