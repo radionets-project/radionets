@@ -86,5 +86,4 @@ def define_learner(
     learn = get_learner(
         data, arch, lr=lr, opt_func=opt_func, cb_funcs=cbfs, loss_func=loss_func
     )
-    print(learn.cbs)
     return learn
