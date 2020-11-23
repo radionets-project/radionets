@@ -1,8 +1,7 @@
 import torch.nn as nn
 from radionets.dl_framework.model import init_cnn
 from radionets.dl_framework.callbacks import (
-    normalize_tfm,
-    BatchTransformXCallback,
+    NormCallback,
     SaveTempCallback,
     TelegramLoggerCallback,
     DataAug,
@@ -43,7 +42,7 @@ def define_learner(
     if train_conf["norm_path"] != "none":
         cbfs.extend(
             [
-                BatchTransformXCallback(normalize_tfm(train_conf["norm_path"])),
+                NormCallback(train_conf["norm_path"]),
             ]
         )
     if train_conf["param_scheduling"]:
@@ -87,4 +86,5 @@ def define_learner(
     learn = get_learner(
         data, arch, lr=lr, opt_func=opt_func, cb_funcs=cbfs, loss_func=loss_func
     )
+    print(learn.cbs)
     return learn
