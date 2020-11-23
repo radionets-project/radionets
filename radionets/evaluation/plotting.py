@@ -265,7 +265,7 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
     )
-    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
+    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
         x_space,
         m_truth * x_space + n_truth,
@@ -273,7 +273,7 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
     )
-    im2 = ax2.imshow(ifft_truth)
+    im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     make_axes_nice(fig, ax1, im1, r"FFT Prediction")
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
