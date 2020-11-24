@@ -470,3 +470,22 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
 
     outpath = str(out_path) + f"/ms_ssim.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def histogram_mean_diff(vals, out_path, plot_format="png"):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.hist(
+        vals.numpy(),
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.set_xlabel("mean flux difference")
+    ax1.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/mean_diff.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
