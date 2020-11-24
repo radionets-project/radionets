@@ -25,7 +25,26 @@ def calc_blobs(ifft_pred, ifft_truth):
     return blobs_log_pred, blobs_log_truth
 
 
-def missing_flux(pred, truth, blob_truth, out_path):
+def crop_first_component(pred, truth, blob_truth, out_path):
+    """Returns the cropped image with the first component of the
+    true image for both prediction and truth.
+
+    Parameters
+    ----------
+    pred : ndarray
+        predicted source image
+    truth : ndarray
+        true source image
+    blob_truth : list
+        list with the coordiantes for the first component
+    out_path : str
+        Outpath
+
+    Returns
+    -------
+    ndarray
+        cropped images
+    """
     y, x, r = blob_truth
     x_coord, y_coord = corners(y, x, r)
     flux_truth = truth[x_coord[0] : x_coord[1], y_coord[0] : y_coord[1]]
@@ -34,6 +53,23 @@ def missing_flux(pred, truth, blob_truth, out_path):
 
 
 def corners(y, x, r):
+    """Generates the value range for cropping the first component out of
+    the images.
+
+    Parameters
+    ----------
+    y : float
+        y coordiante
+    x : float
+        x coordinate
+    r : float
+        radius of the first component
+
+    Returns
+    -------
+    list
+        start and end point for the cropping
+    """
     r = int(np.round(r))
     x = int(x)
     y = int(y)

@@ -23,7 +23,7 @@ from radionets.evaluation.utils import (
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
-from radionets.evaluation.blob_detection import calc_blobs, missing_flux
+from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 
@@ -338,7 +338,7 @@ def evaluate_mean_diff(conf):
 
         for pred, truth in zip(ifft_pred, ifft_truth):
             blobs_pred, blobs_truth = calc_blobs(pred, truth)
-            flux_pred, flux_truth = missing_flux(
+            flux_pred, flux_truth = crop_first_component(
                 pred, truth, blobs_truth[0], out_path
             )
             vals.extend([(flux_truth - flux_pred).mean()])
