@@ -123,12 +123,12 @@ def plot_spectrum(img, out_path=None):
     phase = np.angle(img)
 
     im1 = plot(amp, ax1)
-    make_axes_nice(fig, ax1, im1, "Amplitude")
+    make_axes_nice(fig, ax1, im1, "")
     ax1.set_xlabel("u", fontsize=9)
     ax1.set_ylabel("v", fontsize=9)
 
     im2 = plot(phase, ax2, phase=True)
-    make_axes_nice(fig, ax2, im2, "Phase", phase=True)
+    make_axes_nice(fig, ax2, im2, "", phase=True)
     ax2.set_xlabel("u", fontsize=9)
     ax2.set_ylabel("v", fontsize=9)
 
