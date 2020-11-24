@@ -203,8 +203,6 @@ def plot_antenna_distribution(
         linestyle="none",
         label="Antenna positions",
     )
-    print(x)
-    print(y)
     plt.plot(
         x,
         y,
@@ -223,8 +221,6 @@ def plot_antenna_distribution(
     if end:
         x_start, y_start, _ = source.to_ecef(val=[lon_start, lat_start])
 
-        print(x_start)
-        print(y_start)
         ax.plot(
             np.array([x, x_start]),
             np.array([y, y_start]),
