@@ -339,7 +339,7 @@ def evaluate_mean_diff(conf):
         for pred, truth in zip(ifft_pred, ifft_truth):
             blobs_pred, blobs_truth = calc_blobs(pred, truth)
             flux_pred, flux_truth = missing_flux(
-                pred, truth, blobs_pred[0], blobs_truth[0], out_path
+                pred, truth, blobs_truth[0], out_path
             )
             vals.extend([(flux_truth - flux_pred).mean()])
 
