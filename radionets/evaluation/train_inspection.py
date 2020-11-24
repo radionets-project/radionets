@@ -10,6 +10,7 @@ from radionets.evaluation.plotting import (
     histogram_jet_angles,
     histogram_dynamic_ranges,
     histogram_ms_ssim,
+    histogram_mean_diff,
 )
 from radionets.evaluation.utils import (
     create_databunch,
@@ -22,6 +23,7 @@ from radionets.evaluation.utils import (
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
+from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 
@@ -303,3 +305,48 @@ def evaluate_ms_ssim(conf):
     )
 
     click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
+
+
+def evaluate_mean_diff(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["separate"]:
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    vals = []
+
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["separate"]:
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        for pred, truth in zip(ifft_pred, ifft_truth):
+            blobs_pred, blobs_truth = calc_blobs(pred, truth)
+            flux_pred, flux_truth = crop_first_component(
+                pred, truth, blobs_truth[0], out_path
+            )
+            vals.extend([(flux_truth - flux_pred).mean()])
+
+    click.echo("\nCreating mean_diff histogram.\n")
+    vals = torch.tensor(vals)
+    histogram_mean_diff(
+        vals, out_path, plot_format=conf["format"],
+    )
+
+    click.echo(f"\nThe mean difference is {vals.mean()}.\n")
