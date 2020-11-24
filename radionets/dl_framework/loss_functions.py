@@ -475,6 +475,7 @@ def spe_(x, y):
 
 
 def splitted_L1(x, y):
+    # print(x.shape)
     inp_real = x[:, 0, :]
     inp_imag = x[:, 1, :]
 
