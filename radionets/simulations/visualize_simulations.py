@@ -1,7 +1,5 @@
 import radionets.simulations.layouts.layouts as layouts
 from radionets.simulations.uv_simulations import Antenna, Source
-import cartopy
-import cartopy.feature as cfeature
 import cartopy.crs as ccrs
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,9 +10,8 @@ from pathlib import Path
 from matplotlib.colors import LogNorm
 import matplotlib.patches as mpatches
 from radionets.evaluation.utils import make_axes_nice
-import numpy as np
 
-from radionets.simulations.uv_simulations import get_uv_coverage, create_mask
+from radionets.simulations.uv_simulations import get_uv_coverage
 
 
 def create_path(path):
