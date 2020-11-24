@@ -1,13 +1,15 @@
 import torch
 from torch import nn
 from math import pi
-import numpy as np
 from radionets.dl_framework.model import (
     GeneralELU,
     ResBlock_amp,
     ResBlock_phase,
     SRBlock,
+    Lambda,
+    symmetry,
 )
+from functools import partial
 
 
 class superRes_simple(nn.Module):
@@ -377,6 +379,14 @@ class SRResNet_corr(nn.Module):
             SRBlock(64, 64),
             SRBlock(64, 64),
             SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
         )
 
         self.postBlock = nn.Sequential(
@@ -387,6 +397,9 @@ class SRResNet_corr(nn.Module):
             nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
         )
 
+        self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
+        self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
+
     def forward(self, x):
         x = self.preBlock(x)
 
@@ -394,4 +407,7 @@ class SRResNet_corr(nn.Module):
 
         x = self.final(x)
 
-        return x
+        x0 = self.symmetry_amp(x[:, 0]).reshape(-1, 1, 63, 63)
+        x1 = self.symmetry_imag(x[:, 1]).reshape(-1, 1, 63, 63)
+
+        return torch.cat([x0, x1], dim=1)
