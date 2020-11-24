@@ -143,7 +143,9 @@ def ft(img):
 
 
 def plot_uv_coverage(u, v, ax):
-    ax.plot(u, v, marker="o", linestyle="none", markersize=2, color="#1f77b4")
+    ax.plot(
+        u, v, marker="o", linestyle="none", markersize=2, color="#1f77b4", label="Data"
+    )
     ax.set_xlabel(r"u / $\lambda$", fontsize=9)
     ax.set_ylabel(r"v / $\lambda$", fontsize=9)
 
@@ -167,7 +169,7 @@ def plot_baselines(antenna):
     plt.plot(
         x_base,
         y_base,
-        linestyle="--",
+        linestyle="-",
         color="#2ca02c",
         zorder=0,
         label="Baselines",
