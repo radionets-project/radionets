@@ -69,11 +69,7 @@ def check_outpath(model_path, train_conf):
 
 
 def define_arch(arch_name, img_size):
-    if (
-        arch_name == "filter_deep"
-        or arch_name == "filter_deep_amp"
-        or arch_name == "filter_deep_phase"
-    ):
+    if "filter_deep" in arch_name or "resnet" in arch_name:
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
