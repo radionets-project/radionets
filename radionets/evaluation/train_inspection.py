@@ -11,6 +11,8 @@ from radionets.evaluation.plotting import (
     histogram_dynamic_ranges,
     histogram_ms_ssim,
     histogram_mean_diff,
+    histogram_area,
+    plot_contour,
 )
 from radionets.evaluation.utils import (
     create_databunch,
@@ -24,6 +26,7 @@ from radionets.evaluation.utils import (
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
 from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
+from radionets.evaluation.contour import area_of_contour
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 
@@ -156,6 +159,32 @@ def create_source_plots(conf, num_images=3, rand=False):
         )
 
     return np.abs(ifft_pred), np.abs(ifft_truth)
+
+
+def create_contour_plots(conf, num_images=3, rand=False):
+    if conf["separate"]:
+        pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
+    else:
+        pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    if not conf["fourier"]:
+        click.echo("\n This is not a fourier dataset.\n")
+
+    pred = pred.numpy()
+
+    # inverse fourier transformation for prediction
+    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+    # inverse fourier transform for truth
+    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+
+    for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
+        plot_contour(
+            pred, truth, out_path, i, plot_format=conf["format"],
+        )
 
 
 def evaluate_viewing_angle(conf):
@@ -346,6 +375,48 @@ def evaluate_mean_diff(conf):
     click.echo("\nCreating mean_diff histogram.\n")
     vals = torch.tensor(vals)
     histogram_mean_diff(
+        vals, out_path, plot_format=conf["format"],
+    )
+
+    click.echo(f"\nThe mean difference is {vals.mean()}.\n")
+
+
+def evaluate_area(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["separate"]:
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    vals = []
+
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["separate"]:
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        for pred, truth in zip(ifft_pred, ifft_truth):
+            val = area_of_contour(pred, truth)
+            vals.extend([val])
+
+    click.echo("\nCreating mean_diff histogram.\n")
+    vals = torch.tensor(vals)
+    histogram_area(
         vals, out_path, plot_format=conf["format"],
     )
 
