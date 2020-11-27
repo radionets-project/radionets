@@ -318,17 +318,46 @@ def visualize_source_reconstruction(
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
+def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
+    labels = [r"10%", r"30%", r"50%", r"80%"]
+    colors = ("r", "tomato", "mistyrose", "black")
+    levels = [
+        ifft_truth.max() * 0.1,
+        ifft_truth.max() * 0.3,
+        ifft_truth.max() * 0.5,
+        ifft_truth.max() * 0.8,
+    ]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
+    outpath = str(out_path) + f"/contour_{i}.{plot_format}"
+
+    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
+    CS1 = ax1.contour(ifft_pred, levels=levels, colors=colors)
+    make_axes_nice(fig, ax1, im1, "Prediction")
+
+    im2 = ax2.imshow(ifft_truth)
+    CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
+    make_axes_nice(fig, ax2, im2, "Truth")
+
+    # Assign labels for the levels and save them for the legend
+    for i in range(len(labels)):
+        CS1.collections[i].set_label(labels[i])
+        CS2.collections[i].set_label(labels[i])
+
+    # plotting legend
+    ax1.legend(loc="best")
+    ax2.legend(loc="best")
+
+    plt.tight_layout(pad=0.75)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+
+
 def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
     dif = (alpha_pred - alpha_truth).numpy()
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
-        dif,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dif, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
@@ -356,24 +385,14 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
     ax1.set_title("True Images")
     ax1.hist(
-        dr_truth,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dr_truth, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("Dynamic range")
     ax1.set_ylabel("Number of sources")
 
     ax2.set_title("Predictions")
     ax2.hist(
-        dr_pred,
-        25,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dr_pred, 25, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax2.set_xlabel("Dynamic range")
     ax2.set_ylabel("Number of sources")
@@ -475,12 +494,7 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
 def histogram_mean_diff(vals, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals.numpy(),
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        vals.numpy(), 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("mean flux difference")
     ax1.set_ylabel("Number of sources")
@@ -488,4 +502,30 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     fig.tight_layout()
 
     outpath = str(out_path) + f"/mean_diff.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def histogram_area(vals, out_path, plot_format="png"):
+    vals = vals.numpy()
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
+    ax1.hist(
+        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+    )
+    ax1.set_xlabel("area of first contour")
+    ax1.set_ylabel("Number of sources")
+
+    ax2.hist(
+        vals[(vals > -50) & (vals < 50)],
+        25,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax2.set_xlabel("area of first contour")
+    ax2.set_ylabel("Number of sources")
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/hist_area.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
