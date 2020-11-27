@@ -39,6 +39,7 @@ def read_config(config):
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
+    eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
     eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
     eval_conf["vis_ms_ssim"] = config["inspection"]["visualize_ms_ssim"]
@@ -49,6 +50,7 @@ def read_config(config):
     eval_conf["dynamic_range"] = config["eval"]["evaluate_dynamic_range"]
     eval_conf["ms_ssim"] = config["eval"]["evaluate_ms_ssim"]
     eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
+    eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
     return eval_conf
 
