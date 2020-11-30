@@ -35,4 +35,5 @@ def area_of_contour(ifft_pred, ifft_truth):
     CS2 = plt.contour(ifft_truth, levels=levels)
 
     val = area(CS1, CS2)
+    mpl.rcParams.update(mpl.rcParamsDefault)
     return val
