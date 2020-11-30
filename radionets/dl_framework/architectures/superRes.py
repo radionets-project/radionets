@@ -369,12 +369,8 @@ class SRResNet_corr(nn.Module):
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
         )
 
-        # ResBlock 16
+        # ResBlock 12
         self.blocks = nn.Sequential(
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
             SRBlock(64, 64),
             SRBlock(64, 64),
             SRBlock(64, 64),
@@ -411,3 +407,103 @@ class SRResNet_corr(nn.Module):
         x1 = self.symmetry_imag(x[:, 1]).reshape(-1, 1, 63, 63)
 
         return torch.cat([x0, x1], dim=1)
+
+
+class SRResNet_amp(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        # self.img_size = img_size
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(1, 32, 9, stride=1, padding=4, groups=1), nn.PReLU()
+        )
+
+        # ResBlock 12
+        self.blocks = nn.Sequential(
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(32, 32, 3, stride=1, padding=1), nn.BatchNorm2d(32)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(32, 1, 9, stride=1, padding=4, groups=1),
+        )
+
+        self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
+
+    def forward(self, x):
+        x = x[:, 0].unsqueeze(1)
+
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        x = self.symmetry_amp(x).reshape(-1, 1, 63, 63)
+
+        return x
+
+
+class SRResNet_phase(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        # self.img_size = img_size
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(1, 32, 9, stride=1, padding=4, groups=1), nn.PReLU()
+        )
+
+        # ResBlock 12
+        self.blocks = nn.Sequential(
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+            SRBlock(32, 32),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(32, 32, 3, stride=1, padding=1), nn.BatchNorm2d(32)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(32, 1, 9, stride=1, padding=4, groups=1),
+        )
+
+        self.symmetry_phase = Lambda(partial(symmetry, mode="imag"))
+
+    def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
+
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        x = self.symmetry_phase(x).reshape(-1, 1, 63, 63)
+
+        return x
