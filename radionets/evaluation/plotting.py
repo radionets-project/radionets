@@ -16,6 +16,7 @@ from radionets.evaluation.utils import (
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.blob_detection import calc_blobs
+from radionets.evaluation.contour import area
 from pytorch_msssim import ms_ssim
 
 
@@ -337,7 +338,8 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
 
     im2 = ax2.imshow(ifft_truth)
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
-    make_axes_nice(fig, ax2, im2, "Truth")
+    diff = np.round(area(CS1, CS2), 2)
+    make_axes_nice(fig, ax2, im2, "Truth, diff: {}".format(diff))
 
     # Assign labels for the levels and save them for the legend
     for i in range(len(labels)):
