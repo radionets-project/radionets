@@ -133,6 +133,18 @@ def l1(x, y):
     return loss
 
 
+def l1_amp(x, y):
+    l1 = nn.L1Loss()
+    loss = l1(x, y[:, 0].unsqueeze(1))
+    return loss
+
+
+def l1_phase(x, y):
+    l1 = nn.L1Loss()
+    loss = l1(x, y[:, 1].unsqueeze(1))
+    return loss
+
+
 def splitted_mse(x, y):
     inp_real = x[:, 0, :]
     inp_imag = x[:, 1, :]
@@ -475,22 +487,20 @@ def spe_(x, y):
 
 
 def splitted_L1(x, y):
-    # print(x.shape)
-    inp_real = x[:, 0, :]
-    inp_imag = x[:, 1, :]
+    inp_amp = x[:, 0, :]
+    inp_phase = x[:, 1, :]
 
-    tar_real = y[:, 0, :]
-    tar_imag = y[:, 1, :]
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
 
-    loss_real = (
-        torch.sum(1 / inp_real.shape[1] * torch.sum(torch.abs(inp_real - tar_real), 1))
-        * 1
-        / inp_real.shape[0]
-    )
-    loss_imag = (
-        torch.sum(1 / inp_imag.shape[1] * torch.sum(torch.abs(inp_imag - tar_imag), 1))
-        * 1
-        / inp_real.shape[0]
-    )
+    l1 = nn.L1Loss()
 
-    return loss_real + loss_imag
+    loss_amp = l1(inp_amp, tar_amp)
+
+    loss_phase = l1(inp_phase, tar_phase)
+
+    # print(loss_amp)
+    # print(loss_phase)
+    # print("")
+
+    return loss_amp * 10 + loss_phase
