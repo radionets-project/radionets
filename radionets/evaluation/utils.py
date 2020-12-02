@@ -246,6 +246,8 @@ def eval_model(img, model):
 
 
 def get_ifft(array, amp_phase=False):
+    if len(array.shape) == 3:
+        array = array.unsqueeze(0)
     if amp_phase:
         amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
 
