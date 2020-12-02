@@ -59,6 +59,8 @@ def area_of_contour(ifft_pred, ifft_truth):
 
     CS1 = plt.contour(ifft_pred, levels=levels)
 
+    plt.close()
+
     CS2 = plt.contour(ifft_truth, levels=levels)
 
     val = compute_area_difference(CS1, CS2)
