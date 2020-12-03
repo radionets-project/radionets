@@ -243,6 +243,71 @@ def visualize_with_fourier(
     return real_pred, imag_pred, real_truth, imag_truth
 
 
+def visualize_with_fourier_diff(
+    i, img_pred, img_truth, amp_phase, out_path, plot_format="png"
+):
+    """
+    Visualizing, if the target variables are displayed in fourier space.
+    i: Current index given form the loop
+    img_input: current input image as a numpy array in shape (2*img_size^2)
+    img_pred: current prediction image as a numpy array with shape (2*img_size^2)
+    img_truth: current true image as a numpy array with shape (2*img_size^2)
+    out_path: str which contains the output path
+    """
+    # reshaping and splitting in real and imaginary part if necessary
+    real_pred, imag_pred = img_pred[0], img_pred[1]
+    real_truth, imag_truth = img_truth[0], img_truth[1]
+
+    if amp_phase:
+        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
+        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
+
+    # plotting
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
+        2, 3, figsize=(16, 10), sharex=True, sharey=True
+    )
+
+    if amp_phase:
+        im1 = ax1.imshow(real_pred, cmap="inferno")
+        make_axes_nice(fig, ax1, im1, r"Amplitude Prediction")
+
+        im2 = ax2.imshow(real_truth, cmap="inferno")
+        make_axes_nice(fig, ax2, im2, r"Amplitude Truth")
+
+        a = check_vmin_vmax(real_pred - real_truth)
+        im3 = ax3.imshow(real_pred - real_truth, cmap="RdBu", vmin=-a, vmax=a)
+        make_axes_nice(fig, ax3, im3, r"Amplitude Difference")
+
+        a = check_vmin_vmax(imag_truth)
+        im4 = ax4.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax4, im4, r"Phase Prediction", phase=True)
+
+        a = check_vmin_vmax(imag_truth)
+        im5 = ax5.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        make_axes_nice(fig, ax5, im5, r"Phase Truth", phase=True)
+
+        a = check_vmin_vmax(imag_pred - imag_truth)
+        im6 = ax6.imshow(imag_pred - imag_truth, cmap="RdBu", vmin=-2*np.pi, vmax=2*np.pi)
+        make_axes_nice(fig, ax6, im6, r"Phase Difference")
+
+    ax1.set_ylabel(r"Pixels", fontsize=20)
+    ax4.set_ylabel(r"Pixels", fontsize=20)
+    ax4.set_xlabel(r"Pixels", fontsize=20)
+    ax5.set_xlabel(r"Pixels", fontsize=20)
+    ax6.set_xlabel(r"Pixels", fontsize=20)
+    ax1.tick_params(axis="both", labelsize=20)
+    ax2.tick_params(axis="both", labelsize=20)
+    ax3.tick_params(axis="both", labelsize=20)
+    ax4.tick_params(axis="both", labelsize=20)
+    ax5.tick_params(axis="both", labelsize=20)
+    ax6.tick_params(axis="both", labelsize=20)
+    plt.tight_layout(pad=1.5)
+
+    outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    return real_pred, imag_pred, real_truth, imag_truth
+
+
 def visualize_source_reconstruction(
     ifft_pred,
     ifft_truth,
@@ -257,7 +322,7 @@ def visualize_source_reconstruction(
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 6), sharey=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
 
     ax1.plot(
         x_space,
@@ -266,7 +331,7 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
     )
-    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
+    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
         x_space,
         m_truth * x_space + n_truth,
@@ -274,19 +339,24 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
     )
-    im2 = ax2.imshow(ifft_truth)
+    im2 = ax2.imshow(ifft_truth, cmap="inferno")
+
+    a = check_vmin_vmax(ifft_pred - ifft_truth)
+    im3 = ax3.imshow(ifft_pred - ifft_truth, cmap="RdBu", vmin=-a, vmax=a)
 
     make_axes_nice(fig, ax1, im1, r"FFT Prediction")
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
+    make_axes_nice(fig, ax3, im3, r"FFT Diff")
 
     ax1.set_ylabel(r"Pixels")
     ax1.set_xlabel(r"Pixels")
     ax2.set_xlabel(r"Pixels")
+    ax3.set_xlabel(r"Pixels")
 
-    ax1.set_xlim(0, 63)
-    ax1.set_ylim(0, 63)
-    ax2.set_xlim(0, 63)
-    ax2.set_ylim(0, 63)
+    # ax1.set_xlim(0, 63)
+    # ax1.set_ylim(0, 63)
+    # ax2.set_xlim(0, 63)
+    # ax2.set_ylim(0, 63)
 
     if blobs:
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)

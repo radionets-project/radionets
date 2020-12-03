@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 from radionets.dl_framework.data import load_data
 from radionets.evaluation.plotting import (
-    visualize_with_fourier,
+    visualize_with_fourier_diff,
     plot_results,
     visualize_source_reconstruction,
     histogram_jet_angles,
@@ -96,9 +96,9 @@ def create_inspection_plots(conf, num_images=3, rand=False):
     out_path.mkdir(parents=True, exist_ok=True)
     if conf["fourier"]:
         for i in range(len(img_test)):
-            visualize_with_fourier(
+            visualize_with_fourier_diff(
                 i,
-                img_test[i],
+                # img_test[i],
                 pred[i],
                 img_true[i],
                 amp_phase=conf["amp_phase"],
