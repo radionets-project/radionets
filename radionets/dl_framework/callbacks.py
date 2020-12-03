@@ -52,8 +52,10 @@ class AvgLossCallback(Callback):
     """
 
     def __init__(self):
-        self.loss_train = []
-        self.loss_valid = []
+        if not hasattr(self, "loss_train"):
+            self.loss_train = []
+        if not hasattr(self, "loss_valid"):
+            self.loss_valid = []
 
     def after_train(self):
         self.loss_train.append(self.recorder._train_mets.map(_maybe_item))
