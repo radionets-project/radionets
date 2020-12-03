@@ -149,17 +149,17 @@ def zero_imag():
 class DataAug(Callback):
     _order = 3
 
-    def begin_batch(self):
-        x = self.run.xb.clone()
-        y = self.run.yb.clone()
+    def before_batch(self):
+        x = self.xb[0].clone()
+        y = self.yb[0].clone()
         randint = np.random.randint(0, 4, x.shape[0])
         for i in range(x.shape[0]):
             x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
             x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
             y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
             y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
-        self.run.xb = x
-        self.run.yb = y
+        self.learn.xb = [x]
+        self.learn.yb = [y]
 
 
 class SaveTempCallback(Callback):
