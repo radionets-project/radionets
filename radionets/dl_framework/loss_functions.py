@@ -492,3 +492,19 @@ def spe_(x, y):
     k = sum(loss)
     loss = k / len(x)
     return loss
+
+
+def splitted_L1(x, y):
+    inp_amp = x[:, 0, :]
+    inp_phase = x[:, 1, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    l1 = nn.L1Loss()
+
+    loss_amp = l1(inp_amp, tar_amp)
+
+    loss_phase = l1(inp_phase, tar_phase)
+
+    return loss_amp * 10 + loss_phase
