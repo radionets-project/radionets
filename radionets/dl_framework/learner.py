@@ -66,7 +66,7 @@ def define_learner(
             [
                 SaveTempCallback(model_path=model_path),
                 AvgLossCallback,
-                # DataAug,
+                DataAug,
             ]
         )
     if train_conf["telegram_logger"]:
