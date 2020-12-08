@@ -580,7 +580,7 @@ def histogram_area(vals, out_path, plot_format="png"):
     ax1.hist(
         vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
-    ax1.set_xlabel("area of first contour")
+    ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")
 
     fig.tight_layout()
