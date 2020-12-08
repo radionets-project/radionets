@@ -98,7 +98,6 @@ def create_inspection_plots(conf, num_images=3, rand=False):
         for i in range(len(img_test)):
             visualize_with_fourier_diff(
                 i,
-                # img_test[i],
                 pred[i],
                 img_true[i],
                 amp_phase=conf["amp_phase"],
