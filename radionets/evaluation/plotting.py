@@ -331,7 +331,7 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
     )
-    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
+    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
     ax2.plot(
         x_space,
         m_truth * x_space + n_truth,
@@ -339,7 +339,7 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
     )
-    im2 = ax2.imshow(ifft_truth, cmap="inferno")
+    im2 = ax2.imshow(ifft_truth)
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
     im3 = ax3.imshow(ifft_pred - ifft_truth, cmap="RdBu", vmin=-a, vmax=a)
