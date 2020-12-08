@@ -72,7 +72,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice(fig, ax, im, title, phase=False):
+def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
     Parameters
@@ -96,6 +96,10 @@ def make_axes_nice(fig, ax, im, title, phase=False):
         cbar = fig.colorbar(
             im, cax=cax, orientation="vertical", ticks=[-np.pi, 0, np.pi]
         )
+    elif phase_diff:
+        cbar = fig.colorbar(
+            im, cax=cax, orientation="vertical", ticks=[-2*np.pi, 0, 2*np.pi]
+        )
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
 
@@ -107,6 +111,9 @@ def make_axes_nice(fig, ax, im, title, phase=False):
     if phase:
         # set ticks for colorbar
         cbar.ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+    elif phase_diff:
+        # set ticks for colorbar
+        cbar.ax.set_yticklabels([r"$-2\pi$", r"$0$", r"$2\pi$"])
 
 
 def reshape_split(img):

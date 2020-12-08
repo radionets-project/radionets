@@ -287,8 +287,10 @@ def visualize_with_fourier_diff(
         make_axes_nice(fig, ax5, im5, r"Phase Truth", phase=True)
 
         a = check_vmin_vmax(imag_pred - imag_truth)
-        im6 = ax6.imshow(imag_pred - imag_truth, cmap="RdBu", vmin=-2*np.pi, vmax=2*np.pi)
-        make_axes_nice(fig, ax6, im6, r"Phase Difference")
+        im6 = ax6.imshow(
+            imag_pred - imag_truth, cmap="RdBu", vmin=-2 * np.pi, vmax=2 * np.pi
+        )
+        make_axes_nice(fig, ax6, im6, r"Phase Difference", phase_diff=True)
 
     ax1.set_ylabel(r"Pixels", fontsize=20)
     ax4.set_ylabel(r"Pixels", fontsize=20)
