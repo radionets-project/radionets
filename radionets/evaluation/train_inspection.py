@@ -87,7 +87,7 @@ def get_separate_prediction(conf, num_images=None, rand=False):
 
 
 def create_inspection_plots(conf, num_images=3, rand=False):
-    if conf["separate"]:
+    if conf["model_path_2"] != "none":
         pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
     else:
         pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
@@ -127,7 +127,7 @@ def create_source_plots(conf, num_images=3, rand=False):
     real_truth: real part of the truth computed in visualize with fourier
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
-    if conf["separate"]:
+    if conf["model_path_2"] != "none":
         pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
     else:
         pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)

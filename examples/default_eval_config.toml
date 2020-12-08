@@ -4,7 +4,7 @@ title = "Evaluation configuration"
 
 [mode]
 quiet = true
-gpu = false
+gpu = true
 
 [paths]
 data_path = "./example_data/"
@@ -18,7 +18,6 @@ fourier = true
 amp_phase = true
 source_list = false
 arch_name = "filter_deep"
-separate = false
 arch_name_2 = "none"
 
 [inspection]

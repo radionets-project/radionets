@@ -34,7 +34,6 @@ def read_config(config):
     eval_conf["amp_phase"] = config["general"]["amp_phase"]
     eval_conf["arch_name"] = config["general"]["arch_name"]
     eval_conf["source_list"] = config["general"]["source_list"]
-    eval_conf["separate"] = config["general"]["separate"]
     eval_conf["arch_name_2"] = config["general"]["arch_name_2"]
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
