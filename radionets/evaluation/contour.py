@@ -34,7 +34,7 @@ def compute_area_difference(CS_pred, CS_truth):
     )
     area_truth = np.abs(area_truth)
 
-    return area_truth - area_pred
+    return area_pred/area_truth
 
 
 def area_of_contour(ifft_pred, ifft_truth):

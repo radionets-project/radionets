@@ -355,11 +355,6 @@ def visualize_source_reconstruction(
     ax2.set_xlabel(r"Pixels")
     ax3.set_xlabel(r"Pixels")
 
-    # ax1.set_xlim(0, 63)
-    # ax1.set_ylim(0, 63)
-    # ax2.set_xlim(0, 63)
-    # ax2.set_ylim(0, 63)
-
     if blobs:
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
         plot_blobs(blobs_pred, ax1)
@@ -411,7 +406,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     im2 = ax2.imshow(ifft_truth)
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_difference(CS1, CS2), 2)
-    make_axes_nice(fig, ax2, im2, "Truth, diff: {}".format(diff))
+    make_axes_nice(fig, ax2, im2, "Truth, ratio: {}".format(diff))
 
     # Assign labels for the levels and save them for the legend
     for i in range(len(labels)):
@@ -581,23 +576,12 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
 
 def histogram_area(vals, out_path, plot_format="png"):
     vals = vals.numpy()
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("area of first contour")
     ax1.set_ylabel("Number of sources")
-
-    ax2.hist(
-        vals[(vals > -50) & (vals < 50)],
-        25,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
-    )
-    ax2.set_xlabel("area of first contour")
-    ax2.set_ylabel("Number of sources")
 
     fig.tight_layout()
 
