@@ -19,6 +19,7 @@ amp_phase = true
 source_list = false
 arch_name = "filter_deep"
 arch_name_2 = "none"
+diff = false
 
 [inspection]
 visualize_prediction = true
