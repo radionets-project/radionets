@@ -108,11 +108,13 @@ def main(configuration_path, mode):
             data,
             arch,
             train_conf,
+            lr_find=True,
         )
 
         # load pretrained model
         if train_conf["pre_model"] != "none":
-            load_pre_model(learn, train_conf["pre_model"], lr_find=True)
+            learn.create_opt()
+            load_pre_model(learn, train_conf["pre_model"])
 
         learn.lr_find()
 

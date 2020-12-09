@@ -33,6 +33,7 @@ def define_learner(
     train_conf,
     cbfs=[],
     test=False,
+    lr_find=False,
 ):
     model_path = train_conf["model_path"]
     model_name = model_path.split("build/")[-1].split("/")[-1].split("/")[0].split(".")[0]
@@ -68,7 +69,7 @@ def define_learner(
                 DataAug,
             ]
         )
-    if train_conf["telegram_logger"]:
+    if train_conf["telegram_logger"] and not lr_find:
         cbfs.extend(
             [
                 TelegramLoggerCallback(model_name=model_name),
