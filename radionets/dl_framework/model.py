@@ -468,6 +468,7 @@ def load_pre_model(learn, pre_path, visualize=False):
         learn.loss = checkpoint["loss"]
         learn.avg_loss.loss_train = checkpoint["train_loss"]
         learn.avg_loss.loss_valid = checkpoint["valid_loss"]
+        learn.avg_loss.lrs = checkpoint["lrs"]
         learn.recorder.iters = checkpoint["iters"]
         learn.recorder.values = checkpoint["vals"]
         learn.recorder.train_losses = checkpoint["recorder_train_loss"]
@@ -487,6 +488,7 @@ def save_model(learn, model_path):
             "vals": learn.recorder.values,
             "train_loss": learn.avg_loss.loss_train,
             "valid_loss": learn.avg_loss.loss_valid,
+            "lrs": learn.avg_loss.lrs,
             "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
             "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
             "recorder_losses": learn.recorder.losses,
