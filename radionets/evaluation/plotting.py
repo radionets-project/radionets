@@ -321,8 +321,8 @@ def visualize_source_reconstruction(
     msssim=False,
     plot_format="png",
 ):
-    m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
-    m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
+    m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth.clone())
+    m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred.clone())
     x_space = torch.arange(0, 511, 1)
 
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
