@@ -132,6 +132,20 @@ def l1(x, y):
     loss = l1(x, y)
     return loss
 
+def l1_rnn(x, y):
+    l1 = nn.L1Loss()
+    x = torch.chunk(x, 4, dim=0)
+
+    l = 0
+    for i in range(4):
+        l += l1(x[i], y)
+    return l/4
+
+def splitted_l1(x, y):
+    l1 = nn.L1Loss()
+    l = 0.5*(10*l1(x[:,0], y[:,0]) + l1(x[:,1], y[:,1]))
+    return l
+
 
 def splitted_mse(x, y):
     inp_real = x[:, 0, :]
