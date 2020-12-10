@@ -393,14 +393,16 @@ class SRResNet_corr(nn.Module):
         self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
 
     def forward(self, x):
+        s = x.shape[-1]
+
         x = self.preBlock(x)
 
         x = x + self.postBlock(self.blocks(x))
 
         x = self.final(x)
 
-        x0 = self.symmetry_amp(x[:, 0]).reshape(-1, 1, 63, 63)
-        x1 = self.symmetry_imag(x[:, 1]).reshape(-1, 1, 63, 63)
+        x0 = self.symmetry_amp(x[:, 0]).reshape(-1, 1, s, s)
+        x1 = self.symmetry_imag(x[:, 1]).reshape(-1, 1, s, s)
 
         return torch.cat([x0, x1], dim=1)
 
