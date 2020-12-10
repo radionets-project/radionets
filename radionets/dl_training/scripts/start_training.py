@@ -18,6 +18,8 @@ from radionets.dl_framework.inspection import (
 )
 from radionets.evaluation.train_inspection import create_inspection_plots
 from pathlib import Path
+import os
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
 @click.command()
