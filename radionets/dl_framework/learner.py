@@ -54,6 +54,13 @@ def define_learner(
                 train_conf["lr_stop"],
             )
         }
+        # lr_max = train_conf["lr_max"]
+        # div = 25.
+        # div_final = 1e5
+        # pct_start = 0.25
+        # moms = (0.95, 0.85)
+        # sched = {'lr': combined_cos(pct_start, lr_max/div, lr_max, lr_max/div_final),
+        #       'mom': combined_cos(pct_start, moms[0], moms[1], moms[0])}
         cbfs.extend([ParamScheduler(sched)])
     if train_conf["gpu"]:
         cbfs.extend(
