@@ -466,6 +466,9 @@ def load_pre_model(learn, pre_path, visualize=False):
         learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
         learn.loss = checkpoint["loss"]
+        learn.avg_loss.loss_train = checkpoint["train_loss"]
+        learn.avg_loss.loss_valid = checkpoint["valid_loss"]
+        learn.avg_loss.lrs = checkpoint["lrs"]
         learn.recorder.iters = checkpoint["iters"]
         learn.recorder.values = checkpoint["vals"]
         learn.recorder.train_losses = checkpoint["recorder_train_loss"]
@@ -483,6 +486,9 @@ def save_model(learn, model_path):
             "loss": learn.loss,
             "iters": learn.recorder.iters,
             "vals": learn.recorder.values,
+            "train_loss": learn.avg_loss.loss_train,
+            "valid_loss": learn.avg_loss.loss_valid,
+            "lrs": learn.avg_loss.lrs,
             "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
             "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
             "recorder_losses": learn.recorder.losses,
@@ -604,3 +610,25 @@ def vaild_gauss_bs(in_put):
             h.unsqueeze_(0)
             source = torch.cat((source, h))
     return source
+
+
+class SRBlock(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni, nf, stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
+            nn.BatchNorm2d(nf),
+            nn.PReLU(),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=1),
+            nn.BatchNorm2d(nf),
+        )

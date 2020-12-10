@@ -52,8 +52,12 @@ class AvgLossCallback(Callback):
     """
 
     def __init__(self):
-        self.loss_train = []
-        self.loss_valid = []
+        if not hasattr(self, "loss_train"):
+            self.loss_train = []
+        if not hasattr(self, "loss_valid"):
+            self.loss_valid = []
+        if not hasattr(self, "lrs"):
+            self.lrs = []
 
     def after_train(self):
         self.loss_train.append(self.recorder._train_mets.map(_maybe_item))
@@ -61,12 +65,21 @@ class AvgLossCallback(Callback):
     def after_validate(self):
         self.loss_valid.append(self.recorder._valid_mets.map(_maybe_item))
 
+    def after_batch(self):
+        self.lrs.append(self.opt.hypers[-1]["lr"])
+
     def plot_loss(self):
         plt.plot(self.loss_train, label="train")
         plt.plot(self.loss_valid, label="valid")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
+        plt.tight_layout()
+
+    def plot_lrs(self):
+        plt.plot(self.lrs)
+        plt.xlabel(r"Number of Batches")
+        plt.ylabel(r"Learning rate")
         plt.tight_layout()
 
 
@@ -123,17 +136,17 @@ def zero_imag():
 class DataAug(Callback):
     _order = 3
 
-    def begin_batch(self):
-        x = self.run.xb.clone()
-        y = self.run.yb.clone()
+    def before_batch(self):
+        x = self.xb[0].clone()
+        y = self.yb[0].clone()
         randint = np.random.randint(0, 4, x.shape[0])
         for i in range(x.shape[0]):
             x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
             x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
             y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
             y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
-        self.run.xb = x
-        self.run.yb = y
+        self.learn.xb = [x]
+        self.learn.yb = [y]
 
 
 class SaveTempCallback(Callback):

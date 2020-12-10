@@ -34,11 +34,12 @@ def read_config(config):
     eval_conf["amp_phase"] = config["general"]["amp_phase"]
     eval_conf["arch_name"] = config["general"]["arch_name"]
     eval_conf["source_list"] = config["general"]["source_list"]
-    eval_conf["separate"] = config["general"]["separate"]
     eval_conf["arch_name_2"] = config["general"]["arch_name_2"]
+    eval_conf["diff"] = config["general"]["diff"]
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
+    eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
     eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
     eval_conf["vis_ms_ssim"] = config["inspection"]["visualize_ms_ssim"]
@@ -49,6 +50,7 @@ def read_config(config):
     eval_conf["dynamic_range"] = config["eval"]["evaluate_dynamic_range"]
     eval_conf["ms_ssim"] = config["eval"]["evaluate_ms_ssim"]
     eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
+    eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
     return eval_conf
 
@@ -71,7 +73,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice(fig, ax, im, title, phase=False):
+def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
     Parameters
@@ -95,6 +97,10 @@ def make_axes_nice(fig, ax, im, title, phase=False):
         cbar = fig.colorbar(
             im, cax=cax, orientation="vertical", ticks=[-np.pi, 0, np.pi]
         )
+    elif phase_diff:
+        cbar = fig.colorbar(
+            im, cax=cax, orientation="vertical", ticks=[-2*np.pi, 0, 2*np.pi]
+        )
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
 
@@ -106,6 +112,9 @@ def make_axes_nice(fig, ax, im, title, phase=False):
     if phase:
         # set ticks for colorbar
         cbar.ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+    elif phase_diff:
+        # set ticks for colorbar
+        cbar.ax.set_yticklabels([r"$-2\pi$", r"$0$", r"$2\pi$"])
 
 
 def reshape_split(img):
@@ -244,6 +253,8 @@ def eval_model(img, model):
 
 
 def get_ifft(array, amp_phase=False):
+    if len(array.shape) == 3:
+        array = array.unsqueeze(0)
     if amp_phase:
         amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
 
