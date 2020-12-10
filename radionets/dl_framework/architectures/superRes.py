@@ -9,6 +9,11 @@ from radionets.dl_framework.model import (
     SRBlock,
     EDSRBaseBlock,
     RDB,
+    FBB,
+    Lambda,
+    better_symmetry,
+    tf_shift,
+    btf_shift
 )
 
 
@@ -362,7 +367,7 @@ class SRResNet(nn.Module):
 class SRResNet_corr(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        torch.cuda.set_device(1)
+        # torch.cuda.set_device(1)
         self.img_size = img_size
 
         self.preBlock = nn.Sequential(
@@ -397,6 +402,10 @@ class SRResNet_corr(nn.Module):
             nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
         )
 
+        #new symmetry
+
+        self.symmetry = Lambda(better_symmetry)
+
     def forward(self, x):
         x = self.preBlock(x)
 
@@ -404,7 +413,59 @@ class SRResNet_corr(nn.Module):
 
         x = self.final(x)
 
-        return x
+        return self.symmetry(x)
+
+class SRResNet_sym(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        self.tf = Lambda(tf_shift)
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+        )
+
+        # ResBlock 16
+        self.blocks = nn.Sequential(
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1), nn.BatchNorm2d(64)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
+        )
+
+        #new symmetry
+
+        self.btf = Lambda(btf_shift)
+
+    def forward(self, x):
+        x = self.tf(x)
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        return self.btf(x)
 
 class EDSRBase(nn.Module):
     def __init__(self, img_size):
@@ -457,7 +518,7 @@ class EDSRBase(nn.Module):
 class RDNet(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        # torch.cuda.set_device(1)
+        torch.cuda.set_device(1)
         self.img_size = img_size
 
         self.preBlock = nn.Sequential(
@@ -493,5 +554,47 @@ class RDNet(nn.Module):
         x6 = self.block6(x5)
 
         x = x + self.postBlock(torch.cat((x1,x2,x3,x4,x5,x6), dim=1))
+        x = self.final(x)
+        return x
+
+
+class SRFBNet(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        self.img_size = img_size
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2, bias=False)
+        )
+
+        # ResBlock 6
+        # self.block1 = FBB(64, 32, first=True)
+        # self.block2 = FBB(64, 32)
+        self.block1 = FBB(64, 32, first=True)
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 1, stride=1, padding=0, bias=False),
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2, bias=False)
+        )
+
+    def forward(self, x):
+        x = self.preBlock(x)
+
+
+        
+        x1 = torch.zeros(x.shape).cuda()
+        for i in range(4):
+            x1 = self.block1(torch.cat((x,x1), dim=1))
+            if i == 0:
+                block = x1
+            else:
+                block = torch.cat((block,x1), dim=0)
+
+        x = torch.cat((x,x,x,x), dim=0) + self.postBlock(block)
         x = self.final(x)
         return x

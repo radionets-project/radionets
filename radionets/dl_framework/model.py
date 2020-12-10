@@ -5,6 +5,7 @@ from torch.nn.modules.utils import _pair
 from pathlib import Path
 from math import sqrt, pi
 from fastcore.foundation import L
+from torch.nn.common_types import  _size_4_t
 
 
 class Lambda(nn.Module):
@@ -234,6 +235,39 @@ def symmetry(x, mode="real"):
         x[:, i, j] = -x[:, u, v]
     return torch.rot90(x, 3, dims=(1, 2))
 
+def better_symmetry(x):
+    # rotation
+    x = torch.flip(x, [3])
+
+    # indices of upper and lower triangle
+    triu = torch.triu_indices(x.shape[2], x.shape[3], 1)
+    tril = torch.tril_indices(x.shape[2], x.shape[3], -1)
+    triu = torch.flip(triu, [1])
+
+    # sym amp and phase
+    x[:,0,tril[0], tril[1]] = x[:,0, triu[0], triu[1]]
+    x[:,1,tril[0], tril[1]] = -x[:,1, triu[0], triu[1]]
+
+    # rotation
+    x = torch.flip(x, [3])
+
+    return x
+
+def tf_shift(x):
+    triu = torch.triu_indices(x.shape[2], x.shape[2], 0)
+    tf = torch.flip(x, [3])[:,:,triu[0], triu[1]].reshape(x.shape[0],x.shape[1],x.shape[2],int(x.shape[3]/2)+1)
+
+    return tf
+
+def btf_shift(x):
+    btf = torch.zeros((x.shape[0],x.shape[1],x.shape[2], x.shape[3]*2-1)).cuda()
+    triu = torch.triu_indices(x.shape[2], x.shape[2], 0)
+
+    btf[:,:,triu[0], triu[1]] = x[:,:].reshape(x.shape[0], x.shape[1], -1)
+    btf = torch.flip(btf, [3])
+
+    btf = better_symmetry(btf)
+    return btf
 
 def phase_range(phase):
     # if isinstance(phase, float):
@@ -728,4 +762,91 @@ class RDB(nn.Module):
         return torch.cat((x1,y1,x2,y2), dim=1)
 
 
+class FBB(nn.Module):
+    def __init__(self, ni, nf, stride=1, first=False):
+        super().__init__()
+        self.first = first
+        if first:
+            self.convCat = nn.Conv2d(ni*2, ni, 1, stride=1, padding=0, groups=2, bias=False)
+        else:
+            self.convCat = nn.Identity()
+        self.conv1 = self._conv_block(ni,nf,stride)
+        self.conv2 = self._conv_block(ni+nf,nf,stride)
+        self.conv3 = self._conv_block(ni+2*nf,nf,stride)
+        self.conv4 = self._conv_block(ni+3*nf,nf,stride)
+        self.conv5 = self._conv_block(ni+4*nf,nf,stride)
+        self.conv6 = self._conv_block(ni+5*nf,nf,stride)
 
+        self.convFusion = nn.Conv2d(ni+6*nf, ni, 1, stride=1, padding=0, groups=2, bias=False)
+
+    def forward(self, x):
+        # if self.first:
+        #     comb = torch.chunk(x,2, dim=1)
+        #     skip = comb[0]
+        #     x = self._cat_split(comb[0], comb[1])
+        #     # x = self._cat_split(x, comb[2])
+        #     # x = self._cat_split(x, comb[3])
+        # else:
+        #     skip = x
+
+        x_cc = self.convCat(x)
+        x1_c = self.conv1(x_cc)
+        cat = self._cat_split(x_cc, x1_c)
+        x2_c = self.conv2(cat)
+        cat = self._cat_split(cat, x2_c)
+        x3_c = self.conv3(cat)
+        cat = self._cat_split(cat, x3_c)
+        x4_c = self.conv4(cat)
+        cat = self._cat_split(cat, x4_c)
+        x5_c = self.conv5(cat)
+        cat = self._cat_split(cat, x5_c)
+        x6_c = self.conv6(cat)
+        cat = self._cat_split(cat, x6_c)
+
+
+        return self.convFusion(cat) + x_cc
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1, bias=False),
+            nn.PReLU()
+        )
+    
+    def _cat_split(self, x, y):
+        x1, x2 = torch.chunk(x,2, dim=1)
+        y1, y2 = torch.chunk(y,2, dim=1)
+        return torch.cat((x1,y1,x2,y2), dim=1)
+
+
+class _CirculationPadNd(nn.Module):
+    __constants__ = ['padding']
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        return F.pad(input, self.padding, 'circular')
+
+    def extra_repr(self) -> str:
+        return '{}'.format(self.padding)
+
+class CirculationPad2d(_CirculationPadNd):
+    padding: _size_4_t
+
+    def __init__(self, padding: _size_4_t) -> None:
+        super(CirculationPad2d, self).__init__()
+        self.padding = _pair(padding)
+
+class CirculationShiftPad(nn.Module):
+    padding: _size_4_t
+
+    def __init__(self, padding: _size_4_t) -> None:
+        super(_CirculationShiftPad, self).__init__()
+        self.padding = _pair(padding)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        x = F.pad(input, self.padding, 'circular')
+        x[...,0,:] = 0
+        x[...,-1,:] = 0
+        x[...,:,0] = torch.roll(x[...,:,0],1)
+        x[...,:,-1] = torch.roll(x[...,:,-1],-1)
+        x[...,0,:] = 0
+        x[...,-1,:] = 0
+        return x
