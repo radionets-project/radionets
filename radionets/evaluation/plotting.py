@@ -18,6 +18,7 @@ from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_difference
 from pytorch_msssim import ms_ssim
+from matplotlib.patches import Rectangle
 
 
 def plot_target(h5_dataset, log=False):
@@ -333,7 +334,7 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
     )
-    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
+    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
         x_space,
         m_truth * x_space + n_truth,
@@ -341,7 +342,7 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
     )
-    im2 = ax2.imshow(ifft_truth)
+    im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
     im3 = ax3.imshow(ifft_pred - ifft_truth, cmap="RdBu", vmin=-a, vmax=a)
@@ -350,10 +351,14 @@ def visualize_source_reconstruction(
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
     make_axes_nice(fig, ax3, im3, r"FFT Diff")
 
-    ax1.set_ylabel(r"Pixels")
-    ax1.set_xlabel(r"Pixels")
-    ax2.set_xlabel(r"Pixels")
-    ax3.set_xlabel(r"Pixels")
+    ax1.set_ylabel(r"Pixels", fontsize=20)
+    ax1.set_xlabel(r"Pixels", fontsize=20)
+    ax2.set_xlabel(r"Pixels", fontsize=20)
+    ax3.set_xlabel(r"Pixels", fontsize=20)
+
+    ax1.tick_params(axis="both", labelsize=20)
+    ax2.tick_params(axis="both", labelsize=20)
+    ax3.tick_params(axis="both", labelsize=20)
 
     if blobs:
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
@@ -576,12 +581,18 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
 
 def histogram_area(vals, out_path, plot_format="png"):
     vals = vals.numpy()
+    mean = np.round(np.mean(vals), 3)
+    std = np.round(np.std(vals, ddof=1), 3)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")
+
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0)
+    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
 
     fig.tight_layout()
 
