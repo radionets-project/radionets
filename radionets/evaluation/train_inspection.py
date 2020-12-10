@@ -4,12 +4,16 @@ import numpy as np
 from pathlib import Path
 from radionets.dl_framework.data import load_data
 from radionets.evaluation.plotting import (
+    visualize_with_fourier_diff,
     visualize_with_fourier,
     plot_results,
     visualize_source_reconstruction,
     histogram_jet_angles,
     histogram_dynamic_ranges,
     histogram_ms_ssim,
+    histogram_mean_diff,
+    histogram_area,
+    plot_contour,
 )
 from radionets.evaluation.utils import (
     create_databunch,
@@ -22,6 +26,8 @@ from radionets.evaluation.utils import (
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
+from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
+from radionets.evaluation.contour import area_of_contour
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 
@@ -82,7 +88,7 @@ def get_separate_prediction(conf, num_images=None, rand=False):
 
 
 def create_inspection_plots(conf, num_images=3, rand=False):
-    if conf["separate"]:
+    if conf["model_path_2"] != "none":
         pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
     else:
         pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
@@ -90,16 +96,27 @@ def create_inspection_plots(conf, num_images=3, rand=False):
     out_path = Path(model_path).parent / "evaluation/"
     out_path.mkdir(parents=True, exist_ok=True)
     if conf["fourier"]:
-        for i in range(len(img_test)):
-            visualize_with_fourier(
-                i,
-                img_test[i],
-                pred[i],
-                img_true[i],
-                amp_phase=conf["amp_phase"],
-                out_path=out_path,
-                plot_format=conf["format"],
-            )
+        if conf["diff"]:
+            for i in range(len(img_test)):
+                visualize_with_fourier_diff(
+                    i,
+                    pred[i],
+                    img_true[i],
+                    amp_phase=conf["amp_phase"],
+                    out_path=out_path,
+                    plot_format=conf["format"],
+                )
+        else:
+            for i in range(len(img_test)):
+                visualize_with_fourier(
+                    i,
+                    img_test[i],
+                    pred[i],
+                    img_true[i],
+                    amp_phase=conf["amp_phase"],
+                    out_path=out_path,
+                    plot_format=conf["format"],
+                )
     else:
         plot_results(
             img_test.cpu(),
@@ -122,7 +139,7 @@ def create_source_plots(conf, num_images=3, rand=False):
     real_truth: real part of the truth computed in visualize with fourier
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
-    if conf["separate"]:
+    if conf["model_path_2"] != "none":
         pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
     else:
         pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
@@ -156,6 +173,32 @@ def create_source_plots(conf, num_images=3, rand=False):
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
+def create_contour_plots(conf, num_images=3, rand=False):
+    if conf["model_path_2"] != "none":
+        pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
+    else:
+        pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    if not conf["fourier"]:
+        click.echo("\n This is not a fourier dataset.\n")
+
+    pred = pred.numpy()
+
+    # inverse fourier transformation for prediction
+    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+    # inverse fourier transform for truth
+    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+
+    for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
+        plot_contour(
+            pred, truth, out_path, i, plot_format=conf["format"],
+        )
+
+
 def evaluate_viewing_angle(conf):
     # create DataLoader
     loader = create_databunch(
@@ -167,7 +210,7 @@ def evaluate_viewing_angle(conf):
 
     img_size = loader.dataset[0][0][0].shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-    if conf["separate"]:
+    if conf["model_path_2"] != "none":
         model_2 = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
@@ -179,7 +222,7 @@ def evaluate_viewing_angle(conf):
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
         pred = eval_model(img_test, model)
-        if conf["separate"]:
+        if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
 
@@ -212,7 +255,7 @@ def evaluate_dynamic_range(conf):
 
     img_size = loader.dataset[0][0][0].shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-    if conf["separate"]:
+    if conf["model_path_2"] != "none":
         model_2 = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
@@ -224,7 +267,7 @@ def evaluate_dynamic_range(conf):
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
         pred = eval_model(img_test, model)
-        if conf["separate"]:
+        if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
 
@@ -261,7 +304,7 @@ def evaluate_ms_ssim(conf):
 
     img_size = loader.dataset[0][0][0].shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-    if conf["separate"]:
+    if conf["model_path_2"] != "none":
         model_2 = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
@@ -278,7 +321,7 @@ def evaluate_ms_ssim(conf):
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
         pred = eval_model(img_test, model)
-        if conf["separate"]:
+        if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
 
@@ -303,3 +346,90 @@ def evaluate_ms_ssim(conf):
     )
 
     click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
+
+
+def evaluate_mean_diff(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["model_path_2"] != "none":
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    vals = []
+
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["model_path_2"] != "none":
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        for pred, truth in zip(ifft_pred, ifft_truth):
+            blobs_pred, blobs_truth = calc_blobs(pred, truth)
+            flux_pred, flux_truth = crop_first_component(
+                pred, truth, blobs_truth[0], out_path
+            )
+            vals.extend([(flux_truth - flux_pred).mean()])
+
+    click.echo("\nCreating mean_diff histogram.\n")
+    vals = torch.tensor(vals)
+    histogram_mean_diff(
+        vals, out_path, plot_format=conf["format"],
+    )
+
+    click.echo(f"\nThe mean difference is {vals.mean()}.\n")
+
+
+def evaluate_area(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["model_path_2"] != "none":
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    vals = []
+
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["model_path_2"] != "none":
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        for pred, truth in zip(ifft_pred, ifft_truth):
+            val = area_of_contour(pred, truth)
+            vals.extend([val])
+
+    click.echo("\nCreating mean_diff histogram.\n")
+    vals = torch.tensor(vals)
+    histogram_area(
+        vals, out_path, plot_format=conf["format"],
+    )
+
+    click.echo(f"\nThe mean difference is {vals.mean()}.\n")

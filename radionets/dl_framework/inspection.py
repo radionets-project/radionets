@@ -210,7 +210,7 @@ def plot_lr(learn, model_path, output_format="png"):
     plt.ioff()
     save_path = model_path.with_suffix("")
     print(f"\nPlotting Learning rate for: {model_path.stem}\n")
-    plt.plot(learn.recorder.lrs)
+    learn.avg_loss.plot_lrs()
     plt.savefig(f"{save_path}_lr.{output_format}", bbox_inches="tight", pad_inches=0.01)
     plt.clf()
     mpl.rcParams.update(mpl.rcParamsDefault)

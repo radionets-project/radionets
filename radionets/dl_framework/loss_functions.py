@@ -250,6 +250,26 @@ def loss_phase(x, y):
     return loss
 
 
+def loss_l1_amp(x, y):
+    tar = y[:, 0, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    l1 = nn.L1Loss()
+    loss = l1(x, tar)
+
+    return loss
+
+
+def loss_l1_phase(x, y):
+    tar = y[:, 1, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    l1 = nn.L1Loss()
+    loss = l1(x, tar)
+
+    return loss
+
+
 def loss_new_msssim(x, y):
     msssim_loss = MS_SSIM(data_range=10, channel=2)
     loss = 1 - msssim_loss(x, y)
@@ -498,9 +518,5 @@ def splitted_L1(x, y):
     loss_amp = l1(inp_amp, tar_amp)
 
     loss_phase = l1(inp_phase, tar_phase)
-
-    # print(loss_amp)
-    # print(loss_phase)
-    # print("")
 
     return loss_amp * 10 + loss_phase

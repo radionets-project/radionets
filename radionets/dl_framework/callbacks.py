@@ -56,6 +56,8 @@ class AvgLossCallback(Callback):
             self.loss_train = []
         if not hasattr(self, "loss_valid"):
             self.loss_valid = []
+        if not hasattr(self, "lrs"):
+            self.lrs = []
 
     def after_train(self):
         self.loss_train.append(self.recorder._train_mets.map(_maybe_item))
@@ -63,12 +65,21 @@ class AvgLossCallback(Callback):
     def after_validate(self):
         self.loss_valid.append(self.recorder._valid_mets.map(_maybe_item))
 
+    def after_batch(self):
+        self.lrs.append(self.opt.hypers[-1]["lr"])
+
     def plot_loss(self):
         plt.plot(self.loss_train, label="train")
         plt.plot(self.loss_valid, label="valid")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
+        plt.tight_layout()
+
+    def plot_lrs(self):
+        plt.plot(self.lrs)
+        plt.xlabel(r"Number of Batches")
+        plt.ylabel(r"Learning rate")
         plt.tight_layout()
 
 
