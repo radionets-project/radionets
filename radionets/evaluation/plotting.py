@@ -282,10 +282,10 @@ def visualize_source_reconstruction(
     ax1.set_xlabel(r"Pixels")
     ax2.set_xlabel(r"Pixels")
 
-    ax1.set_xlim(0, 63)
-    ax1.set_ylim(0, 63)
-    ax2.set_xlim(0, 63)
-    ax2.set_ylim(0, 63)
+    # ax1.set_xlim(0, 63)
+    # ax1.set_ylim(0, 63)
+    # ax2.set_xlim(0, 63)
+    # ax2.set_ylim(0, 63)
 
     if blobs:
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
