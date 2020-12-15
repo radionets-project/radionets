@@ -445,7 +445,6 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
 
     mean = np.round(np.mean(dif), 3)
     std = np.round(np.std(dif, ddof=1), 3)
-    print(dif.max(), dif.min())
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
