@@ -19,6 +19,20 @@ from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_difference
 from pytorch_msssim import ms_ssim
 from matplotlib.patches import Rectangle
+import matplotlib as mpl
+
+
+# make nice Latex friendly plots
+mpl.use("pgf")
+mpl.rcParams.update(
+    {
+        "font.size": 12,
+        "font.family": "sans-serif",
+        "text.usetex": True,
+        "pgf.rcfonts": False,
+        "pgf.texsystem": "lualatex",
+    }
+)
 
 
 def plot_target(h5_dataset, log=False):
@@ -307,7 +321,7 @@ def visualize_with_fourier_diff(
     plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
-    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     return real_pred, imag_pred, real_truth, imag_truth
 
 
@@ -387,7 +401,7 @@ def visualize_source_reconstruction(
     ax1.legend(loc="best")
     ax2.legend(loc="best")
     fig.tight_layout(pad=1.5)
-    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
@@ -402,7 +416,6 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     ]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
-    outpath = str(out_path) + f"/contour_{i}.{plot_format}"
 
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
     CS1 = ax1.contour(ifft_pred, levels=levels, colors=colors)
@@ -412,6 +425,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_difference(CS1, CS2), 2)
     make_axes_nice(fig, ax2, im2, "Truth, ratio: {}".format(diff))
+    outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
     # Assign labels for the levels and save them for the legend
     for i in range(len(labels)):
@@ -423,11 +437,15 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     ax2.legend(loc="best")
 
     plt.tight_layout(pad=0.75)
-    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
 
 
 def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
     dif = (alpha_pred - alpha_truth).numpy()
+
+    mean = np.round(np.mean(dif), 3)
+    std = np.round(np.std(dif, ddof=1), 3)
+    print(dif.max(), dif.min())
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
@@ -435,6 +453,10 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
     )
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
+
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
 
     ax2.hist(
         dif[(dif > -10) & (dif < 10)],
@@ -444,6 +466,7 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
         histtype="step",
         alpha=0.75,
     )
+    ax2.set_xticks([-10, -7.5, -5, -2.5, 0, 2.5, 5, 7.5, 10])
     ax2.set_xlabel("Offset / deg")
     ax2.set_ylabel("Number of sources")
 
@@ -580,6 +603,17 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
 
 
 def histogram_area(vals, out_path, plot_format="png"):
+    mpl.use("pgf")
+    mpl.rcParams.update(
+        {
+            "font.size": 12,
+            "font.family": "sans-serif",
+            "text.usetex": True,
+            "pgf.rcfonts": False,
+            "pgf.texsystem": "lualatex",
+        }
+    )
+
     vals = vals.numpy()
     mean = np.round(np.mean(vals), 3)
     std = np.round(np.std(vals, ddof=1), 3)
@@ -590,8 +624,8 @@ def histogram_area(vals, out_path, plot_format="png"):
     ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0)
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
     ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
 
     fig.tight_layout()
