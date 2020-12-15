@@ -386,7 +386,7 @@ def sample_freqs(
         mask = test_mask()
     else:
         layout = getattr(layouts, ant_config)
-        ant = antenna(*layout())
+        ant = Antenna(*layout())
         if specific_mask is True:
             s = source(lon, lat)
             s.propagate(num_steps=num_steps, multi_pointing=False)
