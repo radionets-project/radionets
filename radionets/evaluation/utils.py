@@ -105,7 +105,10 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
         )
     elif phase_diff:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-2 * np.pi, 0, 2 * np.pi]
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
@@ -117,10 +120,12 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
     cbar.update_ticks()
     if phase:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+        cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
     elif phase_diff:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-2\pi$", r"$0$", r"$2\pi$"])
+        cbar.ax.set_yticklabels(
+            [r"$-2\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$2\pi$"]
+        )
 
 
 def reshape_split(img):
