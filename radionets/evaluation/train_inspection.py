@@ -30,6 +30,7 @@ from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 from radionets.evaluation.contour import area_of_contour
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 def get_prediction(conf, num_images=None, rand=False):
@@ -232,8 +233,33 @@ def evaluate_viewing_angle(conf):
         m_truth, n_truth, alpha_truth = calc_jet_angle(torch.tensor(ifft_truth))
         m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
 
-        alpha_truths.extend(alpha_truth)
-        alpha_preds.extend(alpha_pred)
+        alpha_truths.extend(abs(alpha_truth))
+        alpha_preds.extend(abs(alpha_pred))
+
+        # for j in range(100):
+        #     if abs(abs(alpha_truth) - abs(alpha_pred))[j] > 89:
+        #         print("Abweichung")
+        #         x_space = torch.arange(0, 511, 1)
+        #         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8))
+        #         ax1.plot(
+        #             x_space,
+        #             m_pred[j] * x_space + n_pred[j],
+        #             "w-",
+        #             alpha=0.5,
+        #             label=fr"$\alpha = {np.round(alpha_pred[j], 3)}$",
+        #         )
+        #         ax1.imshow(ifft_pred[j])
+        #         ax2.plot(
+        #             x_space,
+        #             m_truth[j] * x_space + n_truth[j],
+        #             "w-",
+        #             alpha=0.5,
+        #             label=fr"$\alpha = {np.round(alpha_truth[j], 3)}$",
+        #         )
+        #         ax2.imshow(ifft_truth[j])
+        #         ax1.legend(loc="best")
+        #         ax2.legend(loc="best")
+        #         fig.savefig("abweichung_{}".format(i), bbox_inches='tight', pad_inches=0.01)
 
     alpha_truths = torch.tensor(alpha_truths)
     alpha_preds = torch.tensor(alpha_preds)
