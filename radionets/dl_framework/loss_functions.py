@@ -11,6 +11,7 @@ from radionets.dl_framework.regularization import (
     rot,
     calc_spec,
 )
+from scipy.optimize import linear_sum_assignment
 
 
 class FeatureLoss(nn.Module):
@@ -520,3 +521,69 @@ def splitted_L1(x, y):
     loss_phase = l1(inp_phase, tar_phase)
 
     return loss_amp * 10 + loss_phase
+
+
+def list_loss(x, y):
+    y = y.squeeze(1)
+    x_pred = x[:]
+    x_true = y[:, 0:2] / 63
+    m = nn.MSELoss()
+    loss = m(x_pred, x_true)
+    # print(x_pred[0], x_true[0])
+    return loss
+
+
+class HungarianMatcher(nn.Module):
+    """
+    Solve assignment Problem.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    @torch.no_grad()
+    def forward(self, outputs, targets):
+
+        assert outputs.shape[-1] is targets.shape[-1]
+
+        C = torch.cdist(targets.to(torch.float64), outputs.to(torch.float64), p=1)
+        C = C.cpu()
+
+        if len(outputs.shape) == 3:
+            bs = outputs.shape[0]
+        else:
+            bs = 1
+            C = C.unsqueeze(0)
+
+        indices = [linear_sum_assignment(C[b]) for b in range(bs)]
+        return [(torch.as_tensor(j), torch.as_tensor(i)) for i, j in indices]
+
+
+def build_matcher():
+    return HungarianMatcher()
+
+
+def pos_loss(x, y):
+    """
+    Permutation Loss for Source-positions list. With hungarian method
+    to solve assignment problem.
+    """
+    out = x.reshape(-1, 3, 2)
+    tar = y[:, 0, :, :2] / 63
+
+    matcher = build_matcher()
+    matches = matcher(out[:, :, 0].unsqueeze(-1), tar[:, :, 0].unsqueeze(-1))
+
+    out_ord, _ = zip(*matches)
+
+    ordered = [sort(out[v], out_ord[v]) for v in range(len(out))]
+    out = torch.stack(ordered)
+
+    loss = nn.MSELoss()
+    loss = loss(out, tar)
+
+    return loss
+
+
+def sort(x, permutation):
+    return x[permutation, :]

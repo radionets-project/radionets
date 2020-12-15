@@ -11,7 +11,10 @@ from torch.utils.data import DataLoader
 def create_databunch(data_path, fourier, source_list, batch_size):
     # Load data sets
     test_ds = load_data(
-        data_path, mode="test", fourier=fourier, source_list=source_list,
+        data_path,
+        mode="test",
+        fourier=fourier,
+        source_list=source_list,
     )
 
     # Create databunch with defined batchsize
@@ -91,23 +94,26 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax.set_title(title, fontsize=16)
+    ax.set_title(title, fontsize=11)
 
     if phase:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-np.pi, 0, np.pi]
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
     elif phase_diff:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-2*np.pi, 0, 2*np.pi]
+            im, cax=cax, orientation="vertical", ticks=[-2 * np.pi, 0, 2 * np.pi]
         )
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
 
-    cbar.set_label("Intensity / a.u.", size=16)
-    cbar.ax.tick_params(labelsize=16)
-    cbar.ax.yaxis.get_offset_text().set_fontsize(16)
-    cbar.formatter.set_powerlimits((0, 0))
+    cbar.set_label("Intensity / a.u.", size=11)
+    cbar.ax.tick_params(labelsize=11)
+    cbar.ax.yaxis.get_offset_text().set_fontsize(11)
+    # cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
     if phase:
         # set ticks for colorbar
