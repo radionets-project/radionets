@@ -34,6 +34,9 @@ def sample_frequencies(
 
         bundle_paths = get_fft_bundle_paths(data_path, "fft", mode)
 
+        if bundle_paths == []:
+            print(f"\n No {mode} data set fft images available.\n")
+
         for path in tqdm(bundle_paths):
             fft, truth = open_fft_bundle(path)
             f = h5py.File(path, "r")
