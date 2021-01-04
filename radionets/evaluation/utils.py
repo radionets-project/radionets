@@ -106,8 +106,8 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
 
     cbar.set_label("Intensity / a.u.", size=16)
     cbar.ax.tick_params(labelsize=16)
-    cbar.ax.yaxis.get_offset_text().set_fontsize(16)
-    cbar.formatter.set_powerlimits((0, 0))
+    # cbar.ax.yaxis.get_offset_text().set_fontsize(16)
+    # cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
     if phase:
         # set ticks for colorbar
