@@ -19,6 +19,9 @@ from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_difference
 from pytorch_msssim import ms_ssim
 from matplotlib.patches import Rectangle
+from matplotlib.colors import LogNorm
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
 import matplotlib as mpl
 
 
@@ -33,6 +36,12 @@ mpl.rcParams.update(
         "pgf.texsystem": "lualatex",
     }
 )
+
+top = cm.get_cmap("Blues_r", 128)
+bottom = cm.get_cmap("Oranges", 128)
+
+newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
+newcmp = ListedColormap(newcolors, name="OrangeBlue")
 
 
 def plot_target(h5_dataset, log=False):
@@ -283,27 +292,27 @@ def visualize_with_fourier_diff(
     )
 
     if amp_phase:
-        im1 = ax1.imshow(real_pred, cmap="inferno")
+        im1 = ax1.imshow(real_pred, cmap="inferno", norm=LogNorm())
         make_axes_nice(fig, ax1, im1, r"Amplitude Prediction")
 
-        im2 = ax2.imshow(real_truth, cmap="inferno")
+        im2 = ax2.imshow(real_truth, cmap="inferno", norm=LogNorm())
         make_axes_nice(fig, ax2, im2, r"Amplitude Truth")
 
         a = check_vmin_vmax(real_pred - real_truth)
-        im3 = ax3.imshow(real_pred - real_truth, cmap="RdBu", vmin=-a, vmax=a)
+        im3 = ax3.imshow(real_pred - real_truth, cmap=newcmp, vmin=-a, vmax=a)
         make_axes_nice(fig, ax3, im3, r"Amplitude Difference")
 
         a = check_vmin_vmax(imag_truth)
-        im4 = ax4.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        im4 = ax4.imshow(imag_pred, cmap=newcmp, vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax4, im4, r"Phase Prediction", phase=True)
 
         a = check_vmin_vmax(imag_truth)
-        im5 = ax5.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        im5 = ax5.imshow(imag_truth, cmap=newcmp, vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax5, im5, r"Phase Truth", phase=True)
 
         a = check_vmin_vmax(imag_pred - imag_truth)
         im6 = ax6.imshow(
-            imag_pred - imag_truth, cmap="RdBu", vmin=-2 * np.pi, vmax=2 * np.pi
+            imag_pred - imag_truth, cmap=newcmp, vmin=-2 * np.pi, vmax=2 * np.pi
         )
         make_axes_nice(fig, ax6, im6, r"Phase Difference", phase_diff=True)
 
