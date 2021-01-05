@@ -374,7 +374,7 @@ def sample_freqs(
     """
 
     def get_mask(lon, lat, num_steps, ant, size):
-        s = source(lon, lat)
+        s = Source(lon, lat)
         s.propagate(num_steps=num_steps, multi_pointing=False)
         u, v, _ = get_uv_coverage(s, ant, iterate=False)
         single_mask = create_mask(u, v, size)
@@ -388,7 +388,7 @@ def sample_freqs(
         layout = getattr(layouts, ant_config)
         ant = Antenna(*layout())
         if specific_mask is True:
-            s = source(lon, lat)
+            s = Source(lon, lat)
             s.propagate(num_steps=num_steps, multi_pointing=False)
             u, v, _ = get_uv_coverage(s, ant, iterate=False)
             single_mask = create_mask(u, v, size)
