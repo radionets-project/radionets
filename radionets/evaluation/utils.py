@@ -6,6 +6,7 @@ import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from matplotlib import ticker
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):
@@ -112,10 +113,12 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
         )
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        # tick_locator = ticker.MaxNLocator(nbins=5)
+        # cbar.locator = tick_locator
 
-    cbar.set_label("Intensity / a.u.", size=11)
-    cbar.ax.tick_params(labelsize=11)
-    cbar.ax.yaxis.get_offset_text().set_fontsize(11)
+    cbar.set_label("Intensity / a.u.")
+    # cbar.ax.tick_params(labelsize=11)
+    cbar.ax.yaxis.get_offset_text()  # .set_fontsize(11)
     # cbar.formatter.set_powerlimits((0, 0))
     cbar.update_ticks()
     if phase:
