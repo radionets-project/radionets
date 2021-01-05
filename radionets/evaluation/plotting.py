@@ -37,12 +37,16 @@ mpl.rcParams.update(
     }
 )
 
-top = cm.get_cmap("Blues_r", 128)
-bottom = cm.get_cmap("Oranges", 128)
+def create_OrBu():
+    top = cm.get_cmap("Blues_r", 128)
+    bottom = cm.get_cmap("Oranges", 128)
+    white = np.array([256/256, 256/256, 256/256, 1])
+    newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
+    newcolors[128, :] = white
+    newcmp = ListedColormap(newcolors, name="OrangeBlue")
+    return newcmp
 
-newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
-newcmp = ListedColormap(newcolors, name="OrangeBlue")
-
+OrBu = create_OrBu()
 
 def plot_target(h5_dataset, log=False):
     index = np.random.randint(len(h5_dataset) - 1)
@@ -299,20 +303,20 @@ def visualize_with_fourier_diff(
         make_axes_nice(fig, ax2, im2, r"Amplitude Truth")
 
         a = check_vmin_vmax(real_pred - real_truth)
-        im3 = ax3.imshow(real_pred - real_truth, cmap=newcmp, vmin=-a, vmax=a)
+        im3 = ax3.imshow(real_pred - real_truth, cmap=OrBu, vmin=-a, vmax=a)
         make_axes_nice(fig, ax3, im3, r"Amplitude Difference")
 
         a = check_vmin_vmax(imag_truth)
-        im4 = ax4.imshow(imag_pred, cmap=newcmp, vmin=-np.pi, vmax=np.pi)
+        im4 = ax4.imshow(imag_pred, cmap=OrBu, vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax4, im4, r"Phase Prediction", phase=True)
 
         a = check_vmin_vmax(imag_truth)
-        im5 = ax5.imshow(imag_truth, cmap=newcmp, vmin=-np.pi, vmax=np.pi)
+        im5 = ax5.imshow(imag_truth, cmap=OrBu, vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax5, im5, r"Phase Truth", phase=True)
 
         a = check_vmin_vmax(imag_pred - imag_truth)
         im6 = ax6.imshow(
-            imag_pred - imag_truth, cmap=newcmp, vmin=-2 * np.pi, vmax=2 * np.pi
+            imag_pred - imag_truth, cmap=OrBu, vmin=-2 * np.pi, vmax=2 * np.pi
         )
         make_axes_nice(fig, ax6, im6, r"Phase Difference", phase_diff=True)
 
