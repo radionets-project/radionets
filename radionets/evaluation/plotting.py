@@ -428,7 +428,8 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
         ifft_truth.max() * 0.8,
     ]
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
+    plt.style.use('./paper_large.rc')
+    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
     CS1 = ax1.contour(ifft_pred, levels=levels, colors=colors)
@@ -448,6 +449,10 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     # plotting legend
     ax1.legend(loc="best")
     ax2.legend(loc="best")
+
+    ax1.set_ylabel(r"Pixels")
+    ax1.set_xlabel(r"Pixels")
+    ax2.set_xlabel(r"Pixels")
 
     plt.tight_layout(pad=0.75)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
