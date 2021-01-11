@@ -508,22 +508,40 @@ def load_pre_model(learn, pre_path, visualize=False):
         learn.recorder.lrs = checkpoint["recorder_lrs"]
 
 
-def save_model(learn, model_path):
-    torch.save(
-        {
-            "model": learn.model.state_dict(),
-            "opt": learn.opt.state_dict(),
-            "epoch": learn.epoch,
-            "loss": learn.loss,
-            "iters": learn.recorder.iters,
-            "vals": learn.recorder.values,
-            "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
-            "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
-            "recorder_losses": learn.recorder.losses,
-            "recorder_lrs": learn.recorder.lrs,
-        },
-        model_path,
-    )
+def save_model(learn, model_path, gan):
+    # print(learn.model.generator)
+    if gan:
+        torch.save(
+            {   
+                "model": learn.model.generator.state_dict(),
+                "opt": learn.opt.state_dict(),
+                "epoch": learn.epoch,
+                "loss": learn.loss,
+                "iters": learn.recorder.iters,
+                "vals": learn.recorder.values,
+                "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
+                "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
+                "recorder_losses": learn.recorder.losses,
+                "recorder_lrs": learn.recorder.lrs,
+            },
+            model_path,
+        )
+    else:
+        torch.save(
+            {   
+                "model": learn.model.state_dict(),
+                "opt": learn.opt.state_dict(),
+                "epoch": learn.epoch,
+                "loss": learn.loss,
+                "iters": learn.recorder.iters,
+                "vals": learn.recorder.values,
+                "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
+                "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
+                "recorder_losses": learn.recorder.losses,
+                "recorder_lrs": learn.recorder.lrs,
+            },
+            model_path,
+        )
 
 
 class LocallyConnected2d(nn.Module):
@@ -704,6 +722,29 @@ class SRBlock(nn.Module):
             nn.BatchNorm2d(nf),
         )
 
+class SRBlockPad(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni, nf, stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            BetterShiftPad((1,1,1,1)),
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=0),
+            nn.BatchNorm2d(nf),
+            nn.PReLU(),
+            BetterShiftPad((1,1,1,1)),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=0),
+            nn.BatchNorm2d(nf),
+        )
+
 class EDSRBaseBlock(nn.Module):
     def __init__(self, ni, nf, stride=1):
         super().__init__()
@@ -838,15 +879,56 @@ class CirculationShiftPad(nn.Module):
     padding: _size_4_t
 
     def __init__(self, padding: _size_4_t) -> None:
-        super(_CirculationShiftPad, self).__init__()
+        super(CirculationShiftPad, self).__init__()
         self.padding = _pair(padding)
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         x = F.pad(input, self.padding, 'circular')
-        x[...,0,:] = 0
-        x[...,-1,:] = 0
-        x[...,:,0] = torch.roll(x[...,:,0],1)
-        x[...,:,-1] = torch.roll(x[...,:,-1],-1)
-        x[...,0,:] = 0
-        x[...,-1,:] = 0
+        x[...,:self.padding[2],:] = 0
+        x[...,-self.padding[3]:,:] = 0
+        x[...,:,:self.padding[0]] = torch.roll(x[...,:,:self.padding[0]],1,2)
+        x[...,:,-self.padding[1]:] = torch.roll(x[...,:,-self.padding[1]:],-1,2)
+        x[...,:self.padding[2],:] = 0
+        x[...,-self.padding[3]:,:] = 0
+        return x
+
+def better_padding(input, padding):
+    in_shape = input.shape
+    paddable_shape = in_shape[2:]
+    
+    out_shape = in_shape[:2]
+    for idx, size in enumerate(paddable_shape):
+        out_shape += (size + padding[-(idx * 2 + 1)] + padding[-(idx * 2 + 2)],)
+    
+    # fill empty tensor of new shape with input
+    out = torch.zeros(out_shape, dtype=input.dtype, layout=input.layout,
+                      device=input.device)
+    
+    out[..., padding[-2]:(out_shape[2]-padding[-1]), padding[-4]:(out_shape[3]-padding[-3])] = input
+    
+    # pad left
+    i0 = out_shape[3] - padding[-4] - padding[-3]
+    i1 = out_shape[3] -padding[-3]
+    o0 = 0
+    o1 = padding[-4]
+    out[:, :, padding[-2]:out_shape[2]-padding[-1], o0:o1] = out[:, :, padding[-2]-1:out_shape[2]-padding[-1]-1, i0:i1]
+    
+    # pad right
+    i0 = padding[-4]
+    i1 = padding[-4] + padding[-3]
+    o0 = out_shape[3] - padding[-3]
+    o1 = out_shape[3]
+    out[:, :, padding[-2]:out_shape[2]-padding[-1], o0:o1] = out[:, :, padding[-2]+1:out_shape[2]-padding[-1]+1, i0:i1]
+    
+    return out
+
+class BetterShiftPad(nn.Module):
+    padding: _size_4_t
+
+    def __init__(self, padding: _size_4_t) -> None:
+        super(BetterShiftPad, self).__init__()
+        self.padding = _pair(padding)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        x = better_padding(input, self.padding)
         return x
