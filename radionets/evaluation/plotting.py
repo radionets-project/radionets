@@ -291,8 +291,9 @@ def visualize_with_fourier_diff(
         real_truth = 10 ** (10 * real_truth - 10) - 1e-10
 
     # plotting
+    plt.style.use('./paper_large_3_2.rc')
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
-        2, 3, figsize=(16, 10), sharex=True, sharey=True
+        2, 3, sharex=True, sharey=True
     )
 
     if amp_phase:
@@ -320,18 +321,18 @@ def visualize_with_fourier_diff(
         )
         make_axes_nice(fig, ax6, im6, r"Phase Difference", phase_diff=True)
 
-    ax1.set_ylabel(r"Pixels", fontsize=20)
-    ax4.set_ylabel(r"Pixels", fontsize=20)
-    ax4.set_xlabel(r"Pixels", fontsize=20)
-    ax5.set_xlabel(r"Pixels", fontsize=20)
-    ax6.set_xlabel(r"Pixels", fontsize=20)
-    ax1.tick_params(axis="both", labelsize=20)
-    ax2.tick_params(axis="both", labelsize=20)
-    ax3.tick_params(axis="both", labelsize=20)
-    ax4.tick_params(axis="both", labelsize=20)
-    ax5.tick_params(axis="both", labelsize=20)
-    ax6.tick_params(axis="both", labelsize=20)
-    plt.tight_layout(pad=1.5)
+    ax1.set_ylabel(r"Pixels")
+    ax4.set_ylabel(r"Pixels")
+    ax4.set_xlabel(r"Pixels")
+    ax5.set_xlabel(r"Pixels")
+    ax6.set_xlabel(r"Pixels")
+    # ax1.tick_params(axis="both", labelsize=20)
+    # ax2.tick_params(axis="both", labelsize=20)
+    # ax3.tick_params(axis="both", labelsize=20)
+    # ax4.tick_params(axis="both", labelsize=20)
+    # ax5.tick_params(axis="both", labelsize=20)
+    # ax6.tick_params(axis="both", labelsize=20)
+    plt.tight_layout(pad=1)
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
@@ -352,7 +353,8 @@ def visualize_source_reconstruction(
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
+    plt.style.use('./paper_large_3.rc')
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
 
     ax1.plot(
         x_space,
@@ -378,14 +380,14 @@ def visualize_source_reconstruction(
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
     make_axes_nice(fig, ax3, im3, r"FFT Diff")
 
-    ax1.set_ylabel(r"Pixels", fontsize=20)
-    ax1.set_xlabel(r"Pixels", fontsize=20)
-    ax2.set_xlabel(r"Pixels", fontsize=20)
-    ax3.set_xlabel(r"Pixels", fontsize=20)
+    ax1.set_ylabel(r"Pixels")
+    ax1.set_xlabel(r"Pixels")
+    ax2.set_xlabel(r"Pixels")
+    ax3.set_xlabel(r"Pixels")
 
-    ax1.tick_params(axis="both", labelsize=20)
-    ax2.tick_params(axis="both", labelsize=20)
-    ax3.tick_params(axis="both", labelsize=20)
+    # ax1.tick_params(axis="both", labelsize=20)
+    # ax2.tick_params(axis="both", labelsize=20)
+    # ax3.tick_params(axis="both", labelsize=20)
 
     if blobs:
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
@@ -413,7 +415,7 @@ def visualize_source_reconstruction(
 
     ax1.legend(loc="best")
     ax2.legend(loc="best")
-    fig.tight_layout(pad=1.5)
+    fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
@@ -610,7 +612,7 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     ax1.hist(
         vals.numpy(), 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
-    ax1.set_xlabel("mean flux difference")
+    ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
 
     fig.tight_layout()
