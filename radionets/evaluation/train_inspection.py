@@ -452,10 +452,10 @@ def evaluate_area(conf):
             val = area_of_contour(pred, truth)
             vals.extend([val])
 
-    click.echo("\nCreating mean_diff histogram.\n")
+    click.echo("\nCreating eval_area histogram.\n")
     vals = torch.tensor(vals)
     histogram_area(
         vals, out_path, plot_format=conf["format"],
     )
 
-    click.echo(f"\nThe mean difference is {vals.mean()}.\n")
+    click.echo(f"\nThe mean area ratio is {vals.mean()}.\n")
