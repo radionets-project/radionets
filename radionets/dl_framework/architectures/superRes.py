@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from math import pi
 import numpy as np
+from fastai.vision import models
 from radionets.dl_framework.model import (
     GeneralELU,
     ResBlock_amp,
@@ -13,7 +14,10 @@ from radionets.dl_framework.model import (
     Lambda,
     better_symmetry,
     tf_shift,
-    btf_shift
+    btf_shift,
+    CirculationShiftPad,
+    SRBlockPad,
+    BetterShiftPad
 )
 
 
@@ -467,6 +471,61 @@ class SRResNet_sym(nn.Module):
 
         return self.btf(x)
 
+class SRResNet_sym_pad(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        self.tf = Lambda(tf_shift)
+
+        self.preBlock = nn.Sequential(
+            BetterShiftPad((4,4,4,4)),
+            nn.Conv2d(2, 64, 9, stride=1, padding=0, groups=2), nn.PReLU()
+        )
+
+        # ResBlock 16
+        self.blocks = nn.Sequential(
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+            SRBlockPad(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            BetterShiftPad((1,1,1,1)),
+            nn.Conv2d(64, 64, 3, stride=1, padding=0), nn.BatchNorm2d(64)
+        )
+
+        self.final = nn.Sequential(
+            BetterShiftPad((4,4,4,4)),
+            nn.Conv2d(64, 2, 9, stride=1, padding=0, groups=2),
+        )
+
+        #new symmetry
+
+        self.btf = Lambda(btf_shift)
+
+    def forward(self, x):
+        x = self.tf(x)
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        return self.btf(x)
+
 class EDSRBase(nn.Module):
     def __init__(self, img_size):
         super().__init__()
@@ -598,3 +657,55 @@ class SRFBNet(nn.Module):
         x = torch.cat((x,x,x,x), dim=0) + self.postBlock(block)
         x = self.final(x)
         return x
+
+
+# SRGAN
+
+class VGG19(nn.Module):
+    def __init__(self):
+        super().__init__()
+        
+        self.block = nn.Sequential(#63*63
+            nn.Conv2d(2,64,3, stride=1),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(64,64,3, stride=2),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(64,128,3, stride=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(128,128,3, stride=2),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(128,256,3, stride=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(256,256,3, stride=2),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(256,512,3, stride=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(512,512,3, stride=2),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2),
+        )
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(512,1024),
+            nn.LeakyReLU(0.2),
+            nn.Linear(1024,1),
+            nn.Sigmoid()
+        )
+    
+
+    def forward(self, x):
+        x = self.block(x)
+        return self.fc(x)
