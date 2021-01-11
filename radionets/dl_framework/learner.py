@@ -13,6 +13,8 @@ from fastai.data.core import DataLoaders
 from fastai.callback.data import CudaCallback
 from fastai.callback.schedule import ParamScheduler, combined_cos
 import radionets.dl_framework.loss_functions as loss_functions
+from fastai.vision import gan, models
+import torchvision
 
 
 def get_learner(
@@ -24,6 +26,18 @@ def get_learner(
         data.valid_ds,
     )
     return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
+
+
+def get_learner_gan(
+    data, generator, discriminator, lr, gen_loss_func, crit_loss_func, cb_funcs=None, opt_func=Adam, **kwargs
+):
+    init_cnn(generator)
+    init_cnn(discriminator)
+    dls = DataLoaders.from_dsets(
+        data.train_ds,
+        data.valid_ds,
+    )
+    return gan.GANLearner(dls, generator, discriminator, gen_loss_func, crit_loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
 
 
 def define_learner(
@@ -71,7 +85,7 @@ def define_learner(
     if not test:
         cbfs.extend(
             [
-                SaveTempCallback(model_path=model_path),
+                SaveTempCallback(model_path=model_path, gan=train_conf["gan"]),
                 AvgLossCallback,
                 # DataAug,
             ]
@@ -90,7 +104,17 @@ def define_learner(
         loss_func = getattr(loss_functions, train_conf["loss_func"])
 
     # Combine model and data in learner
-    learn = get_learner(
-        data, arch, lr=lr, opt_func=opt_func, cb_funcs=cbfs, loss_func=loss_func
-    )
+    if train_conf["gan"]:
+        gl = getattr(loss_functions, "gen_loss")
+        dl = getattr(loss_functions, "disc_loss")
+        # vgg = torchvision.models.vgg19_bn()
+        # vgg.to(device)
+        # print(arch)
+        learn = get_learner_gan(
+            data, arch[0], arch[1], lr=lr, gen_loss_func=gl, crit_loss_func=dl, opt_func=opt_func, cb_funcs=cbfs
+        )
+    else:
+        learn = get_learner(
+            data, arch, lr=lr, opt_func=opt_func, cb_funcs=cbfs, loss_func=loss_func
+        )
     return learn
