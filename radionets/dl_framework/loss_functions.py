@@ -11,6 +11,8 @@ from radionets.dl_framework.regularization import (
     rot,
     calc_spec,
 )
+from fastai.vision import gan
+import radionets.dl_framework.inspection as inspec
 
 
 class FeatureLoss(nn.Module):
@@ -143,8 +145,16 @@ def l1_rnn(x, y):
 
 def splitted_l1(x, y):
     l1 = nn.L1Loss()
-    l = 0.5*(10*l1(x[:,0], y[:,0]) + l1(x[:,1], y[:,1]))
+    l = (10*l1(x[:,0], y[:,0]) + l1(x[:,1], y[:,1]))/2
     return l
+
+def l1_ssim(x,y):
+    fft_x, fft_y = inspec.fft_pred_torch(x,y)
+    l1 = nn.L1Loss()
+    print(inspec.ssim_torch(fft_x, fft_y).shape)
+    l = (l1(fft_x, fft_y) + (1-inspec.ssim_torch(fft_x, fft_y)))/2
+    return l
+
 
 
 def splitted_mse(x, y):
@@ -486,3 +496,14 @@ def spe_(x, y):
     k = sum(loss)
     loss = k / len(x)
     return loss
+
+
+#SRGAN
+def gen_loss(x,y,z):
+    l = gan.gan_loss_from_func(nn.L1Loss(), nn.L1Loss(), weights_gen=(1e-3,1))[0]
+    return l(x,y,z)
+
+
+def disc_loss(x,y):
+    l = gan.gan_loss_from_func(nn.L1Loss(), nn.L1Loss(), weights_gen=(1e-3,1))[1]
+    return l(x,y)
