@@ -41,6 +41,7 @@ def read_config(config):
     train_conf["inspection"] = config["general"]["inspection"]
     train_conf["separate"] = False
     train_conf["format"] = config["general"]["output_format"]
+    train_conf["gan"] = config["general"]["gan"]
 
     train_conf["param_scheduling"] = config["param_scheduling"]["use"]
     train_conf["lr_start"] = config["param_scheduling"]["lr_start"]
@@ -71,6 +72,8 @@ def check_outpath(model_path, train_conf):
 def define_arch(arch_name, img_size):
     if "filter_deep" in arch_name or "resnet" in arch_name or "Net" in arch_name:
         arch = getattr(architecture, arch_name)(img_size)
+    elif "SRGAN" in arch_name:
+        arch = [getattr(architecture, "SRResNet_sym_pad")(img_size), getattr(architecture, "VGG19")()]
     else:
         arch = getattr(architecture, arch_name)()
     return arch
@@ -81,7 +84,7 @@ def pop_interrupt(learn, train_conf):
         model_path = train_conf["model_path"]
         # save model
         print("Saving the model after epoch {}".format(learn.epoch))
-        save_model(learn, model_path)
+        save_model(learn, model_path, train_conf["gan"])
 
         # plot loss
         plot_loss(learn, model_path)
@@ -96,7 +99,7 @@ def pop_interrupt(learn, train_conf):
 
 def end_training(learn, train_conf):
     # Save model
-    save_model(learn, Path(train_conf["model_path"]))
+    save_model(learn, Path(train_conf["model_path"]), train_conf["gan"])
 
     # Plot loss
     plot_loss(learn, Path(train_conf["model_path"]))
