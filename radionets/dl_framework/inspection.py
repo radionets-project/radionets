@@ -1,4 +1,5 @@
 import torch
+import torch.fft as fft
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -146,6 +147,49 @@ def fft_pred(pred, truth, amp_phase=True):
     ifft_true = np.fft.ifft2(compl_true)
 
     return np.absolute(ifft_pred), np.absolute(ifft_true)
+
+
+def fft_pred_torch(pred, truth, amp_phase=True):
+    """
+    Transform predicted image and true image to local domain.
+
+    Parameters
+    ----------
+    pred: 4D array [1, channel, height, width]
+        prediction from eval_model
+    truth: 3D array [channel, height, width]
+        true image
+    amp_phase: Bool
+        trained on Amp/Phase or Re/Im
+
+    Returns
+    -------
+    ifft_pred, ifft_true: two 2D arrays [height, width]
+        predicted and true image in local domain
+    """
+    a = pred[:, 0, :, :]
+    b = pred[:, 1, :, :]
+
+    a_true = truth[:, 0, :, :]
+    b_true = truth[:, 1, :, :]
+
+    if amp_phase:
+        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
+        phase_pred = b
+
+        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10 ** 10
+        phase_true = b_true
+
+        compl_pred = amp_pred_rescaled * (torch.cos(phase_pred) + 1j * torch.sin(phase_pred))#torch.exp(1j * phase_pred)
+        compl_true = amp_true_rescaled * (torch.cos(phase_true) + 1j * torch.sin(phase_true))#torch.exp(1j * phase_true)
+    else:
+        compl_pred = a + 1j * b
+        compl_true = a_true + 1j * b_true
+
+    ifft_pred = fft.ifftn(compl_pred)
+    ifft_true = fft.ifftn(compl_true,2)
+
+    return torch.absolute(ifft_pred), torch.absolute(ifft_true)
 
 
 def reshape_2d(array):
@@ -360,3 +404,17 @@ def ssim(pred,true):
     c = [(2*std_pred[i]*std_true[i]+c2[i])/(std_pred[i]**2+std_true[i]**2+c2[i]) for i in range(len(pred))]
     s = [(cov[i]+c3[i])/(std_pred[i]*std_true[i]+c3[i]) for i in range(len(pred))]
     return np.mean([l[i]*c[i]*s[i] for i in range(len(l))])
+
+def ssim_torch(pred,true):
+    mean_pred = [torch.mean(p) for p in pred]
+    std_pred = [torch.std(p) for p in pred]
+    mean_true = [torch.mean(t) for t in true]
+    std_true = [torch.std(t) for t in true]
+    cov = [1/(len(pred[i])**2-1)*torch.sum((pred[i]-mean_pred[i])*(true[i]-mean_true[i])) for i in range(len(pred))]
+    c1 = [(0.01*torch.amax(t))**2 for t in true]
+    c2 = [(0.03*torch.amax(t))**2 for t in true]
+    c3 = [c/2 for c in c2]
+    l = [(2*mean_pred[i]*mean_true[i]+c1[i])/(mean_pred[i]**2+mean_true[i]**2+c1[i]) for i in range(len(pred))]
+    c = [(2*std_pred[i]*std_true[i]+c2[i])/(std_pred[i]**2+std_true[i]**2+c2[i]) for i in range(len(pred))]
+    s = [(cov[i]+c3[i])/(std_pred[i]*std_true[i]+c3[i]) for i in range(len(pred))]
+    return torch.mean([l[i]*c[i]*s[i] for i in range(len(l))])
