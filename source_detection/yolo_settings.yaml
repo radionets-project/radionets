@@ -1,0 +1,6 @@
+train: //net/big-tank/POOL/users/pblomenkamp/radionets/yolo/data/multi/images/train
+
+val: //net/big-tank/POOL/users/pblomenkamp/radionets/yolo/data/multi/images/valid
+
+nc: 1
+names: ['gauss']
