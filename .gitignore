@@ -9,7 +9,7 @@
 radionets/simulations/test_data
 examples/example_data/
 
-source/detection/yolov5
+source_detection/yolov5
 #evaluation results
 */results
 results/
