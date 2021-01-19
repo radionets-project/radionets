@@ -374,7 +374,7 @@ def visualize_source_reconstruction(
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
-    im3 = ax3.imshow(ifft_pred - ifft_truth, cmap="RdBu", vmin=-a, vmax=a)
+    im3 = ax3.imshow(ifft_pred - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
 
     make_axes_nice(fig, ax1, im1, r"FFT Prediction")
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
