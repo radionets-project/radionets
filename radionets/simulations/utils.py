@@ -8,6 +8,7 @@ import re
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from scipy import interpolate
 from skimage.transform import resize
 from radionets.dl_framework.data import (
     save_fft_pair,
@@ -141,6 +142,7 @@ def read_config(config):
     sim_conf["fourier"] = config["sampling_options"]["fourier"]
     sim_conf["compressed"] = config["sampling_options"]["compressed"]
     sim_conf["keep_fft_files"] = config["sampling_options"]["keep_fft_files"]
+    sim_conf["interpolation"] = config["sampling_options"]["interpolation"]
     return sim_conf
 
 
@@ -208,10 +210,7 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
         rescaled input image
     """
     y = resize(
-        bundle.swapaxes(0, 2),
-        (pixel, pixel),
-        anti_aliasing=True,
-        mode="constant",
+        bundle.swapaxes(0, 2), (pixel, pixel), anti_aliasing=True, mode="constant",
     ).swapaxes(2, 0)
     y_prep = y.copy()
     if noise:
@@ -328,3 +327,44 @@ def calc_norm(sim_conf):
 
     df = pd.DataFrame(data=d)
     df.to_csv(sim_conf["data_path"] + "/norm_factors.csv", index=False)
+
+
+def interpol(img):
+    """Interpolates ftt sampled amplitude and phase data.
+    Parameters
+    ----------
+    img : array
+        array with shape 2,width,heigth
+        input image array with amplitude and phase on axis 0
+    Returns
+    -------
+    array
+        array with shape 2,width,heigth
+        interpolated image array with amplitude and phase on axis 0
+    """
+    grid_x, grid_y = np.mgrid[0 : len(img[0, 0]) : 1, 0 : len(img[0, 0]) : 1]
+
+    idx_amp = np.nonzero(img[0])
+    amp = interpolate.griddata(
+        (idx_amp[0], idx_amp[1]), img[0][idx_amp], (grid_x, grid_y), method="nearest"
+    )
+
+    img[1][img[1] < 0] = 0
+    idx_phase = np.nonzero(img[1])
+    phase = interpolate.griddata(
+        (idx_phase[0], idx_phase[1]),
+        img[1][idx_phase],
+        (grid_x, grid_y),
+        method="nearest",
+    )
+
+    mask = np.ones((len(img[0, 0]), len(img[0, 0])))
+    mask[1::2, 1::2] = 0
+    mask[::2, ::2] = 0
+    for i in range(len(img[0, 0])):
+        mask[i, len(img[0, 0]) - 1 - i :] = 1 - mask[i, len(img[0, 0]) - 1 - i :]
+
+    phase_fl = -np.flip(phase, [0, 1])
+    phase = phase * mask + phase_fl * (1 - mask)
+
+    return np.array([amp, phase])

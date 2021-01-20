@@ -1,7 +1,11 @@
 import os
 from tqdm import tqdm
 from numpy import savez_compressed
-from radionets.simulations.utils import get_fft_bundle_paths, prepare_fft_images
+from radionets.simulations.utils import (
+    get_fft_bundle_paths,
+    prepare_fft_images,
+    interpol,
+)
 from radionets.dl_framework.data import (
     open_fft_bundle,
     save_fft_pair,
@@ -18,6 +22,7 @@ def sample_frequencies(
     real_imag,
     fourier,
     compressed,
+    interpolation,
     specific_mask,
     antenna_config,
     lon=None,
@@ -28,6 +33,9 @@ def sample_frequencies(
         print(f"\n Sampling {mode} data set.\n")
 
         bundle_paths = get_fft_bundle_paths(data_path, "fft", mode)
+
+        if bundle_paths == []:
+            print(f"\n No {mode} data set fft images available.\n")
 
         for path in tqdm(bundle_paths):
             fft, truth = open_fft_bundle(path)
@@ -52,12 +60,14 @@ def sample_frequencies(
                 )
             else:
                 fft_samp = sample_freqs(
-                    fft_scaled.copy(),
-                    antenna_config,
-                    size=size,
-                    specific_mask=False,
+                    fft_scaled.copy(), antenna_config, size=size, specific_mask=False,
                 )
-            out = data_path + f"/samp_" + path.name.split("_")[-1]
+
+            if interpolation:
+                for i in range(len(fft_samp[:, 0, 0, 0])):
+                    fft_samp[i] = interpol(fft_samp[i])
+
+            out = data_path + "/samp_" + path.name.split("_")[-1]
 
             if fourier:
                 if compressed:
