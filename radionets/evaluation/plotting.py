@@ -361,7 +361,7 @@ def visualize_source_reconstruction(
         m_pred * x_space + n_pred,
         "w-",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
+        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$\,deg",
     )
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
@@ -369,7 +369,7 @@ def visualize_source_reconstruction(
         m_truth * x_space + n_truth,
         "w-",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
+        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$\,deg",
     )
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
