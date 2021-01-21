@@ -93,6 +93,7 @@ def main(configuration_path, mode):
 
         # Train the model, except interrupt
         try:
+            # learn.fine_tune(train_conf["num_epochs"])
             learn.fit(train_conf["num_epochs"])
         except KeyboardInterrupt:
             pop_interrupt(learn, train_conf)
