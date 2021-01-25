@@ -138,6 +138,7 @@ def plot_loss(learn, model_path, output_format="pdf"):
     # second turn off the interactive mode
     mpl.use("Agg")
     plt.ioff()
+    # plt.style.use('./paper_small.rc')
     save_path = model_path.with_suffix("")
     print(f"\nPlotting Loss for: {model_path.stem}\n")
     learn.avg_loss.plot_loss()
