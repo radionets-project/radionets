@@ -137,9 +137,9 @@ def main(configuration_path, mode):
             train_conf,
         )
         # load pretrained model
-        if Path(train_conf["pre_model"]).exists:
+        if Path(train_conf["model_path"]).exists:
             learn.create_opt()
-            load_pre_model(learn, train_conf["pre_model"])
+            load_pre_model(learn, train_conf["model_path"])
         else:
             click.echo("Selected model does not exist.")
             click.echo("Exiting.\n")
@@ -147,12 +147,12 @@ def main(configuration_path, mode):
 
         plot_lr(
             learn,
-            Path(train_conf["pre_model"]),
+            Path(train_conf["model_path"]),
             output_format=train_conf["format"],
         )
         plot_loss(
             learn,
-            Path(train_conf["pre_model"]),
+            Path(train_conf["model_path"]),
             output_format=train_conf["format"],
         )
 
