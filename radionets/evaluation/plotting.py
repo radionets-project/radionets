@@ -25,18 +25,6 @@ from matplotlib.colors import ListedColormap
 import matplotlib as mpl
 
 
-# make nice Latex friendly plots
-mpl.use("pgf")
-mpl.rcParams.update(
-    {
-        "font.size": 12,
-        "font.family": "sans-serif",
-        "text.usetex": True,
-        "pgf.rcfonts": False,
-        "pgf.texsystem": "lualatex",
-    }
-)
-
 def create_OrBu():
     top = cm.get_cmap("Blues_r", 128)
     bottom = cm.get_cmap("Oranges", 128)
@@ -291,9 +279,9 @@ def visualize_with_fourier_diff(
         real_truth = 10 ** (10 * real_truth - 10) - 1e-10
 
     # plotting
-    plt.style.use('./paper_large_3_2.rc')
+    # plt.style.use('./paper_large_3_2.rc')
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
-        2, 3, sharex=True, sharey=True
+        2, 3, figsize=(16, 10), sharex=True, sharey=True
     )
 
     if amp_phase:
@@ -353,8 +341,8 @@ def visualize_source_reconstruction(
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
-    plt.style.use('./paper_large_3.rc')
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
+    # plt.style.use('./paper_large_3.rc')
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
 
     ax1.plot(
         x_space,
@@ -430,8 +418,8 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
         ifft_truth.max() * 0.8,
     ]
 
-    plt.style.use('./paper_large.rc')
-    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+    # plt.style.use('./paper_large.rc')
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
 
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
     CS1 = ax1.contour(ifft_pred, levels=levels, colors=colors)
@@ -622,17 +610,6 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
 
 
 def histogram_area(vals, out_path, plot_format="png"):
-    mpl.use("pgf")
-    mpl.rcParams.update(
-        {
-            "font.size": 12,
-            "font.family": "sans-serif",
-            "text.usetex": True,
-            "pgf.rcfonts": False,
-            "pgf.texsystem": "lualatex",
-        }
-    )
-
     vals = vals.numpy()
     mean = np.round(np.mean(vals), 3)
     std = np.round(np.std(vals, ddof=1), 3)
