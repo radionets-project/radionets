@@ -19,6 +19,36 @@ from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_difference
 from pytorch_msssim import ms_ssim
 from matplotlib.patches import Rectangle
+from matplotlib.colors import LogNorm
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
+import matplotlib as mpl
+
+
+# make nice Latex friendly plots
+mpl.use("pgf")
+mpl.rcParams.update(
+    {
+        "font.size": 12,
+        "font.family": "sans-serif",
+        "text.usetex": True,
+        "pgf.rcfonts": False,
+        "pgf.texsystem": "lualatex",
+    }
+)
+
+
+def create_OrBu():
+    top = cm.get_cmap("Blues_r", 128)
+    bottom = cm.get_cmap("Oranges", 128)
+    white = np.array([256 / 256, 256 / 256, 256 / 256, 1])
+    newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
+    newcolors[128, :] = white
+    newcmp = ListedColormap(newcolors, name="OrangeBlue")
+    return newcmp
+
+
+OrBu = create_OrBu()
 
 
 def plot_target(h5_dataset, log=False):
@@ -264,50 +294,51 @@ def visualize_with_fourier_diff(
         real_truth = 10 ** (10 * real_truth - 10) - 1e-10
 
     # plotting
+    plt.style.use("./paper_large_3_2.rc")
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
-        2, 3, figsize=(16, 10), sharex=True, sharey=True
+        2, 3, sharex=True, sharey=True
     )
 
     if amp_phase:
-        im1 = ax1.imshow(real_pred, cmap="inferno")
+        im1 = ax1.imshow(real_pred, cmap="inferno", norm=LogNorm())
         make_axes_nice(fig, ax1, im1, r"Amplitude Prediction")
 
-        im2 = ax2.imshow(real_truth, cmap="inferno")
+        im2 = ax2.imshow(real_truth, cmap="inferno", norm=LogNorm())
         make_axes_nice(fig, ax2, im2, r"Amplitude Truth")
 
         a = check_vmin_vmax(real_pred - real_truth)
-        im3 = ax3.imshow(real_pred - real_truth, cmap="RdBu", vmin=-a, vmax=a)
+        im3 = ax3.imshow(real_pred - real_truth, cmap=OrBu, vmin=-a, vmax=a)
         make_axes_nice(fig, ax3, im3, r"Amplitude Difference")
 
         a = check_vmin_vmax(imag_truth)
-        im4 = ax4.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        im4 = ax4.imshow(imag_pred, cmap=OrBu, vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax4, im4, r"Phase Prediction", phase=True)
 
         a = check_vmin_vmax(imag_truth)
-        im5 = ax5.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        im5 = ax5.imshow(imag_truth, cmap=OrBu, vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax5, im5, r"Phase Truth", phase=True)
 
         a = check_vmin_vmax(imag_pred - imag_truth)
         im6 = ax6.imshow(
-            imag_pred - imag_truth, cmap="RdBu", vmin=-2 * np.pi, vmax=2 * np.pi
+            imag_pred - imag_truth, cmap=OrBu, vmin=-2 * np.pi, vmax=2 * np.pi
         )
         make_axes_nice(fig, ax6, im6, r"Phase Difference", phase_diff=True)
 
-    ax1.set_ylabel(r"Pixels", fontsize=20)
-    ax4.set_ylabel(r"Pixels", fontsize=20)
-    ax4.set_xlabel(r"Pixels", fontsize=20)
-    ax5.set_xlabel(r"Pixels", fontsize=20)
-    ax6.set_xlabel(r"Pixels", fontsize=20)
-    ax1.tick_params(axis="both", labelsize=20)
-    ax2.tick_params(axis="both", labelsize=20)
-    ax3.tick_params(axis="both", labelsize=20)
-    ax4.tick_params(axis="both", labelsize=20)
-    ax5.tick_params(axis="both", labelsize=20)
-    ax6.tick_params(axis="both", labelsize=20)
-    plt.tight_layout(pad=1.5)
+    ax1.set_ylabel(r"Pixels")
+    ax4.set_ylabel(r"Pixels")
+    ax4.set_xlabel(r"Pixels")
+    ax5.set_xlabel(r"Pixels")
+    ax6.set_xlabel(r"Pixels")
+    # ax1.tick_params(axis="both", labelsize=20)
+    # ax2.tick_params(axis="both", labelsize=20)
+    # ax3.tick_params(axis="both", labelsize=20)
+    # ax4.tick_params(axis="both", labelsize=20)
+    # ax5.tick_params(axis="both", labelsize=20)
+    # ax6.tick_params(axis="both", labelsize=20)
+    plt.tight_layout(pad=1)
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
-    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     return real_pred, imag_pred, real_truth, imag_truth
 
 
@@ -325,14 +356,15 @@ def visualize_source_reconstruction(
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
+    plt.style.use("./paper_large_3.rc")
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
 
     ax1.plot(
         x_space,
         m_pred * x_space + n_pred,
         "w-",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$",
+        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}\,$deg",
     )
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
@@ -340,25 +372,25 @@ def visualize_source_reconstruction(
         m_truth * x_space + n_truth,
         "w-",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$",
+        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}\,$deg",
     )
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
-    im3 = ax3.imshow(ifft_pred - ifft_truth, cmap="RdBu", vmin=-a, vmax=a)
+    im3 = ax3.imshow(ifft_pred - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
 
     make_axes_nice(fig, ax1, im1, r"FFT Prediction")
     make_axes_nice(fig, ax2, im2, r"FFT Truth")
     make_axes_nice(fig, ax3, im3, r"FFT Diff")
 
-    ax1.set_ylabel(r"Pixels", fontsize=20)
-    ax1.set_xlabel(r"Pixels", fontsize=20)
-    ax2.set_xlabel(r"Pixels", fontsize=20)
-    ax3.set_xlabel(r"Pixels", fontsize=20)
+    ax1.set_ylabel(r"Pixels")
+    ax1.set_xlabel(r"Pixels")
+    ax2.set_xlabel(r"Pixels")
+    ax3.set_xlabel(r"Pixels")
 
-    ax1.tick_params(axis="both", labelsize=20)
-    ax2.tick_params(axis="both", labelsize=20)
-    ax3.tick_params(axis="both", labelsize=20)
+    # ax1.tick_params(axis="both", labelsize=20)
+    # ax2.tick_params(axis="both", labelsize=20)
+    # ax3.tick_params(axis="both", labelsize=20)
 
     if blobs:
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
@@ -386,8 +418,8 @@ def visualize_source_reconstruction(
 
     ax1.legend(loc="best")
     ax2.legend(loc="best")
-    fig.tight_layout(pad=1.5)
-    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    fig.tight_layout(pad=1)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
@@ -401,8 +433,8 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
         ifft_truth.max() * 0.8,
     ]
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
-    outpath = str(out_path) + f"/contour_{i}.{plot_format}"
+    plt.style.use("./paper_large.rc")
+    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
 
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
     CS1 = ax1.contour(ifft_pred, levels=levels, colors=colors)
@@ -412,6 +444,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_difference(CS1, CS2), 2)
     make_axes_nice(fig, ax2, im2, "Truth, ratio: {}".format(diff))
+    outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
     # Assign labels for the levels and save them for the legend
     for i in range(len(labels)):
@@ -422,12 +455,19 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     ax1.legend(loc="best")
     ax2.legend(loc="best")
 
+    ax1.set_ylabel(r"Pixels")
+    ax1.set_xlabel(r"Pixels")
+    ax2.set_xlabel(r"Pixels")
+
     plt.tight_layout(pad=0.75)
-    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
 
 
 def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
     dif = (alpha_pred - alpha_truth).numpy()
+
+    mean = np.round(np.mean(dif), 3)
+    std = np.round(np.std(dif, ddof=1), 3)
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
@@ -441,6 +481,10 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
 
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
+
     ax2.hist(
         dif[(dif > -10) & (dif < 10)],
         25,
@@ -449,6 +493,7 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
         histtype="step",
         alpha=0.75,
     )
+    ax2.set_xticks([-10, -7.5, -5, -2.5, 0, 2.5, 5, 7.5, 10])
     ax2.set_xlabel("Offset / deg")
     ax2.set_ylabel("Number of sources")
 
@@ -590,7 +635,7 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
         histtype="step",
         alpha=0.75,
     )
-    ax1.set_xlabel("mean flux difference")
+    ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
 
     fig.tight_layout()
@@ -600,6 +645,17 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
 
 
 def histogram_area(vals, out_path, plot_format="png"):
+    mpl.use("pgf")
+    mpl.rcParams.update(
+        {
+            "font.size": 12,
+            "font.family": "sans-serif",
+            "text.usetex": True,
+            "pgf.rcfonts": False,
+            "pgf.texsystem": "lualatex",
+        }
+    )
+
     vals = vals.numpy()
     mean = np.round(np.mean(vals), 3)
     std = np.round(np.std(vals, ddof=1), 3)

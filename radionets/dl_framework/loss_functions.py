@@ -231,6 +231,29 @@ def likelihood_phase(x, y):
     return loss
 
 
+def comb_likelihood(x, y):
+    amp_pred = x[:, 0]
+    amp_unc = x[:, 1]
+    phase_pred = x[:, 2]
+    phase_unc = x[:, 3]
+    y_amp = y[:, 0]
+    y_phase = y[:, 1]
+
+    loss_amp = (
+        2 * torch.log(amp_unc) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
+    ).mean()
+    loss_phase = (
+        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
+    ).mean()
+
+    loss = loss_amp + loss_phase
+    print("amp: ", loss_amp)
+    print("phase: ", loss_phase)
+    # print(loss)
+    # assert unc.shape == y_pred.shape == y.shape
+    return loss
+
+
 def loss_amp(x, y):
     tar = y[:, 0, :].unsqueeze(1)
     assert tar.shape == x.shape

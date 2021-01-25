@@ -69,8 +69,8 @@ class AvgLossCallback(Callback):
         self.lrs.append(self.opt.hypers[-1]["lr"])
 
     def plot_loss(self):
-        plt.plot(self.loss_train, label="train")
-        plt.plot(self.loss_valid, label="valid")
+        plt.plot(self.loss_train, label="Training loss")
+        plt.plot(self.loss_valid, label="Validation loss")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
