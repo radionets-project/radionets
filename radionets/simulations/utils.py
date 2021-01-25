@@ -330,7 +330,7 @@ def calc_norm(sim_conf):
 
 
 def interpol(img):
-    """Interpolates ftt sampled amplitude and phase data.
+    """Interpolates fft sampled amplitude and phase data.
     Parameters
     ----------
     img : array
