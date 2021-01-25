@@ -101,47 +101,6 @@ class NormCallback(Callback):
         return a
 
 
-# class BatchTransformXCallback(Callback):
-#     _order = 2
-
-#     def __init__(self, tfm):
-#         self.tfm = tfm
-
-#     def batch_begin(self):
-#         print("TESTBATCH")
-#         self.run.xb = self.normalize_tfm(self)
-
-#     def normalize_tfm(self):
-#         print(self.path)
-#         norm = pd.read_csv(self.path)
-#         a = do_normalisation(self.run.xb.clone(), norm)
-#         assert self.run.xb[:, 0].mean() != a[:, 0].mean()
-#         # mean for imag and phase is approx 0
-#         # assert x[:, 1].mean() != a[:, 1].mean()
-#         return a
-
-
-# def view_tfm(*size):
-#     def _inner(x):
-#         """
-#         add correct shape (bs, #channels, shape of array)
-#         """
-#         a = x.view(*((-1,) + size))
-#         return a
-
-#     return _inner
-
-
-# def normalize_tfm(self):
-#     print(norm_path)
-#     norm = pd.read_csv(norm_path)
-#     a = do_normalisation(x.clone(), norm)
-#     assert x[:, 0].mean() != a[:, 0].mean()
-#     # mean for imag and phase is approx 0
-#     # assert x[:, 1].mean() != a[:, 1].mean()
-#     return a
-
-
 def zero_imag():
     def _inner(x):
         a = x
