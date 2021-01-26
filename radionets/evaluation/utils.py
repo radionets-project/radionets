@@ -11,7 +11,10 @@ from torch.utils.data import DataLoader
 def create_databunch(data_path, fourier, source_list, batch_size):
     # Load data sets
     test_ds = load_data(
-        data_path, mode="test", fourier=fourier, source_list=source_list,
+        data_path,
+        mode="test",
+        fourier=fourier,
+        source_list=source_list,
     )
 
     # Create databunch with defined batchsize
@@ -95,26 +98,34 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
 
     if phase:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-np.pi, 0, np.pi]
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
     elif phase_diff:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-2*np.pi, 0, 2*np.pi]
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
         )
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        # tick_locator = ticker.MaxNLocator(nbins=5)
+        # cbar.locator = tick_locator
 
     cbar.set_label("Intensity / a.u.")
     # cbar.ax.tick_params(labelsize=16)
     # cbar.ax.yaxis.get_offset_text().set_fontsize(16)
-    cbar.formatter.set_powerlimits((0, 0))
-    cbar.update_ticks()
+    # cbar.formatter.set_powerlimits((0, 0))
+    # cbar.update_ticks()
     if phase:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+        cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
     elif phase_diff:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-2\pi$", r"$0$", r"$2\pi$"])
+        cbar.ax.set_yticklabels([r"$-4\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$4\pi$"])
 
 
 def reshape_split(img):

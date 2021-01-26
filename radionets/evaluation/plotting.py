@@ -24,17 +24,30 @@ from matplotlib import cm
 from matplotlib.colors import ListedColormap
 import matplotlib as mpl
 
+# make nice Latex friendly plots
+# mpl.use("pgf")
+# mpl.rcParams.update(
+#     {
+#         "font.size": 12,
+#         "font.family": "sans-serif",
+#         "text.usetex": True,
+#         "pgf.rcfonts": False,
+#         "pgf.texsystem": "lualatex",
+#     }
+# )
 
 def create_OrBu():
     top = cm.get_cmap("Blues_r", 128)
     bottom = cm.get_cmap("Oranges", 128)
-    white = np.array([256/256, 256/256, 256/256, 1])
+    white = np.array([256 / 256, 256 / 256, 256 / 256, 1])
     newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
     newcolors[128, :] = white
     newcmp = ListedColormap(newcolors, name="OrangeBlue")
     return newcmp
 
+
 OrBu = create_OrBu()
+
 
 def plot_target(h5_dataset, log=False):
     index = np.random.randint(len(h5_dataset) - 1)
@@ -343,13 +356,12 @@ def visualize_source_reconstruction(
 
     # plt.style.use('./paper_large_3.rc')
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
-
     ax1.plot(
         x_space,
         m_pred * x_space + n_pred,
         "w-",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}$\,deg",
+        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}\,$deg",
     )
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
@@ -357,7 +369,7 @@ def visualize_source_reconstruction(
         m_truth * x_space + n_truth,
         "w-",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}$\,deg",
+        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}\,$deg",
     )
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
@@ -456,7 +468,12 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
-        dif, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dif,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
@@ -489,14 +506,24 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
     ax1.set_title("True Images")
     ax1.hist(
-        dr_truth, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dr_truth,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Dynamic range")
     ax1.set_ylabel("Number of sources")
 
     ax2.set_title("Predictions")
     ax2.hist(
-        dr_pred, 25, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dr_pred,
+        25,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax2.set_xlabel("Dynamic range")
     ax2.set_ylabel("Number of sources")
@@ -598,7 +625,12 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
 def histogram_mean_diff(vals, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals.numpy(), 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        vals.numpy(),
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
@@ -615,7 +647,12 @@ def histogram_area(vals, out_path, plot_format="png"):
     std = np.round(np.std(vals, ddof=1), 3)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        vals,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")

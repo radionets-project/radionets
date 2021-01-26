@@ -1,8 +1,7 @@
 import torch.nn as nn
 from radionets.dl_framework.model import init_cnn
 from radionets.dl_framework.callbacks import (
-    normalize_tfm,
-    BatchTransformXCallback,
+    NormCallback,
     SaveTempCallback,
     TelegramLoggerCallback,
     DataAug,
@@ -23,6 +22,7 @@ def get_learner(
     dls = DataLoaders.from_dsets(
         data.train_ds,
         data.valid_ds,
+        bs=data.train_dl.batch_size,
     )
     return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
 
@@ -36,13 +36,15 @@ def define_learner(
     lr_find=False,
 ):
     model_path = train_conf["model_path"]
-    model_name = model_path.split("build/")[-1].split("/")[-1].split("/")[0].split(".")[0]
+    model_name = (
+        model_path.split("build/")[-1].split("/")[-1].split("/")[0].split(".")[0]
+    )
     lr = train_conf["lr"]
     opt_func = Adam
     if train_conf["norm_path"] != "none":
         cbfs.extend(
             [
-                BatchTransformXCallback(normalize_tfm(train_conf["norm_path"])),
+                NormCallback(train_conf["norm_path"]),
             ]
         )
     if train_conf["param_scheduling"]:

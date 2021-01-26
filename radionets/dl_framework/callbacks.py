@@ -83,37 +83,22 @@ class AvgLossCallback(Callback):
         plt.tight_layout()
 
 
-class BatchTransformXCallback(Callback):
+class NormCallback(Callback):
     _order = 2
 
-    def __init__(self, tfm):
-        self.tfm = tfm
+    def __init__(self, norm_path):
+        self.path = norm_path
 
-    def begin_batch(self):
-        self.run.xb = self.tfm(self.run.xb)
+    def before_batch(self):
+        self.learn.xb = [self.normalize_tfm()]
 
-
-def view_tfm(*size):
-    def _inner(x):
-        """
-        add correct shape (bs, #channels, shape of array)
-        """
-        a = x.view(*((-1,) + size))
-        return a
-
-    return _inner
-
-
-def normalize_tfm(norm_path, pointsources=False):
-    def _inner(x):
-        norm = pd.read_csv(norm_path)
-        a = do_normalisation(x.clone(), norm, pointsources)
-        assert x[:, 0].mean() != a[:, 0].mean()
+    def normalize_tfm(self):
+        norm = pd.read_csv(self.path)
+        a = do_normalisation(self.learn.xb[0].clone(), norm)
+        assert self.learn.xb[0][:, 0].mean() != a[:, 0].mean()
         # mean for imag and phase is approx 0
         # assert x[:, 1].mean() != a[:, 1].mean()
         return a
-
-    return _inner
 
 
 def zero_imag():

@@ -3,7 +3,7 @@ import astropy.coordinates as ac
 import radionets.simulations.layouts.layouts as layouts
 
 
-class source:
+class Source:
     """
     Source class that holds longitude and latitude information.
     Can be converted to geocentric coordinates. Position of source
@@ -117,7 +117,7 @@ class source:
         return a[np.mod(np.arange(a.size), n + m) < n]
 
 
-class antenna:
+class Antenna:
     """
     Antenna class that holds information about the geocentric coordinates of the
     radio telescopes. Can be converted to geodetic. All baselines between the
@@ -374,7 +374,7 @@ def sample_freqs(
     """
 
     def get_mask(lon, lat, num_steps, ant, size):
-        s = source(lon, lat)
+        s = Source(lon, lat)
         s.propagate(num_steps=num_steps, multi_pointing=False)
         u, v, _ = get_uv_coverage(s, ant, iterate=False)
         single_mask = create_mask(u, v, size)
@@ -386,9 +386,9 @@ def sample_freqs(
         mask = test_mask()
     else:
         layout = getattr(layouts, ant_config)
-        ant = antenna(*layout())
+        ant = Antenna(*layout())
         if specific_mask is True:
-            s = source(lon, lat)
+            s = Source(lon, lat)
             s.propagate(num_steps=num_steps, multi_pointing=False)
             u, v, _ = get_uv_coverage(s, ant, iterate=False)
             single_mask = create_mask(u, v, size)

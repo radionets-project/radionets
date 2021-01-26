@@ -17,7 +17,7 @@ def do_normalisation(x, norm):
     """
     if len(x.shape) == 3:
         x = x.unsqueeze(0)
-    if norm == "none":
+    if isinstance(norm, str):
         return x
     else:
         train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()

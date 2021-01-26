@@ -10,6 +10,7 @@ import pandas as pd
 from tqdm import tqdm
 from scipy import interpolate
 from skimage.transform import resize
+from scipy import interpolate
 from radionets.dl_framework.data import (
     save_fft_pair,
     open_fft_pair,

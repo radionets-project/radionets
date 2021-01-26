@@ -6,7 +6,7 @@ title = "Simulation configuration"
 quiet = true
 
 [paths]
-data_path = "./example_data/"
+data_path = "./benchmark_data/"
 data_format = "h5"
 
 [mnist]
@@ -23,10 +23,10 @@ extended_gaussians = true
 num_components = [4, 10]
 
 [image_options]
-bundles_train = 5
-bundles_valid = 1
+bundles_train = 0
+bundles_valid = 0
 bundles_test = 1
-bundle_size = 200
+bundle_size = 20
 img_size = 63
 noise = false
 
@@ -35,11 +35,11 @@ fourier = true
 real_imag = false
 amp_phase = true
 antenna_config = "vlba"
-specific_mask = true
+specific_mask = false 
 lon = -80
 lat = 50
 steps = 50
 keep_fft_files = true
 source_list = false
 compressed = false
-interpolation = false
+interpolation = true
