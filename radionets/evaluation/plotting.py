@@ -27,14 +27,15 @@ import matplotlib as mpl
 # make nice Latex friendly plots
 # mpl.use("pgf")
 # mpl.rcParams.update(
-#    {
- #       "font.size": 12,
-  #      "font.family": "sans-serif",
-   #     "text.usetex": True,
-    #    "pgf.rcfonts": False,
-     #   "pgf.texsystem": "lualatex",
-    #}
-#)
+#     {
+#         "font.size": 12,
+#         "font.family": "sans-serif",
+#         "text.usetex": True,
+#         "pgf.rcfonts": False,
+#         "pgf.texsystem": "lualatex",
+#     }
+# )
+
 def create_OrBu():
     top = cm.get_cmap("Blues_r", 128)
     bottom = cm.get_cmap("Oranges", 128)
