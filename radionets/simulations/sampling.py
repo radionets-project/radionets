@@ -60,11 +60,9 @@ def sample_frequencies(
                 )
             else:
                 fft_samp = sample_freqs(
-                    fft_scaled.copy(),
-                    antenna_config,
-                    size=size,
-                    specific_mask=False,
+                    fft_scaled.copy(), antenna_config, size=size, specific_mask=False,
                 )
+
             if interpolation:
                 for i in range(len(fft_samp[:, 0, 0, 0])):
                     fft_samp[i] = interpol(fft_samp[i])

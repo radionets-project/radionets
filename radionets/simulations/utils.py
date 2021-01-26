@@ -8,6 +8,7 @@ import re
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from scipy import interpolate
 from skimage.transform import resize
 from scipy import interpolate
 from radionets.dl_framework.data import (
@@ -210,10 +211,7 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
         rescaled input image
     """
     y = resize(
-        bundle.swapaxes(0, 2),
-        (pixel, pixel),
-        anti_aliasing=True,
-        mode="constant",
+        bundle.swapaxes(0, 2), (pixel, pixel), anti_aliasing=True, mode="constant",
     ).swapaxes(2, 0)
     y_prep = y.copy()
     if noise:
@@ -333,14 +331,12 @@ def calc_norm(sim_conf):
 
 
 def interpol(img):
-    """Interpolates ftt sampled amplitude and phase data.
-
+    """Interpolates fft sampled amplitude and phase data.
     Parameters
     ----------
     img : array
         array with shape 2,width,heigth
         input image array with amplitude and phase on axis 0
-
     Returns
     -------
     array
