@@ -30,6 +30,7 @@ bundles_test = 0
 bundle_size = 10
 img_size = 63
 noise = false
+noise_level = 5
 
 [sampling_options]
 fourier = false
