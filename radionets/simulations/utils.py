@@ -131,6 +131,7 @@ def read_config(config):
     sim_conf["bundle_size"] = config["image_options"]["bundle_size"]
     sim_conf["img_size"] = config["image_options"]["img_size"]
     sim_conf["noise"] = config["image_options"]["noise"]
+    sim_conf["noise_level"] = config["image_options"]["noise_level"]
 
     sim_conf["amp_phase"] = config["sampling_options"]["amp_phase"]
     sim_conf["real_imag"] = config["sampling_options"]["real_imag"]
@@ -268,7 +269,7 @@ def get_noise(image, scale, mean=0, std=1):
     return np.random.normal(mean, std, size=image.shape) * scale
 
 
-def add_noise(bundle):
+def add_noise(bundle, noise_level):
     """
     Used for adding noise and plotting the original and noised picture,
     if asked. Using 0.05 * max(image) as scaling factor.
@@ -277,8 +278,8 @@ def add_noise(bundle):
     ----------
     bundle: path
         path to hdf5 bundle file
-    preview: bool
-        enable/disable showing 10 preview images
+    noise_level: int
+        noise level in percent
 
     Returns
     -------
@@ -286,7 +287,7 @@ def add_noise(bundle):
         bundle with noised images
     """
     bundle_noised = np.array(
-        [img + get_noise(img, (img.max() * 0.05)) for img in bundle]
+        [img + get_noise(img, (img.max() * noise_level/100)) for img in bundle]
     )
     return bundle_noised
 

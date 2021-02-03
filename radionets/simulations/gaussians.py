@@ -16,6 +16,7 @@ def simulate_gaussian_sources(
     num_pointlike,
     num_pointsources,
     noise,
+    noise_level,
     source_list,
 ):
     for i in tqdm(range(num_bundles)):
@@ -43,7 +44,7 @@ def simulate_gaussian_sources(
         images = bundle.copy()
 
         if noise:
-            images = add_noise(images)
+            images = add_noise(images, noise_level)
 
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
         path = adjust_outpath(data_path, "/fft_" + option)
