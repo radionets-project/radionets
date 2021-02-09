@@ -43,7 +43,8 @@ class TelegramLoggerCallback(Callback):
 
 
 class AvgLossCallback(Callback):
-    """Save the same average Loss for training and validation as printed to the terminal.
+    """Save the same average Loss for training and validation as printed to
+    the terminal.
 
     Parameters
     ----------
@@ -99,23 +100,6 @@ class NormCallback(Callback):
         # mean for imag and phase is approx 0
         # assert x[:, 1].mean() != a[:, 1].mean()
         return a
-
-
-def zero_imag():
-    def _inner(x):
-        a = x
-        imag = a[:, 1, :]
-        num = 0
-        for i in range(imag.shape[0]):
-            if imag[i].max() < 1e-9:
-                # print(imag[i].mean().item())
-                num += 1
-                imag[i] = torch.zeros(imag.shape[1])
-        a[:, 1, :] = imag
-        # print(num)
-        return a
-
-    return _inner
 
 
 class DataAug(Callback):
