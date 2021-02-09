@@ -208,15 +208,24 @@ def my_loss(x, y):
     return loss
 
 
-def likelihood(x, y):
-    y = y[:, 0]
-    inp = x[:, 2]
-    unc = x[:, 1][inp == 0]
-    y_pred = x[:, 0][inp == 0]
-    y = y[inp == 0]
-    loss = (2 * torch.log(unc) + ((y - y_pred).pow(2) / unc.pow(2))).mean()
-    assert unc.shape == y_pred.shape == y.shape
-    return loss
+def amp_likelihood(x, y):
+    amp_pred = x[:, 0]
+    amp_unc = x[:, 1]
+    y_amp = y[:, 0]
+    loss_amp = (
+        2 * torch.log(amp_unc) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
+    ).mean()
+    return loss_amp
+
+
+def phase_likelihood(x, y):
+    phase_pred = x[:, 0]
+    phase_unc = x[:, 1]
+    y_phase = y[:, 1]
+    loss_phase = (
+        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
+    ).mean()
+    return loss_phase
 
 
 def likelihood_phase(x, y):
@@ -240,17 +249,43 @@ def comb_likelihood(x, y):
     y_phase = y[:, 1]
 
     loss_amp = (
-        2 * torch.log(amp_unc) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
+        0.5 * torch.log(amp_unc.pow(2)) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
     ).mean()
     loss_phase = (
-        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
+        0.5 * torch.log(phase_unc.pow(2))
+        + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
     ).mean()
 
     loss = loss_amp + loss_phase
-    print("amp: ", loss_amp)
-    print("phase: ", loss_phase)
+    # print("amp: ", loss_amp)
+    # print("phase: ", loss_phase)
     # print(loss)
     # assert unc.shape == y_pred.shape == y.shape
+    return loss
+
+
+def f(x, mu, sig):
+    return torch.abs(-1 / sig * (x - mu))
+
+
+def g(x, mu, sig):
+    return torch.abs(-1 / (2 * sig) + 1 / (2 * sig ** 2) * (x - mu) ** 2)
+
+
+def new_like(x, y):
+    amp_pred = x[:, 0]
+    amp_unc = x[:, 1]
+    phase_pred = x[:, 2]
+    phase_unc = x[:, 3]
+    y_amp = y[:, 0]
+    y_phase = y[:, 1]
+
+    loss_amp = (f(y_amp, amp_pred, amp_unc) + g(y_amp, amp_pred, amp_unc)).mean()
+    loss_phase = (
+        f(y_phase, phase_pred, phase_unc) + g(y_phase, phase_pred, phase_unc)
+    ).mean()
+
+    loss = loss_amp + loss_phase
     return loss
 
 
