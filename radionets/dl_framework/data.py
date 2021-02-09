@@ -191,14 +191,14 @@ def get_bundles(path):
     return bundles
 
 
-def save_fft_pair(path, x, y, name_x="x", name_y="y", name_z=None):
+def save_fft_pair(path, x, y, z=None, name_x="x", name_y="y", name_z="z"):
     """
     write fft_pairs created in second analysis step to h5 file
     """
     with h5py.File(path, "w") as hf:
         hf.create_dataset(name_x, data=x)
         hf.create_dataset(name_y, data=y)
-        if name_z is not None:
+        if z is not None:
             hf.create_dataset(name_z, data=z)
         hf.close()
 
