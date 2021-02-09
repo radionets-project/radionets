@@ -36,6 +36,7 @@ import matplotlib as mpl
 #     }
 # )
 
+
 def create_OrBu():
     top = cm.get_cmap("Blues_r", 128)
     bottom = cm.get_cmap("Oranges", 128)
@@ -354,7 +355,7 @@ def visualize_source_reconstruction(
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
-    # plt.style.use('./paper_large_3.rc')
+    # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
     ax1.plot(
         x_space,
