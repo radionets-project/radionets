@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
 from scipy import ndimage
-from radionets.dl_framework.data import save_fft_pair, save_fft_pair_list
+from radionets.dl_framework.data import save_fft_pair
 from radionets.simulations.utils import adjust_outpath, add_noise
 
 
@@ -24,7 +24,7 @@ def simulate_gaussian_sources(
         ext_gaussian = 0
         pointlike = 0
         pointsource = 0
-        list_sources = 0
+        list_sources = None
 
         if num_comp_ext is not None:
             ext_gaussian = create_ext_gauss_bundle(grid)
@@ -48,7 +48,7 @@ def simulate_gaussian_sources(
 
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
         path = adjust_outpath(data_path, "/fft_" + option)
-        save_fft_pair_list(path, bundle_fft, bundle, list_sources)
+        save_fft_pair(path, bundle_fft, bundle, list_sources)
 
 
 def create_grid(pixel, bundle_size):
