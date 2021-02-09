@@ -265,11 +265,11 @@ def comb_likelihood(x, y):
 
 
 def f(x, mu, sig):
-    return torch.abs(-1 / sig * (x - mu))
+    return -1 / sig * (x - mu)
 
 
 def g(x, mu, sig):
-    return torch.abs(-1 / (2 * sig) + 1 / (2 * sig ** 2) * (x - mu) ** 2)
+    return -1 / (2 * sig) + 1 / (2 * sig ** 2) * (x - mu) ** 2
 
 
 def new_like(x, y):
