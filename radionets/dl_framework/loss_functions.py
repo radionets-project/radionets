@@ -4,13 +4,7 @@ from radionets.dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from radionets.dl_framework.utils import children
 import torch.nn.functional as F
-from pytorch_msssim import ms_ssim, MS_SSIM
-from radionets.dl_framework.regularization import (
-    inv_fft,
-    calc_jet_angle,
-    rot,
-    calc_spec,
-)
+from pytorch_msssim import MS_SSIM
 from scipy.optimize import linear_sum_assignment
 
 
@@ -122,12 +116,6 @@ def init_feature_loss(
     return feat_loss
 
 
-def mse(x, y):
-    mse = nn.MSELoss()
-    loss = mse(x, y)
-    return loss
-
-
 def l1(x, y):
     l1 = nn.L1Loss()
     loss = l1(x, y)
@@ -146,88 +134,36 @@ def l1_phase(x, y):
     return loss
 
 
-def splitted_mse(x, y):
-    inp_real = x[:, 0, :]
-    inp_imag = x[:, 1, :]
+def splitted_L1(x, y):
+    inp_amp = x[:, 0, :]
+    inp_phase = x[:, 1, :]
 
-    tar_real = y[:, 0, :]
-    tar_imag = y[:, 1, :]
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
 
-    loss_real = (
-        torch.sum(1 / inp_real.shape[1] * torch.sum((inp_real - tar_real) ** 2, 1))
-        * 1
-        / inp_real.shape[0]
-    )
-    loss_imag = (
-        torch.sum(1 / inp_imag.shape[1] * torch.sum((inp_imag - tar_imag) ** 2, 1))
-        * 1
-        / inp_real.shape[0]
-    )
-
-    return loss_real + loss_imag
+    l1 = nn.L1Loss()
+    loss_amp = l1(inp_amp, tar_amp)
+    loss_phase = l1(inp_phase, tar_phase)
+    return loss_amp * 10 + loss_phase
 
 
-def regularization(pred_phase, img_true):
-    real_amp_re = img_true[:, 0].reshape(-1, 63 ** 2)
-    real_phase_re = img_true[:, 1].reshape(-1, 63 ** 2)
-    pred_phase_re = pred_phase[:, 0].reshape(-1, 63 ** 2)
-
-    img_pred = inv_fft(real_amp_re, pred_phase_re)
-    img_true = inv_fft(real_amp_re, real_phase_re)
-
-    m_true, n_true, alpha_true = calc_jet_angle(img_true)
-
-    img_rot_pred = rot(img_pred, alpha_true)
-    s_pred = calc_spec(img_rot_pred)
-    img_rot_true = rot(img_true, alpha_true)
-    s_true = calc_spec(img_rot_true)
-
-    img_rot_pred_cj = rot(img_pred, alpha_true - 90)
-    s_pred_cj = calc_spec(img_rot_pred_cj)
-    img_rot_true_cj = rot(img_true, alpha_true - 90)
-    s_true_cj = calc_spec(img_rot_true_cj)
-
-    loss_1 = (((s_pred - s_true) ** 2).sum(axis=0)).mean()
-    # print(loss_1)
-    # loss_2 = (((s_pred_cj - s_true_cj) ** 2).sum(axis=0)).mean()
-    # print(loss_2)
-    loss = loss_1  # + loss_2
-    print(loss)
+def mse(x, y):
+    mse = nn.MSELoss()
+    loss = mse(x, y)
     return loss
 
 
-def my_loss(x, y):
-    img_true = y.clone()
-    y = y[:, 1].unsqueeze(1)
-    assert y.shape == x.shape
-    loss = (((x - y)).pow(2)).mean()
-    print(loss)
-    # final_loss = loss * 10 + regularization(x, img_true) / 100
-    # print(final_loss)
-    print("")
+def mse_amp(x, y):
+    tar = y[:, 0, :].unsqueeze(1)
+    mse = nn.MSELoss()
+    loss = mse(x, tar)
     return loss
 
 
-def likelihood(x, y):
-    y = y[:, 0]
-    inp = x[:, 2]
-    unc = x[:, 1][inp == 0]
-    y_pred = x[:, 0][inp == 0]
-    y = y[inp == 0]
-    loss = (2 * torch.log(unc) + ((y - y_pred).pow(2) / unc.pow(2))).mean()
-    assert unc.shape == y_pred.shape == y.shape
-    return loss
-
-
-def likelihood_phase(x, y):
-    y = y[:, 1]
-    inp = x[:, 2]
-    unc = x[:, 1][inp == 0]
-    assert len(unc[unc <= 0]) == 0
-    y_pred = x[:, 0][inp == 0]
-    y = y[inp == 0]
-    loss = (2 * torch.log(unc) + ((y - y_pred).pow(2) / unc.pow(2))).mean()
-    assert unc.shape == y_pred.shape == y.shape
+def mse_phase(x, y):
+    tar = y[:, 1, :].unsqueeze(1)
+    mse = nn.MSELoss()
+    loss = mse(x, tar)
     return loss
 
 
@@ -254,236 +190,11 @@ def comb_likelihood(x, y):
     return loss
 
 
-def loss_amp(x, y):
-    tar = y[:, 0, :].unsqueeze(1)
-    assert tar.shape == x.shape
-
-    mse = nn.MSELoss()
-    loss = mse(x, tar)
-
-    return loss
-
-
-def loss_phase(x, y):
-    tar = y[:, 1, :].unsqueeze(1)
-    assert tar.shape == x.shape
-
-    mse = nn.MSELoss()
-    loss = mse(x, tar)
-
-    return loss
-
-
-def loss_l1_amp(x, y):
-    tar = y[:, 0, :].unsqueeze(1)
-    assert tar.shape == x.shape
-
-    l1 = nn.L1Loss()
-    loss = l1(x, tar)
-
-    return loss
-
-
-def loss_l1_phase(x, y):
-    tar = y[:, 1, :].unsqueeze(1)
-    assert tar.shape == x.shape
-
-    l1 = nn.L1Loss()
-    loss = l1(x, tar)
-
-    return loss
-
-
 def loss_new_msssim(x, y):
     msssim_loss = MS_SSIM(data_range=10, channel=2)
     loss = 1 - msssim_loss(x, y)
 
     return loss
-
-
-def loss_msssim(x, y):
-    """Loss function with 1 - the value of the MS-SSIM
-
-    Parameters
-    ----------
-    x : tensor
-        output of net
-    y : tensor
-        output of net
-
-    Returns
-    -------
-    float
-        value of 1 - MS-SSIM
-    """
-    inp_real = x[:, 0, :].unsqueeze(1)
-    inp_imag = x[:, 1, :].unsqueeze(1)
-
-    tar_real = y[:, 0, :].unsqueeze(1)
-    tar_imag = y[:, 1, :].unsqueeze(1)
-
-    loss = (
-        1.0
-        - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
-        + 1.0
-        - pytorch_msssim.msssim(inp_imag, tar_imag, normalize="relu")
-    )
-
-    return loss
-
-
-def loss_msssim_diff(x, y):
-    """Loss function with negative value of MS-SSIM
-
-    Parameters
-    ----------
-    x : tensor
-        output of net
-    y : tensor
-        target image
-
-    Returns
-    -------
-    float
-        value of negative MS-SSIM
-    """
-    inp_real = x[:, 0, :].unsqueeze(1)
-    inp_imag = x[:, 1, :].unsqueeze(1)
-
-    tar_real = y[:, 0, :].unsqueeze(1)
-    tar_imag = y[:, 1, :].unsqueeze(1)
-
-    loss = -(
-        pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
-        + pytorch_msssim.msssim(inp_imag, tar_imag, normalize="relu")
-    )
-
-    return loss
-
-
-def loss_msssim_amp(x, y):
-    """Loss function with 1 - the value of the MS-SSIM for amplitude
-
-    Parameters
-    ----------
-    x : tensor
-        output of net
-    y : tensor
-        output of net
-
-    Returns
-    -------
-    float
-        value of 1 - MS-SSIM
-    """
-    inp_real = x
-    tar_real = y[:, 0, :].unsqueeze(1)
-
-    loss = 1.0 - pytorch_msssim.msssim(inp_real, tar_real, normalize="relu")
-
-    return loss
-
-
-def loss_mse_msssim_phase(x, y):
-    """Combine MSE and MS-SSIM loss for phase
-
-    Parameters
-    ----------
-    x : tensor
-        ouptut of net
-    y : tensor
-        target image
-
-    Returns
-    -------
-    float
-        value of addition of MSE and MS-SSIM
-    """
-
-    tar_phase = y[:, 1, :].unsqueeze(1)
-    inp_phase = x
-
-    loss_mse_phase = nn.MSELoss()
-    loss_mse_phase = loss_mse_phase(inp_phase, tar_phase)
-
-    loss_phase = (
-        loss_mse_phase
-        + 1.0
-        - pytorch_msssim.msssim(inp_phase, tar_phase, normalize="relu")
-    )
-
-    return loss_phase
-
-
-def loss_mse_msssim_amp(x, y):
-    """Combine MSE and MS-SSIM loss for amp
-
-    Parameters
-    ----------
-    x : tensor
-        ouptut of net
-    y : tensor
-        target image
-
-    Returns
-    -------
-    float
-        value of addition of MSE and MS-SSIM
-    """
-
-    tar_amp = y[:, 0, :].unsqueeze(1)
-    inp_amp = x
-
-    loss_mse_amp = nn.MSELoss()
-    loss_mse_amp = loss_mse_amp(inp_amp, tar_amp)
-
-    loss_amp = (
-        loss_mse_amp + 1.0 - pytorch_msssim.msssim(inp_amp, tar_amp, normalize="relu")
-    )
-
-    return loss_amp
-
-
-def loss_mse_msssim(x, y):
-    """Combine MSE and MS-SSIM loss
-
-    Parameters
-    ----------
-    x : tensor
-        output of net
-    y : tensor
-        target image
-
-    Returns
-    -------
-    float
-        value of addition of MSE and MS-SSIM
-    """
-    # Split in amplitude and phase
-    inp_amp = x[:, 0, :].unsqueeze(1)
-    inp_phase = x[:, 1, :].unsqueeze(1)
-
-    tar_amp = y[:, 0, :].unsqueeze(1)
-    tar_phase = y[:, 1, :].unsqueeze(1)
-
-    # calculate mse loss
-    loss_mse_amp = nn.MSELoss()
-    loss_mse_amp = loss_mse_amp(inp_amp, tar_amp)
-
-    loss_mse_phase = nn.MSELoss()
-    loss_mse_phase = loss_mse_phase(inp_phase, tar_phase)
-
-    # add mse loss to MS-SSIM
-    loss_amp = (
-        loss_mse_amp + 1.0 - pytorch_msssim.msssim(inp_amp, tar_amp, normalize="relu")
-    )
-    loss_phase = (
-        loss_mse_phase
-        + 1.0
-        - pytorch_msssim.msssim(inp_phase, tar_phase, normalize="relu")
-    )
-
-    return loss_amp + loss_phase
 
 
 def spe(x, y):
@@ -528,22 +239,6 @@ def spe_(x, y):
     k = sum(loss)
     loss = k / len(x)
     return loss
-
-
-def splitted_L1(x, y):
-    inp_amp = x[:, 0, :]
-    inp_phase = x[:, 1, :]
-
-    tar_amp = y[:, 0, :]
-    tar_phase = y[:, 1, :]
-
-    l1 = nn.L1Loss()
-
-    loss_amp = l1(inp_amp, tar_amp)
-
-    loss_phase = l1(inp_phase, tar_phase)
-
-    return loss_amp * 10 + loss_phase
 
 
 def list_loss(x, y):
