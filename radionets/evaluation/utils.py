@@ -286,3 +286,46 @@ def pad_unsqueeze(tensor):
 
 def round_n_digits(tensor, n_digits=3):
     return (tensor * 10 ** n_digits).round() / (10 ** n_digits)
+
+
+def fft_pred(pred, truth, amp_phase=True):
+    """
+    Transform predicted image and true image to local domain.
+
+    Parameters
+    ----------
+    pred: 4D array [1, channel, height, width]
+        prediction from eval_model
+    truth: 3D array [channel, height, width]
+        true image
+    amp_phase: Bool
+        trained on Amp/Phase or Re/Im
+
+    Returns
+    -------
+    ifft_pred, ifft_true: two 2D arrays [height, width]
+        predicted and true image in local domain
+    """
+    a = pred[:, 0, :, :]
+    b = pred[:, 1, :, :]
+
+    a_true = truth[0, :, :]
+    b_true = truth[1, :, :]
+
+    if amp_phase:
+        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
+        phase_pred = b
+
+        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10 ** 10
+        phase_true = b_true
+
+        compl_pred = amp_pred_rescaled * np.exp(1j * phase_pred)
+        compl_true = amp_true_rescaled * np.exp(1j * phase_true)
+    else:
+        compl_pred = a + 1j * b
+        compl_true = a_true + 1j * b_true
+
+    ifft_pred = np.fft.ifft2(compl_pred)
+    ifft_true = np.fft.ifft2(compl_true)
+
+    return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
