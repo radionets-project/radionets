@@ -14,7 +14,6 @@ from scipy import interpolate
 from radionets.dl_framework.data import (
     save_fft_pair,
     open_fft_pair,
-    open_fft_pair_npz,
     get_bundles,
     split_amp_phase,
     split_real_imag,

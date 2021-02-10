@@ -9,7 +9,6 @@ from radionets.simulations.utils import (
 from radionets.dl_framework.data import (
     open_fft_bundle,
     save_fft_pair,
-    save_fft_pair_list,
 )
 from radionets.simulations.uv_simulations import sample_freqs
 import h5py
@@ -39,8 +38,9 @@ def sample_frequencies(
 
         for path in tqdm(bundle_paths):
             fft, truth = open_fft_bundle(path)
-            f = h5py.File(path, "r")
-            z = np.array(f["z"])
+            # list stuff not working atm
+            # f = h5py.File(path, "r")
+            # z = np.array(f["z"])
             size = fft.shape[-1]
 
             fft_scaled = prepare_fft_images(fft.copy(), amp_phase, real_imag)
@@ -60,7 +60,10 @@ def sample_frequencies(
                 )
             else:
                 fft_samp = sample_freqs(
-                    fft_scaled.copy(), antenna_config, size=size, specific_mask=False,
+                    fft_scaled.copy(),
+                    antenna_config,
+                    size=size,
+                    specific_mask=False,
                 )
 
             if interpolation:
@@ -76,4 +79,4 @@ def sample_frequencies(
                 else:
                     save_fft_pair(out, fft_samp, fft_scaled_truth)
             else:
-                save_fft_pair_list(out, fft_samp, truth, z)
+                save_fft_pair(out, fft_samp, truth)
