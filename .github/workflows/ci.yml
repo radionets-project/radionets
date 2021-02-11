@@ -27,7 +27,6 @@ jobs:
       
       - name: tests
         run: |
-          conda install pytest
-          $CONDA/bin/py.test --ignore=tests --cov radionets --cov-report=xml
+          $CONDA/bin/pytest --ignore=tests --cov radionets --cov-report=xml
 
       - uses: codecov/codecov-action@v1
