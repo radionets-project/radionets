@@ -23,7 +23,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install .
+          conda env create -f environment.yml
+          source activate radionets
       - name: tests
         run: py.test --ignore=tests --cov radionets --cov-report=xml
 
