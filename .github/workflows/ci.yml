@@ -26,7 +26,8 @@ jobs:
           $CONDA/bin/conda env update --file environment.yml --name base
       
       - name: tests
-        run: conda install pytest
+        run: |
+          conda install pytest
           $CONDA/bin/py.test --ignore=tests --cov radionets --cov-report=xml
 
       - uses: codecov/codecov-action@v1
