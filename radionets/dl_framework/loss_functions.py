@@ -249,11 +249,14 @@ def comb_likelihood(x, y):
     y_phase = y[:, 1]
 
     loss_amp = (
-        0.5 * torch.log(amp_unc.pow(2)) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
+        0.5 * torch.log(amp_unc.pow(2))
+        + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
+        + (y_amp - amp_pred)
     ).mean()
     loss_phase = (
         0.5 * torch.log(phase_unc.pow(2))
         + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
+        + (y_phase - phase_pred)
     ).mean()
 
     loss = loss_amp + loss_phase
@@ -264,12 +267,12 @@ def comb_likelihood(x, y):
     return loss
 
 
-def f(x, mu, sig):
-    return -1 / sig * (x - mu)
+def f(x, mu):
+    return x - mu
 
 
 def g(x, mu, sig):
-    return -1 / (2 * sig) + 1 / (2 * sig ** 2) * (x - mu) ** 2
+    return (sig ** 2 - (x - mu) ** 2) ** 2
 
 
 def new_like(x, y):
@@ -280,10 +283,8 @@ def new_like(x, y):
     y_amp = y[:, 0]
     y_phase = y[:, 1]
 
-    loss_amp = (f(y_amp, amp_pred, amp_unc) + g(y_amp, amp_pred, amp_unc)).mean()
-    loss_phase = (
-        f(y_phase, phase_pred, phase_unc) + g(y_phase, phase_pred, phase_unc)
-    ).mean()
+    loss_amp = (f(y_amp, amp_pred) + g(y_amp, amp_pred, amp_unc)).mean()
+    loss_phase = (f(y_phase, phase_pred) + g(y_phase, phase_pred, phase_unc)).mean()
 
     loss = loss_amp + loss_phase
     return loss
