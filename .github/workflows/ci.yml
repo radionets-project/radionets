@@ -27,8 +27,6 @@ jobs:
       
       - name: tests
         run: |
-          $CONDA/bin/conda init bash
-          $CONDA/bin/conda activate base
           $CONDA/bin/pytest --ignore=tests --cov radionets --cov-report=xml
 
       - uses: codecov/codecov-action@v1
