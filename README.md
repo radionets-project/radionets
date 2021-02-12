@@ -1,4 +1,4 @@
-# radionets [![Build Status](https://travis-ci.com/Kevin2/radionets.svg?branch=master)](https://travis-ci.org/kevin2/radionets)
+# radionets [![Actions Status](https://github.com/radionets-project/radionets/workflows/CI/badge.svg)](https://github.com/radionets-project/radionets/actions)
 
 ## Imaging Radio Interferometric Data with Neural Networks
 
