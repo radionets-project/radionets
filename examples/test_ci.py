@@ -1,5 +1,5 @@
 import numpy as np
-from radionets.data import load data
+from radionets.data import load_data
 
 def test_ci():
     a = np.array([1, 2, 3, 4])
