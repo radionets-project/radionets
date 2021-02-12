@@ -30,6 +30,7 @@ setup(
         "pandas",
         "requests",
         "toml",
+        "pytest",
         "pytest-cov",
     ],
     setup_requires=["pytest-runner"],

@@ -10,7 +10,6 @@ dependencies:
   - torchvision
   - cudatoolkit=10.2
   - cartopy
-  - pytest
   - pip
   - pip:
     - -e .
