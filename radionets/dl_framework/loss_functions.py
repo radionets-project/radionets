@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from radionets.dl_framework.hook_fastai import hook_outputs
 from torchvision.models import vgg16_bn
 from radionets.dl_framework.utils import children
 import torch.nn.functional as F
