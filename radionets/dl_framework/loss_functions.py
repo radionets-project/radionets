@@ -250,6 +250,26 @@ def list_loss(x, y):
     return loss
 
 
+def amp_likelihood(x, y):
+    amp_pred = x[:, 0]
+    amp_unc = x[:, 1]
+    y_amp = y[:, 0]
+    loss_amp = (
+        2 * torch.log(amp_unc) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
+    ).mean()
+    return loss_amp
+
+
+def phase_likelihood(x, y):
+    phase_pred = x[:, 0]
+    phase_unc = x[:, 1]
+    y_phase = y[:, 1]
+    loss_phase = (
+        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
+    ).mean()
+    return loss_phase
+
+
 class HungarianMatcher(nn.Module):
     """
     Solve assignment Problem.
