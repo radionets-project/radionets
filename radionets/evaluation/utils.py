@@ -76,7 +76,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
+def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
     Parameters
@@ -110,12 +110,21 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
             orientation="vertical",
             ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
         )
+    elif unc:
+        cbar = fig.colorbar(
+            im,
+            cax=cax,
+            label="Rel. uncertainty / a.u.",
+            ticks=[im.get_array().min() + 0.001, im.get_array().max()],
+        )
+        cbar.ax.set_yticklabels(["Low", "High"])
+        cbar.ax.tick_params(size=0)
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar.set_label("Intensity / a.u.")
         # tick_locator = ticker.MaxNLocator(nbins=5)
         # cbar.locator = tick_locator
 
-    cbar.set_label("Intensity / a.u.")
     # cbar.ax.tick_params(labelsize=16)
     # cbar.ax.yaxis.get_offset_text().set_fontsize(16)
     # cbar.formatter.set_powerlimits((0, 0))
