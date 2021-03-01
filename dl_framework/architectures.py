@@ -910,7 +910,7 @@ class filter_deep(nn.Module):
         #self.fully_connected = nn.Linear(3969, 54)
         #self.fully_connected = nn.Linear(7938, 5)
         #self.fully_connected = nn.Linear(3969, 1)
-        self.fully_connected = nn.Linear(7938, 6)
+        self.fully_connected = nn.Linear(7938, 54)
         self.vaild_gauss_bs = Lambda(vaild_gauss_bs)
         self.Relu = nn.ReLU()
         self.fft = Lambda(fft)
@@ -973,7 +973,7 @@ class filter_deep(nn.Module):
         # phase = phase + inp[:, 1].unsqueeze(1)
         x0 = self.symmetry_real(amp).reshape(-1, 1, amp.shape[2], amp.shape[2]) #amp
         x0[inp_amp != 0] = inp_amp[inp_amp != 0]
-        #x0 = torch.exp(10* x0 -10) - 1e-10 
+        #x0 = torch.exp(x0 -1) - 1e-10 
 
         x1 = self.symmetry_imag(phase).reshape(-1, 1, phase.shape[2], phase.shape[2]) #phase
         x1[inp_phase != 0] = inp_phase[inp_phase != 0]
@@ -992,7 +992,7 @@ class filter_deep(nn.Module):
         #comb = self.fully_connected_3(comb)
         #comb = self.Relu(comb)
         #comb = self.fully_connected_4(comb) 
-        #comb = self.vaild_gauss_bs(comb).reshape(-1, 3969)
+        comb = self.vaild_gauss_bs(comb).reshape(-1, 3969)
         #comb = self.Relu(comb)
         return torch.abs(comb)
 

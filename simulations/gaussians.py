@@ -104,7 +104,7 @@ def gauss_paramters():
         0 for one-sided and 1 for two-sided jets
     """
     # random number of components between 4 and 9
-    comps = np.random.randint(4, 7)  # decrease for smaller images
+    comps = 9 #np.random.randint(4, 7)  # decrease for smaller images
 
     # start amplitude between 10 and 1e-3
     amp_start = (np.random.randint(0, 100) * np.random.random()) / 10
@@ -380,7 +380,7 @@ def gaussian_source(img_size):
     s: 2darray
        Image containing a simulated Gaussian source.
     """
-    # grid = create_grid(img_size)
+    grid = create_grid(img_size, 1000)
     comps, amp, x, y, sig_x, sig_y, rot, sides = gauss_paramters()
     s = create_gaussian_source(
         grid, comps, amp, x, y, sig_x, sig_y, rot, sides, blur=True
@@ -402,7 +402,7 @@ def create_ext_gauss_bundle(grid):
     bundle ndarray
         bundle of Gaussian sources
     """
-    bundle = np.array([gaussian_source(g) for g in grid])
+    bundle = np.array([gaussian_source(63) for g in grid])
     return bundle
 
 

@@ -393,12 +393,12 @@ def spe(x, y):
     y = y.squeeze()
     y = y/62
 
-    #print(y[0])
+    #print(x[0])
 
-    #for i in range(len(x)):
-        #y[i] = sort_vektor(x[i], y[i], 2)
+    for i in range(len(x)):
+        x[i] = sort_param(x[i], y[i])
     
-    #print(y[0])
+    #print(x[0])
 
     loss = []
     value = 0

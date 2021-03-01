@@ -86,19 +86,19 @@ class Learner:
 
     def one_batch(self, i, xb, yb):
         #print(xb.shape, yb.shape)
-        yb = yb.squeeze()
-        a = yb
-        for k in range(len(a)):
-           for i in range(len(a[0])):
-               if i == 0:
-                   c = a[k][0].detach().clone()
-               else:
-                   c = torch.cat((c, a[0][i]))
-           h = c.unsqueeze(0)
-           if k == 0:
-               yb = h
-           else:
-               yb = torch.cat((yb, h))
+        #yb = yb.squeeze()
+        #a = yb
+        #for k in range(len(a)):
+        #   for i in range(len(a[0])):
+        #       if i == 0:
+        #           c = a[k][0].detach().clone()
+        #       else:
+        #           c = torch.cat((c, a[0][i]))
+        #   h = c.unsqueeze(0)
+        #   if k == 0:
+        #       yb = h
+        #   else:
+        #       yb = torch.cat((yb, h))
         #print(yb.shape)
         try:
             self.iter = i
