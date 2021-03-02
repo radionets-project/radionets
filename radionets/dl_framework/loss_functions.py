@@ -270,6 +270,24 @@ def phase_likelihood(x, y):
     return loss_phase
 
 
+def phase_likelihood_l1(x, y):
+    phase_pred = x[:, 0]
+    phase_unc = x[:, 1]
+
+    phase_true = y[:, 0]
+    y_phase = y[:, 1]
+
+    loss_phase = (
+        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
+    ).mean()
+
+    l1 = nn.L1Loss()
+    loss_l1 = l1(phase_pred, phase_true)
+
+    loss = loss_phase + loss_l1
+    return loss
+
+
 class HungarianMatcher(nn.Module):
     """
     Solve assignment Problem.
