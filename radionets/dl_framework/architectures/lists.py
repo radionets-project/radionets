@@ -10,7 +10,6 @@ from radionets.dl_framework.model import (
     euler,
     fft,
     shape,
-    vaild_gauss_bs,
     flatten,
     SRBlock,
 )
