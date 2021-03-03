@@ -301,8 +301,8 @@ class HungarianMatcher(nn.Module):
     Solve assignment Problem.
     """
 
-    def init(self):
-        super().init()
+    def __init__(self):
+        super().__init__()
 
     @torch.no_grad()
     def forward(self, outputs, targets):
