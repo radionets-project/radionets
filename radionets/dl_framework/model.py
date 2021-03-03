@@ -406,15 +406,3 @@ class SRBlock(nn.Module):
             nn.Conv2d(nf, nf, 3, stride=1, padding=1),
             nn.BatchNorm2d(nf),
         )
-
-
-def vaild_gauss_bs(in_put):
-    for i in range(in_put.shape[0]):
-        if i == 0:
-            source = gauss_valid(in_put[i]) # gauss parameter des ersten gausses
-            source.unsqueeze_(0)
-        else:
-            h = gauss_valid(in_put[i])
-            h.unsqueeze_(0)
-            source = torch.cat((source, h))
-    return source
