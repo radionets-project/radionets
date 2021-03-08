@@ -133,6 +133,15 @@ def l1_phase(x, y):
     return loss
 
 
+def l1_phase_unc(x, y):
+    phase_pred = x[:, 0]
+    y_phase = y[:, 1]
+
+    l1 = nn.L1Loss()
+    loss = l1(phase_pred, y_phase)
+    return loss
+
+
 def splitted_L1(x, y):
     inp_amp = x[:, 0, :]
     inp_phase = x[:, 1, :]
@@ -274,7 +283,6 @@ def phase_likelihood_l1(x, y):
     phase_pred = x[:, 0]
     phase_unc = x[:, 1]
 
-    phase_true = y[:, 0]
     y_phase = y[:, 1]
 
     loss_phase = (
@@ -282,7 +290,7 @@ def phase_likelihood_l1(x, y):
     ).mean()
 
     l1 = nn.L1Loss()
-    loss_l1 = l1(phase_pred, phase_true)
+    loss_l1 = l1(phase_pred, y_phase)
 
     loss = loss_phase + loss_l1
     return loss
