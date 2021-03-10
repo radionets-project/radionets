@@ -53,12 +53,8 @@ simulations of Gaussian sources are possible.
 
 ### evaluation
 
-'''
-evaluate training process with different approaches
-
-ms-ssim
-blob-detection
-'''
+Functions for the evaluation of the training sessions. The available options reach from single, exemplary plots in (u, v) space and image space to
+methods computing characteristic values on large test datasets.
 
 ## Contributors
 
