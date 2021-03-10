@@ -32,8 +32,6 @@ Simulated data is saved in `hdf5`, trained models are saved as `pickle` files.
   values for the target variable, usually monte carlo simulations.
 * `radionets_evaluation <...>`
   This script is used to evaluate the performance of the trained deep learning models.
-* `radionets_reconstruction <...>`
-  This script is used to reconstruct radio interferometric data using a trained deep learning model.
 
 Default configuration files can be found in the examples directory.
 
