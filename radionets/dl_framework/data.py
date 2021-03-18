@@ -64,12 +64,8 @@ class h5_dataset:
         return len(self.bundles) * self.num_img
 
     def __getitem__(self, i):
-        if self.source_list:
-            x = self.open_image("x", i)
-            y = self.open_image("z", i)
-        else:
-            x = self.open_image("x", i)
-            y = self.open_image("y", i)
+        x = self.open_image("x", i)
+        y = self.open_image("y", i)
         return x, y
 
     def open_bundle(self, bundle_path, var):
@@ -113,11 +109,11 @@ class h5_dataset:
             if len(i) == 1:
                 data_amp, data_phase = data[:, 0], data[:, 1]
 
-                data_channel = torch.cat([data_amp, data_phase], dim=0)
+                data_channel = data
             else:
                 data_amp, data_phase = data[:, 0].unsqueeze(1), data[:, 1].unsqueeze(1)
 
-                data_channel = torch.cat([data_amp, data_phase], dim=1)
+                data_channel = data
         else:
             if self.source_list:
                 data_channel = data
@@ -130,7 +126,7 @@ class h5_dataset:
                 if len(i) == 1:
                     data_channel = data.reshape(data.shape[-1] ** 2)
                 else:
-                    data_channel = data.reshape(-1, data.shape[-1] ** 2)
+                    data_channel = data.reshape(-1, data.shape[-1] ** 2)            
         return data_channel.float()
 
 
@@ -278,6 +274,6 @@ def load_data(data_path, mode, fourier=False, source_list=False):
         dataset containing x and y images
     """
     bundle_paths = get_bundles(data_path)
-    data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
+    data = [path for path in bundle_paths if re.findall(mode, path.name)]
     ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)
     return ds

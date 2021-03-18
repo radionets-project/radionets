@@ -23,6 +23,7 @@ def get_learner(
     dls = DataLoaders.from_dsets(
         data.train_ds,
         data.valid_ds,
+        bs = data.train_dl.batch_size,
     )
     return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
 
@@ -65,8 +66,8 @@ def define_learner(
         cbfs.extend(
             [
                 SaveTempCallback(model_path=model_path),
-                AvgLossCallback,
-                DataAug,
+                AvgLossCallback#,
+               # DataAug,
             ]
         )
     if train_conf["telegram_logger"] and not lr_find:

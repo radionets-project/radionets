@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch
 from torch import nn
 from radionets.dl_framework.hook_fastai import hook_outputs
@@ -508,3 +509,9 @@ def splitted_L1(x, y):
     loss_phase = l1(inp_phase, tar_phase)
 
     return loss_amp * 10 + loss_phase
+
+
+def classifier_loss(x, y):
+    criterion = nn.CrossEntropyLoss()
+    loss = criterion(x,y.squeeze(1).long())
+    return loss
