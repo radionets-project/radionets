@@ -71,6 +71,8 @@ methods computing characteristic values on large test datasets. In detail:
 * Kevin Laudamus [@K-Lauda](https://github.com/K-Lauda)
 * Emiliano Miranda [@emilianozm24](https://github.com/emilianozm24)
 * Maximilian Büchel [@MaxBue](https://github.com/MaxBue)
+* Stefan Fröse [@StFroese](https://github.com/StFroese)
+* Paul-Simon Blomenkamp [@PBlomenkamp](https://github.com/PBlomenkamp)
 
 ## Versions used and tested
 
