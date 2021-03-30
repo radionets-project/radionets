@@ -33,7 +33,8 @@ Simulated data is saved in `hdf5`, trained models are saved as `pickle` files.
 * `radionets_evaluation <...>`
   This script is used to evaluate the performance of the trained deep learning models.
 
-Default configuration files can be found in the examples directory.
+Default configuration files can be found in the examples directory. Additionally, the examples directory contains jupyter notebooks, which show an example
+analysis pipeline and the corresponding commands.
 
 ## Structure of the Repository
 
