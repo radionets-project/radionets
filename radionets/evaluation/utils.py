@@ -11,7 +11,10 @@ from torch.utils.data import DataLoader
 def create_databunch(data_path, fourier, source_list, batch_size):
     # Load data sets
     test_ds = load_data(
-        data_path, mode="test", fourier=fourier, source_list=source_list,
+        data_path,
+        mode="test",
+        fourier=fourier,
+        source_list=source_list,
     )
 
     # Create databunch with defined batchsize
@@ -91,30 +94,38 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax.set_title(title, fontsize=16)
+    ax.set_title(title)
 
     if phase:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-np.pi, 0, np.pi]
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
     elif phase_diff:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-2*np.pi, 0, 2*np.pi]
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
         )
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        # tick_locator = ticker.MaxNLocator(nbins=5)
+        # cbar.locator = tick_locator
 
-    cbar.set_label("Intensity / a.u.", size=16)
-    cbar.ax.tick_params(labelsize=16)
-    cbar.ax.yaxis.get_offset_text().set_fontsize(16)
-    cbar.formatter.set_powerlimits((0, 0))
-    cbar.update_ticks()
+    cbar.set_label("Intensity / a.u.")
+    # cbar.ax.tick_params(labelsize=16)
+    # cbar.ax.yaxis.get_offset_text().set_fontsize(16)
+    # cbar.formatter.set_powerlimits((0, 0))
+    # cbar.update_ticks()
     if phase:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+        cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
     elif phase_diff:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-2\pi$", r"$0$", r"$2\pi$"])
+        cbar.ax.set_yticklabels([r"$-4\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$4\pi$"])
 
 
 def reshape_split(img):
@@ -275,3 +286,46 @@ def pad_unsqueeze(tensor):
 
 def round_n_digits(tensor, n_digits=3):
     return (tensor * 10 ** n_digits).round() / (10 ** n_digits)
+
+
+def fft_pred(pred, truth, amp_phase=True):
+    """
+    Transform predicted image and true image to local domain.
+
+    Parameters
+    ----------
+    pred: 4D array [1, channel, height, width]
+        prediction from eval_model
+    truth: 3D array [channel, height, width]
+        true image
+    amp_phase: Bool
+        trained on Amp/Phase or Re/Im
+
+    Returns
+    -------
+    ifft_pred, ifft_true: two 2D arrays [height, width]
+        predicted and true image in local domain
+    """
+    a = pred[:, 0, :, :]
+    b = pred[:, 1, :, :]
+
+    a_true = truth[0, :, :]
+    b_true = truth[1, :, :]
+
+    if amp_phase:
+        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
+        phase_pred = b
+
+        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10 ** 10
+        phase_true = b_true
+
+        compl_pred = amp_pred_rescaled * np.exp(1j * phase_pred)
+        compl_true = amp_true_rescaled * np.exp(1j * phase_true)
+    else:
+        compl_pred = a + 1j * b
+        compl_true = a_true + 1j * b_true
+
+    ifft_pred = np.fft.ifft2(compl_pred)
+    ifft_true = np.fft.ifft2(compl_true)
+
+    return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
