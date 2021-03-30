@@ -11,7 +11,7 @@ Analysis strategies leading to a reproducible processing and evaluation of data 
 * Training of deep learning models
 * Reconstruction of radio interferometric data
 
-## Installation
+## Installation (must be reworked after shifting simulation part to `vipy` repository)
 
 This repository is build up as a python package. It is recommended to create an own conda environment to handle the dependencies of the packages. You can create one by running the following command in this repository:
 ```
@@ -46,10 +46,12 @@ An introduction to neural networks and an overview of the use of fastai to train
 
 Functions for handling the different training options.
 
-### simulations
+### simulations (further developed in [vipy](https://github.com/radionets-project/vipy) repository)
 
 Functions to simulate and illustrate radio interferometric observations. At the moment simulations based on the MNIST dataset and 
-simulations of Gaussian sources are possible.
+simulations of Gaussian sources are possible. At the moment, we are working on directly simulating the visibilities in Fourier space.
+For more information, visit our corresponding repository [vipy](https://github.com/radionets-project/vipy). In the future, the simulations will be created
+using the `vipy` repository, while the `radionets` repository contains the training and evaluation methods.
 
 ### evaluation
 
