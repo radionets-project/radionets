@@ -1,0 +1,16 @@
+xtick.labelsize : 8
+ytick.labelsize : 8
+
+font.size : 9
+font.family : serif
+font.serif : Times
+text.usetex : true
+
+legend.fontsize : medium
+
+pgf.rcfonts : False
+
+savefig.bbox : tight
+
+figure.dpi : 600
+figure.figsize : 3.46457, 2.5
