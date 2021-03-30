@@ -58,8 +58,10 @@ using the `vipy` repository, while the `radionets` repository contains the train
 Functions for the evaluation of the training sessions. The available options reach from single, exemplary plots in (u, v) space and image space to
 methods computing characteristic values on large test datasets. In detail:
 
-* Amplitude and phase for the prediction and the truth 
-* Reconstructed source images with additional features, such as MS-SSIM values or the viewing angle
+* Amplitude and phase for the prediction and the truth. Example image below including the difference between prediction and truth.
+![](resources/amp_phase.png)
+* Reconstructed source images with additional features, such as MS-SSIM values or the viewing angle. Example image below.
+![](resources/source_plot.png)
 * Histogram of differences between predicted and true viewing angles on a dedicated test dataset
 * Histogram of ratio between predicted and true source areas on a dedicated test dataset
 * Histogram of flux difference in core component on a dedicated test dataset
