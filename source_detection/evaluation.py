@@ -1,13 +1,13 @@
 # +
-import train
+import source_detection.train
 import torch
 from radionets.evaluation.utils import  load_pretrained_model, eval_model
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import h5py
-import model
-from model import center_to_boundary
+import source_detection.model
+from source_detection.model import center_to_boundary
 from radionets.dl_framework.data import get_bundles
 from tqdm import tqdm
 

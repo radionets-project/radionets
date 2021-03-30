@@ -62,11 +62,10 @@ def detect_sources(checkpoint_path, data_path, img_size, n = 0):
         
     ax1.imshow(eval_dataset[n][0].squeeze(0))
     ax2.imshow(eval_dataset[n][0].squeeze(0))
-    ax1.legend()
-    ax2.legend()
     
-def image_detection(checkpoint, image):
+def image_detection(checkpoint_path, image):
     image = torch.FloatTensor(image).unsqueeze(0).unsqueeze(0)
+    checkpoint = checkpoint_path
     checkpoint = torch.load(checkpoint)
     model = checkpoint['model']
     model = model.to('cuda')

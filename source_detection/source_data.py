@@ -87,7 +87,7 @@ def create_mosaic(img_size, bundle_size, num_bundles,path):
             all_labels = []
             for r in range(bundle_size):
                 grid = create_grid(img_size*10, 1)
-                num_objects = np.random.randint(15,40)
+                num_objects = np.random.randint(25,60)
                 bboxes = np.zeros((num_objects,4))
                 labels = np.zeros((num_objects,1))                
                 if num_objects == 0:
