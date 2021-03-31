@@ -388,7 +388,7 @@ def evaluate_mean_diff(conf):
             flux_pred, flux_truth = crop_first_component(
                 pred, truth, blobs_truth[0], out_path
             )
-            vals.extend([1-flux_truth.mean()/flux_pred.mean()])
+            vals.extend([1 - flux_truth.mean() / flux_pred.mean()])
 
     click.echo("\nCreating mean_diff histogram.\n")
     vals = torch.tensor(vals)
