@@ -137,7 +137,7 @@ def l1_phase_unc(x, y):
     phase_pred = x[:, 0]
     y_phase = y[:, 1]
 
-    l1 = nn.L1Loss()
+    l1 = nn.SmoothL1Loss()
     loss = l1(phase_pred, y_phase)
     return loss
 
