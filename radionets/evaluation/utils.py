@@ -103,6 +103,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
             orientation="vertical",
             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
+        cbar.set_label("Specific Intensity / a.u.")
     elif phase_diff:
         cbar = fig.colorbar(
             im,
@@ -110,6 +111,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
             orientation="vertical",
             ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
         )
+        cbar.set_label("Specific Intensity / a.u.")
     elif unc:
         cbar = fig.colorbar(
             im,
@@ -121,7 +123,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar.ax.tick_params(size=0)
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label("Intensity / a.u.")
+        cbar.set_label("Specific Intensity / a.u.")
         # tick_locator = ticker.MaxNLocator(nbins=5)
         # cbar.locator = tick_locator
 
@@ -134,7 +136,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
     elif phase_diff:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-4\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$4\pi$"])
+        cbar.ax.set_yticklabels([r"$-2\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$2\pi$"])
 
 
 def reshape_split(img):
