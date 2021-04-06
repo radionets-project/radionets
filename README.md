@@ -75,7 +75,7 @@ methods computing characteristic values on large test datasets. In detail:
 ## Contributors
 
 * Kevin Schmidt [@Kevin2](https://github.com/Kevin2)
-* Felix Geyer [@FritzGeise](https://github.com/FritzGeise)
+* Felix Geyer [@FeGeyer](https://github.com/FeGeyer)
 * Kevin Laudamus [@K-Lauda](https://github.com/K-Lauda)
 * Emiliano Miranda [@emilianozm24](https://github.com/emilianozm24)
 * Maximilian Büchel [@MaxBue](https://github.com/MaxBue)
