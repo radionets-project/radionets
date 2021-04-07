@@ -13,4 +13,4 @@ pgf.rcfonts : False
 savefig.bbox : tight
 
 figure.dpi : 600
-figure.figsize : 5, 4
+figure.figsize : 3.46457, 5.1358
