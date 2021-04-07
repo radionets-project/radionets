@@ -92,7 +92,7 @@ class SRResNet_unc(nn.Module):
     def __init__(self):
         super().__init__()
 
-        n_channel = 76
+        n_channel = 64
 
         self.preBlock = nn.Sequential(
             nn.Conv2d(2, n_channel, 9, stride=1, padding=4, groups=2), nn.PReLU()
@@ -136,11 +136,9 @@ class SRResNet_unc(nn.Module):
         x0 = self.symmetry_amp(x[:, 0]).reshape(-1, 1, s, s)
         x0_unc = self.symmetry_amp(x[:, 1]).reshape(-1, 1, s, s)
         x0_unc = self.elu(x0_unc)
-
         x1 = self.symmetry_imag(x[:, 2]).reshape(-1, 1, s, s)
-        x1_unc = self.symmetry_imag(x[:, 2]).reshape(-1, 1, s, s)
+        x1_unc = self.symmetry_amp(x[:, 3]).reshape(-1, 1, s, s)
         x1_unc = self.elu(x1_unc)
-
         return torch.cat([x0, x0_unc, x1, x1_unc], dim=1)
 
 
