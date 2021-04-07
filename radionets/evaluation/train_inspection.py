@@ -83,6 +83,12 @@ def get_separate_prediction(conf, num_images=None, rand=False):
     model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)
     pred_1 = eval_model(img_test, model_1)
     pred_2 = eval_model(img_test, model_2)
+
+    # test for uncertainty
+    if pred_1.shape[1] == 2:
+        pred_1 = pred_1[:, 0, :].unsqueeze(1)
+        pred_2 = pred_2[:, 0, :].unsqueeze(1)
+
     pred = torch.cat((pred_1, pred_2), dim=1)
     return pred, img_test, img_true
 
@@ -382,7 +388,7 @@ def evaluate_mean_diff(conf):
             flux_pred, flux_truth = crop_first_component(
                 pred, truth, blobs_truth[0], out_path
             )
-            vals.extend([1-flux_truth.mean()/flux_pred.mean()])
+            vals.extend([1 - flux_truth.mean() / flux_pred.mean()])
 
     click.echo("\nCreating mean_diff histogram.\n")
     vals = torch.tensor(vals)

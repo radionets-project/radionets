@@ -77,6 +77,13 @@ class AvgLossCallback(Callback):
         plt.legend()
         plt.tight_layout()
 
+        train = np.array(self.loss_train)
+        valid = np.array(self.loss_valid)
+        if len(train[train < 0]) == 0 or len(valid[valid < 0]) == 0:
+            return True
+        else:
+            return False
+
     def plot_lrs(self):
         plt.plot(self.lrs)
         plt.xlabel(r"Number of Batches")
