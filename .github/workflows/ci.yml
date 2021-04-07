@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.7]
 
     steps:
       - uses: actions/checkout@v2
@@ -27,6 +27,7 @@ jobs:
       
       - name: tests
         run: |
+          $CONDA/bin/conda activate radionets
           $CONDA/bin/pytest --ignore=tests --cov radionets --cov-report=xml
 
       - uses: codecov/codecov-action@v1
