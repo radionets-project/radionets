@@ -69,8 +69,9 @@ methods computing characteristic values on large test datasets. In detail:
 ![](resources/combined_hist_area.png)
 * Histogram of flux difference in core component on a dedicated test dataset. Example image below.
 ![](resources/combined_hist_mean_diff.png)
-* Histogram of differences between predicted and true MS-SSIM values on a dedicated test dataset
-* Histogram of differences between predicted and true dynamic range values on a dedicated test dataset
+* Included, but not yet fully operational
+  * Histogram of differences between predicted and true MS-SSIM values on a dedicated test dataset
+  * Histogram of differences between predicted and true dynamic range values on a dedicated test dataset
 
 ## Contributors
 
