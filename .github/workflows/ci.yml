@@ -28,5 +28,6 @@ jobs:
       - name: tests
         run: |
           $CONDA/bin/pytest --ignore=tests --cov radionets --cov-report=xml
+          pytest --ignore=tests
 
       - uses: codecov/codecov-action@v1
