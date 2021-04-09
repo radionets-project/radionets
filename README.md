@@ -4,25 +4,27 @@
 
 ## Imaging Radio Interferometric Data with Neural Networks
 
-Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct calibrated observations with convolutional neural networks to create high resolution images. 
+Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct calibrated observations with
+convolutional Neural Networks to create high-resolution images. 
 
 Analysis strategies leading to a reproducible processing and evaluation of data recorded by radio interferometers:
-* Simulation of datasets
+* Simulation of datasets (will be shifted to `vipy` repository)
 * Training of deep learning models
 * Reconstruction of radio interferometric data
 
 ## Installation (must be reworked after shifting simulation part to `vipy` repository)
 
-This repository is build up as a python package. It is recommended to create an own conda environment to handle the dependencies of the packages. You can create one by running the following command in this repository:
+This repository is build up as a python package. It is recommended to create an own conda environment to handle the dependencies of the packages.
+You can create one by running the following command in this repository:
 ```
 $ conda env create -f environment.yml
 ```
-Depending on your `cuda` version you have to specify the `cudatoolkit` version used by `pytorch`. If you working on machines with `cuda` versions < 10.2, please
-change the version number in the environment.yml file.
+Depending on your `cuda` version you have to specify the `cudatoolkit` version used by `pytorch`. If you are working on machines
+with `cuda` versions < 10.2, please change the version number in the environment.yml file.
 
 ## Usage
 
-For each tasks executables are intstalled to your `PATH`. Each of them take `toml` configuration files as input, to manage data paths and options.
+For each task, executables are installed to your `PATH`. Each of them takes `toml` configuration files as input, to manage data paths and options.
 Simulated data is saved in `hdf5`, trained models are saved as `pickle` files.
 
 * `radionets_simulations <...>`
@@ -41,11 +43,11 @@ analysis pipeline and the corresponding commands.
 ### dl_framework
 
 The used deep learning framework is based on [pytorch](https://pytorch.org/) and [fastai](https://www.fast.ai/).
-An introduction to neural networks and an overview of the use of fastai to train deep learning models can be found in [Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html) and [fastbook](https://github.com/fastai/fastbook).
+An introduction to Neural Networks and an overview of the use of fastai to train deep learning models can be found in [Practical Deep Learning for Coders, v3](https://course.fast.ai/index.html) and [fastbook](https://github.com/fastai/fastbook).
 
 ### dl_training
 
-Functions for handling the different training options.
+Functions for handling the different training options. Currently, there are the training, the learning rate finder, and the loss plotting mode.
 
 ### simulations (further developed in [vipy](https://github.com/radionets-project/vipy) repository)
 
@@ -77,11 +79,11 @@ methods computing characteristic values on large test datasets. In detail:
 
 * Kevin Schmidt [@Kevin2](https://github.com/Kevin2)
 * Felix Geyer [@FeGeyer](https://github.com/FeGeyer)
+* Stefan Fröse [@StFroese](https://github.com/StFroese)
+* Paul-Simon Blomenkamp [@PBlomenkamp](https://github.com/PBlomenkamp)
 * Kevin Laudamus [@K-Lauda](https://github.com/K-Lauda)
 * Emiliano Miranda [@emilianozm24](https://github.com/emilianozm24)
 * Maximilian Büchel [@MaxBue](https://github.com/MaxBue)
-* Stefan Fröse [@StFroese](https://github.com/StFroese)
-* Paul-Simon Blomenkamp [@PBlomenkamp](https://github.com/PBlomenkamp)
 
 ## Versions used and tested
 
