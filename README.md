@@ -52,7 +52,7 @@ Functions for handling the different training options. Currently, there are the 
 ### simulations (further developed in [vipy](https://github.com/radionets-project/vipy) repository)
 
 Functions to simulate and illustrate radio interferometric observations. At the moment simulations based on the MNIST dataset and 
-simulations of Gaussian sources are possible. At the moment, we are working on directly simulating the visibilities in Fourier space.
+simulations of Gaussian sources are possible. We are currently working on simulating visibilities directly in Fourier space.
 For more information, visit our corresponding repository [vipy](https://github.com/radionets-project/vipy). In the future, the simulations will be created
 using the `vipy` repository, while the `radionets` repository contains the training and evaluation methods.
 
