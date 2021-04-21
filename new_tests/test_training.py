@@ -1,23 +1,23 @@
-import subprocess
+from click.testing import CliRunner
+from radionets.dl_training.scripts.start_training import main
 
 
 def test_lr_find():
-    list_files = subprocess.run(
-        ["radionets_training", "new_tests/training.toml", "--mode=lr_find"]
-    )
-    print("The exit code was: %d" % list_files.returncode)
-    assert list_files.returncode == 0
+    runner = CliRunner()
+    options = ["new_tests/training.toml", "--mode=lr_find"]
+    result = runner.invoke(main, options)
+    assert result.exit_code == 0
 
 
 def test_training():
-    list_files = subprocess.run(["radionets_training", "new_tests/training.toml"])
-    print("The exit code was: %d" % list_files.returncode)
-    assert list_files.returncode == 0
+    runner = CliRunner()
+    options = ["new_tests/training.toml"]
+    result = runner.invoke(main, options)
+    assert result.exit_code == 0
 
 
 def test_plot_loss():
-    list_files = subprocess.run(
-        ["radionets_training", "new_tests/training.toml", "--mode=plot_loss"]
-    )
-    print("The exit code was: %d" % list_files.returncode)
-    assert list_files.returncode == 0
+    runner = CliRunner()
+    options = ["new_tests/training.toml", "--mode=plot_loss"]
+    result = runner.invoke(main, options)
+    assert result.exit_code == 0
