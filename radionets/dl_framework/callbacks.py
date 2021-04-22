@@ -165,14 +165,13 @@ class DataAug(Callback):
 class SaveTempCallback(Callback):
     _order = 95
 
-    def __init__(self, model_path, gan):
+    def __init__(self, model_path):
         self.model_path = model_path
-        self.gan = gan
 
     def after_epoch(self):
         p = Path(self.model_path).parent
         p.mkdir(parents=True, exist_ok=True)
         if (self.epoch + 1) % 10 == 0:
             out = p / f"temp_{self.epoch + 1}.model"
-            save_model(self, out, self.gan)
+            save_model(self, out)
             print(f"\nFinished Epoch {self.epoch + 1}, model saved.\n")
