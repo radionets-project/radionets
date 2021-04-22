@@ -11,7 +11,10 @@ from torch.utils.data import DataLoader
 def create_databunch(data_path, fourier, source_list, batch_size):
     # Load data sets
     test_ds = load_data(
-        data_path, mode="test", fourier=fourier, source_list=source_list,
+        data_path,
+        mode="test",
+        fourier=fourier,
+        source_list=source_list,
     )
 
     # Create databunch with defined batchsize
@@ -34,11 +37,12 @@ def read_config(config):
     eval_conf["amp_phase"] = config["general"]["amp_phase"]
     eval_conf["arch_name"] = config["general"]["arch_name"]
     eval_conf["source_list"] = config["general"]["source_list"]
-    eval_conf["separate"] = config["general"]["separate"]
     eval_conf["arch_name_2"] = config["general"]["arch_name_2"]
+    eval_conf["diff"] = config["general"]["diff"]
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
+    eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
     eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
     eval_conf["vis_ms_ssim"] = config["inspection"]["visualize_ms_ssim"]
@@ -48,6 +52,8 @@ def read_config(config):
     eval_conf["viewing_angle"] = config["eval"]["evaluate_viewing_angle"]
     eval_conf["dynamic_range"] = config["eval"]["evaluate_dynamic_range"]
     eval_conf["ms_ssim"] = config["eval"]["evaluate_ms_ssim"]
+    eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
+    eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
     return eval_conf
 
@@ -70,7 +76,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice(fig, ax, im, title, phase=False):
+def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
     Parameters
@@ -88,23 +94,49 @@ def make_axes_nice(fig, ax, im, title, phase=False):
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax.set_title(title, fontsize=16)
+    ax.set_title(title)
 
     if phase:
         cbar = fig.colorbar(
-            im, cax=cax, orientation="vertical", ticks=[-np.pi, 0, np.pi]
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
+        cbar.set_label("Specific Intensity / a.u.")
+    elif phase_diff:
+        cbar = fig.colorbar(
+            im,
+            cax=cax,
+            orientation="vertical",
+            ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
+        )
+        cbar.set_label("Specific Intensity / a.u.")
+    elif unc:
+        cbar = fig.colorbar(
+            im,
+            cax=cax,
+            label="Rel. uncertainty / a.u.",
+            ticks=[im.get_array().min() + 0.001, im.get_array().max()],
+        )
+        cbar.ax.set_yticklabels(["Low", "High"])
+        cbar.ax.tick_params(size=0)
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar.set_label("Specific Intensity / a.u.")
+        # tick_locator = ticker.MaxNLocator(nbins=5)
+        # cbar.locator = tick_locator
 
-    cbar.set_label("Intensity / a.u.", size=16)
-    cbar.ax.tick_params(labelsize=16)
-    cbar.ax.yaxis.get_offset_text().set_fontsize(16)
-    cbar.formatter.set_powerlimits((0, 0))
-    cbar.update_ticks()
+    # cbar.ax.tick_params(labelsize=16)
+    # cbar.ax.yaxis.get_offset_text().set_fontsize(16)
+    # cbar.formatter.set_powerlimits((0, 0))
+    # cbar.update_ticks()
     if phase:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-\pi$", r"$0$", r"$\pi$"])
+        cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
+    elif phase_diff:
+        # set ticks for colorbar
+        cbar.ax.set_yticklabels([r"$-2\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$2\pi$"])
 
 
 def reshape_split(img):
@@ -243,6 +275,8 @@ def eval_model(img, model):
 
 
 def get_ifft(array, amp_phase=False):
+    if len(array.shape) == 3:
+        array = array.unsqueeze(0)
     if amp_phase:
         amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
 
@@ -263,3 +297,46 @@ def pad_unsqueeze(tensor):
 
 def round_n_digits(tensor, n_digits=3):
     return (tensor * 10 ** n_digits).round() / (10 ** n_digits)
+
+
+def fft_pred(pred, truth, amp_phase=True):
+    """
+    Transform predicted image and true image to local domain.
+
+    Parameters
+    ----------
+    pred: 4D array [1, channel, height, width]
+        prediction from eval_model
+    truth: 3D array [channel, height, width]
+        true image
+    amp_phase: Bool
+        trained on Amp/Phase or Re/Im
+
+    Returns
+    -------
+    ifft_pred, ifft_true: two 2D arrays [height, width]
+        predicted and true image in local domain
+    """
+    a = pred[:, 0, :, :]
+    b = pred[:, 1, :, :]
+
+    a_true = truth[0, :, :]
+    b_true = truth[1, :, :]
+
+    if amp_phase:
+        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
+        phase_pred = b
+
+        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10 ** 10
+        phase_true = b_true
+
+        compl_pred = amp_pred_rescaled * np.exp(1j * phase_pred)
+        compl_true = amp_true_rescaled * np.exp(1j * phase_true)
+    else:
+        compl_pred = a + 1j * b
+        compl_true = a_true + 1j * b_true
+
+    ifft_pred = np.fft.ifft2(compl_pred)
+    ifft_true = np.fft.ifft2(compl_true)
+
+    return np.absolute(ifft_pred)[0], np.absolute(ifft_true)

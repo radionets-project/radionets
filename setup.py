@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="radionets",
-    version="0.1.1",
+    version="0.1.4",
     description="Imaging radio interferometric data with neural networks",
     url="https://github.com/Kevin2/radionets",
     author="Kevin Schmidt, Felix Geyer, Kevin Laudamus",
@@ -30,6 +30,8 @@ setup(
         "pandas",
         "requests",
         "toml",
+        "pytest",
+        "pytest-cov",
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],

@@ -1,8 +1,6 @@
 import torch
 from torch import nn
 from math import pi
-import numpy as np
-from fastai.vision import models
 from radionets.dl_framework.model import (
     GeneralELU,
     ResBlock_amp,
@@ -18,7 +16,10 @@ from radionets.dl_framework.model import (
     CirculationShiftPad,
     SRBlockPad,
     BetterShiftPad
+    Lambda,
+    symmetry,
 )
+from functools import partial
 
 
 class superRes_simple(nn.Module):
@@ -378,7 +379,7 @@ class SRResNet_corr(nn.Module):
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
         )
 
-        # ResBlock 16
+        # ResBlock 8
         self.blocks = nn.Sequential(
             SRBlock(64, 64),
             SRBlock(64, 64),
@@ -411,6 +412,8 @@ class SRResNet_corr(nn.Module):
         self.symmetry = Lambda(better_symmetry)
 
     def forward(self, x):
+        x = x[:, 0].unsqueeze(1)
+
         x = self.preBlock(x)
 
         x = x + self.postBlock(self.blocks(x))

@@ -23,144 +23,6 @@ def reshape(x):
     return x.reshape(-1, 2, 63, 63)
 
 
-def compress_image(img):
-    part1, part2, part3, part4 = split_parts(img, pad=True)
-
-    part1_1, _, part1_3, _ = split_parts(part1, pad=False)
-    part2_1, part2_2, part2_3, part2_4 = split_parts(part2, pad=False)
-    part3_1, part3_2, _, _ = split_parts(part3, pad=False)
-    part4_1, part4_2, _, _ = split_parts(part4, pad=False)
-
-    return (
-        part1_1,
-        part1_3,
-        part2_1,
-        part2_2,
-        part2_3,
-        part2_4,
-        part3_1,
-        part3_2,
-        part4_1,
-        part4_2,
-    )
-
-
-def expand_image(params):
-    (
-        part1_1,
-        part1_3,
-        part2_1,
-        part2_2,
-        part2_3,
-        part2_4,
-        part3_1,
-        part3_2,
-        part4_1,
-        part4_2,
-    ) = (
-        params[0],
-        params[1],
-        params[2],
-        params[3],
-        params[4],
-        params[5],
-        params[6],
-        params[7],
-        params[8],
-        params[9],
-    )
-    bs = part1_1.shape[0]
-    part1 = combine_parts(
-        [
-            part1_1,
-            -torch.rot90(part1_1, 2, dims=(2, 3)),
-            part1_3,
-            -torch.rot90(part1_3, 2, dims=(2, 3)),
-            (bs, 1, 32, 32),
-            False,
-        ]
-    )
-
-    part2 = combine_parts([part2_1, part2_2, part2_3, part2_4, (bs, 1, 32, 32), False])
-
-    part3 = combine_parts(
-        [
-            part3_1,
-            part3_2,
-            F.pad(
-                input=-torch.rot90(part3_2[:, :, :, :-1], 2, dims=(2, 3)),
-                pad=(0, 1, 0, 0),
-                mode="constant",
-                value=0,
-            ),
-            -torch.rot90(part3_1, 2, dims=(2, 3)),
-            (bs, 1, 32, 32),
-            False,
-        ]
-    )
-
-    part4 = combine_parts(
-        [
-            part4_1,
-            part4_2,
-            -torch.rot90(part4_1, 2, dims=(2, 3)),
-            F.pad(
-                input=-torch.rot90(part4_2[:, :, :-1, :], 2, dims=(2, 3)),
-                pad=(0, 0, 0, 1),
-                mode="constant",
-                value=0,
-            ),
-            (bs, 1, 32, 32),
-            False,
-        ]
-    )
-
-    img = combine_parts([part1, part2, part3, part4, (bs, 1, 63, 63), True])
-    return img
-
-
-def split_parts(img, pad=True):
-    t_img = img.clone()
-    part1 = t_img[:, 0, 0::2, 0::2]
-    part2 = t_img[:, 0, 1::2, 1::2]
-    part3 = t_img[:, 0, 0::2, 1::2]
-    part4 = t_img[:, 0, 1::2, 0::2]
-    if pad:
-        # print("Padding done.")
-        part2 = F.pad(input=part2, pad=(0, 1, 0, 1), mode="constant", value=0)
-        part3 = F.pad(input=part3, pad=(0, 1, 0, 0), mode="constant", value=0)
-        part4 = F.pad(input=part4, pad=(0, 0, 0, 1), mode="constant", value=0)
-    return (
-        part1.unsqueeze(1),
-        part2.unsqueeze(1),
-        part3.unsqueeze(1),
-        part4.unsqueeze(1),
-    )
-
-
-def combine_parts(params):
-    part1, part2, part3, part4, img_size, final = (
-        params[0],
-        params[1],
-        params[2],
-        params[3],
-        params[4],
-        params[5],
-    )
-    comb = torch.zeros(img_size).cuda()
-    if final is True:
-        comb[:, :, 0::2, 0::2] = part1
-        comb[:, :, 1::2, 1::2] = part2[:, :, :-1, :-1]
-        comb[:, :, 0::2, 1::2] = part3[:, :, :, :-1]
-        comb[:, :, 1::2, 0::2] = part4[:, :, :-1, :]
-    else:
-        comb[:, :, 0::2, 0::2] = part1
-        comb[:, :, 1::2, 1::2] = part2
-        comb[:, :, 0::2, 1::2] = part3
-        comb[:, :, 1::2, 0::2] = part4
-    return comb
-
-
 def fft(x):
     """
     Layer that performs a fast Fourier-Transformation.
@@ -172,10 +34,6 @@ def fft(x):
     arr = torch.stack((arr_real, arr_imag), dim=-1)
     # perform fourier transformation and switch imaginary and real part
     arr_fft = torch.ifft(arr, 2).permute(0, 3, 2, 1).transpose(2, 3)
-    # shift the lower frequencies in the middle
-    # axes = tuple(range(arr_fft.ndim))
-    # shift = [-(dim // 2) for dim in arr_fft.shape]
-    # arr_shift = torch.roll(arr_fft, shift, axes)
     return arr_fft
 
 
@@ -271,18 +129,6 @@ def btf_shift(x):
     btf = better_symmetry(btf)
     return btf
 
-def phase_range(phase):
-    # if isinstance(phase, float):
-    #     phase = torch.tensor([phase])
-    mult = phase / pi
-    mult[mult <= 1] = 0
-    mult[mult % 2 <= 1] -= 1
-    mult = torch.round(mult / 2)
-    mult[(phase / pi > 1) & (mult == 0)] = 1
-    phase = phase - mult * 2 * pi
-    return phase
-
-
 class GeneralRelu(nn.Module):
     def __init__(self, leak=None, sub=None, maxv=None):
         super().__init__()
@@ -336,45 +182,6 @@ def conv_layer(ni, nf, ks=3, stride=2, bn=True, **kwargs):
     if bn:
         layers.append(nn.BatchNorm2d(nf, eps=1e-5, momentum=0.1))
     return nn.Sequential(*layers)
-
-
-class RunningBatchNorm(nn.Module):
-    def __init__(self, nf, mom=0.1, eps=1e-5):
-        super().__init__()
-        self.mom, self.eps = mom, eps
-        self.mults = nn.Parameter(torch.ones(nf, 1, 1))
-        self.adds = nn.Parameter(torch.zeros(nf, 1, 1))
-        self.register_buffer("sums", torch.zeros(1, nf, 1, 1))
-        self.register_buffer("sqrs", torch.zeros(1, nf, 1, 1))
-        self.register_buffer("count", torch.tensor(0.0))
-        self.register_buffer("factor", torch.tensor(0.0))
-        self.register_buffer("offset", torch.tensor(0.0))
-        self.batch = 0
-
-    def update_stats(self, x):
-        bs, nc, *_ = x.shape
-        self.sums.detach_()
-        self.sqrs.detach_()
-        dims = (0, 2, 3)
-        s = x.sum(dims, keepdim=True)
-        ss = (x * x).sum(dims, keepdim=True)
-        c = s.new_tensor(x.numel() / nc)
-        mom1 = s.new_tensor(1 - (1 - self.mom) / sqrt(bs - 1))
-        self.sums.lerp_(s, mom1)
-        self.sqrs.lerp_(ss, mom1)
-        self.count.lerp_(c, mom1)
-        self.batch += bs
-        means = self.sums / self.count
-        varns = (self.sqrs / self.count).sub_(means * means)
-        if bool(self.batch < 20):
-            varns.clamp_min_(0.01)
-        self.factor = self.mults / (varns + self.eps).sqrt()
-        self.offset = self.adds - means * self.factor
-
-    def forward(self, x):
-        if self.training:
-            self.update_stats(x)
-        return x * self.factor + self.offset
 
 
 def conv(ni, nc, ks, stride, padding):
@@ -502,6 +309,9 @@ def load_pre_model(learn, pre_path, visualize=False):
         learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
         learn.loss = checkpoint["loss"]
+        learn.avg_loss.loss_train = checkpoint["train_loss"]
+        learn.avg_loss.loss_valid = checkpoint["valid_loss"]
+        learn.avg_loss.lrs = checkpoint["lrs"]
         learn.recorder.iters = checkpoint["iters"]
         learn.recorder.values = checkpoint["vals"]
         learn.recorder.train_losses = checkpoint["recorder_train_loss"]
@@ -520,6 +330,9 @@ def save_model(learn, model_path):
             "loss": learn.loss,
             "iters": learn.recorder.iters,
             "vals": learn.recorder.values,
+            "train_loss": learn.avg_loss.loss_train,
+            "valid_loss": learn.avg_loss.loss_valid,
+            "lrs": learn.avg_loss.lrs,
             "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
             "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
             "recorder_losses": learn.recorder.losses,
@@ -565,82 +378,6 @@ class LocallyConnected2d(nn.Module):
         if self.bias is not None:
             out += self.bias
         return out
-
-
-def create_rot_mat(alpha):
-    rot_mat = torch.tensor(
-        [[torch.cos(alpha), -torch.sin(alpha)], [torch.sin(alpha), torch.cos(alpha)]]
-    )
-    rot_mat = rot_mat.cuda()
-    return rot_mat
-
-
-def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot, center=None):
-    if center is None:
-        x_0 = y_0 = len(x) // 2
-    else:
-        rot_mat = create_rot_mat(torch.deg2rad(rot))
-        x_0, y_0 = ((center - len(x) // 2) @ rot_mat) + len(x) // 2
-    gauss = flux * torch.exp(
-        -((x_0 - x) ** 2 / (2 * (x_fwhm) ** 2) + (y_0 - y) ** 2 / (2 * (y_fwhm) ** 2))
-    )
-    gauss = gauss.cuda()
-    return gauss
-
-
-def create_grid(pixel):
-    x = torch.linspace(0, pixel - 1, steps=pixel)
-    y = torch.linspace(0, pixel - 1, steps=pixel)
-    X, Y = torch.meshgrid(x, y)
-    X = X.cuda()
-    Y = Y.cuda()
-    X.unsqueeze_(0)
-    Y.unsqueeze_(0)
-    mesh = torch.cat((X, Y))
-    x = torch.zeros(X.shape) + 1e-10
-    # grid = torch.tensor((x))
-    grid = x.clone().detach()
-    grid = grid.cuda()
-    grid = torch.cat((grid, mesh))
-    return grid
-
-
-def gauss_valid(params):  # setzt aus den einzelen parametern (54) ein bild zusammen
-    gauss_param = torch.split(params, 9)
-    grid = create_grid(63)
-    source = torch.tensor((grid[0]))
-    source = grid.clone().detach()
-    for i in range(len(gauss_param)):
-        cent = torch.tensor(
-            [
-                len(grid[0]) // 2 + gauss_param[1][i],
-                len(grid[0]) // 2 + gauss_param[2][i],
-            ]
-        )
-        cent = cent.cuda()
-        s = gaussian_component(
-            grid[1],
-            grid[2],
-            gauss_param[0][i],
-            gauss_param[3][i],
-            gauss_param[4][i],
-            rot=gauss_param[5][i],
-            center=cent,
-        )
-        source = torch.add(source, s)
-    return source
-
-
-def vaild_gauss_bs(in_put):
-    for i in range(in_put.shape[0]):
-        if i == 0:
-            source = gauss_valid(in_put[i])  # gauss parameter des ersten gausses
-            source.unsqueeze_(0)
-        else:
-            h = gauss_valid(in_put[i])
-            h.unsqueeze_(0)
-            source = torch.cat((source, h))
-    return source
 
 
 class ResBlock_amp(nn.Module):

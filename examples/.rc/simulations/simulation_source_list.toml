@@ -30,6 +30,7 @@ bundles_test = 1
 bundle_size = 500
 img_size = 63
 noise = false
+noise_level = 5
 
 [sampling_options]
 fourier = true
@@ -43,3 +44,4 @@ steps = 50
 keep_fft_files = true
 source_list = false
 compressed = false
+interpolation = false

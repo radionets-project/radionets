@@ -43,7 +43,8 @@ class TelegramLoggerCallback(Callback):
 
 
 class AvgLossCallback(Callback):
-    """Save the same average Loss for training and validation as printed to the terminal.
+    """Save the same average Loss for training and validation as printed to
+    the terminal.
 
     Parameters
     ----------
@@ -52,8 +53,12 @@ class AvgLossCallback(Callback):
     """
 
     def __init__(self):
-        self.loss_train = []
-        self.loss_valid = []
+        if not hasattr(self, "loss_train"):
+            self.loss_train = []
+        if not hasattr(self, "loss_valid"):
+            self.loss_valid = []
+        if not hasattr(self, "lrs"):
+            self.lrs = []
 
     def after_train(self):
         self.loss_train.append(self.recorder._train_mets.map(_maybe_item))
@@ -61,12 +66,28 @@ class AvgLossCallback(Callback):
     def after_validate(self):
         self.loss_valid.append(self.recorder._valid_mets.map(_maybe_item))
 
+    def after_batch(self):
+        self.lrs.append(self.opt.hypers[-1]["lr"])
+
     def plot_loss(self):
-        plt.plot(self.loss_train, label="train")
-        plt.plot(self.loss_valid, label="valid")
+        plt.plot(self.loss_train, label="Training loss")
+        plt.plot(self.loss_valid, label="Validation loss")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
+        plt.tight_layout()
+
+        train = np.array(self.loss_train)
+        valid = np.array(self.loss_valid)
+        if len(train[train < 0]) == 0 or len(valid[valid < 0]) == 0:
+            return True
+        else:
+            return False
+
+    def plot_lrs(self):
+        plt.plot(self.lrs)
+        plt.xlabel(r"Number of Batches")
+        plt.ylabel(r"Learning rate")
         plt.tight_layout()
 
 
@@ -88,78 +109,20 @@ class NormCallback(Callback):
         return a
 
 
-# class BatchTransformXCallback(Callback):
-#     _order = 2
-
-#     def __init__(self, tfm):
-#         self.tfm = tfm
-
-#     def batch_begin(self):
-#         print("TESTBATCH")
-#         self.run.xb = self.normalize_tfm(self)
-
-#     def normalize_tfm(self):
-#         print(self.path)
-#         norm = pd.read_csv(self.path)
-#         a = do_normalisation(self.run.xb.clone(), norm)
-#         assert self.run.xb[:, 0].mean() != a[:, 0].mean()
-#         # mean for imag and phase is approx 0
-#         # assert x[:, 1].mean() != a[:, 1].mean()
-#         return a
-
-
-# def view_tfm(*size):
-#     def _inner(x):
-#         """
-#         add correct shape (bs, #channels, shape of array)
-#         """
-#         a = x.view(*((-1,) + size))
-#         return a
-
-#     return _inner
-
-
-# def normalize_tfm(self):
-#     print(norm_path)
-#     norm = pd.read_csv(norm_path)
-#     a = do_normalisation(x.clone(), norm)
-#     assert x[:, 0].mean() != a[:, 0].mean()
-#     # mean for imag and phase is approx 0
-#     # assert x[:, 1].mean() != a[:, 1].mean()
-#     return a
-
-
-def zero_imag():
-    def _inner(x):
-        a = x
-        imag = a[:, 1, :]
-        num = 0
-        for i in range(imag.shape[0]):
-            if imag[i].max() < 1e-9:
-                # print(imag[i].mean().item())
-                num += 1
-                imag[i] = torch.zeros(imag.shape[1])
-        a[:, 1, :] = imag
-        # print(num)
-        return a
-
-    return _inner
-
-
 class DataAug(Callback):
     _order = 3
 
-    def begin_batch(self):
-        x = self.run.xb.clone()
-        y = self.run.yb.clone()
+    def before_batch(self):
+        x = self.xb[0].clone()
+        y = self.yb[0].clone()
         randint = np.random.randint(0, 4, x.shape[0])
         for i in range(x.shape[0]):
             x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
             x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
             y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
             y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
-        self.run.xb = x
-        self.run.yb = y
+        self.learn.xb = [x]
+        self.learn.yb = [y]
 
 
 class SaveTempCallback(Callback):

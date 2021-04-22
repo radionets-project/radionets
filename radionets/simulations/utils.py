@@ -8,13 +8,13 @@ import re
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from scipy import interpolate
 from skimage.transform import resize
 from scipy import interpolate
 from natsort import natsorted
 from radionets.dl_framework.data import (
     save_fft_pair,
     open_fft_pair,
-    open_fft_pair_npz,
     get_bundles,
     split_amp_phase,
     split_real_imag,
@@ -131,6 +131,7 @@ def read_config(config):
     sim_conf["bundle_size"] = config["image_options"]["bundle_size"]
     sim_conf["img_size"] = config["image_options"]["img_size"]
     sim_conf["noise"] = config["image_options"]["noise"]
+    sim_conf["noise_level"] = config["image_options"]["noise_level"]
 
     sim_conf["amp_phase"] = config["sampling_options"]["amp_phase"]
     sim_conf["real_imag"] = config["sampling_options"]["real_imag"]
@@ -211,10 +212,7 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
         rescaled input image
     """
     y = resize(
-        bundle.swapaxes(0, 2),
-        (pixel, pixel),
-        anti_aliasing=True,
-        mode="constant",
+        bundle.swapaxes(0, 2), (pixel, pixel), anti_aliasing=True, mode="constant",
     ).swapaxes(2, 0)
     y_prep = y.copy()
     if noise:
@@ -287,7 +285,7 @@ def get_noise(image, scale, mean=0, std=1):
     return np.random.normal(mean, std, size=image.shape) * scale
 
 
-def add_noise(bundle):
+def add_noise(bundle, noise_level):
     """
     Used for adding noise and plotting the original and noised picture,
     if asked. Using 0.05 * max(image) as scaling factor.
@@ -296,8 +294,8 @@ def add_noise(bundle):
     ----------
     bundle: path
         path to hdf5 bundle file
-    preview: bool
-        enable/disable showing 10 preview images
+    noise_level: int
+        noise level in percent
 
     Returns
     -------
@@ -305,7 +303,7 @@ def add_noise(bundle):
         bundle with noised images
     """
     bundle_noised = np.array(
-        [img + get_noise(img, (img.max() * 0.05)) for img in bundle]
+        [img + get_noise(img, (img.max() * noise_level/100)) for img in bundle]
     )
     return bundle_noised
 
@@ -348,37 +346,43 @@ def calc_norm(sim_conf):
     df = pd.DataFrame(data=d)
     df.to_csv(sim_conf["data_path"] + "/norm_factors.csv", index=False)
 
-def interpol(img):
-    """Interpolates ftt sampled amplitude and phase data.
 
+def interpol(img):
+    """Interpolates fft sampled amplitude and phase data.
     Parameters
     ----------
     img : array
         array with shape 2,width,heigth
         input image array with amplitude and phase on axis 0
-
     Returns
     -------
     array
         array with shape 2,width,heigth
         interpolated image array with amplitude and phase on axis 0
     """
-    grid_x, grid_y = np.mgrid[0:len(img[0,0]):1, 0:len(img[0,0]):1]
+    grid_x, grid_y = np.mgrid[0 : len(img[0, 0]) : 1, 0 : len(img[0, 0]) : 1]
 
     idx_amp = np.nonzero(img[0])
-    amp = interpolate.griddata((idx_amp[0],idx_amp[1]), img[0][idx_amp], (grid_x, grid_y), method='nearest')
-    
+    amp = interpolate.griddata(
+        (idx_amp[0], idx_amp[1]), img[0][idx_amp], (grid_x, grid_y), method="nearest"
+    )
+
     img[1][img[1] < 0] = 0
     idx_phase = np.nonzero(img[1])
-    phase = interpolate.griddata((idx_phase[0],idx_phase[1]), img[1][idx_phase], (grid_x, grid_y), method='nearest')
+    phase = interpolate.griddata(
+        (idx_phase[0], idx_phase[1]),
+        img[1][idx_phase],
+        (grid_x, grid_y),
+        method="nearest",
+    )
 
-    mask = np.ones((len(img[0,0]),len(img[0,0])))
+    mask = np.ones((len(img[0, 0]), len(img[0, 0])))
     mask[1::2, 1::2] = 0
     mask[::2, ::2] = 0
-    for i in range(len(img[0,0])):
-        mask[i, len(img[0,0])-1-i:] = 1-mask[i, len(img[0,0])-1-i:]
-    
-    phase_fl = -np.flip(phase, [0,1])
-    phase = phase * mask + phase_fl * (1-mask)
+    for i in range(len(img[0, 0])):
+        mask[i, len(img[0, 0]) - 1 - i :] = 1 - mask[i, len(img[0, 0]) - 1 - i :]
 
-    return np.array([amp,phase])
+    phase_fl = -np.flip(phase, [0, 1])
+    phase = phase * mask + phase_fl * (1 - mask)
+
+    return np.array([amp, phase])

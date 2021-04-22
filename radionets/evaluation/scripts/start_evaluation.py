@@ -4,9 +4,12 @@ from radionets.evaluation.utils import read_config
 from radionets.evaluation.train_inspection import (
     create_inspection_plots,
     create_source_plots,
+    create_contour_plots,
     evaluate_viewing_angle,
     evaluate_dynamic_range,
     evaluate_ms_ssim,
+    evaluate_mean_diff,
+    evaluate_area,
 )
 
 
@@ -52,6 +55,13 @@ def main(configuration_path):
 
         click.echo(f"\nCreated {eval_conf['num_images']} source predictions.\n")
 
+    if eval_conf["plot_contour"]:
+        create_contour_plots(
+            eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
+        )
+
+        click.echo(f"\nCreated {eval_conf['num_images']} contour plots.\n")
+
     if eval_conf["viewing_angle"]:
         click.echo("\nStart evaluation of viewing angles.\n")
         evaluate_viewing_angle(eval_conf)
@@ -63,3 +73,11 @@ def main(configuration_path):
     if eval_conf["ms_ssim"]:
         click.echo("\nStart evaluation of ms ssim.\n")
         evaluate_ms_ssim(eval_conf)
+
+    if eval_conf["mean_diff"]:
+        click.echo("\nStart evaluation of mean difference.\n")
+        evaluate_mean_diff(eval_conf)
+
+    if eval_conf["area"]:
+        click.echo("\nStart evaluation of the area.\n")
+        evaluate_area(eval_conf)

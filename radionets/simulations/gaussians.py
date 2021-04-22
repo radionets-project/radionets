@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
 from scipy import ndimage
-from radionets.dl_framework.data import save_fft_pair, save_fft_pair_list
+from radionets.dl_framework.data import save_fft_pair
 from radionets.simulations.utils import adjust_outpath, add_noise
 
 
@@ -16,6 +16,7 @@ def simulate_gaussian_sources(
     num_pointlike,
     num_pointsources,
     noise,
+    noise_level,
     source_list,
 ):
     for i in tqdm(range(num_bundles)):
@@ -23,7 +24,7 @@ def simulate_gaussian_sources(
         ext_gaussian = 0
         pointlike = 0
         pointsource = 0
-        list_sources = 0
+        list_sources = None
 
         if num_comp_ext is not None:
             ext_gaussian = create_ext_gauss_bundle(grid)
@@ -32,20 +33,22 @@ def simulate_gaussian_sources(
                 grid[:, 0], bundle_size, num_pointlike, True, source_list
             )
         if num_pointsources is not None:
-            pointsource = gauss_pointsources(grid[:, 0], bundle_size, num_pointsources)
+            pointsource = gauss_pointsources(
+                grid[:, 0], bundle_size, num_pointsources, source_list
+            )
         if source_list:
-            list_sources = pointlike[1]
-            pointlike = pointlike[0]
+            list_sources = pointsource[1]
+            pointsource = pointsource[0]
 
         bundle = ext_gaussian + pointlike + pointsource
         images = bundle.copy()
 
         if noise:
-            images = add_noise(images)
+            images = add_noise(images, noise_level)
 
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
         path = adjust_outpath(data_path, "/fft_" + option)
-        save_fft_pair_list(path, bundle_fft, bundle, list_sources)
+        save_fft_pair(path, bundle_fft, bundle, list_sources)
 
 
 def create_grid(pixel, bundle_size):
@@ -391,17 +394,20 @@ def create_gauss(img, N, sources, spherical, source_list):
 # pointsources
 
 
-def gauss_pointsources(img, num_img, sources):
-    mx = np.random.randint(0, 63, size=(num_img, sources))
-    my = np.random.randint(0, 63, size=(num_img, sources))
-    amp = (np.random.randint(0, 100, size=(num_img)) * np.random.random()) / 1e2
-    sigma = 0.05
-    for i in range(num_img):
-        targets = sources
-        # targets = np.random.randint(2, sources + 1)
-        for j in range(targets):
+def gauss_pointsources(img, N, sources, source_list):
+    mx = np.random.randint(0, 63, size=(N, sources))
+    my = np.random.randint(0, 63, size=(N, sources))
+    amp = np.random.randint(1, 10, size=(N))
+    sigma = 0.005
+    s = np.zeros((N, sources, 3))  # changed from 5
+    for i in range(N):
+        for j in range(sources):
             g = gauss(mx[i, j], my[i, j], sigma, sigma, amp[i])
+            s[i, j] = np.array([mx[i, j], my[i, j], amp[i]])
             img[i] += g
+    print(s.shape)
+    if source_list:
+        return img, s
     return np.array(img)
 
 
