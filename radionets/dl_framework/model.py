@@ -6,6 +6,8 @@ from pathlib import Path
 from math import sqrt, pi
 from fastcore.foundation import L
 from torch.nn.common_types import  _size_4_t
+import numpy as np
+import radionets.simulations.utils as utils
 
 
 class Lambda(nn.Module):
@@ -508,40 +510,23 @@ def load_pre_model(learn, pre_path, visualize=False):
         learn.recorder.lrs = checkpoint["recorder_lrs"]
 
 
-def save_model(learn, model_path, gan):
+def save_model(learn, model_path):
     # print(learn.model.generator)
-    if gan:
-        torch.save(
-            {   
-                "model": learn.model.generator.state_dict(),
-                "opt": learn.opt.state_dict(),
-                "epoch": learn.epoch,
-                "loss": learn.loss,
-                "iters": learn.recorder.iters,
-                "vals": learn.recorder.values,
-                "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
-                "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
-                "recorder_losses": learn.recorder.losses,
-                "recorder_lrs": learn.recorder.lrs,
-            },
-            model_path,
-        )
-    else:
-        torch.save(
-            {   
-                "model": learn.model.state_dict(),
-                "opt": learn.opt.state_dict(),
-                "epoch": learn.epoch,
-                "loss": learn.loss,
-                "iters": learn.recorder.iters,
-                "vals": learn.recorder.values,
-                "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
-                "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
-                "recorder_losses": learn.recorder.losses,
-                "recorder_lrs": learn.recorder.lrs,
-            },
-            model_path,
-        )
+    torch.save(
+        {   
+            "model": learn.model.state_dict(),
+            "opt": learn.opt.state_dict(),
+            "epoch": learn.epoch,
+            "loss": learn.loss,
+            "iters": learn.recorder.iters,
+            "vals": learn.recorder.values,
+            "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
+            "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
+            "recorder_losses": learn.recorder.losses,
+            "recorder_lrs": learn.recorder.lrs,
+        },
+        model_path,
+    )
 
 
 class LocallyConnected2d(nn.Module):
@@ -908,7 +893,7 @@ def better_padding(input, padding):
     
     # pad left
     i0 = out_shape[3] - padding[-4] - padding[-3]
-    i1 = out_shape[3] -padding[-3]
+    i1 = out_shape[3] - padding[-3]
     o0 = 0
     o1 = padding[-4]
     out[:, :, padding[-2]:out_shape[2]-padding[-1], o0:o1] = out[:, :, padding[-2]-1:out_shape[2]-padding[-1]-1, i0:i1]
