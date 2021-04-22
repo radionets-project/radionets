@@ -18,6 +18,10 @@ import numpy as np
 from astropy.io import fits
 from PIL import Image
 import cv2
+import radionets.dl_framework.data as dt
+import re
+from natsort import natsorted
+from PIL import Image
 
 
 def process_data(
@@ -35,30 +39,45 @@ def process_data(
 ):
     
     print(f"\n Loading VLBI data set.\n")
-    bundle_paths = get_real_bundle_paths(data_path)
-    size = len(bundle_paths[0])
+    bundles = dt.get_bundles('/net/big-tank/POOL/users/sfroese/vipy/eht/m87/')
+    freq = 227297*10**6 # hard code #eht 227297
+    bundles_target = dt.get_bundles(bundles[0])
+    bundles_input = dt.get_bundles(bundles[1])
+    bundle_paths_target = natsorted(bundles_target)
+    bundle_paths_input = natsorted(bundles_input)
+    size = len(bundle_paths_target)
     img = np.zeros((size,256,256))
-    samps = np.zeros((size,4,21000))
+    samps = np.zeros((size,4,21036)) # hard code
     for i in tqdm(range(size)):
-        sampled = bundle_paths[0][i]
-        target = bundle_paths[1][i]
+        sampled = bundle_paths_input[i]
+        target = bundle_paths_target[i]
 
-        with fits.open(target) as hdul:
-            img[i] = hdul[0].data
-        
+        img[i] = np.asarray(Image.open(str(target)))
+        # img[i] = img[i]/np.sum(img[i])
+    
         with fits.open(sampled) as hdul:
-            data = hdul[4].data
-            samps[i] = [np.append(data['UCOORD']/hdul[1].data['EFF_WAVE'],-data['UCOORD']/hdul[1].data['EFF_WAVE']),np.append(data['VCOORD']/hdul[1].data['EFF_WAVE'],-data['VCOORD']/hdul[1].data['EFF_WAVE']),np.append(data['VISAMP'],data['VISAMP']),np.append(data['VISPHI'],-data['VISPHI'])]
+            data = hdul[0].data
+            cmplx = data['DATA'] 
+            x = cmplx[...,0,0]
+            y = cmplx[...,0,1]
+            w = cmplx[...,0,2]
+            x = np.squeeze(x)
+            y = np.squeeze(y)
+            w = np.squeeze(w)
+            ap = np.sqrt(x**2+y**2)
+            ph = np.angle(x+1j*y)
+            samps[i] = [np.append(data['UU--']*freq,-data['UU--']*freq),np.append(data['VV--']*freq,-data['VV--']*freq),np.append(ap,ap),np.append(ph,-ph)]
 
     print(f"\n Gridding VLBI data set.\n")
 
     # Generate Mask
     u_0 = samps[0][0]
     v_0 = samps[0][1]
-    N = 127
-    mask = np.zeros((N,N,21000))
-    umax = max(u_0)
-    delta_u = 2*umax/N
+    N = 63 # hard code
+    mask = np.zeros((N,N,u_0.shape[0]))
+    fov = 0.00018382*np.pi/(3600*180) # hard code #default 0.00018382
+    # delta_u = 1/(fov*N/256) # hard code
+    delta_u = 1/(fov)
     for i in range(N):
         for j in range(N):
             u_cell = (j-N/2)*delta_u
@@ -73,55 +92,15 @@ def process_data(
     for i in tqdm(range(samps.shape[0])):
         samp_img[i][0] = np.matmul(mask, samps[i][2].T)/points
         samp_img[i][0] = (np.log10(samp_img[i][0] + 1e-10) / 10) + 1 
-        samp_img[i][1] = np.deg2rad(np.matmul(mask, samps[i][3].T)/points)
+        samp_img[i][1] = np.matmul(mask, samps[i][3].T)/points
         img_resized[i] = cv2.resize(img[i], (N,N))
+        img_resized[i] = img_resized[i]/np.sum(img_resized[i])
 
-    truth_fft = np.array([np.fft.fftshift(np.fft.fft2(im)) for im in img_resized])
+    # truth_fft = np.array([np.fft.fft2(np.fft.fftshift(img)) for im in img_resized])
+    truth_fft = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(img_resized, axes=(1,2)), axes=(1,2)), axes=(1,2))
     fft_scaled_truth = prepare_fft_images(truth_fft, True, False)
 
     out = data_path + "/samp_train0.h5"
-    save_fft_pair(out, samp_img[:100], fft_scaled_truth[:100])
+    save_fft_pair(out, samp_img[:500], fft_scaled_truth[:500])
     out = data_path + "/samp_valid0.h5"
-    save_fft_pair(out, samp_img[100:], fft_scaled_truth[100:])
-
-    # return samp_img, fft_scaled_truth
-        # f = h5py.File(path, "r")
-        # z = np.array(f["z"])
-        # size = fft.shape[-1]
-
-        # fft_scaled = prepare_fft_images(fft.copy(), amp_phase, real_imag)
-        # truth_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in truth])
-        # fft_scaled_truth = prepare_fft_images(truth_fft, amp_phase, real_imag)
-
-        # if specific_mask is True:
-        #     fft_samp = sample_freqs(
-        #         fft_scaled.copy(),
-        #         antenna_config,
-        #         size,
-        #         lon,
-        #         lat,
-        #         steps,
-        #         plot=False,
-        #         test=False,
-        #     )
-        # else:
-        #     fft_samp = sample_freqs(
-        #         fft_scaled.copy(),
-        #         antenna_config,
-        #         size=size,
-        #         specific_mask=False,
-        #     )
-        # if interpolation:
-        #     for i in range(len(fft_samp[:, 0, 0, 0])):
-        #         fft_samp[i] = interpol(fft_samp[i])
-
-        # out = data_path + "/samp_" + path.name.split("_")[-1]
-
-        # if fourier:
-        #     if compressed:
-        #         savez_compressed(out, x=fft_samp, y=fft_scaled)
-        #         os.remove(path)
-        #     else:
-        #         save_fft_pair(out, fft_samp, fft_scaled_truth)
-        # else:
-        #     save_fft_pair_list(out, fft_samp, truth, z)
+    save_fft_pair(out, samp_img[500:], fft_scaled_truth[500:])
