@@ -11,7 +11,6 @@ from radionets.dl_framework.regularization import (
     rot,
     calc_spec,
 )
-from fastai.vision import gan
 import radionets.dl_framework.inspection as inspec
 
 
@@ -496,14 +495,3 @@ def spe_(x, y):
     k = sum(loss)
     loss = k / len(x)
     return loss
-
-
-#SRGAN
-def gen_loss(x,y,z):
-    l = gan.gan_loss_from_func(nn.L1Loss(), nn.L1Loss(), weights_gen=(1e-3,1))[0]
-    return l(x,y,z)
-
-
-def disc_loss(x,y):
-    l = gan.gan_loss_from_func(nn.L1Loss(), nn.L1Loss(), weights_gen=(1e-3,1))[1]
-    return l(x,y)
