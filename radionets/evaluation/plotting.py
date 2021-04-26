@@ -19,10 +19,8 @@ from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_difference
 from pytorch_msssim import ms_ssim
 from matplotlib.patches import Rectangle
-from matplotlib.colors import LogNorm
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
-import matplotlib as mpl
 
 # make nice Latex friendly plots
 # mpl.use("pgf")
