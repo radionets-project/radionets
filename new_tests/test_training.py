@@ -22,6 +22,29 @@ def test_create_databunch():
     assert data.c is None
 
 
+def test_define_learner():
+    from radionets.dl_framework.learner import define_learner
+    import toml
+    from radionets.dl_training.utils import read_config, define_arch, create_databunch
+
+    config = toml.load("./new_tests/training.toml")
+    train_conf = read_config(config)
+
+    arch = define_arch(arch_name=train_conf["arch_name"], img_size=63)
+    data = create_databunch(
+        data_path=train_conf["data_path"],
+        fourier=train_conf["fourier"],
+        batch_size=train_conf["bs"],
+        source_list=train_conf["source_list"],
+    )
+
+    learn = define_learner(data, arch, train_conf)
+
+    assert learn.loss_func is not None
+    assert str(learn.cbs[0]) == "TrainEvalCallback"
+    assert str(learn.cbs[1]) == "Recorder"
+
+
 def test_training():
     from radionets.dl_training.scripts.start_training import main
 
