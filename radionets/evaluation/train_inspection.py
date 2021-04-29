@@ -47,6 +47,13 @@ def get_prediction(conf, num_images=None, rand=False):
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     pred = eval_model(img_test, model)
+
+    # test for uncertainty
+    if pred.shape[1] == 4:
+        pred_1 = pred[:, 0, :].unsqueeze(1)
+        pred_2 = pred[:, 2, :].unsqueeze(1)
+        pred = torch.cat((pred_1, pred_2), dim=1)
+
     return pred, img_test, img_true
 
 
