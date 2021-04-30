@@ -230,14 +230,10 @@ def comb_likelihood(x, y):
     y_phase = y[:, 1]
 
     loss_amp = (
-        0.5 * torch.log(amp_unc.pow(2))
-        + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
-        + (y_amp - amp_pred)
+        2 * torch.log(amp_unc) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
     ).mean()
     loss_phase = (
-        0.5 * torch.log(phase_unc.pow(2))
-        + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
-        + (y_phase - phase_pred)
+        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
     ).mean()
 
     loss = loss_amp + loss_phase
