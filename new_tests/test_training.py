@@ -53,43 +53,57 @@ def test_training():
     result = runner.invoke(main, options)
     assert result.exit_code == 0
 
+
 def test_save_model():
     import torch
     from collections.abc import Mapping
 
     def check(x):
-        if torch.is_tensor(x): 
+        if torch.is_tensor(x):
             assert x.nelement != 0
             assert ~x.isnan().any()
             assert ~(0 in x)
-        #assert x != None
+            # assert x != None
         print("Check passed")
 
     model = torch.load("new_tests/build/test_training/test_training.model")
     fastai_list = type(model["opt"]["hypers"])
 
-    for key, value in model.items() :
+    for key, value in model.items():
         if isinstance(value, Mapping):
             for key2, value2 in value.items():
-                if torch.is_tensor(value2) or isinstance(value2, int): check(value2)
+                if torch.is_tensor(value2) or isinstance(value2, int):
+                    check(value2)
                 elif isinstance(value2, list) or type(value2) == fastai_list:
                     for ele3 in value2:
                         for key4, value4 in ele3.items():
-                            if torch.is_tensor(value4) or isinstance(value4, (int, float)): check(value4)
-                            else: assert False, 'Unrecognised type {} {}'.format(key4, type(value4))
-                else: assert False, 'Unrecognised type {} {}'.format(key2, type(value2))
+                            if torch.is_tensor(value4) or isinstance(
+                                value4, (int, float)
+                            ):
+                                check(value4)
+                            else:
+                                assert False, "Unrecognised type {} {}".format(
+                                    key4, type(value4)
+                                )
+                else:
+                    assert False, "Unrecognised type {} {}".format(key2, type(value2))
         elif isinstance(value, list) or type(value) == fastai_list:
             for ele2 in value:
-                if isinstance(ele2, (int, float)) or torch.is_tensor(ele2): check(ele2)
+                if isinstance(ele2, (int, float)) or torch.is_tensor(ele2):
+                    check(ele2)
                 elif type(ele2) == fastai_list:
                     for ele3 in ele2:
-                        if isinstance(ele3, (float)): check(ele3)
-                        else: assert False, 'Unrecognised type {}'.format(type(ele3))
-                else: assert False, 'Unrecognised type {}'.format(type(ele2))
-        else: check(value)
+                        if isinstance(ele3, (float)):
+                            check(ele3)
+                        else:
+                            assert False, "Unrecognised type {}".format(type(ele3))
+                else:
+                    assert False, "Unrecognised type {}".format(type(ele2))
+        else:
+            check(value)
 
 
-def test_load_pretrain_model():
+def test_load_pretrained_model():
     import toml
     from radionets.dl_training.scripts.start_training import main
 
@@ -104,6 +118,7 @@ def test_load_pretrain_model():
     result = runner.invoke(main, options)
 
     assert result.exit_code == 0
+
 
 def test_plot_loss():
     from radionets.dl_training.scripts.start_training import main
