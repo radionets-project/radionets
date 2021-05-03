@@ -64,7 +64,7 @@ def test_save_model():
             assert ~x.isnan().any()
             assert ~(0 in x)
 
-        assert x is not None
+        # assert x is not None
         print("Check passed")
 
     model = torch.load("new_tests/build/test_training/test_training.model")
