@@ -155,6 +155,32 @@ def splitted_L1(x, y):
     return loss_amp * 10 + loss_phase
 
 
+def splitted_L1_unc(x, y):
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    l1 = nn.L1Loss()
+    loss_amp = l1(pred_amp, tar_amp)
+    loss_phase = l1(pred_phase, tar_phase)
+    return loss_amp + loss_phase * 10
+
+
+def splitted_SmoothL1_unc(x, y):
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    l1 = nn.SmoothL1Loss()
+    loss_amp = l1(pred_amp, tar_amp)
+    loss_phase = l1(pred_phase, tar_phase)
+    return loss_amp + loss_phase * 10
+
+
 def mse(x, y):
     mse = nn.MSELoss()
     loss = mse(x, y)
@@ -204,14 +230,10 @@ def comb_likelihood(x, y):
     y_phase = y[:, 1]
 
     loss_amp = (
-        0.5 * torch.log(amp_unc.pow(2))
-        + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
-        + (y_amp - amp_pred)
+        2 * torch.log(amp_unc) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
     ).mean()
     loss_phase = (
-        0.5 * torch.log(phase_unc.pow(2))
-        + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
-        + (y_phase - phase_pred)
+        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
     ).mean()
 
     loss = loss_amp + loss_phase
