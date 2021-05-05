@@ -371,7 +371,7 @@ class UncertaintyWrapper(nn.Module):
 
         pred = self.pred(x)
 
-        x = pred + inp
+        x = torch.abs(pred - inp)
 
         unc = self.uncertainty(x)
 
