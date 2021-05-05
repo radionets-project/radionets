@@ -6,6 +6,7 @@ from radionets.dl_framework.callbacks import (
     TelegramLoggerCallback,
     DataAug,
     AvgLossCallback,
+    SwitchLoss,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -69,6 +70,7 @@ def define_learner(
                 SaveTempCallback(model_path=model_path),
                 AvgLossCallback,
                 DataAug,
+                SwitchLoss(second_loss=getattr(loss_functions, "comb_likelihood"))
             ]
         )
     if train_conf["telegram_logger"] and not lr_find:

@@ -138,3 +138,14 @@ class SaveTempCallback(Callback):
             out = p / f"temp_{self.epoch + 1}.model"
             save_model(self, out)
             print(f"\nFinished Epoch {self.epoch + 1}, model saved.\n")
+
+
+class SwitchLoss(Callback):
+    _order = 5
+
+    def __init__(self, second_loss):
+        self.second_loss = second_loss
+
+    def before_epoch(self):
+        if (self.epoch + 1) > 100:
+            self.learn.loss_func = self.second_loss
