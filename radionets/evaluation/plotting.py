@@ -355,8 +355,8 @@ def visualize_source_reconstruction(
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
-    # plt.style.use("./paper_large_3.rc")
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
+    plt.style.use("./paper_large_3.rc")
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
     ax1.plot(
         x_space,
         m_pred * x_space + n_pred,
@@ -377,9 +377,9 @@ def visualize_source_reconstruction(
     a = check_vmin_vmax(ifft_pred - ifft_truth)
     im3 = ax3.imshow(ifft_pred - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
 
-    make_axes_nice(fig, ax1, im1, r"FFT Prediction")
-    make_axes_nice(fig, ax2, im2, r"FFT Truth")
-    make_axes_nice(fig, ax3, im3, r"FFT Diff")
+    make_axes_nice(fig, ax1, im1, r"")
+    make_axes_nice(fig, ax2, im2, r"")
+    make_axes_nice(fig, ax3, im3, r"")
 
     ax1.set_ylabel(r"Pixels")
     ax1.set_xlabel(r"Pixels")

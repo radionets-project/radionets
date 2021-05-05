@@ -273,9 +273,9 @@ def load_pre_model(learn, pre_path, visualize=False):
         learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
         learn.loss = checkpoint["loss"]
-        learn.avg_loss.loss_train = checkpoint["train_loss"]
-        learn.avg_loss.loss_valid = checkpoint["valid_loss"]
-        learn.avg_loss.lrs = checkpoint["lrs"]
+        learn.avg_loss.loss_train = []
+        learn.avg_loss.loss_valid = []
+        learn.avg_loss.lrs = []
         learn.recorder.iters = checkpoint["iters"]
         learn.recorder.values = checkpoint["vals"]
         learn.recorder.train_losses = checkpoint["recorder_train_loss"]
