@@ -181,6 +181,27 @@ def splitted_SmoothL1_unc(x, y):
     return loss_amp + loss_phase * 10
 
 
+def splitted_MSE_unc(x, y):
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+
+    unc_amp = x[:, 1, :]
+    unc_phase = x[:, 3, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    MSE = nn.MSELoss()
+    loss_amp = MSE(pred_amp, tar_amp)
+    loss_phase = MSE(pred_phase, tar_phase)
+
+    unc = (unc_amp - (tar_amp - pred_amp).detach())**2 + \
+          (unc_phase - (tar_phase - pred_phase).detach())**2
+    loss = loss_amp + loss_phase + unc.mean()
+
+    return loss
+
+
 def mse(x, y):
     mse = nn.MSELoss()
     loss = mse(x, y)
@@ -237,10 +258,6 @@ def comb_likelihood(x, y):
     ).mean()
 
     loss = loss_amp + loss_phase
-    # print("amp: ", loss_amp)
-    # print("phase: ", loss_phase)
-    # print(loss)
-    # assert unc.shape == y_pred.shape == y.shape
     return loss
 
 
