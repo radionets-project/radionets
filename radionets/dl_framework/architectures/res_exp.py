@@ -5,7 +5,7 @@ from radionets.dl_framework.model import (
     Lambda,
     symmetry,
     GeneralELU,
-    LocallyConnected2d
+    LocallyConnected2d,
 )
 from functools import partial
 
@@ -329,7 +329,14 @@ class Uncertainty(nn.Module):
         )
 
         self.final = nn.Sequential(
-            LocallyConnected2d(32, 2, img_size, 1, stride=1, bias=False,)
+            LocallyConnected2d(
+                32,
+                2,
+                img_size,
+                1,
+                stride=1,
+                bias=False,
+            )
         )
 
         self.symmetry = Lambda(partial(symmetry, mode="real"))
@@ -368,6 +375,14 @@ class UncertaintyWrapper(nn.Module):
 
         unc = self.uncertainty(x)
 
-        val = torch.cat([pred[:, 0].unsqueeze(1), unc[:, 0].unsqueeze(1), pred[:, 1].unsqueeze(1), unc[:, 1].unsqueeze(1)], dim=1)
+        val = torch.cat(
+            [
+                pred[:, 0].unsqueeze(1),
+                unc[:, 0].unsqueeze(1),
+                pred[:, 1].unsqueeze(1),
+                unc[:, 1].unsqueeze(1),
+            ],
+            dim=1,
+        )
 
         return val
