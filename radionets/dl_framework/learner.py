@@ -70,7 +70,7 @@ def define_learner(
                 SaveTempCallback(model_path=model_path),
                 AvgLossCallback,
                 DataAug,
-                SwitchLoss(second_loss=getattr(loss_functions, "comb_likelihood"))
+                SwitchLoss(second_loss=getattr(loss_functions, "comb_likelihood")),
             ]
         )
     if train_conf["telegram_logger"] and not lr_find:
