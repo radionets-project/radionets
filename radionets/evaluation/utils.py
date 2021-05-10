@@ -209,7 +209,11 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     arch: architecture object
         architecture with pretrained weigths
     """
-    if "filter_deep" in arch_name or "resnet" in arch_name:
+    if (
+        "filter_deep" in arch_name
+        or "resnet" in arch_name
+        or "Uncertainty" in arch_name
+    ):
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
