@@ -147,5 +147,5 @@ class SwitchLoss(Callback):
         self.second_loss = second_loss
 
     def before_epoch(self):
-        if (self.epoch + 1) > 100:
+        if (self.epoch + 1) > 25:
             self.learn.loss_func = self.second_loss
