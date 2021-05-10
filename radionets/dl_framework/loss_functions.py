@@ -195,8 +195,9 @@ def splitted_MSE_unc(x, y):
     loss_amp = MSE(pred_amp, tar_amp)
     loss_phase = MSE(pred_phase, tar_phase)
 
-    unc = (unc_amp - (tar_amp - pred_amp).detach())**2 + \
-          (unc_phase - (tar_phase - pred_phase).detach())**2
+    unc = (unc_amp - (tar_amp - pred_amp).detach()) ** 2 + (
+        unc_phase - (tar_phase - pred_phase).detach()
+    ) ** 2
     loss = loss_amp + loss_phase + unc.mean()
 
     return loss
