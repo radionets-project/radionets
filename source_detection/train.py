@@ -8,10 +8,10 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 path = get_bundles('//net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/train/')
-iterations = 180000
+iterations = 240000
 n_classes = 5 #nodiff
-#checkpoint = None
-checkpoint = '/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300.pth.tar'
+checkpoint = None
+#checkpoint = '/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300_e120.pth.tar'
 batch_size = 32
 workers = 4
 lr = 1e-4
@@ -175,7 +175,7 @@ def main():
 def train(data_loader, model, loss_function, optimizer, epochs):
     
     model.train()
-    losses = np.zeros(470)
+    losses = np.zeros(1877)
     for i, (images, boxes, labels) in enumerate(data_loader):
         images = images.to('cuda')
         

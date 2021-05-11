@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import torch 
 import torchvision
 import os
+import matplotlib.pyplot as plt
 
 
 # -
@@ -97,8 +98,7 @@ class base_maps(nn.Module):
         out = F.relu(self.conv14(out))  
 
         fmap15 = F.relu(self.conv15(out))  # (N, 1024, 19, 19)
-
-     
+        
         base_fmaps = {'fmap7': fmap7,'fmap10': fmap10, 'fmap15':fmap15}
         return base_fmaps
 
@@ -151,7 +151,6 @@ class adv_maps(nn.Module):
         return fmaps
 
 
-# +
 class feature_pyramid(nn.Module):
     def __init__(self):
         super(feature_pyramid, self).__init__()
@@ -195,8 +194,8 @@ class feature_pyramid(nn.Module):
         p7 = self.smooth7(p7)
 
         return p7, p10, p15, p17, p19, p21, p23
-        
-        
+
+
 
 # +
 def create_prior_boxes():

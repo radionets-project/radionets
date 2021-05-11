@@ -153,7 +153,7 @@ class adv_maps(nn.Module):
 
 # +
 def create_prior_boxes():
-    fmap_dims = {    'fmap7' : 75, #update
+    fmap_dims = {    #'fmap7' : 75, #update
                      'fmap10': 38, #was 38 with old 37
                      'fmap15': 19, #was 19 with old 18
                      'fmap17': 10, #was 10 with old 9
@@ -162,7 +162,7 @@ def create_prior_boxes():
                      'fmap23': 1}
     maps = list(fmap_dims.keys()) 
    
-    scales = {    'fmap7' : 0.02,
+    scales = {    #'fmap7' : 0.02,
                   'fmap10': 0.06,
                   'fmap15': 0.11,
                   'fmap17': 0.16,
@@ -171,7 +171,7 @@ def create_prior_boxes():
                   'fmap23': 0.3}
     
     
-    aspect_ratios = {'fmap7': [1.],
+    aspect_ratios = {#'fmap7': [1.],
                      'fmap10': [1.],
                      'fmap15': [1.],
                      'fmap17': [1.],
@@ -215,14 +215,14 @@ class predconvs(nn.Module):
         #             'fmap21': 4,
         #             'fmap23': 4}
         
-        n_boxes = {  'fmap7': 2,
+        n_boxes = {  #'fmap7': 2,
                      'fmap10': 2,
                      'fmap15': 2,
                      'fmap17': 2,
                      'fmap19': 2,
                      'fmap21': 2,
                      'fmap23': 2}
-        self.loc_fmap7 = nn.Conv2d(256, n_boxes['fmap7'] * 4, kernel_size=3, padding=1)
+       # self.loc_fmap7 = nn.Conv2d(256, n_boxes['fmap7'] * 4, kernel_size=3, padding=1)
         self.loc_fmap10 = nn.Conv2d(512, n_boxes['fmap10'] * 4, kernel_size=3, padding=1)
         self.loc_fmap15 = nn.Conv2d(1024, n_boxes['fmap15'] * 4, kernel_size=3, padding=1)
         self.loc_fmap17 = nn.Conv2d(512, n_boxes['fmap17'] * 4, kernel_size=3, padding=1)
@@ -230,7 +230,7 @@ class predconvs(nn.Module):
         self.loc_fmap21 = nn.Conv2d(256, n_boxes['fmap21'] * 4, kernel_size=3, padding=1)
         self.loc_fmap23 = nn.Conv2d(256, n_boxes['fmap23'] * 4, kernel_size=3, padding=1)
         
-        self.cl_fmap7 = nn.Conv2d(256, n_boxes['fmap7'] * nclasses, kernel_size=3, padding=1)
+        #self.cl_fmap7 = nn.Conv2d(256, n_boxes['fmap7'] * nclasses, kernel_size=3, padding=1)
         self.cl_fmap10 = nn.Conv2d(512, n_boxes['fmap10'] * nclasses, kernel_size=3, padding=1)
         self.cl_fmap15 = nn.Conv2d(1024, n_boxes['fmap15'] * nclasses, kernel_size=3, padding=1)
         self.cl_fmap17 = nn.Conv2d(512, n_boxes['fmap17'] * nclasses, kernel_size=3, padding=1)
@@ -246,7 +246,7 @@ class predconvs(nn.Module):
                 nn.init.xavier_uniform_(c.weight)
                 nn.init.constant_(c.bias, 0.)
 
-    def forward(self,fmap7, fmap10, fmap15, fmap17, fmap19, fmap21, fmap23):
+    def forward(self, fmap10, fmap15, fmap17, fmap19, fmap21, fmap23):
     #stuff
         batch_size = fmap10.size(0)
         l_fmap10 = self.loc_fmap10(fmap10)
@@ -273,9 +273,9 @@ class predconvs(nn.Module):
         l_fmap23 = l_fmap23.permute(0,2,3,1).contiguous()
         l_fmap23 = l_fmap23.view(batch_size,-1,4)
         
-        l_fmap7 = self.loc_fmap7(fmap7)
-        l_fmap7 = l_fmap7.permute(0,2,3,1).contiguous()
-        l_fmap7 = l_fmap7.view(batch_size,-1,4)
+       # l_fmap7 = self.loc_fmap7(fmap7)
+       # l_fmap7 = l_fmap7.permute(0,2,3,1).contiguous()
+       # l_fmap7 = l_fmap7.view(batch_size,-1,4)
         
         c_fmap10 = self.cl_fmap10(fmap10)
         c_fmap10 = c_fmap10.permute(0,2,3,1).contiguous()
@@ -301,12 +301,12 @@ class predconvs(nn.Module):
         c_fmap23 = c_fmap23.permute(0,2,3,1).contiguous()
         c_fmap23 = c_fmap23.view(batch_size,-1,self.nclasses)
 
-        c_fmap7 = self.cl_fmap7(fmap7)
-        c_fmap7 = c_fmap7.permute(0,2,3,1).contiguous()
-        c_fmap7 = c_fmap7.view(batch_size,-1,self.nclasses)
+        #c_fmap7 = self.cl_fmap7(fmap7)
+        #c_fmap7 = c_fmap7.permute(0,2,3,1).contiguous()
+        #c_fmap7 = c_fmap7.view(batch_size,-1,self.nclasses)
         
-        locs = torch.cat([l_fmap7, l_fmap10, l_fmap15, l_fmap17, l_fmap19, l_fmap21, l_fmap23], dim = 1)
-        classes_scores = torch.cat([c_fmap7, c_fmap10, c_fmap15, c_fmap17, c_fmap19, c_fmap21, c_fmap23], dim = 1)    
+        locs = torch.cat([ l_fmap10, l_fmap15, l_fmap17, l_fmap19, l_fmap21, l_fmap23], dim = 1)
+        classes_scores = torch.cat([ c_fmap10, c_fmap15, c_fmap17, c_fmap19, c_fmap21, c_fmap23], dim = 1)    
         return locs, classes_scores
     
 class SSD300(nn.Module):
@@ -322,9 +322,9 @@ class SSD300(nn.Module):
         self.pred_convs = predconvs(nclasses)
         
         self.rescale_factors = nn.Parameter(torch.FloatTensor(1, 512, 1, 1)) 
-        self.rescale_factors7 = nn.Parameter(torch.FloatTensor(1, 256, 1, 1))  
+      #  self.rescale_factors7 = nn.Parameter(torch.FloatTensor(1, 256, 1, 1))  
         nn.init.constant_(self.rescale_factors, 20)
-        nn.init.constant_(self.rescale_factors7, 20)
+        #nn.init.constant_(self.rescale_factors7, 20)
         self.priors_cxcy = create_prior_boxes()
     
 
@@ -335,23 +335,22 @@ class SSD300(nn.Module):
         bmaps = self.base(image)
         fmap10 = bmaps['fmap10'] #[256, 38, 38]
         fmap15 = bmaps['fmap15']
-        fmap7 = bmaps['fmap7']
+        #fmap7 = bmaps['fmap7']
         #fmap_13 = bmaps['fmap_13']
-        norm7 = fmap7.pow(2).sum(dim=1, keepdim=True).sqrt()
+        #norm7 = fmap7.pow(2).sum(dim=1, keepdim=True).sqrt()
         norm = fmap10.pow(2).sum(dim=1, keepdim=True).sqrt()
         fmap10 = fmap10 / norm
         fmap10 = fmap10 * self.rescale_factors
         
-        fmap7 = fmap7 / norm7
-        fmap7 = fmap7 * self.rescale_factors7
+        #fmap7 = fmap7 / norm7
+        #fmap7 = fmap7 * self.rescale_factors7
         
         amaps = self.adv(fmap15)
         fmap17 = amaps['fmap17']
         fmap19 = amaps['fmap19']
         fmap21 = amaps['fmap21']
         fmap23 = amaps['fmap23']
-        locs, classes_scores = self.pred_convs(fmap7, fmap10,fmap15,fmap17,fmap19,fmap21,fmap23)
-        
+        locs, classes_scores = self.pred_convs(fmap10,fmap15,fmap17,fmap19,fmap21,fmap23)
         return locs, classes_scores
     
     def object_detection(self, locs, class_scores, priors, min_score=0.01, max_overlap=0.45,top_k=200):

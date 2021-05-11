@@ -353,8 +353,8 @@ def create_ext_gauss_bundle(grid):
 # pointlike gaussians
 
 
-def create_gauss(img, N, sources, source_list, img_size, diffuse = False, bboxes = False, mosaic = False):
-    # img = [img]
+def create_gauss(img, N, sources, source_list, img_size=63, diffuse = False, bboxes = False, mosaic = False):
+
     mos = 1
     if mosaic:
              mos = 10

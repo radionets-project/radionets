@@ -9,14 +9,14 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 path = get_bundles('//net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/train/')
-iterations = 120000
+iterations = 240000
 n_classes = 5 #nodiff
-checkpoint = None
-#checkpoint = '/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300.pth.tar'
+#checkpoint = None
+checkpoint = '/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300.pth.tar'
 batch_size = 32
 workers = 4
 lr = 1e-4
-decay_lr_at = [80000,100000]
+decay_lr_at = [80000,120000]
 decay_lr_to = 0.1
 momentum = 0.9
 weight_decay = 5e-4
@@ -176,7 +176,7 @@ def main():
 def train(data_loader, model, loss_function, optimizer, epochs):
     
     model.train()
-    losses = np.zeros(939)
+    losses = np.zeros(1877)
     for i, (images, boxes, labels) in enumerate(data_loader):
         images = images.to('cuda')
         
@@ -187,7 +187,7 @@ def train(data_loader, model, loss_function, optimizer, epochs):
         
             
         losses[i] = loss
-        print('i', i, 'Loss:',loss)
+        #print('i', i, 'Loss:',loss)
         optimizer.zero_grad()
         loss.backward()
         

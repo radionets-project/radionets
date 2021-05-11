@@ -41,7 +41,6 @@ class detectionLoss(nn.Module):                 #0.6                 #9         
         n_classes = predicted_scores.size(2)
         n_priors = self.priors_cxcy.size(0)
         assert n_priors ==  predicted_locs.size(1) == predicted_scores.size(1)
-        
         true_locs = torch.zeros((batch_size, n_priors, 4), dtype = torch.float).to('cuda')
         true_classes = torch.zeros((batch_size, n_priors), dtype = torch.long).to('cuda')
         
@@ -78,7 +77,6 @@ class detectionLoss(nn.Module):                 #0.6                 #9         
         hardness_ranks = torch.LongTensor(range(n_priors)).unsqueeze(0).expand_as(conf_loss_neg).to('cuda')
         hard_negatives = hardness_ranks < n_hard_negatives.unsqueeze(1)
         conf_loss_hard_neg = conf_loss_neg[hard_negatives]
-        
         conf_loss = (conf_loss_hard_neg.sum()+conf_loss_pos.sum())/n_positives.sum().float()
         return conf_loss + self.alpha * loc_loss
 # -

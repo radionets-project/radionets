@@ -1,6 +1,7 @@
 from radionets.simulations.gaussians import create_grid, create_gauss, create_diamond, create_square
 from radionets.dl_framework.data import save_fft_pair, open_fft_pair
 from scipy import ndimage
+from tqdm import tqdm
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,16 +15,16 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 def detector_data(img_size, bundle_size, num_bundles,path):
-    for t in range(num_bundles):
+    for t in tqdm(range(num_bundles)):
         with h5py.File(path+str(t)+'.h5', "w") as hf:
             all_images = []
             all_bboxes = []
             all_labels = []
             for r in range(bundle_size):
                 grid = create_grid(img_size, 1)
-                num_objects = np.random.randint(1,4)
+                num_objects = np.random.randint(1,2)  #noise
                 bboxes = np.zeros((num_objects,4))
-                labels = np.zeros((num_objects,1))                
+                labels = np.zeros((num_objects,1))
                 if num_objects == 0:
                     bboxes = np.zeros((1,4))
                     labels = np.zeros((1,1))
@@ -33,6 +34,7 @@ def detector_data(img_size, bundle_size, num_bundles,path):
                 else:
                     for i in range(num_objects): 
                         rand = np.random.randint(0,4)
+                        rand = 0  #noise
                         if rand == 0:
                             g,c,s = create_gauss(grid[:, 0], 1, 1, False,img_size, False, True)
                             xmin = (c[0]-(3*np.sqrt(s[0])/2)).clip(0,img_size)/img_size
@@ -87,9 +89,10 @@ def create_mosaic(img_size, bundle_size, num_bundles,path):
             all_labels = []
             for r in range(bundle_size):
                 grid = create_grid(img_size*10, 1)
-                num_objects = np.random.randint(25,60)
+                num_objects = np.random.randint(150,200)
                 bboxes = np.zeros((num_objects,4))
-                labels = np.zeros((num_objects,1))                
+                labels = np.zeros((num_objects,1))
+                diffuse_limiter = 0
                 if num_objects == 0:
                     bboxes = np.zeros((1,4))
                     labels = np.zeros((1,1))
@@ -110,6 +113,10 @@ def create_mosaic(img_size, bundle_size, num_bundles,path):
                             bboxes[i] = bbox 
                             labels[i] = label
                         elif rand == 1:
+                            diffuse_limiter +=1
+                            if diffuse_limiter > 5:
+                                continue
+                            print(diffuse_limiter)
                             g,c,s = create_gauss(grid[:, 0], 1, 1, False,img_size, True, True, True)
                             xmin = (c[0]-(3*np.sqrt(s[0])/2)).clip(0,img_size)/img_size
                             ymin = (c[1]-(3*np.sqrt(s[1])/2)).clip(0,img_size)/img_size
@@ -139,7 +146,6 @@ def create_mosaic(img_size, bundle_size, num_bundles,path):
                             label = np.array([3]) #nodiff
                             bboxes[i] = bbox 
                             labels[i] = label
-               
                 hf.create_dataset('x'+str(r), data=g)
                 hf.create_dataset('y'+str(r), data=bboxes)
                 hf.create_dataset('z'+str(r), data=labels)
