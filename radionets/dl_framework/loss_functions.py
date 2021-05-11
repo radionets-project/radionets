@@ -168,6 +168,27 @@ def splitted_L1_unc(x, y):
     return loss_amp + loss_phase * 10
 
 
+def L1_mirco(x, y):
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+
+    unc_amp = x[:, 1, :]
+    unc_phase = x[:, 3, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    l1 = nn.L1Loss()
+    loss_amp = l1(pred_amp, tar_amp)
+    loss_phase = l1(pred_phase, tar_phase)
+
+    unc = (unc_amp - (tar_amp - pred_amp).detach())**2 + \
+          (unc_phase - (tar_phase - pred_phase).detach())**2
+    loss = loss_amp + loss_phase + unc.mean()
+
+    return loss
+
+
 def splitted_SmoothL1_unc(x, y):
     pred_amp = x[:, 0, :]
     pred_phase = x[:, 2, :]
