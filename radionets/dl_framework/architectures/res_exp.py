@@ -286,7 +286,7 @@ class SRResNet_pred(nn.Module):
         self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
         self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
 
-        self.elu = GeneralELU(add=+(1 + 1e-10))
+        self.elu = GeneralELU(add=+(1 + 1e-7))
 
     def forward(self, x):
         s = x.shape[-1]
@@ -341,7 +341,7 @@ class Uncertainty(nn.Module):
 
         self.symmetry = Lambda(partial(symmetry, mode="real"))
 
-        self.elu = GeneralELU(add=+(1 + 1e-10))
+        self.elu = GeneralELU(add=+(1 + 1e-7))
 
     def forward(self, x):
         s = x.shape[-1]
