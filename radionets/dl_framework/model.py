@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 from pathlib import Path
 from math import sqrt, pi
-from fastcore.foundation import L
 
 
 class Lambda(nn.Module):
