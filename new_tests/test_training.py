@@ -65,7 +65,6 @@ def test_save_model():
             assert ~(0 in x)
 
         assert x is not None
-        print("Check passed")
 
     model = torch.load("new_tests/build/test_training/test_training.model")
     fastai_list = type(model["opt"]["hypers"])
@@ -88,7 +87,7 @@ def test_save_model():
                                 )
                 else:
                     assert False, "Unrecognised type {} {}".format(key2, type(value2))
-        elif isinstance(value, list) or type(value) == fastai_list:
+        elif isinstance(value, list):
             for ele2 in value:
                 if isinstance(ele2, (int, float)) or torch.is_tensor(ele2):
                     check(ele2)
