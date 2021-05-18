@@ -61,10 +61,12 @@ class TestEvaluation:
 
         if num_images is None:
             num_images = len(test_ds)
-        img_test, img_true = get_images(test_ds, num_images, norm_path="none", rand=rand)
+        img_test, img_true = get_images(
+            test_ds, num_images, norm_path="none", rand=rand
+        )
         img_size = img_test.shape[-1]
         model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-        pred = eval_model(img_test, model)
+        pred = eval_model(img_test, model, test=True)
         assert str(pred.device) == "cpu"
 
         # test for uncertainty
@@ -72,3 +74,5 @@ class TestEvaluation:
             pred_1 = pred[:, 0, :].unsqueeze(1)
             pred_2 = pred[:, 2, :].unsqueeze(1)
             pred = torch.cat((pred_1, pred_2), dim=1)
+
+        assert pred.shape == (10, 2, 63, 63)
