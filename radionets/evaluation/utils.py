@@ -271,7 +271,10 @@ def eval_model(img, model, test=False):
     if not test:
         model.cuda()
     with torch.no_grad():
-        pred = model(img.float().cuda())
+        if not test:
+            pred = model(img.float().cuda())
+        else:
+            pred = model(img.float())
     return pred.cpu()
 
 
