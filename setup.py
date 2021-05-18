@@ -32,6 +32,7 @@ setup(
         "toml",
         "pytest",
         "pytest-cov",
+        "pytest-ordering",
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
