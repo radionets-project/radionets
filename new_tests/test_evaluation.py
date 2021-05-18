@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.last
+@pytest.mark.order("last")
 def test_get_images():
     import torch
     from radionets.dl_framework.data import load_data, do_normalisation

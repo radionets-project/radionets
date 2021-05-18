@@ -2,7 +2,7 @@ import pytest
 from click.testing import CliRunner
 
 
-@pytest.mark.first
+@pytest.mark.order("first")
 def test_simulation():
     from radionets.simulations.scripts.simulate_images import main
 
