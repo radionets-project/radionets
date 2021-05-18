@@ -26,7 +26,7 @@ num_components = [4, 10]
 [image_options]
 bundles_train = 1
 bundles_valid = 1
-bundles_test = 0
+bundles_test = 1
 bundle_size = 100
 img_size = 63
 noise = true
