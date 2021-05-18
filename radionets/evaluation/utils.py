@@ -249,7 +249,7 @@ def get_images(test_ds, num_images, norm_path="none", rand=False):
     return img_test, img_true
 
 
-def eval_model(img, model):
+def eval_model(img, model, test=False):
     """
     Put model into eval mode and evaluate test images.
 
@@ -268,7 +268,8 @@ def eval_model(img, model):
     if len(img.shape) == (3):
         img = img.unsqueeze(0)
     model.eval()
-    model.cuda()
+    if not test:
+        model.cuda()
     with torch.no_grad():
         pred = model(img.float().cuda())
     return pred.cpu()
