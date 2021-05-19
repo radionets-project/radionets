@@ -373,3 +373,11 @@ def interpol(img):
     phase = phase * mask + phase_fl * (1 - mask)
 
     return np.array([amp, phase])
+
+
+def add_white_noise(images):
+    img_size = images.shape[2]
+    noise = np.random.normal(0, 0.05, size=(images.shape[0], img_size, img_size))
+    images.real += noise
+    images.imag += noise
+    return images

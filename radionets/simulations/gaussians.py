@@ -3,7 +3,7 @@ from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
 from scipy import ndimage
 from radionets.dl_framework.data import save_fft_pair
-from radionets.simulations.utils import adjust_outpath, add_noise
+from radionets.simulations.utils import adjust_outpath, add_noise, add_white_noise
 
 
 def simulate_gaussian_sources(
@@ -47,6 +47,7 @@ def simulate_gaussian_sources(
             images = add_noise(images, noise_level)
 
         bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
+        bundle_fft = add_white_noise(bundle_fft)
         path = adjust_outpath(data_path, "/fft_" + option)
         save_fft_pair(path, bundle_fft, bundle, list_sources)
 
