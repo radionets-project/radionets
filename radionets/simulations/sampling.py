@@ -27,6 +27,7 @@ def sample_frequencies(
     lon=None,
     lat=None,
     steps=None,
+    multi_channel=False,
 ):
     for mode in ["train", "valid", "test"]:
         print(f"\n Sampling {mode} data set.\n")
@@ -57,6 +58,7 @@ def sample_frequencies(
                     steps,
                     plot=False,
                     test=False,
+                    multi_channel=multi_channel,
                 )
             else:
                 fft_samp = sample_freqs(
@@ -64,6 +66,7 @@ def sample_frequencies(
                     antenna_config,
                     size=size,
                     specific_mask=False,
+                    multi_channel=multi_channel,
                 )
 
             if interpolation:

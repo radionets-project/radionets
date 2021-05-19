@@ -144,6 +144,7 @@ def read_config(config):
     sim_conf["compressed"] = config["sampling_options"]["compressed"]
     sim_conf["keep_fft_files"] = config["sampling_options"]["keep_fft_files"]
     sim_conf["interpolation"] = config["sampling_options"]["interpolation"]
+    sim_conf["multi_channel"] = config["sampling_options"]["multi_channel"]
     return sim_conf
 
 
@@ -211,7 +212,10 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
         rescaled input image
     """
     y = resize(
-        bundle.swapaxes(0, 2), (pixel, pixel), anti_aliasing=True, mode="constant",
+        bundle.swapaxes(0, 2),
+        (pixel, pixel),
+        anti_aliasing=True,
+        mode="constant",
     ).swapaxes(2, 0)
     y_prep = y.copy()
     if noise:
@@ -286,7 +290,7 @@ def add_noise(bundle, noise_level):
         bundle with noised images
     """
     bundle_noised = np.array(
-        [img + get_noise(img, (img.max() * noise_level/100)) for img in bundle]
+        [img + get_noise(img, (img.max() * noise_level / 100)) for img in bundle]
     )
     return bundle_noised
 
