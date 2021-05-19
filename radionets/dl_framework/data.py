@@ -32,7 +32,7 @@ def do_normalisation(x, norm):
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False, vgg=False):
         """
         Save the bundle paths and the number of bundles in one file.
         """
@@ -41,6 +41,7 @@ class h5_dataset:
         self.tar_fourier = tar_fourier
         self.amp_phase = amp_phase
         self.source_list = source_list
+        self.vgg = vgg
 
     def __call__(self):
         return print("This is the h5_dataset class.")
@@ -98,6 +99,8 @@ class h5_dataset:
                 data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
             if self.source_list:
+                data_channel = data
+            elif self.vgg:
                 data_channel = data
             else:
                 if data.shape[1] == 2:
@@ -202,6 +205,18 @@ def save_fft_pair(path, x, y, z=None, name_x="x", name_y="y", name_z="z"):
             hf.create_dataset(name_z, data=z)
         hf.close()
 
+def save_fft_pair_with_response(path, x, y, base_mask, A, name_x="x", name_y="y", name_base_mask="base_mask", name_A='A'):
+    """
+    write fft_pairs created in second analysis step to h5 file
+    write response matrices & baselines 
+    """
+    with h5py.File(path, "w") as hf:
+        hf.create_dataset(name_x, data=x)
+        hf.create_dataset(name_y, data=y)
+        hf.create_dataset(name_base_mask, data=base_mask)
+        hf.create_dataset(name_A, data=A)
+        hf.close()
+
 
 def open_fft_pair(path):
     """
@@ -217,7 +232,7 @@ def mean_and_std(array):
     return array.mean(), array.std()
 
 
-def load_data(data_path, mode, fourier=False, source_list=False):
+def load_data(data_path, mode, fourier=False, source_list=False, vgg=False):
     """
     Load data set from a directory and return it as h5_dataset.
 
@@ -237,5 +252,5 @@ def load_data(data_path, mode, fourier=False, source_list=False):
     """
     bundle_paths = get_bundles(data_path)
     data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
-    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)
+    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list, vgg=vgg)
     return ds
