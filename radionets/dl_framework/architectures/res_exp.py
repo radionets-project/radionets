@@ -129,7 +129,7 @@ class SRResNet_unc(nn.Module):
         self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
         self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
 
-        self.elu = GeneralELU(add=+(1 + 1e-5))
+        self.elu = GeneralELU(add=+(1 + 1e-10))
 
     def forward(self, x):
         s = x.shape[-1]
