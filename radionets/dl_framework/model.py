@@ -320,26 +320,47 @@ def load_pre_model(learn, pre_path, visualize=False):
         learn.recorder.lrs = checkpoint["recorder_lrs"]
 
 
-def save_model(learn, model_path):
+def save_model(learn, model_path, gan=False):
     # print(learn.model.generator)
-    torch.save(
-        {   
-            "model": learn.model.state_dict(),
-            "opt": learn.opt.state_dict(),
-            "epoch": learn.epoch,
-            "loss": learn.loss,
-            "iters": learn.recorder.iters,
-            "vals": learn.recorder.values,
-            "train_loss": learn.avg_loss.loss_train,
-            "valid_loss": learn.avg_loss.loss_valid,
-            "lrs": learn.avg_loss.lrs,
-            "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
-            "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
-            "recorder_losses": learn.recorder.losses,
-            "recorder_lrs": learn.recorder.lrs,
-        },
-        model_path,
-    )
+    if not gan:
+        torch.save(
+            {   
+                "model": learn.model.state_dict(),
+                "opt": learn.opt.state_dict(),
+                "epoch": learn.epoch,
+                "loss": learn.loss,
+                "iters": learn.recorder.iters,
+                "vals": learn.recorder.values,
+                "train_loss": learn.avg_loss.loss_train,
+                "valid_loss": learn.avg_loss.loss_valid,
+                "lrs": learn.avg_loss.lrs,
+                "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
+                "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
+                "recorder_losses": learn.recorder.losses,
+                "recorder_lrs": learn.recorder.lrs,
+            },
+            model_path,
+        )
+    else:
+        torch.save(
+            {   
+                "model": learn.model.generator.state_dict(),
+                "opt": learn.opt.state_dict(),
+                "epoch": learn.epoch,
+                "loss": learn.loss,
+                "iters": learn.recorder.iters,
+                "vals": learn.recorder.values,
+                "train_loss": learn.avg_loss.loss_train,
+                "valid_loss": learn.avg_loss.loss_valid,
+                "lrs": learn.avg_loss.lrs,
+                "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
+                "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
+                "recorder_losses": learn.recorder.losses,
+                "recorder_lrs": learn.recorder.lrs,
+            },
+            model_path,
+        )
+
 
 
 class LocallyConnected2d(nn.Module):

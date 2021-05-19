@@ -112,6 +112,9 @@ class NormCallback(Callback):
 class DataAug(Callback):
     _order = 3
 
+    def __init__(self, vgg):
+        self.vgg = vgg
+
     def before_batch(self):
         x = self.xb[0].clone()
         y = self.yb[0].clone()
@@ -119,8 +122,9 @@ class DataAug(Callback):
         for i in range(x.shape[0]):
             x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
             x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
-            y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
-            y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
+            if not self.vgg:
+                y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
+                y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
         self.learn.xb = [x]
         self.learn.yb = [y]
 
@@ -128,13 +132,14 @@ class DataAug(Callback):
 class SaveTempCallback(Callback):
     _order = 95
 
-    def __init__(self, model_path):
+    def __init__(self, model_path, gan=False):
         self.model_path = model_path
+        self.gan = gan
 
     def after_epoch(self):
         p = Path(self.model_path).parent
         p.mkdir(parents=True, exist_ok=True)
         if (self.epoch + 1) % 10 == 0:
             out = p / f"temp_{self.epoch + 1}.model"
-            save_model(self, out)
+            save_model(self, out, self.gan)
             print(f"\nFinished Epoch {self.epoch + 1}, model saved.\n")

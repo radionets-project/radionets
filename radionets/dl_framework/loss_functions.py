@@ -5,6 +5,7 @@ from radionets.dl_framework.utils import children
 import torch.nn.functional as F
 from pytorch_msssim import MS_SSIM
 from scipy.optimize import linear_sum_assignment
+from radionets.dl_framework.architectures import superRes
 
 
 class FeatureLoss(nn.Module):
@@ -119,6 +120,96 @@ def l1(x, y):
     l1 = nn.L1Loss()
     loss = l1(x, y)
     return loss
+
+# vgg19 = superRes.vgg19_feature_maps(5,4).eval().to('cuda:1')
+def vgg19_feature_loss(x, y):
+    print()
+    if 'vgg19_feature_model_12' not in globals():
+        global vgg19_feature_model_12
+        # global vgg19_feature_model_22
+        # global vgg19_feature_model_34
+        # global vgg19_feature_model_44
+        # global vgg19_feature_model_54
+        vgg19_feature_model_12 = superRes.vgg19_feature_maps(1,2).eval().to('cuda:1')
+        # vgg19_feature_model_22 = superRes.vgg19_feature_maps(2,2).eval().to('cuda:1')
+        # vgg19_feature_model_34 = superRes.vgg19_feature_maps(3,4).eval().to('cuda:1')
+        # vgg19_feature_model_44 = superRes.vgg19_feature_maps(4,4).eval().to('cuda:1')
+        # vgg19_feature_model_54 = superRes.vgg19_feature_maps(5,4).eval().to('cuda:1')
+
+    
+    mse = nn.MSELoss()
+    l1 = nn.L1Loss()
+
+    # up1 = nn.Upsample(size=7, mode='nearest').to('cuda:1')
+    # up2 = nn.Upsample(size=15, mode='nearest').to('cuda:1')
+    # up3 = nn.Upsample(size=31, mode='nearest').to('cuda:1')
+    # up4 = nn.Upsample(size=63, mode='nearest').to('cuda:1')
+    # c34 = nn.Conv2d(256, 512, 1).to('cuda:1')
+    # c22 = nn.Conv2d(128, 512, 1).to('cuda:1')
+    # c12 = nn.Conv2d(64, 512, 1).to('cuda:1')
+
+    # upx1 = up1(vgg19_feature_model_54(x))
+    # upy1 = up1(vgg19_feature_model_54(y))
+
+    # upx2 = up2(vgg19_feature_model_44(x) + upx1)
+    # upy2 = up2(vgg19_feature_model_44(y) + upy1)
+
+    # upx3 = up3(c34(vgg19_feature_model_34(x)) + upx2)
+    # upy3 = up3(c34(vgg19_feature_model_34(y)) + upy2)
+
+    # upx4 = up4(c22(vgg19_feature_model_22(x)) + upx3)
+    # upy4 = up4(c22(vgg19_feature_model_22(y)) + upy3)
+
+    # upx5 = (c12(vgg19_feature_model_12(x)) + upx4)
+    # upy5 = (c12(vgg19_feature_model_12(y)) + upy4)
+
+
+    # mix_x = (0.5*x[:,0]+0.5*x[:,1]).unsqueeze(1)
+    # mix_y = (0.5*y[:,0]+0.5*y[:,1]).unsqueeze(1)
+    # ones = torch.ones((x.shape[0], 1, x.shape[2], x.shape[3])).to('cuda:1')
+    # x_3c = torch.cat((x, ones), dim=1)
+    # y_3c = torch.cat((y, ones), dim=1)
+
+    # loss = l1(vgg19_feature_model_22(x), vgg19_feature_model_22(y))# + l1(vgg19_feature_model_12(x), vgg19_feature_model_12(y)) + l1(vgg19_feature_model_34(x), vgg19_feature_model_34(y)) + l1(vgg19_feature_model_44(x), vgg19_feature_model_44(y)) + l1(vgg19_feature_model_54(x), vgg19_feature_model_54(y))
+    loss = l1(vgg19_feature_model_12(x), vgg19_feature_model_12(y))
+    return loss
+
+def gen_loss_func(fake_pred, x, y):
+    l1 = nn.L1Loss()
+    bce = nn.BCELoss()
+
+    # mask = torch.zeros(x.shape).to('cuda:1')
+    # mask[:,:,31-10:31+10,31-10:31+10]=1
+    # xm = torch.einsum('bcij,bcjk->bcik',x,mask)
+    # ym = torch.einsum('bcij,bcjk->bcik',y,mask)
+
+    # content_loss = l1(x,y)
+    content_loss = automap_l2(x,y)
+    # content_loss = vgg19_feature_loss(x,y)
+    adv_loss = bce(fake_pred, torch.ones_like(fake_pred))
+
+    return content_loss + 1e-3*adv_loss
+def automap_l2(x,y):
+    amp_y = (10 ** (10 * y[:,0]) - 1) / 10 ** 10
+    phase_y = y[:,1]
+    compl_y = amp_y * torch.exp(1j * phase_y)
+    ifft_y = torch.fft.ifft2(compl_y)
+    img_y = torch.absolute(ifft_y)
+    shift_y = torch.fft.fftshift(img_y).unsqueeze(1)
+    mse = nn.MSELoss()
+    return mse(x,shift_y)
+
+
+def crit_loss_func(real_pred, fake_pred):
+    bce = nn.BCELoss()
+    loss = bce(real_pred, torch.ones_like(real_pred)) + bce(fake_pred, torch.zeros_like(fake_pred))
+   
+    return loss
+
+def cross_entropy(x,y):
+    loss = nn.CrossEntropyLoss()
+    return loss(x, y.squeeze().long())
+
 
 def l1_rnn(x, y):
     l1 = nn.L1Loss()

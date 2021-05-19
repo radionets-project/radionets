@@ -14,7 +14,10 @@ from fastai.callback.data import CudaCallback
 from fastai.callback.schedule import ParamScheduler, combined_cos
 import radionets.dl_framework.loss_functions as loss_functions
 from fastai.vision import models
+# from radionets.dl_framework.architectures import superRes
 import torchvision
+from radionets.dl_training.utils import define_arch
+from fastai.vision.gan import GANLearner
 
 
 def get_learner(
@@ -36,6 +39,7 @@ def define_learner(
     cbfs=[],
     test=False,
     lr_find=False,
+    gan=False,
 ):
     model_path = train_conf["model_path"]
     model_name = (
@@ -72,12 +76,20 @@ def define_learner(
                 CudaCallback,
             ]
         )
-    if not test:
+    if not test and not gan:
         cbfs.extend(
             [
                 SaveTempCallback(model_path=model_path),
                 AvgLossCallback,
-                DataAug,
+                DataAug(vgg=train_conf["vgg"]),
+            ]
+        )
+    if gan:
+        cbfs.extend(
+            [
+                SaveTempCallback(model_path=model_path, gan=gan),
+                AvgLossCallback,
+                DataAug(vgg=train_conf["vgg"]),
             ]
         )
     if train_conf["telegram_logger"] and not lr_find:
@@ -92,6 +104,24 @@ def define_learner(
         loss_func = loss_functions.init_feature_loss()
     else:
         loss_func = getattr(loss_functions, train_conf["loss_func"])
+
+    if gan:
+        gen_loss_func = getattr(loss_functions, 'gen_loss_func')
+        crit_loss_func = getattr(loss_functions, 'crit_loss_func')
+
+        generator = arch
+        critic = define_arch(
+            arch_name='discriminator', img_size=train_conf["image_size"]
+        )
+        init_cnn(generator)
+        init_cnn(critic)
+        dls = DataLoaders.from_dsets(
+            data.train_ds,
+            data.valid_ds,
+            bs=data.train_dl.batch_size,
+        )
+        learn = GANLearner(dls, generator, critic, gen_loss_func, crit_loss_func, lr=lr, cbs=cbfs, opt_func=opt_func)
+        return learn
 
     # Combine model and data in learner
     learn = get_learner(

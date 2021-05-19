@@ -8,10 +8,10 @@ from radionets.dl_framework.model import save_model
 from radionets.evaluation.train_inspection import create_inspection_plots
 
 
-def create_databunch(data_path, fourier, source_list, batch_size):
+def create_databunch(data_path, fourier, source_list, batch_size, vgg):
     # Load data sets
-    train_ds = load_data(data_path, "train", source_list=source_list, fourier=fourier)
-    valid_ds = load_data(data_path, "valid", source_list=source_list, fourier=fourier)
+    train_ds = load_data(data_path, "train", source_list=source_list, fourier=fourier, vgg=vgg)
+    valid_ds = load_data(data_path, "valid", source_list=source_list, fourier=fourier, vgg=vgg)
 
     # Create databunch with defined batchsize
     bs = batch_size
@@ -34,6 +34,7 @@ def read_config(config):
     train_conf["lr"] = config["hypers"]["lr"]
 
     train_conf["fourier"] = config["general"]["fourier"]
+    train_conf["vgg"] = config["general"]["vgg"]
     train_conf["amp_phase"] = config["general"]["amp_phase"]
     train_conf["arch_name"] = config["general"]["arch_name"]
     train_conf["loss_func"] = config["general"]["loss_func"]

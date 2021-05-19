@@ -15,11 +15,14 @@ from radionets.dl_framework.model import (
     btf_shift,
     CirculationShiftPad,
     SRBlockPad,
-    BetterShiftPad
+    BetterShiftPad,
     Lambda,
     symmetry,
 )
 from functools import partial
+import torchvision
+import radionets.evaluation.utils as ut
+import numpy as np
 
 
 class superRes_simple(nn.Module):
@@ -372,7 +375,7 @@ class SRResNet(nn.Module):
 class SRResNet_corr(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        # torch.cuda.set_device(1)
+        torch.cuda.set_device(1)
         self.img_size = img_size
 
         self.preBlock = nn.Sequential(
@@ -411,14 +414,21 @@ class SRResNet_corr(nn.Module):
 
         self.symmetry = Lambda(better_symmetry)
 
-    def forward(self, x):
-        x = x[:, 0].unsqueeze(1)
+        #pi layer
+        self.pi = nn.Tanh()
 
+    def forward(self, x):
         x = self.preBlock(x)
 
         x = x + self.postBlock(self.blocks(x))
 
         x = self.final(x)
+
+        # x[:,0][x[:,0]<0] = 0
+        # x[:,0][x[:,0]>2] = 2
+        # x[:,1] = np.pi*self.pi(x[:,1])
+
+    
 
         return self.symmetry(x)
 
@@ -659,4 +669,200 @@ class SRFBNet(nn.Module):
 
         x = torch.cat((x,x,x,x), dim=0) + self.postBlock(block)
         x = self.final(x)
+        return x
+
+
+class vgg19_feature_maps(nn.Module):
+
+    def __init__(self, i, j):
+        super().__init__()
+        # load pretrained vgg19
+        # vgg19 = torchvision.models.vgg19(pretrained=True)
+        # model = ut.load_pretrained_model(arch_name='vgg19_blackhole_group2', model_path='/net/big-tank/POOL/users/sfroese/vipy/eht/m87/blackhole/models/vgg19_group2.model')
+        # model = ut.load_pretrained_model(arch_name='vgg19_blackhole_group2_prelu', model_path='/net/big-tank/POOL/users/sfroese/vipy/eht/m87/blackhole/models/vgg19_groups2_prelu.model')
+        model = ut.load_pretrained_model(arch_name='vgg19_blackhole_fft', model_path='/net/big-tank/POOL/users/sfroese/vipy/eht/m87/blackhole/models/vgg19_fft.model')
+        
+        vgg19 = model.vgg
+
+        conv_counter = 0
+        maxpool_counter = 0
+        truncate_at = 0
+        for layer in vgg19.features:
+            truncate_at += 1
+
+            if isinstance(layer, nn.MaxPool2d):
+                maxpool_counter += 1
+                conv_counter = 0
+            if isinstance(layer, nn.Conv2d):
+                conv_counter += 1
+            
+            if maxpool_counter == i - 1 and conv_counter == j:
+                break
+
+        self.truncated_vgg19 = nn.Sequential(*list(vgg19.features)[:truncate_at + 1])
+
+    def forward(self, x):
+        amp_rescaled = (10 ** (10 * x[:,0]) - 1) / 10 ** 10
+        phase = x[:,1]
+        compl = amp_rescaled * torch.exp(1j * phase)
+        ifft = torch.fft.ifft2(compl)
+        img = torch.absolute(ifft)
+        shift = torch.fft.fftshift(img)
+        with torch.no_grad():
+            feature = self.truncated_vgg19(img.unsqueeze(1))
+
+        return feature
+
+
+
+class vgg19_blackhole(nn.Module):
+    def __init__(self):
+        super().__init__()
+        torch.cuda.set_device(1)
+        vgg19 = torchvision.models.vgg19(pretrained=False)
+
+        # customize vgg19
+        vgg19.features[0] = nn.Conv2d(2, 64, 3, stride=1, padding=1)
+        vgg19.classifier[6] = nn.Sequential(nn.Linear(in_features=4096, out_features=6, bias=True))
+
+        # for i, layer in enumerate(vgg19.features):
+            # if isinstance(layer, nn.Conv2d):
+            #     vgg19.features[i] = nn.Conv2d(layer.in_channels, layer.out_channels, layer.kernel_size, layer.stride, layer.padding, groups=2)
+            # if isinstance(layer, nn.ReLU):
+            #     vgg19.features[i] = nn.PReLU()
+
+        self.vgg = vgg19
+    
+    def forward(self, x):
+        return self.vgg(x)
+
+
+class vgg19_blackhole_group2(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        vgg19 = torchvision.models.vgg19(pretrained=False)
+
+        # customize vgg19
+
+        vgg19.features[0] = nn.Conv2d(2, 64, 3, stride=1, padding=1)
+        vgg19.classifier[6] = nn.Sequential(nn.Linear(in_features=4096, out_features=6, bias=True))
+
+        for i, layer in enumerate(vgg19.features):
+            if isinstance(layer, nn.Conv2d):
+                vgg19.features[i] = nn.Conv2d(layer.in_channels, layer.out_channels, layer.kernel_size, layer.stride, layer.padding, groups=2)
+            # if isinstance(layer, nn.ReLU):
+            #     vgg19.features[i] = nn.PReLU()
+
+        self.vgg = vgg19
+    
+    def forward(self, x):
+        #ifft
+        return self.vgg(x)
+
+class vgg19_blackhole_group2_prelu(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        vgg19 = torchvision.models.vgg19(pretrained=False)
+
+        # customize vgg19
+        vgg19.features[0] = nn.Conv2d(2, 64, 3, stride=1, padding=1)
+        vgg19.classifier[6] = nn.Sequential(nn.Linear(in_features=4096, out_features=6, bias=True))
+
+        for i, layer in enumerate(vgg19.features):
+            if isinstance(layer, nn.Conv2d):
+                vgg19.features[i] = nn.Conv2d(layer.in_channels, layer.out_channels, layer.kernel_size, layer.stride, layer.padding, groups=2)
+            if isinstance(layer, nn.ReLU):
+                vgg19.features[i] = nn.PReLU()
+
+        self.vgg = vgg19
+    
+    def forward(self, x):
+        return self.vgg(x)
+
+class vgg19_blackhole_fft(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # torch.cuda.set_device(1)
+        vgg19 = torchvision.models.vgg19(pretrained=False)
+
+        # customize vgg19
+
+        vgg19.features[0] = nn.Conv2d(1, 64, 3, stride=1, padding=1)
+        vgg19.classifier[6] = nn.Sequential(nn.Linear(in_features=4096, out_features=6, bias=True))
+
+        # for i, layer in enumerate(vgg19.features):
+        #     if isinstance(layer, nn.Conv2d):
+        #         vgg19.features[i] = nn.Conv2d(layer.in_channels, layer.out_channels, layer.kernel_size, layer.stride, layer.padding, groups=2)
+        #     # if isinstance(layer, nn.ReLU):
+            #     vgg19.features[i] = nn.PReLU()
+
+        self.vgg = vgg19
+    
+    def forward(self, x):
+        #ifft
+        amp_rescaled = (10 ** (10 * x[:,0]) - 1) / 10 ** 10
+        phase = x[:,1]
+        compl = amp_rescaled * torch.exp(1j * phase)
+        ifft = torch.fft.ifft2(compl)
+        img = torch.absolute(ifft)
+        shift = torch.fft.fftshift(img)
+        return self.vgg(img.unsqueeze(1))
+
+class discriminator(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.preBlock = nn.Sequential(nn.Conv2d(1, 64, 3, stride=1, padding=1), nn.LeakyReLU(0.2))
+
+        self.block1 = nn.Sequential(nn.Conv2d(64, 64, 3, stride=2, padding=1), nn.BatchNorm2d(64), nn.LeakyReLU(0.2))
+        self.block2 = nn.Sequential(nn.Conv2d(64, 128, 3, stride=1, padding=1), nn.BatchNorm2d(128), nn.LeakyReLU(0.2))
+        self.block3 = nn.Sequential(nn.Conv2d(128, 128, 3, stride=2, padding=1), nn.BatchNorm2d(128), nn.LeakyReLU(0.2))
+        self.block4 = nn.Sequential(nn.Conv2d(128, 256, 3, stride=1, padding=1), nn.BatchNorm2d(256), nn.LeakyReLU(0.2))
+        self.block5 = nn.Sequential(nn.Conv2d(256, 256, 3, stride=2, padding=1), nn.BatchNorm2d(256), nn.LeakyReLU(0.2))
+        self.block6 = nn.Sequential(nn.Conv2d(256, 512, 3, stride=1, padding=1), nn.BatchNorm2d(512), nn.LeakyReLU(0.2))
+        self.block7 = nn.Sequential(nn.Conv2d(512, 512, 3, stride=2, padding=1), nn.BatchNorm2d(512), nn.LeakyReLU(0.2))
+
+        self.main = nn.Sequential(self.block1, self.block2, self.block3, self.block4, self.block5, self.block6, self.block7)
+
+        self.postBlock = nn.Sequential(nn.Linear(512*4*4, 1024), nn.LeakyReLU(0.2), nn.Linear(1024,1), nn.Sigmoid())
+
+    def forward(self, x):
+        if x.shape[1] == 2:
+            amp_x = (10 ** (10 * x[:,0]) - 1) / 10 ** 10
+            phase_x = x[:,1]
+            compl_x = amp_x * torch.exp(1j * phase_x)
+            ifft_x = torch.fft.ifft2(compl_x)
+            img_x = torch.absolute(ifft_x)
+            shift_x = torch.fft.fftshift(img_x).unsqueeze(1)
+            x = shift_x
+        x = self.preBlock(x)
+        x = self.main(x)
+        x = torch.flatten(x, 1)
+        x = self.postBlock(x)
+
+
+        return x
+
+
+class automap(nn.Module):
+    def __init__(self):
+        super().__init__()
+        torch.cuda.set_device(1)
+        self.fcs = nn.Sequential(nn.Linear(63*63*2,63*63),nn.Tanh(),nn.Linear(63*63,63*63),nn.Tanh())
+
+        self.convs = nn.Sequential(nn.Conv2d(1,64,5, stride=1, padding=2),nn.ReLU(),nn.Conv2d(64,64,5,stride=1, padding=2),nn.ReLU(),nn.Conv2d(64,1,7,stride=1, padding=3))
+
+    
+    def forward(self, x):
+        amp_x = (10 ** (10 * x[:,0]) - 1) / 10 ** 10
+        phase_x = x[:,1]
+        compl_x = amp_x * torch.exp(1j * phase_x)
+        x[:,0] = compl_x.real
+        x[:,1] = compl_x.imag
+        x = torch.flatten(x, 1)
+        x = self.fcs(x)
+        x = x.reshape((x.shape[0],1,63,63))
+        x = self.convs(x)
         return x

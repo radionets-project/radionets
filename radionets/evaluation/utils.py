@@ -209,7 +209,11 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     arch: architecture object
         architecture with pretrained weigths
     """
-    if "filter_deep" in arch_name or "resnet" in arch_name:
+    if 'vgg19' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'automap' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif "filter_deep" in arch_name or "resnet" or "Res" in arch_name:
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
@@ -320,8 +324,8 @@ def fft_pred(pred, truth, amp_phase=True):
     a = pred[:, 0, :, :]
     b = pred[:, 1, :, :]
 
-    a_true = truth[0, :, :]
-    b_true = truth[1, :, :]
+    a_true = truth[:, 0, :, :]
+    b_true = truth[:, 1, :, :]
 
     if amp_phase:
         amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
@@ -339,4 +343,4 @@ def fft_pred(pred, truth, amp_phase=True):
     ifft_pred = np.fft.ifft2(compl_pred)
     ifft_true = np.fft.ifft2(compl_true)
 
-    return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
+    return np.absolute(ifft_pred), np.absolute(ifft_true)
