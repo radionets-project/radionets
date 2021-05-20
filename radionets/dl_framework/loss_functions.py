@@ -121,6 +121,16 @@ def l1(x, y):
     loss = l1(x, y)
     return loss
 
+def dirty_model(x, y):
+    print(x.shape)
+    print(y[0].shape)
+    print(y[1].shape)
+    print(y[2].shape)
+    
+    l1 = nn.L1Loss()
+    loss = l1(x, y[0])
+    return loss
+
 # vgg19 = superRes.vgg19_feature_maps(5,4).eval().to('cuda:1')
 def vgg19_feature_loss(x, y):
     print()

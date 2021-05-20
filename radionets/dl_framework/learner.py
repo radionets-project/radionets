@@ -81,7 +81,7 @@ def define_learner(
             [
                 SaveTempCallback(model_path=model_path),
                 AvgLossCallback,
-                DataAug(vgg=train_conf["vgg"]),
+                DataAug(vgg=train_conf["vgg"], physics_informed=train_conf["physics_informed"]),
             ]
         )
     if gan:
@@ -89,7 +89,7 @@ def define_learner(
             [
                 SaveTempCallback(model_path=model_path, gan=gan),
                 AvgLossCallback,
-                DataAug(vgg=train_conf["vgg"]),
+                DataAug(vgg=train_conf["vgg"], physics_informed=train_conf["physics_informed"]),
             ]
         )
     if train_conf["telegram_logger"] and not lr_find:

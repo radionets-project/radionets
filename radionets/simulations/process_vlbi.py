@@ -207,9 +207,9 @@ def process_data_dirty_model(data_path, freq, n_positions, fov_asec):
         fft_scaled_truth = prepare_fft_images(truth_fft, True, False)
 
         out = data_path + "/h5/samp_train"+ str(p) + ".h5"
-        save_fft_pair_with_response(out, samp_img[:800], fft_scaled_truth[:800], base_mask, A)
+        save_fft_pair_with_response(out, samp_img[:800], fft_scaled_truth[:800], np.expand_dims(base_mask,0), np.expand_dims(A,0))
         out = data_path + "/h5/samp_valid"+ str(p) + ".h5"
-        save_fft_pair_with_response(out, samp_img[800:], fft_scaled_truth[800:], base_mask, A)
+        save_fft_pair_with_response(out, samp_img[800:], fft_scaled_truth[800:], np.expand_dims(base_mask,0), np.expand_dims(A,0))
 
 
 def response(config, N, unique_telescopes, unique_baselines):

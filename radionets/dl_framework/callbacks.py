@@ -112,12 +112,18 @@ class NormCallback(Callback):
 class DataAug(Callback):
     _order = 3
 
-    def __init__(self, vgg):
+    def __init__(self, vgg, physics_informed):
         self.vgg = vgg
+        self.physics_informed = physics_informed
 
     def before_batch(self):
         x = self.xb[0].clone()
-        y = self.yb[0].clone()
+        if self.physics_informed:
+            y = self.yb[0][0].clone()
+            base_mask = self.yb[0][1].clone()
+            A = self.yb[0][2].clone()
+        else:
+            y = self.yb[0].clone()
         randint = np.random.randint(0, 4, x.shape[0])
         for i in range(x.shape[0]):
             x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
@@ -125,8 +131,14 @@ class DataAug(Callback):
             if not self.vgg:
                 y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
                 y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
+        if self.physics_informed:
+            base_mask[i] = torch.rot90(base_mask[i], int(randint[i]), dims=[0,1])
+            A[i] = torch.rot90(A[i], int(randint[i]), dims=[0,1])
         self.learn.xb = [x]
-        self.learn.yb = [y]
+        if self.physics_informed:
+            self.learn.yb = [(y, base_mask, A)]
+        else:
+            self.learn.yb = [y]
 
 
 class SaveTempCallback(Callback):

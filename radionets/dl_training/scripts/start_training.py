@@ -65,6 +65,7 @@ def main(configuration_path, mode):
         batch_size=train_conf["bs"],
         source_list=train_conf["source_list"],
         vgg=train_conf["vgg"],
+        physics_informed=train_conf["physics_informed"]
     )
 
     # get image size

@@ -32,7 +32,7 @@ def do_normalisation(x, norm):
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False, vgg=False):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False, vgg=False, physics_informed=False):
         """
         Save the bundle paths and the number of bundles in one file.
         """
@@ -42,6 +42,7 @@ class h5_dataset:
         self.amp_phase = amp_phase
         self.source_list = source_list
         self.vgg = vgg
+        self.physics_informed = physics_informed
 
     def __call__(self):
         return print("This is the h5_dataset class.")
@@ -56,6 +57,12 @@ class h5_dataset:
         if self.source_list:
             x = self.open_image("x", i)
             y = self.open_image("z", i)
+        elif self.physics_informed:
+            x = self.open_image("x", i)
+            y = self.open_image("y", i)
+            base_mask = self.open_image("base_mask", i)
+            A = self.open_image("A", i)
+            return x, (y, base_mask.squeeze(0), A.squeeze(0))
         else:
             x = self.open_image("x", i)
             y = self.open_image("y", i)
@@ -79,6 +86,12 @@ class h5_dataset:
             h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
         ]
         bundle_paths_str = list(map(str, bundle_paths))
+        
+        if var == 'base_mask' or var == 'A': # Baselines and response matrices are the same for every single src_position/bundle
+            image[image != 0] = 0
+            
+
+
         data = torch.tensor(
             [
                 bund[var][img]
@@ -88,7 +101,7 @@ class h5_dataset:
                 ]
             ]
         )
-        if var == "x" or self.tar_fourier is True:
+        if var == "x" or var == 'y':
             if len(i) == 1:
                 data_amp, data_phase = data[:, 0], data[:, 1]
 
@@ -102,6 +115,8 @@ class h5_dataset:
                 data_channel = data
             elif self.vgg:
                 data_channel = data
+            elif self.physics_informed:
+                data_channel = data
             else:
                 if data.shape[1] == 2:
                     raise ValueError(
@@ -112,6 +127,8 @@ class h5_dataset:
                     data_channel = data.reshape(data.shape[-1] ** 2)
                 else:
                     data_channel = data.reshape(-1, data.shape[-1] ** 2)
+        # if var == 'base_mask' or var == 'A':
+        #     print(data_channel.shape)
         return data_channel.float()
 
 
@@ -232,7 +249,7 @@ def mean_and_std(array):
     return array.mean(), array.std()
 
 
-def load_data(data_path, mode, fourier=False, source_list=False, vgg=False):
+def load_data(data_path, mode, fourier=False, source_list=False, vgg=False, physics_informed=False):
     """
     Load data set from a directory and return it as h5_dataset.
 
@@ -252,5 +269,5 @@ def load_data(data_path, mode, fourier=False, source_list=False, vgg=False):
     """
     bundle_paths = get_bundles(data_path)
     data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
-    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list, vgg=vgg)
+    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list, vgg=vgg, physics_informed=physics_informed)
     return ds
