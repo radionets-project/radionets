@@ -11,7 +11,6 @@ from radionets.dl_framework.data import (
     save_fft_pair,
 )
 from radionets.simulations.uv_simulations import sample_freqs
-import h5py
 import numpy as np
 
 
