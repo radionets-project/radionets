@@ -16,7 +16,7 @@ from radionets.evaluation.utils import (
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.blob_detection import calc_blobs
-from radionets.evaluation.contour import compute_area_difference
+from radionets.evaluation.contour import compute_area_ratio
 from pytorch_msssim import ms_ssim
 from matplotlib.patches import Rectangle
 from matplotlib import cm
@@ -438,7 +438,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
 
     im2 = ax2.imshow(ifft_truth)
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
-    diff = np.round(compute_area_difference(CS1, CS2), 2)
+    diff = np.round(compute_area_ratio(CS1, CS2), 2)
     make_axes_nice(fig, ax2, im2, "Truth, ratio: {}".format(diff))
     outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
