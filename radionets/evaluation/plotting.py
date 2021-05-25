@@ -355,7 +355,7 @@ def visualize_source_reconstruction(
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
 
-    plt.style.use("./paper_large_3.rc")
+    # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharey=True)
     ax1.plot(
         x_space,
