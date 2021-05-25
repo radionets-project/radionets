@@ -44,4 +44,4 @@ antenna_config = "vlba"
 compressed = false
 keep_fft_files = true
 source_list = false
-interpolation = false
+interpolation = true
