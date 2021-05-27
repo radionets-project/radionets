@@ -6,6 +6,7 @@ import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+import h5py
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):
@@ -344,3 +345,30 @@ def fft_pred(pred, truth, amp_phase=True):
     ifft_true = np.fft.ifft2(compl_true)
 
     return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
+
+
+def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
+    """
+    write test data and predictions to h5 file
+    x: truth of test data
+    y: predictions of truth of test data
+    """
+    with h5py.File(path, "w") as hf:
+        hf.create_dataset(name_x, data=x)
+        hf.create_dataset(name_y, data=y)
+        hf.create_dataset(name_z, data=z)
+        hf.close()
+
+
+def read_pred(path):
+    """
+    read data saved with save_pred from h5 file
+    x: truth of test data
+    y: predictions of truth of test data
+    """
+    with h5py.File(path, "r") as hf:
+        x = np.array(hf["pred"])
+        y = np.array(hf["img_test"])
+        z = np.array(hf["img_true"])
+        hf.close()
+    return x, y, z
