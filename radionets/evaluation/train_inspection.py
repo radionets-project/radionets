@@ -65,7 +65,10 @@ def get_prediction(conf, num_images=None, rand=False):
     )
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-    pred = eval_model(img_test, model, test=True)
+    if conf["gpu"]:
+        pred = eval_model(img_test, model)
+    else:
+        pred = eval_model(img_test, model, test=True)
 
     # test for uncertainty
     if pred.shape[1] == 4:
@@ -107,8 +110,12 @@ def get_separate_prediction(conf, num_images=None, rand=False):
     img_size = img_test.shape[-1]
     model_1 = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)
-    pred_1 = eval_model(img_test, model_1)
-    pred_2 = eval_model(img_test, model_2)
+    if conf["gpu"]:
+        pred_1 = eval_model(img_test, model_1)
+        pred_2 = eval_model(img_test, model_2)
+    else:
+        pred_1 = eval_model(img_test, model_1, test=True)
+        pred_2 = eval_model(img_test, model_2, test=True)
 
     # test for uncertainty
     if pred_1.shape[1] == 2:
