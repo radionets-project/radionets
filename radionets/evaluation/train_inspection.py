@@ -65,7 +65,7 @@ def get_prediction(conf, num_images=None, rand=False):
     )
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-    pred = eval_model(img_test, model)
+    pred = eval_model(img_test, model, test=True)
 
     # test for uncertainty
     if pred.shape[1] == 4:
