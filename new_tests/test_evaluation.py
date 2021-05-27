@@ -173,3 +173,11 @@ class TestEvaluation:
         assert isinstance(val, np.float64)
         assert ~np.isnan(val).any()
         assert val > 0
+
+    def test_evaluation(self):
+        from click.testing import CliRunner
+        from radionets.evaluation.scripts.start_evaluation import main
+
+        runner = CliRunner()
+        result = runner.invoke(main, "new_tests/evaluate.toml")
+        assert result.exit_code == 0
