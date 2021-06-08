@@ -262,11 +262,13 @@ def load_pre_model(learn, pre_path, visualize=False):
     """
     name_pretrained = Path(pre_path).stem
     print("\nLoad pretrained model: {}\n".format(name_pretrained))
-    checkpoint = torch.load(pre_path)
+    if torch.cuda.is_available():
+        checkpoint = torch.load(pre_path)
+    else:
+        checkpoint = torch.load(pre_path, map_location=torch.device("cpu"))
 
     if visualize:
         learn.load_state_dict(checkpoint["model"])
-
     else:
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])
