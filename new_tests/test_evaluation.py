@@ -36,6 +36,7 @@ class TestEvaluation:
         assert img_true.shape == (10, 2, 63, 63)
 
     def test_get_prediction(self):
+        from pathlib import Path
         from radionets.dl_framework.data import load_data
         from radionets.evaluation.utils import (
             get_images,
@@ -79,8 +80,10 @@ class TestEvaluation:
         assert pred.shape == (10, 2, 63, 63)
 
         pred = pred.numpy()
+        out_path = Path("./new_tests/build/test_training/evaluation/")
+        out_path.mkdir(parents=True, exist_ok=True)
         save_pred(
-            "./new_tests/build/test_training/evaluation/predictions_model_test.h5",
+            str(out_path) + "/predictions_model_test.h5",
             pred,
             img_test,
             img_true,
