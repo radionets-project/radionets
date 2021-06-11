@@ -47,7 +47,9 @@ class TestEvaluation:
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = generate_images(conf["arch_name"], conf["model_path"])
+        pred, img_test, img_true = generate_images(
+            conf["arch_name"], conf["model_path"]
+        )
         assert str(pred.device) == "cpu"
 
         # test for uncertainty
@@ -116,13 +118,16 @@ class TestEvaluation:
 
     def test_evaluation(self):
         import shutil
+        import os
         from click.testing import CliRunner
         from radionets.evaluation.scripts.start_evaluation import main
 
         runner = CliRunner()
         result = runner.invoke(main, "new_tests/evaluate.toml")
         assert result.exit_code == 0
-        shutil.rmtree("new_tests/model/evaluation")
+
+        if os.path.exists("new_tests/model/evaluation"):
+            shutil.rmtree("new_tests/model/evaluation")
 
 
 def generate_images(arch_name, model_path):
