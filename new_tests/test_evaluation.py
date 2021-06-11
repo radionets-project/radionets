@@ -37,12 +37,8 @@ class TestEvaluation:
 
     def test_get_prediction(self):
         from pathlib import Path
-        from radionets.dl_framework.data import load_data
         from radionets.evaluation.utils import (
-            get_images,
-            load_pretrained_model,
             read_config,
-            eval_model,
             save_pred,
         )
         import toml
@@ -51,24 +47,7 @@ class TestEvaluation:
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
 
-        test_ds = load_data(
-            "./new_tests/build/data",
-            mode="test",
-            fourier=True,
-            source_list=False,
-        )
-
-        num_images = 10
-        rand = True
-
-        if num_images is None:
-            num_images = len(test_ds)
-        img_test, img_true = get_images(
-            test_ds, num_images, norm_path="none", rand=rand
-        )
-        img_size = img_test.shape[-1]
-        model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-        pred = eval_model(img_test, model, test=True)
+        pred, img_test, img_true = generate_images(conf["arch_name"], conf["model_path"])
         assert str(pred.device) == "cpu"
 
         # test for uncertainty
@@ -93,12 +72,8 @@ class TestEvaluation:
         )
 
     def test_contour(self):
-        from radionets.dl_framework.data import load_data
         from radionets.evaluation.utils import (
-            get_images,
-            load_pretrained_model,
             read_config,
-            eval_model,
             get_ifft,
             save_pred,
         )
@@ -111,36 +86,12 @@ class TestEvaluation:
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
 
-        test_ds = load_data(
-            "./new_tests/build/data",
-            mode="test",
-            fourier=True,
-            source_list=False,
+        pred, img_test, img_true = generate_images(
+            conf["arch_name"],
+            "./new_tests/model/model_eval.model",
         )
 
-        num_images = 10
-        rand = True
-
-        img_test, img_true = get_images(
-            test_ds, num_images, norm_path="none", rand=rand
-        )
-        img_size = img_test.shape[-1]
-        model = load_pretrained_model(
-            conf["arch_name"], "./new_tests/model/model_eval.model", img_size
-        )
-        pred = eval_model(img_test, model, test=True)
         assert str(pred.device) == "cpu"
-
-        pred = pred.numpy()
-        save_pred(
-            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5",
-            pred,
-            img_test,
-            img_true,
-            "pred",
-            "img_test",
-            "img_true",
-        )
 
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -153,10 +104,46 @@ class TestEvaluation:
         assert ~np.isnan(val).any()
         assert val > 0
 
+        save_pred(
+            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5",
+            pred,
+            img_test,
+            img_true,
+            "pred",
+            "img_test",
+            "img_true",
+        )
+
     def test_evaluation(self):
+        import shutil
         from click.testing import CliRunner
         from radionets.evaluation.scripts.start_evaluation import main
 
         runner = CliRunner()
         result = runner.invoke(main, "new_tests/evaluate.toml")
         assert result.exit_code == 0
+        shutil.rmtree("new_tests/model/evaluation")
+
+
+def generate_images(arch_name, model_path):
+    from radionets.dl_framework.data import load_data
+    from radionets.evaluation.utils import get_images, eval_model, load_pretrained_model
+
+    test_ds = load_data(
+        "./new_tests/build/data",
+        mode="test",
+        fourier=True,
+        source_list=False,
+    )
+
+    num_images = 10
+    rand = True
+
+    if num_images is None:
+        num_images = len(test_ds)
+    img_test, img_true = get_images(test_ds, num_images, norm_path="none", rand=rand)
+    img_size = img_test.shape[-1]
+    model = load_pretrained_model(arch_name, model_path, img_size)
+    pred = eval_model(img_test, model, test=True)
+
+    return pred, img_test, img_true
