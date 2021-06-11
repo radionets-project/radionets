@@ -100,6 +100,9 @@ class TestEvaluation:
 
         assert ~np.isnan([ifft_pred, ifft_truth]).any()
 
+        assert ifft_pred[0].shape == (63, 63)
+        assert ifft_truth[0].shape == (63, 63)
+
         val = area_of_contour(ifft_pred[0], ifft_truth[0])
 
         assert isinstance(val, np.float64)
