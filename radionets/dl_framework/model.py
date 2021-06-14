@@ -825,3 +825,29 @@ def gauss(kernel_size, sigma):
     return gaussian_kernel
 
     
+class ConvGRUCell(nn.Module):
+    def __init__(self, input_size, hidden_size, kernel_size, dilation=1, bias=True):
+        super().__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.kernel_size = kernel_size
+        self.dilation = dilation
+        self.bias = bias
+
+        self.Wih = nn.Conv2d(input_size, 3*hidden_size, kernel_size, dilation=dilation, bias=bias, padding=dilation*(kernel_size-1)/2)
+        self.Whh = nn.Conv2d(input_size, 3*hidden_size, kernel_size, dilation=dilation, bias=bias, padding=dilation*(kernel_size-1)/2)
+
+    def forward(self, x, hx=None):
+        if hx is None:
+            hx = torch.zeros((x.size(0), self.hidden_size) + x.size()[2:], requires_grad=False)
+        
+        ih = self.Wih(x).chunk(3, dim=1)
+        hh = self.Whh(hx).chunk(3, dim=1)
+
+        z = torch.sigmoid(ih[0] + hh[0])
+        r = torch.sigmoid(ih[1] + hh[1])
+        n = torch.tanh(ih[2]+ r*hh[2])
+
+        hx = (1-z)*hx + z*n
+
+        return hx
