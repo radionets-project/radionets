@@ -1298,3 +1298,15 @@ class CLEANNN(nn.Module):
         residual[:,1] = res_phase
 
         return residual, M
+
+class CLEANR(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.block1 = nn.Sequential(
+            nn.Conv2d(2, 64, stride=2, padding=0),
+            nn.Tanh(),
+        )
+        self.block2 = nn.GRU(64, 256)
+
+    def forward(self, x):
+        return 0
