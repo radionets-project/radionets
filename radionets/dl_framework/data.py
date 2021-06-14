@@ -62,7 +62,7 @@ class h5_dataset:
             y = self.open_image("y", i)
             base_mask = self.open_image("base_mask", i)
             A = self.open_image("A", i)
-            return x, (y, base_mask.squeeze(0), A.squeeze(0))
+            return (x, base_mask.squeeze(0), A.squeeze(0)), y #x, (y, base_mask.squeeze(0), A.squeeze(0))
         else:
             x = self.open_image("x", i)
             y = self.open_image("y", i)
@@ -102,7 +102,10 @@ class h5_dataset:
             ]
         )
         if var == "x" or var == 'y':
-            if len(i) == 1:
+            if data.shape[1] == 1:
+
+                data_channel = data
+            elif len(i) == 1:
                 data_amp, data_phase = data[:, 0], data[:, 1]
 
                 data_channel = torch.cat([data_amp, data_phase], dim=0)
