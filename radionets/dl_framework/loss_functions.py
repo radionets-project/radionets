@@ -6,6 +6,8 @@ import torch.nn.functional as F
 from pytorch_msssim import MS_SSIM
 from scipy.optimize import linear_sum_assignment
 from radionets.dl_framework.architectures import superRes
+from fastai.vision.gan import _tk_mean
+import matplotlib.pyplot as plt
 
 
 class FeatureLoss(nn.Module):
@@ -121,14 +123,101 @@ def l1(x, y):
     loss = l1(x, y)
     return loss
 
+def l1_phyinfo(x, y):
+    l1 = nn.L1Loss()
+    return l1(x[1],y[0])
+
+def l1_GANCS(x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    spatial = torch.fft.ifftshift(ifft).unsqueeze(1)
+    # change to two channels real/imag
+    # input = torch.zeros(y.shape)
+    # input[:,0] = spatial.real
+    # input[:,1] = spatial.imag
+
+    l1 = nn.L1Loss()
+
+    return l1(x,spatial)
+
+def l1_CLEAN(x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    spatial = torch.fft.ifftshift(ifft).unsqueeze(1)
+
+
+    l1 = nn.L1Loss()
+
+    return l1((x[1][:,0]+1j*x[1][:,1]).unsqueeze(1),spatial)
+
+def l1_wgan_GANCS(fake_pred,x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    spatial = torch.fft.ifftshift(ifft).unsqueeze(1)
+
+    l1 = nn.L1Loss()
+    lamb = 1e-5
+
+    return l1(x,spatial)+lamb*_tk_mean(fake_pred, x, spatial)
+
 def dirty_model(x, y):
-    print(x.shape)
-    print(y[0].shape)
-    print(y[1].shape)
-    print(y[2].shape)
+    amp = x[1][:,0]
+    phase = x[1][:,1]
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    pred = torch.fft.ifftshift(torch.absolute(ifft)).unsqueeze(1)
+    
+    # amp_t = y[0][:,0]
+    # phase_t = y[0][:,1]
+    # amp_rescaled_t = (10 ** (10 * amp_t) - 1) / 10 ** 10
+    # compl_t = amp_rescaled_t * torch.exp(1j * phase_t)
+    # ifft_t = torch.fft.ifft2(compl_t)
+    # true = torch.fft.ifftshift(torch.absolute(ifft_t)).unsqueeze(1)
+
+    
+    base_nums = torch.zeros(45) #hard code
+    n_tel = 10 #hardcode
+    c = 0
+    for i in range(n_tel):
+        for j in range(n_tel):
+            if j<=i:
+                continue
+            base_nums[c] = 256 * (i + 1) + j + 1
+            c += 1
+
+    base_mask = y[1]
+    A = y[2]
+    MD = torch.zeros(pred.shape, dtype=torch.complex64).to('cuda')
+
+      
+    for idx, bn in enumerate(base_nums):
+        s_uv = torch.sum((base_mask == bn),3)
+        if not (base_mask == bn).any():
+            continue
+        AI = torch.einsum('blm,bclm->bclm',A[...,idx],pred)
+        MD += torch.einsum('blm,bclm->bclm',s_uv,torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(AI)))) #spatial
+    
+    points = base_mask.clone()
+    points[points != 0] = 1
+    points = torch.sum(points,3)
+    points[points == 0] = 1
+    
+    MD = torch.fft.ifftshift(torch.absolute(torch.fft.ifft2(MD/points.unsqueeze(1))))
     
     l1 = nn.L1Loss()
-    loss = l1(x, y[0])
+    mse = nn.MSELoss()
+    loss = l1(pred, x[0])
+    # loss = vgg19_feature_loss(MD,x[0])
     return loss
 
 # vgg19 = superRes.vgg19_feature_maps(5,4).eval().to('cuda:1')
@@ -181,7 +270,7 @@ def vgg19_feature_loss(x, y):
     # y_3c = torch.cat((y, ones), dim=1)
 
     # loss = l1(vgg19_feature_model_22(x), vgg19_feature_model_22(y))# + l1(vgg19_feature_model_12(x), vgg19_feature_model_12(y)) + l1(vgg19_feature_model_34(x), vgg19_feature_model_34(y)) + l1(vgg19_feature_model_44(x), vgg19_feature_model_44(y)) + l1(vgg19_feature_model_54(x), vgg19_feature_model_54(y))
-    loss = l1(vgg19_feature_model_12(x), vgg19_feature_model_12(y))
+    loss = l1(vgg19_feature_model_22(x), vgg19_feature_model_22(y))
     return loss
 
 def gen_loss_func(fake_pred, x, y):
@@ -193,27 +282,75 @@ def gen_loss_func(fake_pred, x, y):
     # xm = torch.einsum('bcij,bcjk->bcik',x,mask)
     # ym = torch.einsum('bcij,bcjk->bcik',y,mask)
 
-    # content_loss = l1(x,y)
-    content_loss = automap_l2(x,y)
+    content_loss = l1(x,y)
+    # content_loss = automap_l2(x,y)
     # content_loss = vgg19_feature_loss(x,y)
     adv_loss = bce(fake_pred, torch.ones_like(fake_pred))
 
     return content_loss + 1e-3*adv_loss
-def automap_l2(x,y):
-    amp_y = (10 ** (10 * y[:,0]) - 1) / 10 ** 10
-    phase_y = y[:,1]
-    compl_y = amp_y * torch.exp(1j * phase_y)
-    ifft_y = torch.fft.ifft2(compl_y)
-    img_y = torch.absolute(ifft_y)
-    shift_y = torch.fft.fftshift(img_y).unsqueeze(1)
-    mse = nn.MSELoss()
-    return mse(x,shift_y)
+
+def gen_loss_wgan_l1(fake_pred, x, y):
+    l1 = nn.L1Loss()
+    content_loss = l1(x[1], y[0])
+
+
+    adv_loss = _tk_mean(fake_pred, x, y)
+    lamb = 1.5 # first:0.9
+
+    return lamb*content_loss + (1-lamb)*adv_loss
+
+
+def gen_loss_func_physics_informed(fake_pred, x, y):
+
+
+
+    bce = nn.BCELoss()
+    l1 = nn.L1Loss()
+    ######### physics informed stuff
+    # base_nums = torch.zeros(45) #hard code
+    # n_tel = 10 #hardcode
+    # c = 0
+    # for i in range(n_tel):
+    #     for j in range(n_tel):
+    #         if j<=i:
+    #             continue
+    #         base_nums[c] = 256 * (i + 1) + j + 1
+    #         c += 1
+
+    # base_mask = y[1]
+    # A = y[2]
+    # MD = torch.zeros(x[1].shape, dtype=torch.complex64).to('cuda')
+
+  
+   
+        
+    # for idx, bn in enumerate(base_nums):
+    #     s_uv = torch.sum((base_mask == bn),3)
+    #     if not (base_mask == bn).any():
+    #         continue
+    #     AI = torch.einsum('blm,bclm->bclm',A[...,idx],x[1])
+    #     MD += torch.einsum('blm,bclm->bclm',s_uv,torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(AI)))) #spatial
+    
+    # points = base_mask.clone()
+    # points[points != 0] = 1
+    # points = torch.sum(points,3)
+    # points[points == 0] = 1
+    
+    # MD = torch.fft.ifftshift(torch.absolute(torch.fft.ifft2(MD/points.unsqueeze(1))))
+    
+
+    content_loss = l1(x[1], y[0])
+    # print(fake_pred.requires_grad)
+    adv_loss = bce(fake_pred, torch.ones_like(fake_pred))
+
+    return 1e-3*adv_loss +content_loss
+
 
 
 def crit_loss_func(real_pred, fake_pred):
     bce = nn.BCELoss()
     loss = bce(real_pred, torch.ones_like(real_pred)) + bce(fake_pred, torch.zeros_like(fake_pred))
-   
+    # print(fake_pred.requires_grad)
     return loss
 
 def cross_entropy(x,y):
