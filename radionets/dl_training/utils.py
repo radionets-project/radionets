@@ -78,12 +78,12 @@ def define_arch(arch_name, img_size):
     return arch
 
 
-def pop_interrupt(learn, train_conf):
+def pop_interrupt(learn, train_conf, gan=False):
     if click.confirm("KeyboardInterrupt, do you want to save the model?", abort=False):
-        model_path = train_conf["model_path"]
+        model_path = Path(train_conf["model_path"])
         # save model
         print("Saving the model after epoch {}".format(learn.epoch))
-        save_model(learn, model_path)
+        save_model(learn, model_path, gan=False)
 
         # plot loss
         plot_loss(learn, model_path)
@@ -96,9 +96,9 @@ def pop_interrupt(learn, train_conf):
     sys.exit(1)
 
 
-def end_training(learn, train_conf):
+def end_training(learn, train_conf, gan=False):
     # Save model
-    save_model(learn, Path(train_conf["model_path"]))
+    save_model(learn, Path(train_conf["model_path"]), gan=False)
 
     # Plot loss
     plot_loss(learn, Path(train_conf["model_path"]))
