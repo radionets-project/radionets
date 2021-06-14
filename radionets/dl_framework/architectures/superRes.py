@@ -11,6 +11,7 @@ from radionets.dl_framework.model import (
     FBB,
     Lambda,
     better_symmetry,
+    fft,
     tf_shift,
     btf_shift,
     CirculationShiftPad,
@@ -18,12 +19,18 @@ from radionets.dl_framework.model import (
     BetterShiftPad,
     Lambda,
     symmetry,
+    SRBlock_noBias,
+    HardDC,
+    SoftDC,
+    calc_DirtyBeam,
+    gauss,
 )
 from functools import partial
 import torchvision
 import radionets.evaluation.utils as ut
 import numpy as np
-
+import matplotlib.pyplot as plt
+import numpy as np
 
 class superRes_simple(nn.Module):
     def __init__(self, img_size):
@@ -375,7 +382,7 @@ class SRResNet(nn.Module):
 class SRResNet_corr(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        torch.cuda.set_device(1)
+        # torch.cuda.set_device(1)
         self.img_size = img_size
 
         self.preBlock = nn.Sequential(
@@ -415,7 +422,7 @@ class SRResNet_corr(nn.Module):
         self.symmetry = Lambda(better_symmetry)
 
         #pi layer
-        self.pi = nn.Tanh()
+        # self.pi = nn.Tanh()
 
     def forward(self, x):
         x = self.preBlock(x)
@@ -676,11 +683,13 @@ class vgg19_feature_maps(nn.Module):
 
     def __init__(self, i, j):
         super().__init__()
+        # torch.cuda.set_device(1)
         # load pretrained vgg19
         # vgg19 = torchvision.models.vgg19(pretrained=True)
         # model = ut.load_pretrained_model(arch_name='vgg19_blackhole_group2', model_path='/net/big-tank/POOL/users/sfroese/vipy/eht/m87/blackhole/models/vgg19_group2.model')
         # model = ut.load_pretrained_model(arch_name='vgg19_blackhole_group2_prelu', model_path='/net/big-tank/POOL/users/sfroese/vipy/eht/m87/blackhole/models/vgg19_groups2_prelu.model')
-        model = ut.load_pretrained_model(arch_name='vgg19_blackhole_fft', model_path='/net/big-tank/POOL/users/sfroese/vipy/eht/m87/blackhole/models/vgg19_fft.model')
+        # model = ut.load_pretrained_model(arch_name='vgg19_blackhole_fft', model_path='/net/big-tank/POOL/users/sfroese/vipy/eht/m87/blackhole/models/vgg19_fft.model')
+        model = ut.load_pretrained_model(arch_name='vgg19_one_channel', model_path='/net/big-tank/POOL/projects/radio/simulations/jets/260521/model/temp_30.model')
         
         vgg19 = model.vgg
 
@@ -700,17 +709,21 @@ class vgg19_feature_maps(nn.Module):
                 break
 
         self.truncated_vgg19 = nn.Sequential(*list(vgg19.features)[:truncate_at + 1])
+        for param in self.truncated_vgg19.parameters():
+            param.requires_grad = False
 
     def forward(self, x):
-        amp_rescaled = (10 ** (10 * x[:,0]) - 1) / 10 ** 10
-        phase = x[:,1]
-        compl = amp_rescaled * torch.exp(1j * phase)
-        ifft = torch.fft.ifft2(compl)
-        img = torch.absolute(ifft)
-        shift = torch.fft.fftshift(img)
-        with torch.no_grad():
-            feature = self.truncated_vgg19(img.unsqueeze(1))
-
+        if x.shape[1] == 2:
+            amp_rescaled = (10 ** (10 * x[:,0]) - 1) / 10 ** 10
+            phase = x[:,1]
+            compl = amp_rescaled * torch.exp(1j * phase)
+            ifft = torch.fft.ifft2(compl)
+            img = torch.absolute(ifft)
+            shift = torch.fft.fftshift(img)
+            with torch.no_grad():
+                feature = self.truncated_vgg19(img.unsqueeze(1))
+        else:
+            feature = self.truncated_vgg19(x) 
         return feature
 
 
@@ -810,9 +823,27 @@ class vgg19_blackhole_fft(nn.Module):
         shift = torch.fft.fftshift(img)
         return self.vgg(img.unsqueeze(1))
 
+class vgg19_one_channel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        torch.cuda.set_device(1)
+        vgg19 = torchvision.models.vgg19(pretrained=False)
+
+        # customize vgg19
+
+        vgg19.features[0] = nn.Conv2d(1, 64, 3, stride=1, padding=1)
+        vgg19.classifier[6] = nn.Sequential(nn.Linear(in_features=4096, out_features=2, bias=True))
+
+        self.vgg = vgg19
+    
+    def forward(self, x):
+        #ifft
+        return self.vgg(x)
+
 class discriminator(nn.Module):
     def __init__(self):
         super().__init__()
+        torch.cuda.set_device(0)
 
         self.preBlock = nn.Sequential(nn.Conv2d(1, 64, 3, stride=1, padding=1), nn.LeakyReLU(0.2))
 
@@ -826,43 +857,444 @@ class discriminator(nn.Module):
 
         self.main = nn.Sequential(self.block1, self.block2, self.block3, self.block4, self.block5, self.block6, self.block7)
 
-        self.postBlock = nn.Sequential(nn.Linear(512*4*4, 1024), nn.LeakyReLU(0.2), nn.Linear(1024,1), nn.Sigmoid())
+        # self.postBlock = nn.Sequential(nn.Linear(512*4*4, 1024), nn.LeakyReLU(0.2), nn.Linear(1024,1), nn.Sigmoid()) #GAN
+        self.postBlock = nn.Sequential(nn.Linear(512*4*4, 1024), nn.LeakyReLU(0.2), nn.Linear(1024,1)) #WGAN
 
     def forward(self, x):
+        if isinstance(x, tuple) or isinstance(x, list):
+            if len(x) == 2:
+                x = x[1]
+            else:
+                x = x[0]
+            
         if x.shape[1] == 2:
             amp_x = (10 ** (10 * x[:,0]) - 1) / 10 ** 10
             phase_x = x[:,1]
             compl_x = amp_x * torch.exp(1j * phase_x)
             ifft_x = torch.fft.ifft2(compl_x)
             img_x = torch.absolute(ifft_x)
-            shift_x = torch.fft.fftshift(img_x).unsqueeze(1)
-            x = shift_x
-        x = self.preBlock(x)
-        x = self.main(x)
-        x = torch.flatten(x, 1)
-        x = self.postBlock(x)
+            shift_x = torch.fft.ifftshift(img_x).unsqueeze(1)
+        else:
+            shift_x = x
+        # shift_x[torch.isnan(shift_x)] = 0
+        pred = self.preBlock(shift_x)
+        pred = self.main(pred)
+        pred = torch.flatten(pred, 1)
+        pred = self.postBlock(pred)
+        return pred
+
+class SRResNet_dirtyModel_pretrainedL1(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        self.model = ut.load_pretrained_model(arch_name='SRResNet_dirtyModel', model_path='/net/big-tank/POOL/users/sfroese/vipy/jets/models/l1_symmetry.model')
+
+    def forward(self, x):
+        return self.model(x)
 
 
-        return x
+class SRResNet_dirtyModel(nn.Module):
+    def __init__(self, img_size):
+        super().__init__()
+        torch.cuda.set_device(1)
+        self.img_size = img_size
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=1), nn.PReLU()
+        )
+
+        # ResBlock 16
+        self.blocks = nn.Sequential(
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1), nn.BatchNorm2d(64)
+        )
+        # self.upscale = nn.Sequential(
+        #     nn.Conv2d(64, 256, 3, stride=1, padding = 1),
+        #     nn.PixelShuffle(2),
+        #     nn.PReLU()
+        # )
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=1),
+        )
+
+        self.relu = nn.Hardtanh(0,1.1)
+        self.pi = nn.Hardtanh(-np.pi,np.pi)
+
+        self.symmetry = Lambda(better_symmetry)
 
 
-class automap(nn.Module):
+    def forward(self, x):
+
+        amp = x[:,0].clone().detach()
+        phase = x[:,1].clone().detach()
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase)
+        ifft = torch.fft.ifft2(compl)
+        dirty = torch.fft.ifftshift(torch.absolute(ifft))
+        dirty = dirty.unsqueeze(1)
+
+
+        pred = self.preBlock(x)
+
+        pred = pred + self.postBlock(self.blocks(pred))
+        # pred = self.postBlock(self.blocks(pred))
+
+
+        # pred = self.upscale(pred)
+
+        pred = self.final(pred)
+
+        pred[:,0] = self.relu(pred[:,0].clone())
+        pred[:,1] = self.pi(pred[:,1].clone())
+
+        pred = self.symmetry(pred)
+
+
+        # pred = self.relu(pred)
+        # pred = nn.functional.interpolate(pred, scale_factor=0.5)
+
+        return dirty, pred
+
+
+class GANCS_generator_test(nn.Module):
     def __init__(self):
         super().__init__()
         torch.cuda.set_device(1)
-        self.fcs = nn.Sequential(nn.Linear(63*63*2,63*63),nn.Tanh(),nn.Linear(63*63,63*63),nn.Tanh())
+        self.blocks = nn.Sequential(
+            SRBlock(2, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+        )
 
-        self.convs = nn.Sequential(nn.Conv2d(1,64,5, stride=1, padding=2),nn.ReLU(),nn.Conv2d(64,64,5,stride=1, padding=2),nn.ReLU(),nn.Conv2d(64,1,7,stride=1, padding=3))
+        self.post = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1), nn.ReLU(),
+            nn.Conv2d(64, 64, 1, stride=1, padding=0), nn.ReLU(),
+            nn.Conv2d(64, 2, 1, stride=1, padding=0)
+        )
 
+        self.DC = HardDC(45, 10)
     
     def forward(self, x):
-        amp_x = (10 ** (10 * x[:,0]) - 1) / 10 ** 10
-        phase_x = x[:,1]
-        compl_x = amp_x * torch.exp(1j * phase_x)
-        x[:,0] = compl_x.real
-        x[:,1] = compl_x.imag
-        x = torch.flatten(x, 1)
-        x = self.fcs(x)
-        x = x.reshape((x.shape[0],1,63,63))
-        x = self.convs(x)
-        return x
+        ap = x[0]
+        base_mask = x[1]
+        A = x[2]
+
+
+        amp = ap[:,0].clone().detach()
+        phase = ap[:,1].clone().detach()
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase) #k measured
+        ifft = torch.fft.ifft2(compl)
+        spatial = torch.fft.ifftshift(ifft) 
+        # change to two channels real/imag
+        input = torch.zeros(ap.shape).to('cuda')
+        input[:,0] = spatial.real
+        input[:,1] = spatial.imag
+        # dirty = input.clone().detach()
+
+
+        pred = self.blocks(input)
+
+        pred = self.post(pred)
+
+        pred = self.DC(pred, compl.unsqueeze(1), A, base_mask)
+        
+
+        return pred
+
+class GANCS_generator(nn.Module):
+    def __init__(self):
+        super().__init__()
+        torch.cuda.set_device(1)
+        self.blocks = nn.Sequential(
+            SRBlock(2, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+        )
+
+        self.post = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1), nn.ReLU(),
+            nn.Conv2d(64, 64, 1, stride=1, padding=0), nn.ReLU(),
+            nn.Conv2d(64, 2, 1, stride=1, padding=0)
+        )
+
+        self.DC = HardDC(45, 10)
+    
+    def forward(self, x):
+        ap = x[0]
+        base_mask = x[1]
+        A = x[2]
+
+
+        amp = ap[:,0].clone().detach()
+        phase = ap[:,1].clone().detach()
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase) #k measured
+        ifft = torch.fft.ifft2(compl)
+        spatial = torch.fft.ifftshift(ifft) 
+        # change to two channels real/imag
+        input = torch.zeros(ap.shape).to('cuda')
+        input[:,0] = spatial.real
+        input[:,1] = spatial.imag
+        # dirty = input.clone().detach()
+
+
+        pred = self.blocks(input)
+
+        pred = self.post(pred)
+
+        pred = self.DC(pred, compl.unsqueeze(1), A, base_mask)
+        
+
+        return pred
+
+
+class GANCS_critic(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # self.blocks = nn.Sequential(
+        #     nn.Conv2d(2, 4, 3, stride=2, padding=1),
+        #     nn.LeakyReLU(0.2),
+        #     nn.Conv2d(4, 8, 3, stride=2, padding=1),
+        #     nn.LeakyReLU(0.2),
+        #     nn.Conv2d(8, 16, 3, stride=2, padding=1),
+        #     nn.LeakyReLU(0.2),
+        #     nn.Conv2d(16, 32, 3, stride=2, padding=1),
+        #     nn.LeakyReLU(0.2),
+        #     nn.Conv2d(32, 32, 3, stride=1, padding=1),
+        #     nn.LeakyReLU(0.2),
+        #     nn.Conv2d(32, 32, 1, stride=1, padding=0),
+        #     nn.LeakyReLU(0.2),
+        #     nn.Conv2d(32, 1, 1, stride=1, padding=0),
+        #     nn.AdaptiveAvgPool2d(1)
+        # )
+        self.block1 = nn.Sequential(nn.Conv2d(2, 64, 3, stride=2, padding=1), nn.BatchNorm2d(64), nn.LeakyReLU(0.2))
+        self.block2 = nn.Sequential(nn.Conv2d(64, 128, 3, stride=1, padding=1), nn.BatchNorm2d(128), nn.LeakyReLU(0.2))
+        self.block3 = nn.Sequential(nn.Conv2d(128, 128, 3, stride=2, padding=1), nn.BatchNorm2d(128), nn.LeakyReLU(0.2))
+        self.block4 = nn.Sequential(nn.Conv2d(128, 256, 3, stride=1, padding=1), nn.BatchNorm2d(256), nn.LeakyReLU(0.2))
+        self.block5 = nn.Sequential(nn.Conv2d(256, 256, 3, stride=2, padding=1), nn.BatchNorm2d(256), nn.LeakyReLU(0.2))
+        self.block6 = nn.Sequential(nn.Conv2d(256, 512, 3, stride=1, padding=1), nn.BatchNorm2d(512), nn.LeakyReLU(0.2))
+        self.block7 = nn.Sequential(nn.Conv2d(512, 512, 3, stride=2, padding=1), nn.BatchNorm2d(512), nn.LeakyReLU(0.2))
+
+        self.blocks = nn.Sequential(self.block1, self.block2, self.block3, self.block4, self.block5, self.block6, self.block7, nn.AdaptiveAvgPool2d(1))
+            
+    def forward(self, x):
+        if x.shape[1] == 2:
+            amp = x[:,0].clone().detach()
+            phase = x[:,1].clone().detach()
+            amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+            compl = amp_rescaled * torch.exp(1j * phase)
+            ifft = torch.fft.ifft2(compl)
+            x = torch.fft.ifftshift(ifft).unsqueeze(1)
+        input = torch.zeros((x.shape[0],2,x.shape[2], x.shape[3])).to('cuda')
+        input[:,0] = x.real.squeeze(1)
+        input[:,1] = x.imag.squeeze(1)
+        return self.blocks(input)
+
+
+class GANCS_unrolled(nn.Module):
+    def __init__(self):
+        super().__init__()
+        torch.cuda.set_device(0)
+        self.block1 = nn.Sequential(
+            SRBlock(2, 64),
+            SRBlock(64, 64),
+            nn.Conv2d(64, 2, 3, stride=1, padding=1),
+        )
+        self.DC1 = SoftDC(45, 10)
+        self.block2 = nn.Sequential(
+            SRBlock(2, 64),
+            SRBlock(64, 64),
+            nn.Conv2d(64, 2, 3, stride=1, padding=1),
+        )
+        self.DC2 = SoftDC(45, 10)
+        self.block3 = nn.Sequential(
+            SRBlock(2, 64),
+            SRBlock(64, 64),
+            nn.Conv2d(64, 2, 3, stride=1, padding=1),
+        )
+        self.DC3 = HardDC(45, 10)
+        # self.block4 = nn.Sequential(
+        #     SRBlock(2, 64),
+        #     SRBlock(64, 64),
+        #     nn.Conv2d(64, 2, 3, stride=1, padding=1),
+        # )
+        # self.DC4 = SoftDC(45, 10)
+        # self.block5 = nn.Sequential(
+        #     SRBlock(2, 64),
+        #     SRBlock(64, 64),
+        #     nn.Conv2d(64, 2, 3, stride=1, padding=1),
+        # )
+        # self.DC5 = SoftDC(45, 10)
+    
+    def forward(self, x):
+        ap = x[0]
+        base_mask = x[1]
+        A = x[2]
+
+
+        amp = ap[:,0].clone().detach()
+        phase = ap[:,1].clone().detach()
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase) #k measured
+        ifft = torch.fft.ifft2(compl)
+        spatial = torch.fft.ifftshift(ifft) 
+        # change to two channels real/imag
+        input = torch.zeros(ap.shape).to('cuda')
+        input[:,0] = spatial.real
+        input[:,1] = spatial.imag
+        measured = input.clone().detach()
+        # dirty = input.clone().detach()
+
+
+        pred = self.block1(input)
+        dc1 = self.DC1(pred, measured, A, base_mask)
+        # pred[:,0] = dc1.real.squeeze(1)
+        # pred[:,1] = dc1.imag.squeeze(1)
+        pred = self.block2(pred)
+        dc2 = self.DC2(pred, measured, A, base_mask)
+        # pred[:,0] = dc2.real.squeeze(1)
+        # pred[:,1] = dc2.imag.squeeze(1)
+        pred = self.block3(pred)
+        dc3 = self.DC3(pred, compl.unsqueeze(1), A, base_mask)
+        pred[:,0] = dc3.real.squeeze(1)
+        pred[:,1] = dc3.imag.squeeze(1)
+        # pred = self.block4(pred)
+        # pred = self.DC4(pred, measured, A, base_mask)
+        # pred = self.block5(pred)
+        # pred = self.DC5(pred, measured, A, base_mask)
+
+        #pred = self.post(pred)
+
+        #pred = self.DC(pred, compl.unsqueeze(1), A, base_mask)
+        
+        return (pred[:,0]+1j*pred[:,1]).unsqueeze(1)
+
+
+class CLEANNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        torch.cuda.set_device(0)
+
+        self.blocks = nn.Sequential(
+            SRBlock(2, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64)
+        )
+
+        self.post = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1), nn.ReLU(),
+            nn.Conv2d(64, 64, 1, stride=1, padding=0), nn.ReLU(),
+            nn.Conv2d(64, 2, 1, stride=1, padding=0)
+        )
+
+        self.lamb = nn.Parameter(torch.tensor(1).float())
+
+        # self.conv = nn.Conv2d(2, 2, 3, stride=1, padding=1, bias=False)
+
+        # self.DC = HardDC(45, 10)
+        # self.beamBlock = nn.Sequential(
+        #     SRBlock(2, 64),
+        #     SRBlock(64, 64),
+        #     SRBlock(64, 64),
+        #     SRBlock(64, 64),
+        #     SRBlock(64, 64),
+        #     nn.Conv2d(64, 2, 1, stride=1, padding=0)
+        # )
+        # self.block1 = nn.Sequential(nn.Conv2d(2, 64, 3, stride=2, padding=1), nn.BatchNorm2d(64), nn.LeakyReLU(0.2))
+        # self.block2 = nn.Sequential(nn.Conv2d(64, 128, 3, stride=1, padding=1), nn.BatchNorm2d(128), nn.LeakyReLU(0.2))
+        # self.block3 = nn.Sequential(nn.Conv2d(128, 128, 3, stride=2, padding=1), nn.BatchNorm2d(128), nn.LeakyReLU(0.2))
+        # self.block4 = nn.Sequential(nn.Conv2d(128, 256, 3, stride=1, padding=1), nn.BatchNorm2d(256), nn.LeakyReLU(0.2))
+        # self.block5 = nn.Sequential(nn.Conv2d(256, 256, 3, stride=2, padding=1), nn.BatchNorm2d(256), nn.LeakyReLU(0.2))
+        # self.block6 = nn.Sequential(nn.Conv2d(256, 512, 3, stride=1, padding=1), nn.BatchNorm2d(512), nn.LeakyReLU(0.2))
+        # self.block7 = nn.Sequential(nn.Conv2d(512, 512, 3, stride=2, padding=1), nn.BatchNorm2d(512), nn.LeakyReLU(0.2))
+
+        # self.beamBlock = nn.Sequential(self.block1, self.block2, self.block3, self.block4, self.block5, self.block6, self.block7, nn.Conv2d(512, 1, 3, stride=1, padding=1), nn.AdaptiveAvgPool2d(1), nn.Hardtanh(1,3))
+
+
+    def forward(self, x):
+        # print(len(x))
+        ap = x[0]
+        base_mask = x[1]
+        A = x[2]
+        M = x[3]
+
+        amp = ap[:,0].clone().detach()
+        phase = ap[:,1].clone().detach()
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase) #k measured
+        ifft = torch.fft.ifft2(compl)
+        spatial = torch.fft.ifftshift(ifft) 
+        # change to two channels real/imag
+        input = torch.zeros(ap.shape).to('cuda')
+        input[:,0] = spatial.real
+        input[:,1] = spatial.imag
+        # measured = input.clone().detach()
+
+        #calculate Dirty Beam
+        beam = calc_DirtyBeam(base_mask)
+        # beam_copy = beam.clone().detach()
+
+        # M = torch.zeros(input.shape).to('cuda')
+
+
+        # for i in range(5):
+        out_b = self.blocks(input)
+        out_p = self.post(out_b)
+    
+
+        # residual = input - self.lamb*torch.einsum('bclm,bclm->bclm', out_p, beam)
+        residual = input - self.lamb*out_p
+
+        M = M + self.lamb*out_p
+
+            # if i == 4:
+            #     break
+
+        # return (input[:,0]+1j*input[:,1]).unsqueeze(1)
+        # return (M[:,0]+1j*M[:,1]).unsqueeze(1)
+
+        # gauss_params = self.beamBlock(beam)
+
+        # clean_beam = torch.fft.ifft2(torch.fft.fft2(torch.cat([gauss(63,s) for s in gauss_params]).reshape(-1,M.shape[2],M.shape[2])))
+
+        # M = M + input
+        # return clean_beam
+        # M_compl = (M[:,0]+1j*M[:,1])
+       
+
+        # M_conv = torch.einsum('blm,blm->blm',  torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(M_compl))),  torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(clean_beam))))
+        
+        # M_conv = torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(M_conv)))
+        fft_residual = torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(residual[:,0]+1j*residual[:,1])))
+
+        res_amp = torch.absolute(fft_residual)
+        res_phase = torch.angle(fft_residual)
+
+        residual[:,0] = ((torch.log10(res_amp + 1e-10) / 10) + 1)
+        residual[:,1] = res_phase
+
+        return residual, M
