@@ -126,7 +126,7 @@ def process_data_dirty_model(data_path, freq, n_positions, fov_asec):
     
     print(f"\n Loading VLBI data set.\n")
     bundles = dt.get_bundles(data_path)
-    freq = freq*10**6 # hard code #eht 227297
+    freq = freq*10**6 # mhz hard code #eht 227297
     uvfits = dt.get_bundles(bundles[3])
     imgs = dt.get_bundles(bundles[2])
     configs = dt.get_bundles(bundles[0])
@@ -150,7 +150,7 @@ def process_data_dirty_model(data_path, freq, n_positions, fov_asec):
         print(f"\n Load subset.\n")
         for i in np.arange(p*1000, p*1000+1000):
             sampled = uv_srt[i]
-            target = img_srt[i]
+            target = img_srt[i] # +1000 because I had to only grid images from 1000-1999
 
             img[i-p*1000] = np.asarray(Image.open(str(target)))
         
@@ -179,7 +179,11 @@ def process_data_dirty_model(data_path, freq, n_positions, fov_asec):
         fov = fov_asec*np.pi/(3600*180) # hard code #default 0.00018382
         # delta_u = 1/(fov*N/256) # hard code
         delta_u = 1/(fov) # with a set N this is the same as zooming in since N*delta_u can be smaller than u_max
-        delta_u = (2*max(np.max(u_0),np.max(v_0))/N) # test gridding pixel size
+        # delta_u = (2*max(np.max(u_0),np.max(v_0))/N) # test gridding pixel size
+        # biggest_baselines = 8611*1e3 
+        # wave = const.c/(freq/un.second)/un.meter
+        # uv_max = biggest_baselines/wave
+        # delta_u = uv_max/N
         # print(delta_u)
         for i in range(N):
             for j in range(N):
@@ -206,7 +210,7 @@ def process_data_dirty_model(data_path, freq, n_positions, fov_asec):
         truth_fft = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(img_resized, axes=(1,2)), axes=(1,2)), axes=(1,2))
         fft_scaled_truth = prepare_fft_images(truth_fft, True, False)
 
-        out = data_path + "/h5/samp_train"+ str(p) + ".h5"
+        out = data_path + "/h5/samp_train"+ str(p) +".h5"
         save_fft_pair_with_response(out, samp_img[:800], fft_scaled_truth[:800], np.expand_dims(base_mask,0), np.expand_dims(A,0))
         out = data_path + "/h5/samp_valid"+ str(p) + ".h5"
         save_fft_pair_with_response(out, samp_img[800:], fft_scaled_truth[800:], np.expand_dims(base_mask,0), np.expand_dims(A,0))
@@ -217,7 +221,7 @@ def response(config, N, unique_telescopes, unique_baselines):
     array_layout = layouts.get_array_layout('vlba')
     src_crd = rc['src_coord']
 
-    wave = const.c/((float(rc['channel'].split(':')[0])/2)*10**6/un.second)/un.meter
+    wave = const.c/((float(rc['channel'].split(':')[0]))*10**6/un.second)/un.meter
     rd = scan.rd_grid(rc['fov_size']*np.pi/(3600*180),N, src_crd)
     E = scan.getE(rd, array_layout, wave, src_crd)
     A = np.zeros((N,N,int(unique_baselines)))
@@ -230,4 +234,85 @@ def response(config, N, unique_telescopes, unique_baselines):
             counter += 1
     
     return A
+    
+
+def process_measurement(data_path, file, config, fov_asec):
+    
+    print(f"\n Loading VLBI data set.\n")
+    configs = config
+    size = 1
+    N=63
+    with fits.open(file) as hdul:
+        n_sampled = hdul[0].data.shape[0] #number of sampled points
+        baselines = hdul[0].data['Baseline']
         
+        unique_telescopes = hdul[3].data.shape[0]
+        unique_baselines = (unique_telescopes**2 - unique_telescopes)/2
+        freq = hdul[0].header[37]
+        offset = hdul[2].data['IF FREQ']
+        for o in offset[0][1:]:
+            baselines = np.append(baselines,hdul[0].data['Baseline'])
+        baselines = np.append(baselines,baselines)
+    # response matrices
+    A = response(configs, N, unique_telescopes, unique_baselines)
+
+    samps = np.zeros((size,4,n_sampled*2))
+    print(f"\n Load subset.\n")
+
+
+    with fits.open(file) as hdul:
+        data = hdul[0].data
+        cmplx = data['DATA'] 
+        x = cmplx[...,0,0]
+        y = cmplx[...,0,1]
+        w = cmplx[...,0,2]
+        x = np.squeeze(x)
+        y = np.squeeze(y)
+        w = np.squeeze(w)
+        ap = np.sqrt(x**2+y**2)
+        ph = np.angle(x+1j*y)
+        u = np.array([])
+        v = np.array([])
+        for f in offset[0]:
+            u = np.append(u,data['UU--']*(freq+f))
+            v = np.append(v,data['VV--']*(freq+f))
+        samps = [np.append(u,-u),np.append(v,-v),np.append(ap,ap),np.append(ph,-ph)]
+
+    print(f"\n Gridding VLBI data set.\n")
+
+    # Generate Mask
+    u_0 = samps[0]
+    v_0 = samps[1]
+    mask = np.zeros((N,N,u_0.shape[0]))
+    
+    base_mask = np.zeros((N,N,int(unique_baselines)))
+    
+    fov = fov_asec*np.pi/(3600*180) # hard code #default 0.00018382
+    delta_u = 1/(fov) # with a set N this is the same as zooming in since N*delta_u can be smaller than u_max
+
+    for i in range(N):
+        for j in range(N):
+            u_cell = (j-N/2)*delta_u
+            v_cell = (i-N/2)*delta_u
+            mask[i,j] = ((u_cell <= u_0) & (u_0 <= u_cell+delta_u)) & ((v_cell <= v_0) & (v_0 <= v_cell+delta_u))
+            
+            base = np.unique(baselines[mask[i,j].astype(bool)])
+            base_mask[i,j,:base.shape[0]] = base
+
+    mask = np.flip(mask, [0])
+    points = np.sum(mask, 2)
+    points[points==0] = 1
+    img_resized = np.zeros((size,N,N))
+
+    samp_img = np.zeros((size,2,N,N))
+    samp_img[0,0] = np.matmul(mask, samps[2].T)/points
+    samp_img[0,0] = (np.log10(samp_img[0,0] + 1e-10) / 10) + 1 
+    samp_img[0,1] = np.matmul(mask, samps[3].T)/points
+
+
+    # truth_fft = np.array([np.fft.fft2(np.fft.fftshift(img)) for im in img_resized])
+
+    out = data_path + "/h5/samp_meas2.h5"
+    save_fft_pair_with_response(out, samp_img, samp_img, np.expand_dims(base_mask,0), np.expand_dims(A,0))
+
+
