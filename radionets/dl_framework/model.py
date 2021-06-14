@@ -291,7 +291,7 @@ def deconv(ni, nc, ks, stride, padding, out_padding):
     return layers
 
 
-def load_pre_model(learn, pre_path, visualize=False):
+def load_pre_model(learn, pre_path, visualize=False, gan=False):
     """
     :param learn:       object of type learner
     :param pre_path:    string wich contains the path of the model
@@ -303,7 +303,7 @@ def load_pre_model(learn, pre_path, visualize=False):
 
     if visualize:
         learn.load_state_dict(checkpoint["model"])
-
+    
     else:
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])
@@ -462,6 +462,27 @@ class SRBlock(nn.Module):
             nn.BatchNorm2d(nf),
             nn.PReLU(),
             nn.Conv2d(nf, nf, 3, stride=1, padding=1),
+            nn.BatchNorm2d(nf),
+        )
+
+class SRBlock_noBias(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni, nf, stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1,bias=False)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1,bias=False),
+            nn.BatchNorm2d(nf),
+            nn.PReLU(),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=1,bias=False),
             nn.BatchNorm2d(nf),
         )
 
@@ -675,3 +696,132 @@ class BetterShiftPad(nn.Module):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         x = better_padding(input, self.padding)
         return x
+
+class HardDC(nn.Module):
+    def __init__(self, base_nums, n_tel):
+        super().__init__()
+        self.base_nums = torch.zeros(base_nums)
+        self.n_tel = n_tel
+        self.weights = nn.Parameter(torch.tensor(1).float())
+        
+    def forward(self, x, input, A, base_mask):
+        c = 0
+        for i in range(self.n_tel):
+            for j in range(self.n_tel):
+                if j<=i:
+                    continue
+                self.base_nums[c] = 256 * (i + 1) + j + 1
+                c += 1
+
+
+        pred = torch.zeros((x.shape[0],1,x.shape[2],x.shape[3]), dtype=torch.complex64).to('cuda')
+        c = 0
+        for idx, bn in enumerate(self.base_nums):
+            s_uv = torch.sum((base_mask == bn),3)
+            if not (base_mask == bn).any():
+                continue
+
+            xA = torch.einsum('bclm,blm->bclm',x,A[...,idx])
+            x_prime = xA[:,0] + 1j*xA[:,1] #from 2 channels to complex for fft
+            k_prime = torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(x_prime)))
+            y_prime = torch.einsum('blm,bclm->bclm',(1-s_uv),k_prime.unsqueeze(1))
+
+            Y = torch.einsum('blm,bclm->bclm', s_uv, input)
+
+            full_k_space = Y + self.weights*y_prime
+
+            pred += full_k_space # maybe a conj(A) missing, see paper 1910.07048
+            c += 1
+
+        points = base_mask.clone()
+        points[points != 0] = 1
+        points = torch.sum(points,3)
+        points[points == 0] = 1
+
+        
+        return torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(pred/c))) #divide by c because we summed c fully sampled maps in pred??? 
+
+class SoftDC(nn.Module):
+    def __init__(self, base_nums, n_tel):
+        super().__init__()
+        self.base_nums = torch.zeros(base_nums)
+        self.n_tel = n_tel
+        self.weights = nn.Parameter(torch.tensor(1).float())
+        
+    def forward(self, x, measured, A, base_mask):
+        c = 0
+        for i in range(self.n_tel):
+            for j in range(self.n_tel):
+                if j<=i:
+                    continue
+                self.base_nums[c] = 256 * (i + 1) + j + 1
+                c += 1
+
+
+        sum = torch.zeros((x.shape[0],1,x.shape[2],x.shape[3]), dtype=torch.complex64).to('cuda')
+        c = 0
+        for idx, bn in enumerate(self.base_nums):
+            s_uv = torch.sum((base_mask == bn),3)
+            if not (base_mask == bn).any():
+                continue
+
+            xA = torch.einsum('bclm,blm->bclm',x,A[...,idx])
+            x_prime = xA[:,0] + 1j*xA[:,1] #from 2 channels to complex for fft
+            k_prime = torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(x_prime)))
+            y_prime = torch.einsum('blm,bclm->bclm',s_uv,k_prime.unsqueeze(1))
+
+            # Y = torch.einsum('blm,bclm->bclm', s_uv, input)
+
+            diff = torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(y_prime))) 
+
+            sum += diff # maybe a conj(A) missing, see paper 1910.07048
+            c += 1
+
+        sum = sum/c
+
+        pred = torch.zeros(x.shape).to('cuda')
+
+        pred[:,0] = sum.real.squeeze(1)
+        pred[:,1] = sum.imag.squeeze(1)
+
+
+
+
+        
+        return x + self.weights*(pred-measured) #divide by c because we summed c fully sampled maps in pred??? 
+
+
+def calc_DirtyBeam(base_mask):
+    s_uv = torch.sum(base_mask,3)
+    s_uv[s_uv != 0] = 1
+
+    b = torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(s_uv)))
+    beam = torch.zeros((b.shape[0],2, b.shape[1], b.shape[2])).to('cuda')
+    beam[:,0] = b.real.squeeze(1)
+    beam[:,1] = b.imag.squeeze(1)
+    return beam
+
+
+def gauss(kernel_size, sigma):
+    # Create a x, y coordinate grid of shape (kernel_size, kernel_size, 2)
+    x_cord = torch.arange(kernel_size).to('cuda')
+    x_grid = x_cord.repeat(kernel_size).view(kernel_size, kernel_size)
+    y_grid = x_grid.t()
+    xy_grid = torch.stack([x_grid, y_grid], dim=-1)
+
+    mean = (kernel_size - 1)/2.
+    variance = sigma**2.
+
+    # Calculate the 2-dimensional gaussian kernel which is
+    # the product of two gaussian distributions for two different
+    # variables (in this case called x and y)
+    gaussian_kernel = (1./(2.*np.pi*variance)) *\
+                    torch.exp(
+                        -torch.sum((xy_grid - mean)**2., dim=-1) /\
+                        (2*variance)
+                    )
+    # Make sure sum of values in gaussian kernel equals 1.
+    gaussian_kernel = gaussian_kernel / torch.sum(gaussian_kernel)
+    return gaussian_kernel
+
+    
