@@ -91,6 +91,8 @@ class AvgLossCallback(Callback):
         plt.tight_layout()
 
 
+
+
 class NormCallback(Callback):
     _order = 2
 
@@ -117,26 +119,37 @@ class DataAug(Callback):
         self.physics_informed = physics_informed
 
     def before_batch(self):
-        x = self.xb[0].clone()
+        # x = self.xb[0].clone()
+        y = self.yb[0].clone()
         if self.physics_informed:
-            y = self.yb[0][0].clone()
-            base_mask = self.yb[0][1].clone()
-            A = self.yb[0][2].clone()
+            # y = self.yb[0][0].clone()
+            # base_mask = self.yb[0][1].clone()
+            # A = self.yb[0][2].clone()
+            x = self.xb[0][0].clone()
+            base_mask = self.xb[0][1].clone()
+            A = self.xb[0][2].clone()
         else:
             y = self.yb[0].clone()
+        
         randint = np.random.randint(0, 4, x.shape[0])
         for i in range(x.shape[0]):
-            x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
-            x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
+            if x.shape[1] == 2:
+                x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
+                x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
+            else:
+                x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
+
             if not self.vgg:
                 y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
                 y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
         if self.physics_informed:
             base_mask[i] = torch.rot90(base_mask[i], int(randint[i]), dims=[0,1])
             A[i] = torch.rot90(A[i], int(randint[i]), dims=[0,1])
-        self.learn.xb = [x]
+        # self.learn.xb = [x]
+        self.learn.yb = [y]
         if self.physics_informed:
-            self.learn.yb = [(y, base_mask, A)]
+            # self.learn.yb = [(y, base_mask, A)]
+            self.learn.xb = [(x, base_mask, A)]
         else:
             self.learn.yb = [y]
 
@@ -155,3 +168,21 @@ class SaveTempCallback(Callback):
             out = p / f"temp_{self.epoch + 1}.model"
             save_model(self, out, self.gan)
             print(f"\nFinished Epoch {self.epoch + 1}, model saved.\n")
+
+# Best callback ever
+class OverwriteOneBatch_CLEAN(Callback):
+    _order = 4
+    def __init__(self, n_iter):
+        self.n_iter = n_iter
+
+    def before_batch(self):
+        input = self.xb[0]
+        M = torch.zeros(input[0].shape).to('cuda')
+        self.learn.xb = [(self.xb[0][0],self.xb[0][1],self.xb[0][2],M)]
+
+        for i in range(self.n_iter-1):
+            # self.model.zero_grad()
+            self._do_one_batch()
+            self.learn.xb = [(self.pred[0].clone().detach(),self.xb[0][1],self.xb[0][2],self.pred[1].clone().detach())]
+
+            
