@@ -29,7 +29,7 @@ visualize_dynamic_range = false
 visualize_blobs = false
 visualize_ms_ssim = false
 random = true
-num_images = 2
+num_images = 10
 
 [eval]
 batch_size = 100

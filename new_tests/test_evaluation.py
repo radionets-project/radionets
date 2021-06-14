@@ -47,9 +47,7 @@ class TestEvaluation:
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = generate_images(
-            conf["arch_name"], conf["model_path"]
-        )
+        pred, img_test, img_true = generate_images(conf)
         assert str(pred.device) == "cpu"
 
         # test for uncertainty
@@ -88,10 +86,7 @@ class TestEvaluation:
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = generate_images(
-            conf["arch_name"],
-            "./new_tests/model/model_eval.model",
-        )
+        pred, img_test, img_true = generate_images(conf)
 
         assert str(pred.device) == "cpu"
 
@@ -133,25 +128,25 @@ class TestEvaluation:
             shutil.rmtree("new_tests/model/evaluation")
 
 
-def generate_images(arch_name, model_path):
+def generate_images(conf):
     from radionets.dl_framework.data import load_data
     from radionets.evaluation.utils import get_images, eval_model, load_pretrained_model
 
     test_ds = load_data(
-        "./new_tests/build/data",
+        conf["data_path"],
         mode="test",
-        fourier=True,
-        source_list=False,
+        fourier=conf["fourier"],
+        source_list=conf["source_list"],
     )
 
-    num_images = 10
-    rand = True
+    num_images = conf["num_images"]
+    rand = conf["random"]
 
     if num_images is None:
         num_images = len(test_ds)
     img_test, img_true = get_images(test_ds, num_images, norm_path="none", rand=rand)
     img_size = img_test.shape[-1]
-    model = load_pretrained_model(arch_name, model_path, img_size)
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     pred = eval_model(img_test, model, test=True)
 
     return pred, img_test, img_true
