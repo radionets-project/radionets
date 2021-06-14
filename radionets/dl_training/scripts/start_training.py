@@ -92,7 +92,7 @@ def main(configuration_path, mode):
         # load pretrained model
         if train_conf["pre_model"] != "none":
             learn.create_opt()
-            load_pre_model(learn, train_conf["pre_model"])
+            load_pre_model(learn, train_conf["pre_model"], gan=False)
 
         # Train the model, except interrupt
         try:
@@ -130,9 +130,9 @@ def main(configuration_path, mode):
             # learn.fine_tune(train_conf["num_epochs"])
             learn.fit(train_conf["num_epochs"]) 
         except KeyboardInterrupt:
-            pop_interrupt(learn, train_conf)
+            pop_interrupt(learn, train_conf, True)
 
-        end_training(learn, train_conf)
+        end_training(learn, train_conf, True)
 
         if train_conf["inspection"]:
             create_inspection_plots(train_conf, rand=True)
