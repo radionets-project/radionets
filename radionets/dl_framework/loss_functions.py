@@ -156,6 +156,23 @@ def l1_CLEAN(x,y):
 
     return l1((x[1][:,0]+1j*x[1][:,1]).unsqueeze(1),spatial)
 
+def l1_RIM(x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    spatial = torch.fft.ifftshift(ifft).unsqueeze(1)
+
+
+    l1 = nn.L1Loss()
+    loss = 0
+    for eta in x:
+        loss += l1((eta[:,0]+1j*eta[:,1]).unsqueeze(1),spatial)
+
+    loss = loss/len(x)
+    return loss
+
 def l1_wgan_GANCS(fake_pred,x,y):
     amp = y[:,0].clone().detach()
     phase = y[:,1].clone().detach()
