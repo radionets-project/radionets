@@ -1,3 +1,4 @@
+from numpy.lib.function_base import diff
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -834,12 +835,12 @@ class ConvGRUCell(nn.Module):
         self.dilation = dilation
         self.bias = bias
 
-        self.Wih = nn.Conv2d(input_size, 3*hidden_size, kernel_size, dilation=dilation, bias=bias, padding=dilation*(kernel_size-1)/2)
-        self.Whh = nn.Conv2d(input_size, 3*hidden_size, kernel_size, dilation=dilation, bias=bias, padding=dilation*(kernel_size-1)/2)
+        self.Wih = nn.Conv2d(input_size, 3*hidden_size, kernel_size, dilation=dilation, bias=bias, padding=dilation*(kernel_size-1)//2)
+        self.Whh = nn.Conv2d(input_size, 3*hidden_size, kernel_size, dilation=dilation, bias=bias, padding=dilation*(kernel_size-1)//2)
 
     def forward(self, x, hx=None):
         if hx is None:
-            hx = torch.zeros((x.size(0), self.hidden_size) + x.size()[2:], requires_grad=False)
+            hx = torch.zeros((x.size(0), self.hidden_size) + x.size()[2:], requires_grad=False).to('cuda')
         
         ih = self.Wih(x).chunk(3, dim=1)
         hh = self.Whh(hx).chunk(3, dim=1)
@@ -851,3 +852,60 @@ class ConvGRUCell(nn.Module):
         hx = (1-z)*hx + z*n
 
         return hx
+
+def gradFunc(x, y, A, base_mask, n_tel, base_nums): 
+    # does_require_grad = x.requires_grad
+    # with torch.enable_grad():
+    #     x.requires_grad_(True)
+    # print(y.shape)
+    # base_nums = torch.zeros(base_nums)
+    # c = 0
+    # for i in range(n_tel):
+    #     for j in range(n_tel):
+    #         if j<=i:
+    #             continue
+    #         base_nums[c] = 256 * (i + 1) + j + 1
+    #         c += 1
+    # difference = torch.zeros((x.shape[0],1,x.shape[2],x.shape[3]), dtype=torch.complex64).to('cuda')
+    # c = 0
+    # for idx, bn in enumerate(base_nums):
+    #     s_uv = torch.sum((base_mask == bn),3)
+    #     if not (base_mask == bn).any():
+    #         continue
+
+    #     xA = torch.einsum('bclm,blm->bclm',x,A[...,idx])
+    #     x_prime = xA[:,0] + 1j*xA[:,1] #from 2 channels to complex for fft
+    #     k_prime = torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(x_prime)))
+    #     y_prime = torch.einsum('blm,bclm->bclm',s_uv,k_prime.unsqueeze(1))
+
+    #     # Y = torch.einsum('blm,bclm->bclm', s_uv, y.unsqueeze(1))
+
+    #     # d = Y - y_prime
+
+    #     difference += y_prime
+    #     c += 1
+    # print(difference.shape)
+    # print(y.shape)
+    # print((difference-y).shape)
+    # print((difference-y.unsqueeze(1)).shape)
+    # points = base_mask.clone()
+    # points[points != 0] = 1
+    # points = torch.sum(points,3)
+    # points[points == 0] = 1
+    mask = torch.sum(base_mask, 3)
+    mask[mask != 0] = 1
+
+    fx = torch.fft.fft2(torch.fft.fftshift(x[:,0]+1j*x[:,1]))
+    pfx = torch.einsum('blm,blm->blm', mask, fx)
+
+    diff = pfx-y
+
+    ift = torch.fft.fftshift(torch.fft.ifft2(diff))
+
+    grad = torch.zeros((ift.size(0), 2) + ift.size()[1:]).to('cuda')
+    grad[:,0] = ift.real.squeeze(1)
+    grad[:,1] = ift.imag.squeeze(1)
+    # grad_x = torch.autograd.grad(spatial, inputs=x, retain_graph=does_require_grad, create_graph=does_require_grad)[0]
+    # grad_2c = torch.zeros((grad_x, 1) + grad_x()[2:], dtype=torch.complex64).to('cuda')
+    # x.requires_grad_(does_require_grad)
+    return grad
