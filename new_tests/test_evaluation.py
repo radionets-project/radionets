@@ -114,6 +114,29 @@ class TestEvaluation:
             "img_true",
         )
 
+    def test_im_to_array_value(self):
+        import torch
+        from radionets.evaluation.utils import read_pred
+
+        pred, img_test, img_true = read_pred(
+            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+        )
+
+        image = pred[0]
+
+        num = image.shape[0]
+        pix = image.shape[-1]
+
+        a = torch.arange(0, pix, 1)
+        grid_x, grid_y = torch.meshgrid(a, a)
+        x_coords = torch.cat(num * [grid_x.flatten().unsqueeze(0)])
+        y_coords = torch.cat(num * [grid_y.flatten().unsqueeze(0)])
+        value = image.reshape(-1, pix ** 2)
+
+        assert x_coords.shape == (2, 3969)
+        assert y_coords.shape == (2, 3969)
+        assert value.shape == (2, 3969)
+
     def test_evaluation(self):
         import shutil
         import os
