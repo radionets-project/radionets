@@ -149,6 +149,60 @@ class TestEvaluation:
 
         assert cov.shape == (1, 2, 2)
 
+    def test_pca(self):
+        import torch
+        import toml
+        from radionets.evaluation.jet_angle import im_to_array_value, bmul
+        from radionets.evaluation.utils import read_pred, get_ifft, read_config
+
+        config = toml.load("./new_tests/evaluate.toml")
+        conf = read_config(config)
+
+        torch.set_printoptions(precision=16)
+
+        pred, img_test, img_true = read_pred(
+            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+        )
+
+        ifft_pred = get_ifft(pred, conf["amp_phase"])
+        assert ifft_pred.shape == (10, 63, 63)
+
+        pix_x, pix_y, image = im_to_array_value(torch.tensor(ifft_pred))
+
+        cog_x = (torch.sum(pix_x * image, axis=1) / torch.sum(image, axis=1)).unsqueeze(
+            -1
+        )
+        cog_y = (torch.sum(pix_y * image, axis=1) / torch.sum(image, axis=1)).unsqueeze(
+            -1
+        )
+
+        assert cog_x.shape == (10, 1)
+        assert cog_y.shape == (10, 1)
+
+        delta_x = pix_x - cog_x
+        delta_y = pix_y - cog_y
+
+        inp = torch.cat([delta_x.unsqueeze(1), delta_y.unsqueeze(1)], dim=1)
+
+        cov_w = bmul(
+            (
+                cog_x - 1 * torch.sum(image * image, axis=1).unsqueeze(-1) / cog_x
+            ).squeeze(1),
+            (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
+        )
+
+        eig_vals_torch, eig_vecs_torch = torch.symeig(cov_w, eigenvectors=True)
+
+        assert eig_vals_torch.shape == (10, 2)
+        assert eig_vecs_torch.shape == (10, 2, 2)
+
+        psi_torch = torch.atan(
+            eig_vecs_torch[:, 1, 1] / eig_vecs_torch[:, 0, 1]
+        ).numpy()
+
+        assert len(psi_torch) == 10
+        assert len(psi_torch[psi_torch > 360]) == 0
+
     def test_evaluation(self):
         import shutil
         import os
