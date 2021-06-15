@@ -154,6 +154,7 @@ class TestEvaluation:
         import toml
         from radionets.evaluation.jet_angle import im_to_array_value, bmul
         from radionets.evaluation.utils import read_pred, get_ifft, read_config
+        from math import pi
 
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
@@ -196,12 +197,68 @@ class TestEvaluation:
         assert eig_vals_torch.shape == (10, 2)
         assert eig_vecs_torch.shape == (10, 2, 2)
 
-        psi_torch = torch.atan(
-            eig_vecs_torch[:, 1, 1] / eig_vecs_torch[:, 0, 1]
-        ).numpy()
+        psi_torch = (
+            torch.atan(eig_vecs_torch[:, 1, 1] / eig_vecs_torch[:, 0, 1]).numpy()
+            * 180
+            / pi
+        )
 
         assert len(psi_torch) == 10
         assert len(psi_torch[psi_torch > 360]) == 0
+
+    def test_calc_jet_angle(self):
+        import torch
+        import toml
+        from radionets.evaluation.jet_angle import pca
+        from math import pi
+        from radionets.evaluation.utils import read_config, read_pred, get_ifft
+
+        config = toml.load("./new_tests/evaluate.toml")
+        conf = read_config(config)
+
+        torch.set_printoptions(precision=16)
+
+        pred, img_test, img_true = read_pred(
+            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+        )
+
+        image = get_ifft(pred, conf["amp_phase"])
+        assert image.shape == (10, 63, 63)
+
+        if not isinstance(image, torch.Tensor):
+            image = torch.tensor(image)
+        image = image.clone()
+        img_size = image.shape[-1]
+        # ignore negagive pixels, which can appear in predictions
+        image[image < 0] = 0
+
+        if len(image.shape) == 2:
+            image = image.unsqueeze(0)
+
+        bs = image.shape[0]
+
+        # only use brightest pixel
+        max_val = torch.tensor([(i.max() * 0.4) for i in image])
+        max_arr = (torch.ones(img_size, img_size, bs) * max_val).permute(2, 0, 1)
+        image[image < max_arr] = 0
+
+        assert image.shape == (10, 63, 63)
+
+        _, _, alpha_pca = pca(image)
+
+        x_mid = torch.ones(img_size, img_size).shape[0] // 2
+        y_mid = torch.ones(img_size, img_size).shape[1] // 2
+
+        assert x_mid == 31
+        assert y_mid == 31
+
+        m = torch.tan(pi / 2 - alpha_pca)
+        n = torch.tensor(y_mid) - m * torch.tensor(x_mid)
+        alpha = ((alpha_pca) * 180 / pi).numpy()
+
+        assert len(n) == 10
+        assert len(alpha) == 10
+        assert len(alpha[alpha > 360]) == 0
 
     def test_evaluation(self):
         import shutil
