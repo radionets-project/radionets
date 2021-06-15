@@ -137,6 +137,18 @@ class TestEvaluation:
         assert y_coords.shape == (2, 3969)
         assert value.shape == (2, 3969)
 
+    def test_bmul(self):
+        import torch
+
+        vec = torch.ones(1)
+        mat = torch.ones(1, 2, 2)
+        axis = 0
+
+        mat = mat.transpose(axis, -1)
+        cov = (mat * vec.expand_as(mat)).transpose(axis, -1)
+
+        assert cov.shape == (1, 2, 2)
+
     def test_evaluation(self):
         import shutil
         import os
