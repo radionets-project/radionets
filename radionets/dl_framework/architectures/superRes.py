@@ -24,6 +24,8 @@ from radionets.dl_framework.model import (
     SoftDC,
     calc_DirtyBeam,
     gauss,
+    ConvGRUCell,
+    gradFunc,
 )
 from functools import partial
 import torchvision
@@ -1299,14 +1301,70 @@ class CLEANNN(nn.Module):
 
         return residual, M
 
-class CLEANR(nn.Module):
+class ConvRNN(nn.Module):
     def __init__(self):
         super().__init__()
-        self.block1 = nn.Sequential(
-            nn.Conv2d(2, 64, stride=2, padding=0),
-            nn.Tanh(),
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(4, 64, 5, stride=1, dilation=1, padding=2), #padding = dilation * (ks-1) // 2
+            nn.ReLU(),
         )
-        self.block2 = nn.GRU(64, 256)
+        self.GRU1 = ConvGRUCell(64, 64, 1)
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, dilation=2, padding=2),
+            nn.ReLU(),
+        )
+        self.GRU2 = ConvGRUCell(64, 64, 1)
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(64, 2, 3, stride=1, dilation=1, padding=1, bias=False)
+        )
 
-    def forward(self, x):
-        return 0
+    def forward(self, x, hx=None):
+        if not hx:
+            hx = [None]*2
+        
+        c1 = self.conv1(x)
+        g1 = self.GRU1(c1, hx[0])
+        c2 = self.conv2(g1)
+        g2 = self.GRU2(c2, hx[1])
+        c3 = self.conv3(g2)
+
+
+
+        return c3, [g1, g2]
+
+class RIM(nn.Module):
+    def __init__(self, n_steps=20):
+        super().__init__()
+        torch.cuda.set_device(1)
+        self.n_steps = n_steps
+        self.cRNN = ConvRNN()
+
+    def forward(self, x, hx=None):
+        ap = x[0]
+        amp = ap[:,0]
+        phase = ap[:,1]
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase) #k measured
+        data = compl.clone()
+        ifft = torch.fft.ifft2(compl)
+        spatial = torch.fft.ifftshift(ifft)
+        eta = torch.zeros(ap.shape).to('cuda')
+        eta[:,0] = spatial.real
+        eta[:,1] = spatial.imag
+
+        
+        etas = []
+
+        for i in range(self.n_steps):
+            grad = gradFunc(eta, data, x[2], x[1], 8, 45)
+            input = torch.cat((eta,grad), dim=1)
+
+            delta, hx = self.cRNN(input, hx)
+            eta = eta + delta
+            # plt.imshow(torch.absolute(eta[0,0]+1j*eta[0,1]).cpu().detach().numpy())
+            # plt.colorbar()
+            # plt.show()
+            # print(i)
+            etas.append(eta)
+        
+        return etas
