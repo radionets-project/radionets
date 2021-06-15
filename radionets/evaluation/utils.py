@@ -211,6 +211,12 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     """
     if 'vgg19' in arch_name:
         arch = getattr(architecture, arch_name)()
+    elif 'GANCS' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'CLEANNN' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'RIM' in arch_name:
+        arch = getattr(architecture, arch_name)()
     elif 'automap' in arch_name:
         arch = getattr(architecture, arch_name)()
     elif "filter_deep" in arch_name or "resnet" or "Res" in arch_name:
@@ -269,13 +275,20 @@ def eval_model(img, model):
     pred: n 1d arrays
         predicted images
     """
-    if len(img.shape) == (3):
-        img = img.unsqueeze(0)
     model.eval()
     model.cuda()
-    with torch.no_grad():
-        pred = model(img.float().cuda())
-    return pred.cpu()
+    if isinstance(img, tuple):
+        img = (img[0].unsqueeze(0).float().cuda(), img[1].float().cuda(), img[2].float().cuda())
+        with torch.no_grad():
+            pred = model(img)
+    else:
+        if len(img.shape) == (3):
+            img = img.unsqueeze(0)
+        with torch.no_grad():
+            pred = model(img.float().cuda())
+        if isinstance(pred, tuple):
+            return pred
+    return pred
 
 
 def get_ifft(array, amp_phase=False):
