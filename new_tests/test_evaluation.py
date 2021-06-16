@@ -216,8 +216,6 @@ class TestEvaluation:
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
 
-        torch.set_printoptions(precision=16)
-
         pred, img_test, img_true = read_pred(
             "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
@@ -259,6 +257,55 @@ class TestEvaluation:
         assert len(n) == 10
         assert len(alpha) == 10
         assert len(alpha[alpha > 360]) == 0
+
+    def test_corners(self):
+        import numpy as np
+        from radionets.evaluation.blob_detection import corners
+
+        r = np.random.randint(1, 10)
+        x = np.random.randint(10, 40)
+        y = np.random.randint(10, 40)
+
+        x_coord, y_coord = corners(y, x, r)
+
+        assert (x_coord[0] - x_coord[1]) % 2 == 1
+        assert (y_coord[0] - y_coord[1]) % 2 == 1
+
+    def test_calc_blobs_and_crop_first_comp(self):
+        import torch
+        import toml
+        import numpy as np
+        from radionets.evaluation.utils import read_config, get_ifft, read_pred
+        from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
+
+        config = toml.load("./new_tests/evaluate.toml")
+        conf = read_config(config)
+
+        pred, img_test, img_true = read_pred(
+            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+        )
+
+        ifft_pred = get_ifft(torch.tensor(pred[0]), conf["amp_phase"]).reshape(63, 63)
+        ifft_truth = get_ifft(torch.tensor(img_true[0]), conf["amp_phase"]).reshape(
+            63, 63
+        )
+
+        blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
+
+        assert ~np.isnan(blobs_pred).any()
+        assert ~np.isnan(blobs_truth).any()
+        assert blobs_pred.all() > 0
+        assert blobs_truth.all() > 0
+        assert len(blobs_truth[0]) == 3
+
+        flux_pred, flux_truth = crop_first_component(
+            ifft_pred, ifft_truth, blobs_truth[0]
+        )
+
+        assert ~np.isnan(flux_pred).any()
+        assert ~np.isnan(flux_truth).any()
+        assert flux_pred.all() > 0
+        assert flux_truth.all() > 0
 
     def test_evaluation(self):
         import shutil
