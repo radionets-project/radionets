@@ -216,7 +216,7 @@ class TestEvaluation:
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = read_pred(
+        pred, _, _ = read_pred(
             "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
@@ -227,7 +227,7 @@ class TestEvaluation:
             image = torch.tensor(image)
         image = image.clone()
         img_size = image.shape[-1]
-        # ignore negagive pixels, which can appear in predictions
+        # ignore negative pixels, which can appear in predictions
         image[image < 0] = 0
 
         if len(image.shape) == 2:
@@ -281,7 +281,7 @@ class TestEvaluation:
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = read_pred(
+        pred, _, img_true = read_pred(
             "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
