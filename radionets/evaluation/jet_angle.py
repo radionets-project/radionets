@@ -83,7 +83,7 @@ def calc_jet_angle(image):
         image = torch.tensor(image)
     image = image.clone()
     img_size = image.shape[-1]
-    # ignore negagive pixels, which can appear in predictions
+    # ignore negative pixels, which can appear in predictions
     image[image < 0] = 0
 
     if len(image.shape) == 2:
