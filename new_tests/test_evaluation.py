@@ -152,9 +152,8 @@ class TestEvaluation:
     def test_pca(self):
         import torch
         import toml
-        from radionets.evaluation.jet_angle import im_to_array_value, bmul
+        from radionets.evaluation.jet_angle import im_to_array_value, bmul, pca
         from radionets.evaluation.utils import read_pred, get_ifft, read_config
-        from math import pi
 
         config = toml.load("./new_tests/evaluate.toml")
         conf = read_config(config)
@@ -197,11 +196,7 @@ class TestEvaluation:
         assert eig_vals_torch.shape == (10, 2)
         assert eig_vecs_torch.shape == (10, 2, 2)
 
-        psi_torch = (
-            torch.atan(eig_vecs_torch[:, 1, 1] / eig_vecs_torch[:, 0, 1]).numpy()
-            * 180
-            / pi
-        )
+        _, _, psi_torch = pca(torch.tensor(ifft_pred))
 
         assert len(psi_torch) == 10
         assert len(psi_torch[psi_torch > 360]) == 0
@@ -209,8 +204,7 @@ class TestEvaluation:
     def test_calc_jet_angle(self):
         import torch
         import toml
-        from radionets.evaluation.jet_angle import pca
-        from math import pi
+        from radionets.evaluation.jet_angle import pca, calc_jet_angle
         from radionets.evaluation.utils import read_config, read_pred, get_ifft
 
         config = toml.load("./new_tests/evaluate.toml")
@@ -250,9 +244,7 @@ class TestEvaluation:
         assert x_mid == 31
         assert y_mid == 31
 
-        m = torch.tan(pi / 2 - alpha_pca)
-        n = torch.tensor(y_mid) - m * torch.tensor(x_mid)
-        alpha = ((alpha_pca) * 180 / pi).numpy()
+        m, n, alpha = calc_jet_angle(image)
 
         assert len(n) == 10
         assert len(alpha) == 10
