@@ -31,9 +31,7 @@ def main(configuration_path):
     click.echo("\nEvaluation config:")
     print(eval_conf, "\n")
 
-    create_predictions(
-        eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
-    )
+    create_predictions(eval_conf)
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(

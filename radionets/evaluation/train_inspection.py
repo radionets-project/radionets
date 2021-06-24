@@ -34,11 +34,11 @@ from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 
 
-def create_predictions(conf, num_images=None, rand=False):
+def create_predictions(conf):
     if conf["model_path_2"] != "none":
-        pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
+        pred, img_test, img_true = get_separate_prediction(conf)
     else:
-        pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
+        pred, img_test, img_true = get_prediction(conf)
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
@@ -51,20 +51,27 @@ def create_predictions(conf, num_images=None, rand=False):
     save_pred(out_path, pred, img_test, img_true, "pred", "img_test", "img_true")
 
 
-def get_prediction(conf, num_images=None, rand=False):
+def get_prediction(conf):
     test_ds = load_data(
         conf["data_path"],
         mode="test",
         fourier=conf["fourier"],
         source_list=conf["source_list"],
     )
+
+    num_images = conf["num_images"]
+    rand = conf["random"]
+
     if num_images is None:
         num_images = len(test_ds)
+
     img_test, img_true = get_images(
         test_ds, num_images, norm_path=conf["norm_path"], rand=rand
     )
+
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+
     if conf["gpu"]:
         pred = eval_model(img_test, model)
     else:
@@ -79,7 +86,7 @@ def get_prediction(conf, num_images=None, rand=False):
     return pred, img_test, img_true
 
 
-def get_separate_prediction(conf, num_images=None, rand=False):
+def get_separate_prediction(conf):
     """Get predictions for separate architectures.
 
     Parameters
@@ -102,6 +109,10 @@ def get_separate_prediction(conf, num_images=None, rand=False):
         fourier=conf["fourier"],
         source_list=conf["source_list"],
     )
+
+    num_images = conf["num_images"]
+    rand = conf["random"]
+
     if num_images is None:
         num_images = len(test_ds)
     img_test, img_true = get_images(
