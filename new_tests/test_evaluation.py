@@ -7,6 +7,7 @@ class TestEvaluation:
         import torch
         from radionets.dl_framework.data import load_data, do_normalisation
         import pandas as pd
+        from radionets.evaluation.utils import get_images
 
         test_ds = load_data(
             "./new_tests/build/data",
@@ -33,7 +34,10 @@ class TestEvaluation:
         img_test = do_normalisation(img_test, norm)
         img_true = test_ds[indices][1]
 
+        img_test, img_true = get_images(test_ds, num_images, norm_path, rand)
+
         assert img_true.shape == (10, 2, 63, 63)
+        assert img_test.shape == (10, 2, 63, 63)
 
     def test_get_prediction(self):
         from pathlib import Path
@@ -115,8 +119,8 @@ class TestEvaluation:
         )
 
     def test_im_to_array_value(self):
-        import torch
         from radionets.evaluation.utils import read_pred
+        from radionets.evaluation.jet_angle import im_to_array_value
 
         pred, img_test, img_true = read_pred(
             "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
@@ -124,14 +128,7 @@ class TestEvaluation:
 
         image = pred[0]
 
-        num = image.shape[0]
-        pix = image.shape[-1]
-
-        a = torch.arange(0, pix, 1)
-        grid_x, grid_y = torch.meshgrid(a, a)
-        x_coords = torch.cat(num * [grid_x.flatten().unsqueeze(0)])
-        y_coords = torch.cat(num * [grid_y.flatten().unsqueeze(0)])
-        value = image.reshape(-1, pix ** 2)
+        x_coords, y_coords, value = im_to_array_value(image)
 
         assert x_coords.shape == (2, 3969)
         assert y_coords.shape == (2, 3969)
@@ -139,13 +136,13 @@ class TestEvaluation:
 
     def test_bmul(self):
         import torch
+        from radionets.evaluation.jet_angle import bmul
 
         vec = torch.ones(1)
         mat = torch.ones(1, 2, 2)
         axis = 0
 
-        mat = mat.transpose(axis, -1)
-        cov = (mat * vec.expand_as(mat)).transpose(axis, -1)
+        cov = bmul(vec, mat, axis)
 
         assert cov.shape == (1, 2, 2)
 
