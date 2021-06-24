@@ -336,6 +336,7 @@ def visualize_with_fourier_diff(
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close('all')
     return real_pred, imag_pred, real_truth, imag_truth
 
 
@@ -416,6 +417,7 @@ def visualize_source_reconstruction(
     ax2.legend(loc="best")
     fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close('all')
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
@@ -457,6 +459,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
 
     plt.tight_layout(pad=0.75)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close('all')
 
 
 def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
