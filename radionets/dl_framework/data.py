@@ -54,11 +54,13 @@ class h5_dataset:
     def __getitem__(self, i):
         if self.source_list:
             x = self.open_image("x", i)
-            y = self.open_image("z", i)
+            y = self.open_image("y", i)
+            z = self.open_image("z", i)
+            return x, y, z
         else:
             x = self.open_image("x", i)
             y = self.open_image("y", i)
-        return x, y
+            return x, y
 
     def open_bundle(self, bundle_path, var):
         bundle = h5py.File(bundle_path, "r")
@@ -78,15 +80,27 @@ class h5_dataset:
             h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
         ]
         bundle_paths_str = list(map(str, bundle_paths))
-        data = torch.tensor(
-            [
-                bund[var][img]
+        if not var == "z":
+            data = torch.tensor(
+                [
+                    bund[var][img]
+                    for bund, bund_str in zip(bundle_paths, bundle_paths_str)
+                    for img in image[
+                        bundle == bundle_unique[bundle_paths_str.index(bund_str)]
+                    ]
+                ]
+            )
+
+        else:
+            data = [
+                bund[var + str(int(img))]
                 for bund, bund_str in zip(bundle_paths, bundle_paths_str)
                 for img in image[
                     bundle == bundle_unique[bundle_paths_str.index(bund_str)]
                 ]
             ]
-        )
+            return data
+
         if var == "x" or self.tar_fourier is True:
             if len(i) == 1:
                 data_amp, data_phase = data[:, 0], data[:, 1]
@@ -97,18 +111,15 @@ class h5_dataset:
 
                 data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
-            if self.source_list:
-                data_channel = data
+            if data.shape[1] == 2:
+                raise ValueError(
+                    "Two channeled data is used despite Fourier being False.\
+                        Set Fourier to True!"
+                )
+            if len(i) == 1:
+                data_channel = data.reshape(data.shape[-1] ** 2)
             else:
-                if data.shape[1] == 2:
-                    raise ValueError(
-                        "Two channeled data is used despite Fourier being False.\
-                            Set Fourier to True!"
-                    )
-                if len(i) == 1:
-                    data_channel = data.reshape(data.shape[-1] ** 2)
-                else:
-                    data_channel = data.reshape(-1, data.shape[-1] ** 2)
+                data_channel = data.reshape(-1, data.shape[-1] ** 2)
         return data_channel.float()
 
 
