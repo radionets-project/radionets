@@ -93,7 +93,7 @@ class h5_dataset:
 
         else:
             data = [
-                bund[var + str(int(img))]
+                np.array(bund[var + str(int(img))])
                 for bund, bund_str in zip(bundle_paths, bundle_paths_str)
                 for img in image[
                     bundle == bundle_unique[bundle_paths_str.index(bund_str)]
