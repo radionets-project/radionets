@@ -8,6 +8,13 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 
+def my_collate(batch):
+    x = [item[0] for item in batch]
+    y = [item[1] for item in batch]
+    z = [item[2][0] for item in batch]
+    return torch.stack(x), torch.stack(y), z
+
+
 def create_databunch(data_path, fourier, source_list, batch_size):
     # Load data sets
     test_ds = load_data(
@@ -18,7 +25,12 @@ def create_databunch(data_path, fourier, source_list, batch_size):
     )
 
     # Create databunch with defined batchsize
-    data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+    if source_list:
+        data = DataLoader(
+            test_ds, batch_size=batch_size, shuffle=True, collate_fn=my_collate
+        )
+    else:
+        data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
     return data
 
 
@@ -55,6 +67,7 @@ def read_config(config):
     eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
     eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
+    eval_conf["point"] = config["eval"]["evaluate_point"]
     return eval_conf
 
 
