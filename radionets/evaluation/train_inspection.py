@@ -15,7 +15,7 @@ from radionets.evaluation.plotting import (
     histogram_area,
     plot_contour,
     hist_point,
-    plot_radius_point
+    plot_radius_point,
 )
 from radionets.evaluation.utils import (
     create_databunch,
@@ -504,4 +504,6 @@ def evaluate_point(conf):
             radius += list(np.sqrt(elem[2, :] ** 2 + elem[3, :] ** 2))
 
     hist_point(np.array(vals), out_path, plot_format=conf["format"])
-    plot_radius_point(np.array(radius), np.array(vals), out_path, plot_format=conf["format"])
+    plot_radius_point(
+        np.array(radius), np.array(vals), out_path, plot_format=conf["format"]
+    )
