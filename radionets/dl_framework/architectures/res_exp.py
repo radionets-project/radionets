@@ -52,7 +52,7 @@ class SRResNet_bigger(nn.Module):
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
         )
 
-        # ResBlock 4
+        # ResBlock 8
         self.blocks = nn.Sequential(
             SRBlock(64, 64),
             SRBlock(64, 64),
