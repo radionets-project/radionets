@@ -8,7 +8,20 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 
-def my_collate(batch):
+def source_list_collate(batch):
+    """Collate function for the DataLoader with source list
+
+    Parameters
+    ----------
+    batch : tuple
+        input and target images alongside with the corresponding source_list
+
+    Returns
+    -------
+    tuple
+        stacked images and list for source_list values
+    """
+
     x = [item[0] for item in batch]
     y = [item[1] for item in batch]
     z = [item[2][0] for item in batch]
@@ -24,10 +37,10 @@ def create_databunch(data_path, fourier, source_list, batch_size):
         source_list=source_list,
     )
 
-    # Create databunch with defined batchsize
+    # Create databunch with defined batchsize and check for source_list
     if source_list:
         data = DataLoader(
-            test_ds, batch_size=batch_size, shuffle=True, collate_fn=my_collate
+            test_ds, batch_size=batch_size, shuffle=True, collate_fn=source_list_collate
         )
     else:
         data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
