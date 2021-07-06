@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="radionets",
-    version="0.1.4",
+    version="0.1.5",
     description="Imaging radio interferometric data with neural networks",
     url="https://github.com/Kevin2/radionets",
     author="Kevin Schmidt, Felix Geyer, Kevin Laudamus",
@@ -10,7 +10,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     install_requires=[
-        "fastai",
+        "fastai <= 2.3.0",
         "fastcore",
         "kornia",
         "pytorch-msssim",
@@ -32,6 +32,7 @@ setup(
         "toml",
         "pytest",
         "pytest-cov",
+        "pytest-order",
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],

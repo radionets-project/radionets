@@ -23,6 +23,8 @@ from radionets.evaluation.utils import (
     eval_model,
     get_ifft,
     pad_unsqueeze,
+    save_pred,
+    read_pred,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
@@ -32,21 +34,48 @@ from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 
 
-def get_prediction(conf, num_images=None, rand=False):
+def create_predictions(conf):
+    if conf["model_path_2"] != "none":
+        pred, img_test, img_true = get_separate_prediction(conf)
+    else:
+        pred, img_test, img_true = get_prediction(conf)
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+    out_path = str(out_path) + "/predictions.h5"
+
+    if not conf["fourier"]:
+        click.echo("\n This is not a fourier dataset.\n")
+
+    pred = pred.numpy()
+    save_pred(out_path, pred, img_test, img_true, "pred", "img_test", "img_true")
+
+
+def get_prediction(conf):
     test_ds = load_data(
         conf["data_path"],
         mode="test",
         fourier=conf["fourier"],
         source_list=conf["source_list"],
     )
+
+    num_images = conf["num_images"]
+    rand = conf["random"]
+
     if num_images is None:
         num_images = len(test_ds)
+
     img_test, img_true = get_images(
         test_ds, num_images, norm_path=conf["norm_path"], rand=rand
     )
+
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-    pred = eval_model(img_test, model)
+
+    if conf["gpu"]:
+        pred = eval_model(img_test, model)
+    else:
+        pred = eval_model(img_test, model, test=True)
 
     # test for uncertainty
     if pred.shape[1] == 4:
@@ -57,7 +86,7 @@ def get_prediction(conf, num_images=None, rand=False):
     return pred, img_test, img_true
 
 
-def get_separate_prediction(conf, num_images=None, rand=False):
+def get_separate_prediction(conf):
     """Get predictions for separate architectures.
 
     Parameters
@@ -80,6 +109,10 @@ def get_separate_prediction(conf, num_images=None, rand=False):
         fourier=conf["fourier"],
         source_list=conf["source_list"],
     )
+
+    num_images = conf["num_images"]
+    rand = conf["random"]
+
     if num_images is None:
         num_images = len(test_ds)
     img_test, img_true = get_images(
@@ -88,8 +121,12 @@ def get_separate_prediction(conf, num_images=None, rand=False):
     img_size = img_test.shape[-1]
     model_1 = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)
-    pred_1 = eval_model(img_test, model_1)
-    pred_2 = eval_model(img_test, model_2)
+    if conf["gpu"]:
+        pred_1 = eval_model(img_test, model_1)
+        pred_2 = eval_model(img_test, model_2)
+    else:
+        pred_1 = eval_model(img_test, model_1, test=True)
+        pred_2 = eval_model(img_test, model_2, test=True)
 
     # test for uncertainty
     if pred_1.shape[1] == 2:
@@ -101,13 +138,12 @@ def get_separate_prediction(conf, num_images=None, rand=False):
 
 
 def create_inspection_plots(conf, num_images=3, rand=False):
-    if conf["model_path_2"] != "none":
-        pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
-    else:
-        pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
     model_path = conf["model_path"]
+    path = str(Path(model_path).parent / "evaluation")
+    path += "/predictions.h5"
     out_path = Path(model_path).parent / "evaluation/"
-    out_path.mkdir(parents=True, exist_ok=True)
+
+    pred, img_test, img_true = read_pred(path)
     if conf["fourier"]:
         if conf["diff"]:
             for i in range(len(img_test)):
@@ -152,18 +188,12 @@ def create_source_plots(conf, num_images=3, rand=False):
     real_truth: real part of the truth computed in visualize with fourier
     imag_truth: imaginary part of the truth computed in visualize with fourier
     """
-    if conf["model_path_2"] != "none":
-        pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
-    else:
-        pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
     model_path = conf["model_path"]
+    path = str(Path(model_path).parent / "evaluation")
+    path += "/predictions.h5"
     out_path = Path(model_path).parent / "evaluation"
-    out_path.mkdir(parents=True, exist_ok=True)
 
-    if not conf["fourier"]:
-        click.echo("\n This is not a fourier dataset.\n")
-
-    pred = pred.numpy()
+    pred, img_test, img_true = read_pred(path)
 
     # inverse fourier transformation for prediction
     ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
@@ -187,18 +217,15 @@ def create_source_plots(conf, num_images=3, rand=False):
 
 
 def create_contour_plots(conf, num_images=3, rand=False):
-    if conf["model_path_2"] != "none":
-        pred, img_test, img_true = get_separate_prediction(conf, num_images, rand=rand)
-    else:
-        pred, img_test, img_true = get_prediction(conf, num_images, rand=rand)
     model_path = conf["model_path"]
+    path = str(Path(model_path).parent / "evaluation")
+    path += "/predictions.h5"
     out_path = Path(model_path).parent / "evaluation"
-    out_path.mkdir(parents=True, exist_ok=True)
 
     if not conf["fourier"]:
         click.echo("\n This is not a fourier dataset.\n")
 
-    pred = pred.numpy()
+    pred, img_test, img_true = read_pred(path)
 
     # inverse fourier transformation for prediction
     ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
@@ -393,7 +420,7 @@ def evaluate_mean_diff(conf):
         for pred, truth in zip(ifft_pred, ifft_truth):
             blobs_pred, blobs_truth = calc_blobs(pred, truth)
             flux_pred, flux_truth = crop_first_component(
-                pred, truth, blobs_truth[0], out_path
+                pred, truth, blobs_truth[0]
             )
             vals.extend([(flux_pred.mean() - flux_truth.mean()) / flux_truth.mean()])
 
