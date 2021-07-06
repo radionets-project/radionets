@@ -7,6 +7,7 @@ from radionets.dl_framework.model import (
     GeneralELU,
 )
 from functools import partial
+from dropblock import DropBlock2D
 
 
 class SRResNet_small(nn.Module):
@@ -131,6 +132,60 @@ class SRResNet_bigger_16(nn.Module):
         x = self.preBlock(x)
 
         x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        x0 = self.symmetry_amp(x[:, 0]).reshape(-1, 1, s, s)
+        x1 = self.symmetry_imag(x[:, 1]).reshape(-1, 1, s, s)
+
+        return torch.cat([x0, x1], dim=1)
+
+
+class SRResNet_bigger_16_reg(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+        )
+
+        # ResBlock 16
+        self.blocks = nn.Sequential(
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1), nn.BatchNorm2d(64)
+        )
+
+        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),)
+
+        self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
+        self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
+        self.dropblock = DropBlock2D(block_size=3, drop_prob=0.1)
+
+    def forward(self, x):
+        s = x.shape[-1]
+
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+        x = self.dropblock(x)
 
         x = self.final(x)
 
