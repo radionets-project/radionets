@@ -11,6 +11,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_mean_diff,
     evaluate_area,
     evaluate_point,
+    create_predictions,
 )
 
 
@@ -30,6 +31,8 @@ def main(configuration_path):
 
     click.echo("\nEvaluation config:")
     print(eval_conf, "\n")
+
+    create_predictions(eval_conf)
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(
