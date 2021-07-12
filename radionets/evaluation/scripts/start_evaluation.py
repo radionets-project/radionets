@@ -32,7 +32,10 @@ def main(configuration_path):
     click.echo("\nEvaluation config:")
     print(eval_conf, "\n")
 
-    create_predictions(eval_conf)
+    for entry in conf["inspection"]:
+        if (conf["inspection"][entry]) & (entry != "random"):
+            create_predictions(eval_conf)
+            break
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(
