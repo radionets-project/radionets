@@ -1,24 +1,42 @@
 import numpy as np
 
 
-def get_length_extended(element):
-    x_min = element[0, :][element[4, :] == 1.0].min()
-    x_max = element[0, :][element[4, :] == 1.0].max()
-    y_min = element[1, :][element[4, :] == 1.0].min()
-    y_max = element[1, :][element[4, :] == 1.0].max()
+def get_min_max(element, index):
+    min_val = element[index, :][element[4, :] == 1.0].min()
+    max_val = element[index, :][element[4, :] == 1.0].max()
+    arg_max = np.argmax(element[index, :][element[4, :] == 1.0])
+    arg_min = np.argmin(element[index, :][element[4, :] == 1.0])
 
-    arg_max_x = np.argmax(element[0, :][element[4, :] == 1.0])
-    arg_min_x = np.argmin(element[0, :][element[4, :] == 1.0])
-    arg_max_y = np.argmax(element[1, :][element[4, :] == 1.0])
-    arg_min_y = np.argmin(element[1, :][element[4, :] == 1.0])
+    return min_val, max_val, arg_min, arg_max
+
+
+def get_length_extended(element):
+    """Identify the first and the last gaussian component in the extended source and
+    compute the distance. Last, add the extension of the source to the length.
+
+    Parameters
+    ----------
+    element : ndarray
+        array which contains all sources in the given image
+
+    Returns
+    -------
+    ndarray
+        length of extended source
+    """
+
+    x_min, x_max, arg_min_x, arg_max_x = get_min_max(element, 0)
+    y_min, y_max, arg_min_y, arg_max_y = get_min_max(element, 1)
 
     sig_x_max = element[2, :][element[4, :] == 1.0][arg_max_x]
     sig_x_min = element[2, :][element[4, :] == 1.0][arg_min_x]
     sig_y_max = element[3, :][element[4, :] == 1.0][arg_max_y]
     sig_y_min = element[3, :][element[4, :] == 1.0][arg_min_y]
 
+    # multiply with the factor for full width-half maximum
     extend_max = np.sqrt(sig_x_max ** 2 + sig_y_max ** 2) * 2.35
     extend_min = np.sqrt(sig_x_min ** 2 + sig_y_min ** 2) * 2.35
+    # compute amount of vector
     laenge_x = (x_max - x_min) ** 2
     laenge_y = (y_max - y_min) ** 2
     laenge_extend = np.sqrt(laenge_x + laenge_y) + extend_max + extend_min
@@ -27,6 +45,19 @@ def get_length_extended(element):
 
 
 def get_length_point(element):
+    """Compute linear extend of pointsources.
+
+    Parameters
+    ----------
+    element : ndarray
+        array which contains all sources in the given image
+
+    Returns
+    -------
+    ndarray
+        lengths of the pointsources in the image
+    """
+
     laenge_y_point = element[3, :][element[4, :] == 0.0] * 2
     laenge_x_point = element[2, :][element[4, :] == 0.0] * 2
     laenge_point = np.max([laenge_x_point, laenge_y_point], axis=0)
@@ -45,8 +76,6 @@ def flux_comparison(pred, truth, source_list):
         mean_truth = np.array([])
         for blob in element.T:
             y, x, sig_x, sig_y, mask = blob
-            # sig_x *= 2.35
-            # sig_y *= 2.35
 
             x_low = int(np.floor(x - sig_x))
             if x_low < 0:
