@@ -7,8 +7,8 @@ quiet = false
 gpu = false
 
 [paths]
-data_path = "./new_tests/build/data/"
-model_path = "./new_tests/model/model_eval.model"
+data_path = "./tests/build/data/"
+model_path = "./tests/model/model_eval.model"
 model_path_2 = "none"
 norm_path = "none"
 

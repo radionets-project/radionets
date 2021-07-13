@@ -10,7 +10,7 @@ class TestEvaluation:
         from radionets.evaluation.utils import get_images
 
         test_ds = load_data(
-            "./new_tests/build/data",
+            "./tests/build/data",
             mode="test",
             fourier=True,
             source_list=False,
@@ -49,7 +49,7 @@ class TestEvaluation:
         import torch
         from radionets.evaluation.train_inspection import get_prediction
 
-        config = toml.load("./new_tests/evaluate.toml")
+        config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
         pred, img_test, img_true = get_prediction(conf)
@@ -66,7 +66,7 @@ class TestEvaluation:
         assert img_true.shape == (10, 2, 63, 63)
 
         pred = pred.numpy()
-        out_path = Path("./new_tests/build/test_training/evaluation/")
+        out_path = Path("./tests/build/test_training/evaluation/")
         out_path.mkdir(parents=True, exist_ok=True)
         save_pred(
             str(out_path) + "/predictions_model_eval.h5",
@@ -90,11 +90,11 @@ class TestEvaluation:
         import toml
         import numpy as np
 
-        config = toml.load("./new_tests/evaluate.toml")
+        config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
         pred, img_test, img_true = read_pred(
-            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
@@ -116,7 +116,7 @@ class TestEvaluation:
         from radionets.evaluation.jet_angle import im_to_array_value
 
         pred, img_test, img_true = read_pred(
-            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
         image = pred[0]
@@ -145,13 +145,13 @@ class TestEvaluation:
         from radionets.evaluation.jet_angle import im_to_array_value, bmul, pca
         from radionets.evaluation.utils import read_pred, get_ifft, read_config
 
-        config = toml.load("./new_tests/evaluate.toml")
+        config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
         torch.set_printoptions(precision=16)
 
         pred, img_test, img_true = read_pred(
-            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
         ifft_pred = get_ifft(pred, conf["amp_phase"])
@@ -197,11 +197,11 @@ class TestEvaluation:
         from radionets.evaluation.jet_angle import pca, calc_jet_angle
         from radionets.evaluation.utils import read_config, read_pred, get_ifft
 
-        config = toml.load("./new_tests/evaluate.toml")
+        config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
         pred, _, _ = read_pred(
-            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
         image = get_ifft(pred, conf["amp_phase"])
@@ -260,11 +260,11 @@ class TestEvaluation:
         from radionets.evaluation.utils import read_config, get_ifft, read_pred
         from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 
-        config = toml.load("./new_tests/evaluate.toml")
+        config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
         pred, _, img_true = read_pred(
-            "./new_tests/build/test_training/evaluation/predictions_model_eval.h5"
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
         ifft_pred = get_ifft(torch.tensor(pred[0]), conf["amp_phase"]).reshape(63, 63)
@@ -296,8 +296,8 @@ class TestEvaluation:
         from radionets.evaluation.scripts.start_evaluation import main
 
         runner = CliRunner()
-        result = runner.invoke(main, "new_tests/evaluate.toml")
+        result = runner.invoke(main, "tests/evaluate.toml")
         assert result.exit_code == 0
 
-        if os.path.exists("new_tests/model/evaluation"):
-            shutil.rmtree("new_tests/model/evaluation")
+        if os.path.exists("tests/model/evaluation"):
+            shutil.rmtree("tests/model/evaluation")
