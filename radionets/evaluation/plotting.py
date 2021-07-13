@@ -696,8 +696,8 @@ def plot_radius_point(radius, vals, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.plot(radius, vals, ".")
     ax1.set_ylabel("Flux deviation / %")
-    ax1.set_xlabel("Radius")
+    ax1.set_xlabel("Linear extend / px")
     plt.grid()
 
-    outpath = str(out_path) + "/radius_point.png"
+    outpath = str(out_path) + "/extend_point.png"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

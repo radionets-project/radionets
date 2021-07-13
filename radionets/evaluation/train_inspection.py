@@ -510,7 +510,7 @@ def evaluate_point(conf):
         )
 
     vals = []
-    radius = []
+    lengths = []
 
     for i, (img_test, img_true, source_list) in enumerate(tqdm(loader)):
 
@@ -522,15 +522,15 @@ def evaluate_point(conf):
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
-        fluxes_pred, fluxes_truth, sig_x, sig_y = flux_comparison(
+        fluxes_pred, fluxes_truth, length = flux_comparison(
             ifft_pred, ifft_truth, source_list
         )
         val = ((fluxes_pred - fluxes_truth) / fluxes_truth) * 100
         vals += list(val)
-        for elem in source_list:
-            radius += list(np.sqrt(elem[2, :] ** 2 + elem[3, :] ** 2))
+        lengths += list(length)
 
-    hist_point(np.array(vals), out_path, plot_format=conf["format"])
+    vals = np.concatenate(vals).ravel()
+    hist_point(vals, out_path, plot_format=conf["format"])
     plot_radius_point(
-        np.array(radius), np.array(vals), out_path, plot_format=conf["format"]
+        lengths, vals, out_path, plot_format=conf["format"]
     )
