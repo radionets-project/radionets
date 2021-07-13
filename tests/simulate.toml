@@ -6,7 +6,7 @@ title = "Simulation configuration"
 quiet = true
 
 [paths]
-data_path = "./new_tests/build/data/"
+data_path = "./tests/build/data/"
 data_format = "h5"
 
 [mnist]

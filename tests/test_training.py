@@ -4,7 +4,7 @@ from click.testing import CliRunner
 def test_create_databunch():
     from radionets.dl_framework.data import load_data, DataBunch, get_dls
 
-    data_path = "./new_tests/build/data/"
+    data_path = "./tests/build/data/"
     source_list = False
     fourier = False
     batch_size = 64
@@ -27,7 +27,7 @@ def test_define_learner():
     import toml
     from radionets.dl_training.utils import read_config, define_arch, create_databunch
 
-    config = toml.load("./new_tests/training.toml")
+    config = toml.load("./tests/training.toml")
     train_conf = read_config(config)
 
     arch = define_arch(arch_name=train_conf["arch_name"], img_size=63)
@@ -49,7 +49,7 @@ def test_training():
     from radionets.dl_training.scripts.start_training import main
 
     runner = CliRunner()
-    options = ["new_tests/training.toml"]
+    options = ["tests/training.toml"]
     result = runner.invoke(main, options)
     assert result.exit_code == 0
 
@@ -66,7 +66,7 @@ def test_save_model():
 
         assert x is not None
 
-    model = torch.load("new_tests/build/test_training/test_training.model")
+    model = torch.load("tests/build/test_training/test_training.model")
     fastai_list = type(model["opt"]["hypers"])
 
     for key, value in model.items():
@@ -107,14 +107,14 @@ def test_load_pretrained_model():
     import toml
     from radionets.dl_training.scripts.start_training import main
 
-    config = toml.load("new_tests/training.toml")
+    config = toml.load("tests/training.toml")
     config["paths"]["pre_model"] = config["paths"]["model_path"]
     config["paths"]["model_path"] = config["paths"]["model_path"] + "_2"
-    with open("new_tests/build/tmp_training.toml", "w") as toml_file:
+    with open("tests/build/tmp_training.toml", "w") as toml_file:
         toml.dump(config, toml_file)
 
     runner = CliRunner()
-    options = ["new_tests/build/tmp_training.toml"]
+    options = ["tests/build/tmp_training.toml"]
     result = runner.invoke(main, options)
 
     assert result.exit_code == 0
@@ -124,6 +124,6 @@ def test_plot_loss():
     from radionets.dl_training.scripts.start_training import main
 
     runner = CliRunner()
-    options = ["new_tests/training.toml", "--mode=plot_loss"]
+    options = ["tests/training.toml", "--mode=plot_loss"]
     result = runner.invoke(main, options)
     assert result.exit_code == 0

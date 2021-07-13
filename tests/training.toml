@@ -8,8 +8,8 @@ telegram_logger = false
 gpu = false
 
 [paths]
-data_path = "./new_tests/build/data/"
-model_path = "./new_tests/build/test_training/test_training.model"
+data_path = "./tests/build/data/"
+model_path = "./tests/build/test_training/test_training.model"
 pre_model = "none"
 norm_path = "none"
 
