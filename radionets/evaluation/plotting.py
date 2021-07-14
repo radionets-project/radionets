@@ -695,8 +695,8 @@ def hist_point(vals, out_path, plot_format="png"):
 def plot_radius_point(radius, vals, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.plot(radius, vals, ".")
-    ax1.set_ylabel("Flux deviation / %")
-    ax1.set_xlabel("Linear extend / px")
+    ax1.set_ylabel("Mean flux deviation / %")
+    ax1.set_xlabel("Linear extent / px")
     plt.grid()
 
     outpath = str(out_path) + "/extend_point.png"
