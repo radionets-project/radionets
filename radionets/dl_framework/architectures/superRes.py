@@ -12,6 +12,8 @@ from radionets.dl_framework.model import (
     Lambda,
     better_symmetry,
     fft,
+    gradFunc2,
+    manual_grad,
     tf_shift,
     btf_shift,
     CirculationShiftPad,
@@ -26,6 +28,9 @@ from radionets.dl_framework.model import (
     gauss,
     ConvGRUCell,
     gradFunc,
+    gradFunc2,
+    gradFunc_putzky,
+    rnd_dirty_noise,
 )
 from functools import partial
 import torchvision
@@ -33,6 +38,7 @@ import radionets.evaluation.utils as ut
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
+# import irim.rim as rim
 
 class superRes_simple(nn.Module):
     def __init__(self, img_size):
@@ -1330,7 +1336,7 @@ class ConvRNN(nn.Module):
 
 
 
-        return c3, [g1, g2]
+        return c3, [g1.detach(), g2.detach()]
 
 class RIM(nn.Module):
     def __init__(self, n_steps=20):
@@ -1338,6 +1344,8 @@ class RIM(nn.Module):
         torch.cuda.set_device(1)
         self.n_steps = n_steps
         self.cRNN = ConvRNN()
+        # self.bn = nn.BatchNorm2d(2)
+    
 
     def forward(self, x, hx=None):
         ap = x[0]
@@ -1345,26 +1353,248 @@ class RIM(nn.Module):
         phase = ap[:,1]
         amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
         compl = amp_rescaled * torch.exp(1j * phase) #k measured
-        data = compl.clone()
-        ifft = torch.fft.ifft2(compl)
-        spatial = torch.fft.ifftshift(ifft)
+        data = compl.clone().detach()
+        compl_shift = torch.fft.fftshift(compl) # shift low freq to corner
+        ifft = torch.fft.ifft2(compl_shift)
+        ifft_shift = torch.fft.ifftshift(ifft) # shift low freq to center
         eta = torch.zeros(ap.shape).to('cuda')
-        eta[:,0] = spatial.real
-        eta[:,1] = spatial.imag
+        eta[:,0] = ifft_shift.real
+        eta[:,1] = ifft_shift.imag
+
 
         
         etas = []
 
         for i in range(self.n_steps):
-            grad = gradFunc(eta, data, x[2], x[1], 8, 45)
+
+            grad = gradFunc(eta, data, x[2], x[1], 8, 45).detach()
+            # bn = self.bn(grad)
             input = torch.cat((eta,grad), dim=1)
 
             delta, hx = self.cRNN(input, hx)
             eta = eta + delta
-            # plt.imshow(torch.absolute(eta[0,0]+1j*eta[0,1]).cpu().detach().numpy())
+            # plt.imshow(torch.absolute(bn[0,0]+1j*bn[0,1]).cpu().detach().numpy())
             # plt.colorbar()
             # plt.show()
-            # print(i)
             etas.append(eta)
         
+        return etas
+
+
+class ConvRNN_deepClean(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(4, 64, 11, stride=3, dilation=1, padding=2), # use stride=4 for 63 px images
+            nn.Tanh(),
+        )
+        self.GRU1 = ConvGRUCell(64, 64, 11)
+        self.conv2 = nn.Sequential(
+            nn.ConvTranspose2d(64, 64, 11, stride=3, dilation=1, padding=2),
+            nn.Tanh(),
+        )
+        self.GRU2 = ConvGRUCell(64, 64, 11)
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(64, 2, 11, stride=1, dilation=1, padding=5, bias=False)
+        )
+        # self.weight = nn.Parameter(torch.tensor([0.25]))
+
+    def forward(self, x, hx=None):
+        if not hx:
+            hx = [None]*2
+
+        
+        complex2channels = torch.cat((x[:,0].real.unsqueeze(1),x[:,0].imag.unsqueeze(1),x[:,1].real.unsqueeze(1),x[:,1].imag.unsqueeze(1)), dim=1)
+        # print(complex2channels.shape)
+        # print(complex2channels.dtype)
+
+        c1 = self.conv1(complex2channels)
+        g1 = self.GRU1(c1, hx[0])
+        c2 = self.conv2(g1)
+        g2 = self.GRU2(c2, hx[1])
+        c3 = self.conv3(g2)
+
+        # plt.imshow(torch.absolute(c2[0,0]+1j*c2[0,1]).cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+        channels2complex = (c3[:,0]+1j*c3[:,1]).unsqueeze(1)
+
+        return channels2complex, [g1.detach(), g2.detach()] # ??? detach() ???
+
+class RIM_DC(nn.Module):
+    def __init__(self, n_steps=10):
+        super().__init__()
+        torch.cuda.set_device(0)
+        # torch.set_default_dtype(torch.float64) ## this is really important since we do a lot of ffts. otherwise torch.zeros is float32 and we can't save complex128 into it!
+        self.n_steps = n_steps
+        
+        self.cRNN = ConvRNN_deepClean()
+        # self.type(torch.complex64)
+        # torch.backends.cudnn.enabled = False
+        
+
+    def forward(self, x, hx=None):
+        ap = x[0]
+        amp = ap[:,0]
+        phase = ap[:,1]
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase) #k measured
+        
+
+        data = compl.clone().detach().unsqueeze(1)
+        compl_shift = torch.fft.fftshift(compl) # shift low freq to corner
+        ifft = torch.fft.ifft2(compl_shift, norm="forward")
+        eta = torch.fft.ifftshift(ifft).unsqueeze(1) # shift low freq to center
+        # print(eta.shape)
+        # eta = torch.zeros(ap.shape, dtype=torch.float64).to('cuda')
+        # eta[:,0] = ifft_shift.real
+        # eta[:,1] = ifft_shift.imag
+
+
+        
+        etas = []
+        # plt.imshow(torch.abs(eta[0,0]).cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+        for i in range(self.n_steps):
+
+            grad = gradFunc_putzky(eta.detach(), [data, x[1]]).detach()
+            # grad = manual_grad(eta.detach(), [data, x[1]]).detach()
+            # plt.imshow(torch.absolute(grad[0,0]+1j*grad[0,1]).cpu().detach().numpy())
+            # plt.colorbar()
+            # plt.show()
+            # break
+
+            input = torch.cat((eta.detach(),grad), dim=1)
+
+
+            delta, hx = self.cRNN(input, hx)
+            # plt.imshow(torch.abs(grad[0,0]).cpu().detach().numpy())
+            # plt.colorbar()
+            # plt.show()
+            # plt.imshow(torch.absolute(grad[0,0]).cpu().detach().numpy())
+            # plt.colorbar()
+            # plt.show()
+            # print(hx[0].requires_grad)
+            # plt.imshow(torch.abs(delta[0,0]).cpu().detach().numpy())
+            # plt.colorbar()
+            # plt.show()
+            eta = eta.detach() + delta
+            # plt.imshow(torch.abs(eta[0,0]).cpu().detach().numpy())
+            # plt.colorbar()
+            # plt.show()
+
+            etas.append(eta)
+
+
+        
+        return [eta/eta.shape[2]**2 for eta in etas]
+
+
+class ConvRNN_SRBlock(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.pre = nn.Sequential(
+            SRBlock(4, 64),
+            SRBlock(64, 64),
+        )
+        self.GRU1 = ConvGRUCell(64, 64, 3)
+        self.conv2 = SRBlock(64, 64)
+        self.GRU2 = ConvGRUCell(64, 64, 3)
+        self.conv3 = SRBlock(64, 2)
+
+    def forward(self, x, hx=None):
+        if not hx:
+            hx = [None]*2
+
+        c1 = self.pre(x)
+        g1 = self.GRU1(c1, hx[0])
+        c2 = self.conv2(g1)
+        g2 = self.GRU2(c2, hx[1])
+        c3 = self.conv3(g2)
+        # plt.imshow(torch.absolute(c2[0,0]+1j*c2[0,1]).cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+
+
+        return c3, [g1.detach(), g2.detach()] # ??? detach() ???
+
+
+class RIM_SR(nn.Module):
+    def __init__(self, n_steps=2):
+        super().__init__()
+        torch.cuda.set_device(0)
+        # torch.set_default_dtype(torch.float64) ## this is really important since we do a lot of ffts. otherwise torch.zeros is float32 and we can't save complex128 into it!
+        self.n_steps = n_steps
+        self.cRNN = ConvRNN_SRBlock()
+        
+
+    def forward(self, x, hx=None):
+        ap = x[0]
+        amp = ap[:,0]
+        phase = ap[:,1]
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase) #k measured
+        
+
+        data = compl.clone().detach()
+        compl_shift = torch.fft.fftshift(compl) # shift low freq to corner
+        ifft = torch.fft.ifft2(compl_shift)
+        ifft_shift = torch.fft.ifftshift(ifft) # shift low freq to center
+        eta = torch.zeros(ap.shape, dtype=torch.float64).to('cuda')
+        eta[:,0] = ifft_shift.real
+        eta[:,1] = ifft_shift.imag
+
+
+        
+        etas = []
+
+        for i in range(self.n_steps):
+
+            grad = gradFunc(eta, data, x[2], x[1], 8, 45).detach()
+            # plt.imshow(torch.absolute(grad[0,0]+1j*grad[0,1]).cpu().detach().numpy())
+            # plt.colorbar()
+            # plt.show()
+            # break
+
+            input = torch.cat((eta.float(),grad.float()), dim=1)
+            
+
+            delta, hx = self.cRNN(input, hx)
+            
+            # print(hx[0].requires_grad)
+            eta = eta + delta
+            # print(delta.requires_grad)
+            etas.append(eta)
+            
+            # plt.imshow(torch.absolute(delta[0,0]+1j*delta[0,1]).cpu().detach().numpy())
+            # plt.colorbar()
+            # plt.show()
+        
+        return etas
+
+class putzky(nn.Module):
+    def __init__(self):
+        super().__init__()
+        torch.cuda.set_device(0)
+        convrnn = rim.conv_rnn.ConvRNN(4)
+        self.rim = rim.rim.RIM(convrnn, gradFunc_putzky)
+
+    def forward(self, x):
+        ap = x[0]
+        amp = ap[:,0]
+        phase = ap[:,1]
+        amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+        compl = amp_rescaled * torch.exp(1j * phase) #k measured
+        
+
+        data = compl.clone().detach()
+        compl_shift = torch.fft.fftshift(compl) # shift low freq to corner
+        ifft = torch.fft.ifft2(compl_shift)
+        ifft_shift = torch.fft.ifftshift(ifft) # shift low freq to center
+        eta = torch.zeros(ap.shape,  dtype=torch.float64).to('cuda').float()
+        eta[:,0] = ifft_shift.real
+        eta[:,1] = ifft_shift.imag
+
+        etas, hx = self.rim.forward(eta, [data,x[1]], n_steps=8, accumulate_eta=True)
         return etas

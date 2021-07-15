@@ -19,6 +19,7 @@ from fastai.vision import models
 import torchvision
 from radionets.dl_training.utils import define_arch
 from fastai.vision.gan import GANLearner, FixedGANSwitcher, _tk_diff, GANDiscriminativeLR
+from fastai.callback.mixup import MixUp
 
 
 def get_learner(
@@ -85,6 +86,7 @@ def define_learner(
                 DataAug(vgg=train_conf["vgg"], physics_informed=train_conf["physics_informed"]),
                 # OverwriteOneBatch_CLEAN(5),
                 # OverwriteOneBatch_CLEAN(10),
+                MixUp(),
             ]
         )
     if gan:

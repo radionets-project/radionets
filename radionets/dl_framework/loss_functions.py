@@ -173,6 +173,31 @@ def l1_RIM(x,y):
     loss = loss/len(x)
     return loss
 
+def mse_RIM(x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    compl_shift = torch.fft.fftshift(compl)
+    ifft = torch.fft.ifft2(compl_shift, norm="forward")
+    true = torch.fft.ifftshift(ifft).unsqueeze(1)
+    # spatial = torch.zeros((ifft.size(0),2) + ifft.size()[1:]).to('cuda')
+    # spatial[:,0] = torch.fft.ifftshift(ifft).real.squeeze(1)
+    # spatial[:,1] = torch.fft.ifftshift(ifft).imag.squeeze(1)
+    
+    complex2channels_y = torch.cat((true.real,true.imag), dim=1)
+    
+    mse = nn.MSELoss()
+    loss = 0
+    for eta in x:
+        complex2channels_x = torch.cat((eta.real,eta.imag), dim=1)
+        # print(complex2channels_x.shape)
+        # print(complex2channels_y.shape)
+        loss += mse(complex2channels_x*eta.shape[2]**2,complex2channels_y)
+
+    loss = loss/len(x)
+    return loss
+
 def l1_wgan_GANCS(fake_pred,x,y):
     amp = y[:,0].clone().detach()
     phase = y[:,1].clone().detach()

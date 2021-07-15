@@ -217,6 +217,10 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
         arch = getattr(architecture, arch_name)()
     elif 'RIM' in arch_name:
         arch = getattr(architecture, arch_name)()
+    elif 'RIM_SR' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'putzky' in arch_name:
+        arch = getattr(architecture, arch_name)()
     elif 'automap' in arch_name:
         arch = getattr(architecture, arch_name)()
     elif "filter_deep" in arch_name or "resnet" or "Res" in arch_name:

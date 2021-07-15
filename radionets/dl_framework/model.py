@@ -849,23 +849,182 @@ class ConvGRUCell(nn.Module):
         r = torch.sigmoid(ih[1] + hh[1])
         n = torch.tanh(ih[2]+ r*hh[2])
 
+        # import matplotlib.pyplot as plt
+        # plt.imshow(torch.abs(hx[0,0]).cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
         hx = (1-z)*hx + z*n
 
         return hx
 
 def gradFunc(x, y, A, base_mask, n_tel, base_nums): 
+    does_require_grad = x.requires_grad
+    with torch.enable_grad():
+        x.requires_grad_(True)
+
+        mask = torch.sum(base_mask, 3)
+        mask[mask != 0] = 1
+
+        fx = torch.fft.fft2(torch.fft.fftshift(x[:,0]+1j*x[:,1])) # shift x low freq to corner & fft
+        pfx = torch.einsum('blm,blm->blm', mask, torch.fft.ifftshift(fx)) # shift low freq to center
+        py = torch.einsum('blm,blm->blm', mask, y)
+
+        # import matplotlib.pyplot as plt
+        # plt.imshow(torch.absolute(py[0]-pfx[0]).cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+
+        diff = (py-pfx)**2
+        # import matplotlib.pyplot as plt
+        # plt.imshow(torch.absolute(py[0]-pfx[0]).cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+        # diff_shift = torch.fft.fftshift(diff) # shift low freq to corner
+
+        # error = torch.sum(torch.fft.ifftshift(torch.fft.ifft2(diff_shift))) # ifft & shift low freq to center
+
+        # grad = torch.zeros((ift.size(0), 2) + ift.size()[1:]).to('cuda')
+        # grad[:,0] = ift.real.squeeze(1)
+        # grad[:,1] = ift.imag.squeeze(1)
+
+        grad_x = torch.autograd.grad(torch.sum(diff), inputs=x, retain_graph=does_require_grad,
+                                     create_graph=does_require_grad)[0]
+
+        
+        # import matplotlib.pyplot as plt
+        # plt.imshow(np.absolute((grad_x[:,0]+1j*grad_x[:,1])[0].cpu().detach().numpy()))
+        # plt.colorbar()
+        # plt.show()
+        # import matplotlib.pyplot as plt
+        # plt.imshow(np.absolute(torch.fft.ifftshift(torch.fft.ifft(torch.fft.fftshift(grad_x)))[0].cpu().detach().numpy()))
+        # plt.colorbar()
+        # plt.show()
+
+
+
+    # import matplotlib.pyplot as plt
+    # # print(grad_x.shape)
+    # plt.imshow(torch.absolute(diff[0]).cpu().detach().numpy())
+    # plt.colorbar()
+    # plt.show()
+    x.requires_grad_(does_require_grad)
+
+    return grad_x
+
+
+def gradFunc2(x, y, A, base_mask, n_tel, base_nums): 
+    
+
     mask = torch.sum(base_mask, 3)
     mask[mask != 0] = 1
 
-    fx = torch.fft.fft2(torch.fft.fftshift(x[:,0]+1j*x[:,1]))
-    pfx = torch.einsum('blm,blm->blm', mask, fx)
+    fx = torch.fft.fft2(torch.fft.fftshift(x[:,0]+1j*x[:,1])) # shift x low freq to corner & fft
+    pfx = torch.einsum('blm,blm->blm', mask, torch.fft.ifftshift(fx)) # shift low freq to center
+    py = torch.einsum('blm,blm->blm', mask, y) # mask y otherwise diff is not zero if x=y since we do a lot of ffts
 
-    diff = pfx-y
+    diff = pfx-py
+    diff_shift = torch.fft.fftshift(diff) # shift low freq to corner
+    error = torch.fft.ifftshift(torch.fft.ifft2(diff_shift))
 
-    ift = torch.fft.fftshift(torch.fft.ifft2(diff))
 
-    grad = torch.zeros((ift.size(0), 2) + ift.size()[1:]).to('cuda')
-    grad[:,0] = ift.real.squeeze(1)
-    grad[:,1] = ift.imag.squeeze(1)
+    grad = torch.zeros((error.size(0), 2) + error.size()[1:]).to('cuda')
+    grad[:,0] = error.real.squeeze(1)
+    grad[:,1] = error.imag.squeeze(1)
+
+    # import matplotlib.pyplot as plt
+    # # # print(grad_x.shape)
+    # plt.imshow(torch.absolute(error[0]).cpu().detach().numpy())
+    # plt.colorbar()
+    # plt.show()
 
     return grad
+
+def gradFunc_putzky(x, y): 
+    base_mask = y[1]
+    data = y[0]
+    does_require_grad = x.requires_grad
+    with torch.enable_grad():
+        x.requires_grad_(True)
+
+        mask = torch.sum(base_mask, 3)
+        mask[mask != 0] = 1
+        
+        fx = torch.fft.fft2(torch.fft.fftshift(x), norm="forward")
+       
+        # import matplotlib.pyplot as plt
+        # plt.imshow((torch.abs(torch.fft.ifftshift(torch.fft.ifft2(fx))))[0,0].cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+        pfx = torch.einsum('blm,bclm->bclm', torch.flip(mask, [1]), torch.fft.ifftshift(fx)) # shift low freq to center
+        # py = torch.einsum('blmforward,bclm->bclm', mask, data)
+        # plt.imshow(torch.abs(pfx-data)[0,0].cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+        difference = pfx-data
+
+        # import matplotlib.pyplot as plt
+        # plt.imshow((torch.abs(torch.fft.ifftshift(torch.fft.ifft2(data))-torch.fft.ifftshift(torch.fft.ifft2(pfx))))[0,0].cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+
+
+
+        chi2 = torch.sum(torch.square(torch.abs(difference)))
+
+
+        grad_x = torch.autograd.grad(chi2, inputs=x, retain_graph=does_require_grad,
+                                     create_graph=does_require_grad)[0]
+
+        # import matplotlib.pyplot as plt
+        # # # print(grad_x.shape)
+        # # test[test==0] = 1
+        # # plt.figure(figsize=(12,8))
+        # plt.imshow((torch.abs(grad_x))[0,0].cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+
+    x.requires_grad_(does_require_grad)
+
+    return grad_x
+
+def manual_grad(x, y): 
+    base_mask = y[1]
+    data = y[0]
+
+    mask = torch.sum(base_mask, 3)
+    mask[mask != 0] = 1
+    
+    fx = torch.fft.fft2(torch.fft.fftshift(x), norm="forward")
+    
+    # import matplotlib.pyplot as plt
+    # plt.imshow((torch.abs(torch.fft.ifftshift(torch.fft.ifft2(fx))))[0,0].cpu().detach().numpy())
+    # plt.colorbar()
+    # plt.show()
+    pfx = torch.einsum('blm,bclm->bclm', torch.flip(mask, [1]), torch.fft.ifftshift(fx)) # shift low freq to center
+    # py = torch.einsum('blmforward,bclm->bclm', mask, data)
+    # plt.imshow(torch.abs(pfx-data)[0,0].cpu().detach().numpy())
+    # plt.colorbar()
+    # plt.show()
+    difference = pfx-data
+
+    # import matplotlib.pyplot as plt
+    # plt.imshow((torch.abs(torch.fft.ifftshift(torch.fft.ifft2(data))-torch.fft.ifftshift(torch.fft.ifft2(pfx))))[0,0].cpu().detach().numpy())
+    # plt.colorbar()
+    # plt.show()
+
+    grad_x = torch.fft.ifftshift(torch.fft.ifft2(torch.fft.fftshift(difference), norm='forward'))
+
+    # import matplotlib.pyplot as plt
+    # # # print(grad_x.shape)
+    # # test[test==0] = 1
+    # # plt.figure(figsize=(12,8))
+    # plt.imshow((torch.abs(grad_x))[0,0].cpu().detach().numpy())
+    # plt.colorbar()
+    # plt.show()
+
+    return grad_x
+
+def rnd_dirty_noise(x, basemask):
+    noise = torch.random.normal(size=x.shape)
+    ft_noise = torch.fft.ifftshift(torch.fft.fft2(torch.fft.fftshift(noise)))
+    
