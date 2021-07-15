@@ -530,7 +530,10 @@ def evaluate_point(conf):
         lengths += list(length)
 
     vals = np.concatenate(vals).ravel()
+    click.echo("\nCreating pointsources histogram.\n")
     hist_point(vals, out_path, plot_format=conf["format"])
+    click.echo(f"\nThe mean flux difference is {vals.mean()}.\n")
+    click.echo("\nCreating linear extend-mean flux diff plot.\n")
     plot_radius_point(
         lengths, vals, out_path, plot_format=conf["format"]
     )
