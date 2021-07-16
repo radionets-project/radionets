@@ -60,12 +60,10 @@ def check_outpath(model_path, train_conf):
             path.unlink()
         else:
             if click.confirm(
-                "Do you really want to overwrite existing model file?", abort=False
+                "Do you really want to overwrite existing model file?", abort=True
             ):
                 click.echo("Overwriting existing model file!")
                 path.unlink()
-
-    return None
 
 
 def define_arch(arch_name, img_size):
