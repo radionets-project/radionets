@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import h5py
+from pathlib import Path
 
 
 def source_list_collate(batch):
@@ -400,3 +401,10 @@ def read_pred(path):
         z = np.array(hf["img_true"])
         hf.close()
     return x, y, z
+
+
+def check_outpath(model_path):
+    model_path = Path(model_path).parent / "evaluation" / "predictions.h5"
+    path = Path(model_path)
+    exists = path.exists()
+    return exists

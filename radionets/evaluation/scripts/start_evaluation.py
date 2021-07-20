@@ -1,6 +1,6 @@
 import click
 import toml
-from radionets.evaluation.utils import read_config
+from radionets.evaluation.utils import read_config, check_outpath
 from radionets.evaluation.train_inspection import (
     create_inspection_plots,
     create_source_plots,
@@ -33,9 +33,13 @@ def main(configuration_path):
     print(eval_conf, "\n")
 
     for entry in conf["inspection"]:
-        if (conf["inspection"][entry]) & (entry != "random"):
-            create_predictions(eval_conf)
-            break
+        if conf["inspection"][entry] and entry != "random":
+            if (
+                not check_outpath(eval_conf["model_path"])
+                or conf["inspection"]["random"]
+            ):
+                create_predictions(eval_conf)
+                break
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(
