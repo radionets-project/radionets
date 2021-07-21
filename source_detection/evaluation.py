@@ -78,11 +78,12 @@ def image_detection(checkpoint, image):
                                      min_score = 0.2, max_overlap = 0.1, top_k = 100)
     return predb, predl
 
-def classifier_eval(arch, img_batch):
-    
-    pred = eval_model(img, arch)
+def classifier_eval(arch, img_batch, labels):
+    pred = eval_model(img_batch, arch)
     _, l = torch.max(pred, dim = 1)
-    return l
+    diff = labels -l
+    diff_sum = diff.sum()
+    return diff, diff_sum, pred
 
 def mAPeval(checkpoint_path, data_path):
     data = get_bundles(data_path)
@@ -228,3 +229,6 @@ def calculate_mAP(pred_boxes, pred_labels, pred_scores, true_boxes, true_labels)
         average_precisions = {rev_label_map[c]: v for c, v in enumerate(average_precisions.tolist())}
 
         return average_precisions, mean_average_precision
+# -
+
+

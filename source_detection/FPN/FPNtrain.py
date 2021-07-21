@@ -3,21 +3,25 @@ import torch
 import h5py
 import numpy as np
 from radionets.dl_framework.data import get_bundles
-from FPNloss import detectionLoss
+from FPNloss import detectionLoss, FocalLoss
 from FPN import SSD300
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-path = get_bundles('//net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/train/')
-iterations = 240000
-n_classes = 5 #nodiff
-#checkpoint = None
-checkpoint = '/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300.pth.tar'
+path = get_bundles('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/july/mixed')
+iterations = 120000
+n_classes = 3 #nodiff
+checkpoint = None
+#checkpoint = '/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/june/mixedcheckpoints/checkpoint_ssd300.pth.tar'
 batch_size = 32
 workers = 4
-lr = 1e-4
+lr = 1e-9
 decay_lr_at = [80000,120000]
 decay_lr_to = 0.1
+#increase_lr_at = [10,30000]
+#increase_lr_to = 10
+#increase_lr_at2 = [100,80000]
+#increase_lr_to2 = 100
 momentum = 0.9
 weight_decay = 5e-4
 grad_clip = None
@@ -46,7 +50,7 @@ class detect_dataset:
         bundle = indices // self.num_img
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
-        
+        #print('bundle:',bundle)
         bundle_paths = [
                 h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
             ]
@@ -147,7 +151,7 @@ def main():
         optimizer = checkpoint['optimizer']
     model = model.to('cuda')
     
-    loss_function = detectionLoss(priors_cxcy = model.priors_cxcy).to('cuda')
+    loss_function = FocalLoss(priors_cxcy = model.priors_cxcy).to('cuda')#detectionLoss(priors_cxcy = model.priors_cxcy).to('cuda')
     
     
                
@@ -163,20 +167,23 @@ def main():
         
         if epoch in decay_lr_at:
             adjust_learning_rate(optimizer, decay_lr_to) 
-        
+        #if epoch in increase_lr_at:
+           # adjust_learning_rate(optimizer, increase_lr_to) 
+        #if epoch in increase_lr_at2:
+            #adjust_learning_rate(optimizer, increase_lr_to2) 
         train(train_loader, model, loss_function, optimizer, epoch)
         
         print("Epoch:", epoch)
         
         if epoch % 10 == 0:
-            save_checkpoint(epoch, model, optimizer,'/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300' + '_e' + str(epoch)+'.pth.tar')
-        save_checkpoint(epoch, model, optimizer,'/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300.pth.tar')# apparently not defined
+            save_checkpoint(epoch, model, optimizer,'/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/july/focal/checkpoint_ssd300' + '_e' + str(epoch)+'.pth.tar')
+        save_checkpoint(epoch, model, optimizer,'/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/july/focal/checkpoint_ssd300.pth.tar')# apparently not defined
 
 
 def train(data_loader, model, loss_function, optimizer, epochs):
     
     model.train()
-    losses = np.zeros(1877)
+    losses = np.zeros(940)
     for i, (images, boxes, labels) in enumerate(data_loader):
         images = images.to('cuda')
         
@@ -197,7 +204,7 @@ def train(data_loader, model, loss_function, optimizer, epochs):
         optimizer.step()
         
     print('Average Loss', np.average(losses))
-    f = open('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/loss.txt', "a")
+    f = open('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/focalloss.txt', "a")
     f.write(str(epochs) + '\t' + str(np.average(losses)) +'\n')
     f.close()
     del predicted_locs, predicted_classes_scores, images, boxes, labels

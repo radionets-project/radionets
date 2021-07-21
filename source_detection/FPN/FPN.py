@@ -50,7 +50,8 @@ class base_maps(nn.Module):
         
         self.load_arch()
     def load_arch(self):
-        arch = load_pretrained_model('VGG', '//net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/build/VGG_test/temp_20.model', 300)
+        arch = load_pretrained_model('VGG','/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/build/temp_20.model', 300)
+        #arch = load_pretrained_model('VGG', '//net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/build/VGG_test/temp_20.model', 300)
         state_dict = self.state_dict()
         param_names = list(state_dict.keys())
         pretrained_state_dict = arch.state_dict()
@@ -127,7 +128,7 @@ class adv_maps(nn.Module):
         for c in self.children():
             if isinstance(c, nn.Conv2d):
                 nn.init.xavier_uniform_(c.weight)
-                nn.init.constant_(c.bias, 0.)
+                nn.init.constant_(c.bias, 0)
 
     def forward(self, fmap15):
       
@@ -218,7 +219,7 @@ def create_prior_boxes():
     
     
     aspect_ratios = {'fmap7': [1.],
-                     'fmap10': [1.],
+                     'fmap10': [1.,2.,0.5],
                      'fmap15': [1.],
                      'fmap17': [1.],
                      'fmap19': [1.],
@@ -230,9 +231,8 @@ def create_prior_boxes():
             for f in range(fmap_dims[s]):
                 x = (d + 0.5) / fmap_dims[s]
                 y = (f + 0.5) / fmap_dims[s]
-                
                 for ratio in aspect_ratios[s]:
-                        priors.append([x, y, scales[s] * sqrt(ratio), scales[s] / sqrt(ratio)])
+                        priors.append([y, x, scales[s] * sqrt(ratio), scales[s] / sqrt(ratio)])
                         
                         if ratio == 1.:
                             try:
@@ -262,7 +262,7 @@ class predconvs(nn.Module):
         #             'fmap23': 4}
         
         n_boxes = {  'fmap7': 2,
-                     'fmap10': 2,
+                     'fmap10': 4,
                      'fmap15': 2,
                      'fmap17': 2,
                      'fmap19': 2,
@@ -431,7 +431,6 @@ class SSD300(nn.Module):
                 
                 overlap = jaccard(c_boundary_locs, c_boundary_locs)
                 suppress = torch.zeros((n_above_min)).bool().to('cuda') 
-
                 for box in range(c_boundary_locs.size(0)):
                     if suppress[box] == 1:
                         continue
@@ -445,7 +444,7 @@ class SSD300(nn.Module):
                 predicted_scores.append(c_scores[~suppress])
             if len(predicted_boxes) == 0:
                 predicted_boxes.append(torch.FloatTensor([[0.,0.,1.,1.]]).to('cuda'))
-                predicted_labels.append(torch.LongTensor([4]).to('cuda'))
+                predicted_labels.append(torch.LongTensor([4]).to('cuda')) #nodiff
                 predicted_scores.append(torch.FloatTensor([0.]).to('cuda'))
             
             predicted_boxes = torch.cat(predicted_boxes, dim = 0)

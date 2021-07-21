@@ -36,7 +36,6 @@ class detectionLoss(nn.Module):                 #0.6                 #9         
         self.cross_entropy = nn.CrossEntropyLoss(reduce = False)
     
     def forward(self, predicted_locs, predicted_scores, data_locs, data_labels):
-        
         batch_size = predicted_locs.size(0)
         n_classes = predicted_scores.size(2)
         n_priors = self.priors_cxcy.size(0)
@@ -58,11 +57,11 @@ class detectionLoss(nn.Module):                 #0.6                 #9         
             
             overlap_for_each_prior[prior_for_each_object] = 1.
             label_for_each_prior = data_labels[image_i][0][0][object_for_each_prior]#very ugly shapes watch out
-            label_for_each_prior[overlap_for_each_prior < self.threshold] = 4 #nodiff
+            label_for_each_prior[overlap_for_each_prior < self.threshold] = 2 #nodiff
             true_classes[image_i] = label_for_each_prior
             
             true_locs[image_i] = center_to_offset(boundary_to_center(data_locs[image_i][0][object_for_each_prior]), self.priors_cxcy)
-        positive_priors = true_classes != 4 #nodiff
+        positive_priors = true_classes != 2 #nodiff
         loc_loss = self.smooth_l1(predicted_locs[positive_priors], true_locs[positive_priors])
         n_positives = positive_priors.sum(dim = 1)
         n_hard_negatives = self.neg_pos_ratio * n_positives
@@ -79,6 +78,57 @@ class detectionLoss(nn.Module):                 #0.6                 #9         
         conf_loss_hard_neg = conf_loss_neg[hard_negatives]
         conf_loss = (conf_loss_hard_neg.sum()+conf_loss_pos.sum())/n_positives.sum().float()
         return conf_loss + self.alpha * loc_loss
-# -
 
+
+# -
+class FocalLoss(nn.Module):                 #0.6                 #9         #20.
+    def __init__(self, priors_cxcy, threshold = 0.5, neg_pos_ratio = 3, alpha = 50., gamma = 2):
+        
+        super(FocalLoss, self).__init__()
+        self.priors_cxcy = priors_cxcy
+        self.priors_xy = center_to_boundary(priors_cxcy)
+        self.threshold = threshold
+        self.neg_pos_ratio = neg_pos_ratio
+        self.alpha = alpha
+        self.gamma = gamma
+        self.smooth_l1 = nn.SmoothL1Loss()
+        self.cross_entropy = nn.CrossEntropyLoss(reduce = False)
+    
+    def forward(self, predicted_locs, predicted_scores, data_locs, data_labels):
+        batch_size = predicted_locs.size(0)
+        n_classes = predicted_scores.size(2)
+        n_priors = self.priors_cxcy.size(0)
+        assert n_priors ==  predicted_locs.size(1) == predicted_scores.size(1)
+        true_locs = torch.zeros((batch_size, n_priors, 4), dtype = torch.float).to('cuda')
+        true_classes = torch.zeros((batch_size, n_priors), dtype = torch.long).to('cuda')
+        
+        for image_i in range(batch_size):
+            n_objects = data_locs[image_i][0].size(0)
+            overlap = jaccard(data_locs[image_i][0], self.priors_xy) #overlap of the boxes in this image with the priors
+            overlap_for_each_prior, object_for_each_prior = overlap.max(dim=0)
+            #overlap has shape [a,s,f,g,....]
+                              #[h,d,g,h,....].... each entry is the overlap of one true box with all the priors.
+                                #each row describes one object. Max gives the maximum overlap value and the index of the object.
+            
+            _, prior_for_each_object = overlap.max(dim = 1)
+            
+            object_for_each_prior[prior_for_each_object] = torch.LongTensor(range(n_objects)).to('cuda')
+            
+            overlap_for_each_prior[prior_for_each_object] = 1.
+            label_for_each_prior = data_labels[image_i][0][0][object_for_each_prior]#very ugly shapes watch out
+            label_for_each_prior[overlap_for_each_prior < self.threshold] = 2 #nodiff
+            true_classes[image_i] = label_for_each_prior
+            
+            true_locs[image_i] = center_to_offset(boundary_to_center(data_locs[image_i][0][object_for_each_prior]), self.priors_cxcy)
+        positive_priors = true_classes != 2 #nodiff
+        loc_loss = self.smooth_l1(predicted_locs[positive_priors], true_locs[positive_priors])
+        n_positives = positive_priors.sum(dim = 1)
+        n_hard_negatives = self.neg_pos_ratio * n_positives
+        conf_loss_all = -self.cross_entropy(predicted_scores.view(-1, n_classes), true_classes.view(-1))
+        pt = torch.exp(conf_loss_all)
+        print(positive_priors.shape[0])
+        class_loss = (-((1-pt)**self.gamma) * conf_loss_all)/positive_priors.shape[0]
+        print(class_loss.sum())
+        print(loc_loss*self.alpha)
+        return class_loss.sum() + self.alpha * loc_loss
 

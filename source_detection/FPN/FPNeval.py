@@ -12,17 +12,28 @@ from radionets.dl_framework.data import get_bundles
 from tqdm import tqdm
 
 class_labels = ('pointlike gaussian', 'diffuse gaussian', 'diamond', 'square', 'background')
-color_map = ('y', 'g', 'w', 'r','brown')
+color_map = ('w', 'r', 'pink', 'r','brown')
 label_map = {k: v for v, k in enumerate(class_labels)}
 rev_label_map = {v: k for k, v in label_map.items()} 
 def box_coord(coord, img_size):
-    x = coord[0].item()*img_size
-    y = coord[3].item()*img_size
-    xmax = coord[2]
-    ymin = coord[1]
+    x = coord[0].item()*img_size #0
+    y = coord[3].item()*img_size#3
+    xmax = coord[2]#2
+    ymin = coord[1]#1
     w = xmax.item()*img_size - x
     h = -(y - ymin.item()*img_size)
     return x,y,w,h
+def box_coord_inv(coord):
+    newcoord = np.zeros(coord.shape)
+    xmin = coord[:,0]
+    ymax = coord[:,1]
+    xmax = xmin+coord[:,2]
+    ymin = ymax + coord[:,3]
+    newcoord[:,0] = xmin
+    newcoord[:,1] = ymin
+    newcoord[:,2] = xmax
+    newcoord[:,3] = ymax
+    return newcoord
 
 def detect_sources(checkpoint_path, data_path, img_size, n = 0):
     data = get_bundles(data_path)
@@ -38,12 +49,10 @@ def detect_sources(checkpoint_path, data_path, img_size, n = 0):
     #print(eval_dataset[31])
     with torch.no_grad():
         for i, (images, boxes, labels) in enumerate(tqdm(eval_loader)):
-            print(enumerate(eval_loader))
             images = images.to('cuda')
-            print(images.shape)
             predicted_locs, predicted_scores = model(images)
             predb, predl, preds = model.object_detection(predicted_locs, predicted_scores,priors= model.priors_cxcy,
-                                     min_score = 0.5, max_overlap = 0.45, top_k = 100)
+                                     min_score = 0.2, max_overlap = 0.2, top_k = 100)
     fig, (ax1,ax2) = plt.subplots(1,2,figsize=(12,8))
     for j in range(len(eval_dataset[n][1][0])):
         true_label = class_labels[eval_dataset[n][2][0][j].item()]
@@ -61,10 +70,12 @@ def detect_sources(checkpoint_path, data_path, img_size, n = 0):
                                      facecolor='none')
         ax2.text(predx,(predy+predh-7),predicted_label, color = 'k',fontsize=8,backgroundcolor = color)
         ax2.add_patch(predrect)
-        
-    ax1.imshow(eval_dataset[n][0].squeeze(0))
-    img = ax2.imshow(eval_dataset[n][0].squeeze(0))
-    fig.colorbar(img)
+    
+    cbar_ax = fig.add_axes([1, 0.1, 0.05, 0.8])
+
+    img2 = ax1.imshow(eval_dataset[n][0].squeeze(0),cmap = 'gist_heat')
+    img = ax2.imshow(eval_dataset[n][0].squeeze(0),cmap = 'gist_heat')
+    cbar = fig.colorbar(img, cax=cbar_ax)
 def image_detection(checkpoint_path, image):
     img_size = image.shape[0]
     image = torch.FloatTensor(image).unsqueeze(0).unsqueeze(0)
@@ -73,11 +84,13 @@ def image_detection(checkpoint_path, image):
     model = checkpoint['model']
     model = model.to('cuda')
     model.eval()
+    priors = FPN.create_prior_boxes()
     with torch.no_grad():
         image = image.to('cuda')
         predicted_locs, predicted_scores = model(image)
-        predb, predl, preds = model.object_detection(predicted_locs, predicted_scores,priors= model.priors_cxcy,
-                                     min_score = 0.5, max_overlap = 0.2, top_k = 100)
+        #print(predicted_locs.shape)
+        predb, predl, preds = model.object_detection(predicted_locs, predicted_scores,priors,
+                                     min_score = 0.2, max_overlap = 0.1, top_k = 200)
     #fig, ax1 = plt.subplots(1,1,figsize=(12,8))
     #for k in range(len(predl[0])):
     #    predicted_label = class_labels[predl[0][k].item()]
@@ -88,7 +101,7 @@ def image_detection(checkpoint_path, image):
     #    ax1.text(predx,(predy+predh-7),predicted_label, color = 'k',fontsize=8,backgroundcolor = color)
     #    ax1.add_patch(predrect)
     #ax1.imshow(image[0][0].cpu())
-    return predb, predl
+    return predb, predl,preds
 
 def classifier_eval(arch, img_batch):
     
@@ -246,7 +259,7 @@ def calculate_mAP(pred_boxes, pred_labels, pred_scores, true_boxes, true_labels,
                 else:
                     precisions[i] = 0.
             average_precisions[c] = precisions.mean()  # c is in [1, n_classes - 1]
-        print(precisions)
+        #print(precisions)
         # Calculate Mean Average Precision (mAP)
 
 
@@ -256,6 +269,35 @@ def calculate_mAP(pred_boxes, pred_labels, pred_scores, true_boxes, true_labels,
         average_precisions = {rev_label_map[c]: v for c, v in enumerate(average_precisions.tolist())}
 
         return average_precisions, mean_average_precision
+
+
 # -
+def open_bundle_pack(path):
+    bundle_x = []
+    bundle_y = []
+    bundle_z = []
+    f = h5py.File(path, "r")
+    bundle_size = len(f)//3
+    for i in range(bundle_size):
+        bundle_x_i = np.array(f["x"+str(i)])
+        bundle_y_i = np.array(f["y"+str(i)])
+        bundle_z_i = np.array(f["z"+str(i)])
+        bundle_x.append(bundle_x_i)
+        bundle_y.append(bundle_y_i)
+        bundle_z.append(bundle_z_i)
+    return bundle_x, bundle_y, bundle_z
 
 
+def annotate(img, bbox, labels):
+    #class_labels = ('pointlike gaussian', 'diffuse gaussian', 'diamond', 'square', 'background')
+    #color_map = ('w', 'g', 'r', 'y','brown')
+    img_size = img.shape[0]
+    fig, ax2 = plt.subplots(1,1,figsize=(50,40))
+    for j in range(bbox.shape[0]):
+        true_label = labels[j]
+        color = color_map[labels[j].astype('int')]
+        trux, truy, truw, truh = box_coord(bbox[j],img_size)
+        trurect = patches.Rectangle((trux, truy), truw, truh, linewidth=1, edgecolor=color, facecolor='none')
+        #ax2.text(trux,(truy+truh-7),true_label, color = 'k',fontsize=8,backgroundcolor = color)
+        ax2.add_patch(trurect)
+    ax2.imshow(img, cmap = 'gist_heat')
