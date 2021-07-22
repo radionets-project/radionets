@@ -112,6 +112,74 @@ class h5_dataset:
         return data_channel.float()
 
 
+class h5_dataset_segmentation:
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False):
+        """
+        Save the bundle paths and the number of bundles in one file.
+        """
+        self.bundles = bundle_paths
+        self.num_img = len(self.open_bundle(self.bundles[0], "x"))
+        self.tar_fourier = tar_fourier
+        self.amp_phase = amp_phase
+        self.source_list = source_list
+
+    def __call__(self):
+        return print("This is the h5_dataset class.")
+
+    def __len__(self):
+        """
+        Returns the total number of pictures in this dataset
+        """
+        return len(self.bundles) * self.num_img
+
+    def __getitem__(self, i):
+        if self.source_list:
+            x = self.open_image("x", i)
+            y = self.open_image("z", i)
+        else:
+            x = self.open_image("x", i)
+            y = self.open_image("y", i)
+        return x, y
+
+    def open_bundle(self, bundle_path, var):
+        bundle = h5py.File(bundle_path, "r")
+        data = bundle[var]
+        return data
+
+    def open_image(self, var, i):
+        if isinstance(i, int):
+            i = torch.tensor([i])
+        elif isinstance(i, np.ndarray):
+            i = torch.tensor(i)
+        indices, _ = torch.sort(i)
+        bundle = indices // self.num_img
+        image = indices - bundle * self.num_img
+        bundle_unique = torch.unique(bundle)
+        bundle_paths = [
+            h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
+        ]
+        bundle_paths_str = list(map(str, bundle_paths))
+        data = torch.tensor(
+            [
+                bund[var][img]
+                for bund, bund_str in zip(bundle_paths, bundle_paths_str)
+                for img in image[
+                    bundle == bundle_unique[bundle_paths_str.index(bund_str)]
+                ]
+            ]
+        )
+        if var == "x":
+            data_channel = data
+        elif var == "y":
+            data_channel = data
+        else:
+            if len(i) == 1:
+                data_channel = data.reshape(data.shape[-1] ** 2)
+            else:
+                data_channel = data.reshape(-1, data.shape[-1] ** 2)
+        return data_channel.float()
+
+
 def combine_and_swap_axes(array1, array2):
     return np.swapaxes(np.dstack((array1, array2)), 2, 0)
 
@@ -237,5 +305,5 @@ def load_data(data_path, mode, fourier=False, source_list=False):
     """
     bundle_paths = get_bundles(data_path)
     data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
-    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)
+    ds = h5_dataset_segmentation(data, tar_fourier=fourier, source_list=source_list)
     return ds
