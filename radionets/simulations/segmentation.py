@@ -2,6 +2,8 @@ import numpy as np
 from scipy.ndimage import zoom
 import warnings
 
+from scipy.ndimage.measurements import maximum
+
 warnings.filterwarnings("ignore", message="covariance is not positive-semidefinite")
 warnings.filterwarnings("ignore", message="invalid value encountered in true_divide")
 
@@ -194,16 +196,19 @@ def create_image(size=64, noise=0, edge_factor=0.1):
 
 def create_data_bunch(config):
     """
-    Creation of data bunches.
+    Creation of data in bunches.
 
-    # n: number of images for the bunch
-    # size: size of the image
-    # noise: strength of noise in percent of the max. brightness of the image
-    # edge_factor: larger values move the distribution towards the center [0,0.5)
-    # x: accumulated data of the different distributions
-    # y: label of the most common data in each bin of the 2d hist
-    #
-    # Memory is allocated and the images are created in bunches.
+    Parameters
+    ----------
+    config: .toml configuration
+        configurations for the simulation
+
+    Returns
+    -------
+    x: ndarray
+        Data for segmentation
+    y: ndarray
+        Labels for segmentation task
     """
     n = config["image_options"]["bundle_size"]
     size = config["image_options"]["img_size"]
@@ -218,9 +223,7 @@ def create_data_bunch(config):
             print("Created {} of {} data bunches".format(i + 1, n))
 
     y = get_y(x, config)
-    print(x.shape)
     x = np.sum(x, axis=1, keepdims=True)
-    print(x.shape)
     return x, y
 
 
@@ -254,10 +257,12 @@ def get_y(x, config):
     x_faint = (np.ones((n, 1, size, size)).T * max_of_image * faint).T
 
     if smooth:  # the class distribution is captured: y: [n, n_class+1, size, size]
-        y = x / sum_image
-        y_0 = np.ones((n, 1, size, size))
-        y_0 = np.where(sum_image < x_faint, y_0, 0)
-        y = np.where(sum_image > x_faint, y, 0)
+        y_0 = np.empty((n, 1, size, size))
+        y_0 = np.where(sum_image < x_faint, 1 - (sum_image / x_faint), 0)
+
+        mask = np.repeat(sum_image < x_faint, 3, axis=1)
+        y = np.where(mask, x / x_faint, x / sum_image)
+
         y = np.concatenate((y_0, y), axis=1)
         y[np.isnan(y)] = 0
     else:  # takes the largest occurance of one class: y: [n, size, size]
