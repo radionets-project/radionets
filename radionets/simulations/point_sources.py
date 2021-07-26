@@ -152,7 +152,9 @@ def create_gauss(img, num_sources, source_list, img_size=63):
         return img
 
 
-def create_point_source_img(img_size, bundle_size, num_bundles, path, option, extended=False):
+def create_point_source_img(
+    img_size, bundle_size, num_bundles, path, option, extended=False
+):
     for num_bundle in tqdm(range(num_bundles)):
         with h5py.File(path + "/fft_" + option + str(num_bundle) + ".h5", "w") as hf:
             for num_img in range(bundle_size):
@@ -207,7 +209,11 @@ def create_point_source_img(img_size, bundle_size, num_bundles, path, option, ex
                 )
 
                 source_list = np.array([list_x, list_y, list_sx, list_sy, list_tag])
-                hf.create_dataset("x" + str(num_img), data=g)
-                hf.create_dataset("l" + str(num_img), data=source_list)
+                g_fft = np.array(
+                    [np.fft.fftshift(np.fft.fft2(img)) for img in g.copy()]
+                )
+                hf.create_dataset("x" + str(num_img), data=g_fft)
+                hf.create_dataset("y" + str(num_img), data=g)
+                hf.create_dataset("z" + str(num_img), data=source_list)
 
         hf.close()
