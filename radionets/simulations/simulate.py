@@ -67,6 +67,7 @@ def sample_fft_images(sim_conf):
         fourier=sim_conf["fourier"],
         compressed=sim_conf["compressed"],
         interpolation=sim_conf["interpolation"],
+        source_type=sim_conf["type"],
     )
     if sim_conf["keep_fft_files"] is not True:
         if click.confirm("Do you really want to delete the fft_files?", abort=False):
