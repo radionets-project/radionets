@@ -44,7 +44,8 @@ def create_fft_images(sim_conf):
                 img_size=sim_conf["img_size"],
                 bundle_size=sim_conf["bundle_size"],
                 num_bundles=sim_conf["bundles_" + str(opt)],
-                path=sim_conf["data_path"] + str(opt),
+                path=sim_conf["data_path"],
+                option=opt,
                 extended=sim_conf["add_extended"],
             )
 
