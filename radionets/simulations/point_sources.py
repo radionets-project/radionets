@@ -1,7 +1,45 @@
-from radionets.simulations.gaussians import create_grid, gaussian_component
+from radionets.simulations.gaussians import create_grid, create_rot_mat
 import numpy as np
 from tqdm import tqdm
 import h5py
+
+
+def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot, center=None):
+    """
+    Adds a gaussian component to a 2d grid.
+
+    Parameters
+    ----------
+    x: 2darray
+        x coordinates of 2d meshgrid
+    y: 2darray
+        y coordinates of 2d meshgrid
+    flux: float
+        peak amplitude of component
+    x_fwhm: float
+        full-width-half-maximum in x direction (sigma_x)
+    y_fwhm: float
+        full-width-half-maximum in y direction (sigma_y)
+    rot: int
+        rotation of component in degree
+    center: 2darray
+        enter of component
+
+    Returns
+    -------
+    gauss: 2darray
+        2d grid with gaussian component
+    """
+    if center is None:
+        x_0 = y_0 = len(x) // 2
+    else:
+        rot_mat = create_rot_mat(np.deg2rad(rot))
+        x_0, y_0 = ((center - len(x) // 2) @ rot_mat) + len(x) // 2
+    gauss = flux * np.exp(
+        -((x_0 - x) ** 2 / (2 * (x_fwhm) ** 2) + (y_0 - y) ** 2 / (2 * (y_fwhm) ** 2))
+    )
+    params = np.array([x_0, y_0, x_fwhm, y_fwhm])
+    return gauss, params
 
 
 def gauss_parameters():
@@ -107,16 +145,16 @@ def create_gauss(img, num_sources, source_list, img_size=63):
     my = np.delete(my, idx)
     sx = np.delete(sx, idx)
     sy = np.delete(sy, idx)
-    assert np.isnan(img).any() is False
+    # assert np.isnan(img).any() == False
     if source_list:
         return img, [mx, my], [sx, sy]
     else:
         return img
 
 
-def create_point_source_img(img_size, bundle_size, num_bundles, path, extended=False):
+def create_point_source_img(img_size, bundle_size, num_bundles, path, option, extended=False):
     for num_bundle in tqdm(range(num_bundles)):
-        with h5py.File(path + str(num_bundle) + ".h5", "w") as hf:
+        with h5py.File(path + "/fft_" + option + str(num_bundle) + ".h5", "w") as hf:
             for num_img in range(bundle_size):
                 grid = create_grid(img_size, 1)
                 num_point_sources = np.random.randint(2, 5)
@@ -136,7 +174,7 @@ def create_point_source_img(img_size, bundle_size, num_bundles, path, extended=F
                     gs, num_point_sources, True, img_size
                 )
 
-                tag_point = np.zeros(num_point_sources)
+                tag_point = np.zeros(len(p_point[0]))
 
                 comps = np.array(
                     [
