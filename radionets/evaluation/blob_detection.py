@@ -25,7 +25,7 @@ def calc_blobs(ifft_pred, ifft_truth):
     return blobs_log_pred, blobs_log_truth
 
 
-def crop_first_component(pred, truth, blob_truth, out_path):
+def crop_first_component(pred, truth, blob_truth):
     """Returns the cropped image with the first component of the
     true image for both prediction and truth.
 
