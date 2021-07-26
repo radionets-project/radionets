@@ -210,7 +210,7 @@ def save_fft_pair(path, x, y, z=None, name_x="x", name_y="y", name_z="z"):
         hf.create_dataset(name_x, data=x)
         hf.create_dataset(name_y, data=y)
         if z is not None:
-            hf.create_dataset(name_z, data=z)
+            [hf.create_dataset(name_z + str(i), data=z[i]) for i in range(len(z))]
         hf.close()
 
 
@@ -238,7 +238,7 @@ def open_bundle_pack(path):
         bundle_z_i = np.array(f["z" + str(i)])
         bundle_z.append(bundle_z_i)
     f.close()
-    return bundle_x, bundle_y, bundle_z
+    return np.array(bundle_x), np.array(bundle_y), bundle_z
 
 
 def mean_and_std(array):
