@@ -18,7 +18,7 @@ simulate = true
 num_components = [4, 10]
 
 [point_sources]
-simulate = true
+simulate = false
 add_extended = true
 
 [image_options]
