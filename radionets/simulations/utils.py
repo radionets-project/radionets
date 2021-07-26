@@ -110,7 +110,7 @@ def read_config(config):
     if config["point_sources"]["simulate"]:
         click.echo("Create fft_images from point source data set! \n")
 
-        sim_conf["type"] = "gaussians"
+        sim_conf["type"] = "point_sources"
         sim_conf["add_extended"] = config["point_sources"]["add_extended"]
         click.echo("Adding point sources.")
 
