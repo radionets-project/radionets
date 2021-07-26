@@ -1,6 +1,7 @@
 from radionets.simulations.mnist import mnist_fft
 from radionets.simulations.gaussians import simulate_gaussian_sources
 from radionets.simulations.sampling import sample_frequencies
+from radionets.simulations.point_sources import create_point_source_img
 import click
 from pathlib import Path
 
@@ -22,6 +23,7 @@ def create_fft_images(sim_conf):
             bundle_size=sim_conf["bundle_size"],
             noise=sim_conf["noise"],
         )
+
     if sim_conf["type"] == "gaussians":
         for opt in ["train", "valid", "test"]:
             simulate_gaussian_sources(
@@ -31,11 +33,19 @@ def create_fft_images(sim_conf):
                 bundle_size=sim_conf["bundle_size"],
                 img_size=sim_conf["img_size"],
                 num_comp_ext=sim_conf["num_components"],
-                num_pointlike=sim_conf["num_pointlike_gaussians"],
-                num_pointsources=sim_conf["num_pointsources"],
                 noise=sim_conf["noise"],
                 noise_level=sim_conf["noise_level"],
                 source_list=sim_conf["source_list"],
+            )
+
+    if sim_conf["type"] == "point_sources":
+        for opt in ["train", "valid", "test"]:
+            create_point_source_img(
+                img_size=sim_conf["img_size"],
+                bundle_size=sim_conf["bundle_size"],
+                num_bundles=sim_conf["bundles_" + str(opt)],
+                path=sim_conf["data_path"] + str(opt),
+                extended=sim_conf["add_extended"],
             )
 
 
