@@ -373,21 +373,24 @@ class UNet_segmentation(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.dconv_down1 = nn.Sequential(*double_conv(1, 4))
-        self.dconv_down2 = nn.Sequential(*double_conv(4, 8))
-        self.dconv_down3 = nn.Sequential(*double_conv(8, 16))
-        self.dconv_down4 = nn.Sequential(*double_conv(16, 32))
-        self.dconv_down5 = nn.Sequential(*double_conv(32, 64))
+        self.channels = 8
+
+        self.dconv_down1 = nn.Sequential(*double_conv(1, self.channels))
+        self.dconv_down2 = nn.Sequential(*double_conv(self.channels, 2*self.channels))
+        self.dconv_down3 = nn.Sequential(*double_conv(2*self.channels, 4*self.channels))
+        self.dconv_down4 = nn.Sequential(*double_conv(4*self.channels, 8*self.channels))
+        self.dconv_down5 = nn.Sequential(*double_conv(8*self.channels, 16*self.channels))
 
         self.maxpool = nn.MaxPool2d(2)
         self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
 
-        self.dconv_up4 = nn.Sequential(*double_conv(32 + 64, 32))
-        self.dconv_up3 = nn.Sequential(*double_conv(16 + 32, 16))
-        self.dconv_up2 = nn.Sequential(*double_conv(8 + 16, 8))
-        self.dconv_up1 = nn.Sequential(*double_conv(4 + 8, 4))
+        self.dconv_up4 = nn.Sequential(*double_conv(24*self.channels, 8*self.channels))
+        self.dconv_up3 = nn.Sequential(*double_conv(12*self.channels, 4*self.channels))
+        self.dconv_up2 = nn.Sequential(*double_conv(6*self.channels, 2*self.channels))
+        self.dconv_up1 = nn.Sequential(*double_conv(3*self.channels, self.channels))
 
-        self.conv_last = nn.Conv2d(4, 4, 1)
+        self.conv_last = nn.Conv2d(8, 4, 1)
+        self.output_activation = nn.Sequential(nn.Softmax(dim=1))
 
     def forward(self, x):
         conv1 = self.dconv_down1(x)
@@ -414,5 +417,6 @@ class UNet_segmentation(nn.Module):
         x = self.dconv_up1(x)
 
         out = self.conv_last(x)
+        out = self.output_activation(out)
 
         return out
