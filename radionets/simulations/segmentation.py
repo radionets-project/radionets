@@ -190,7 +190,7 @@ def create_image(size=64, noise=0, edge_factor=0.1):
         x_noise = np.random.uniform(0, max_noise_rnd, size=size_noise)
         x_noise = zoom(x_noise, (1, size_rescale, size_rescale))
 
-    x = np.concatenate((x0, x1, x2, x_noise), axis=0)
+    x = np.concatenate((x_noise, x0, x1, x2), axis=0)
     return x.astype("int16")
 
 
@@ -216,12 +216,18 @@ def create_data_bunch(config):
     edge_factor = config["image_options"]["edge_factor"]
     classes = config["gaussians"]
 
-    x = np.empty((n, len(classes) + 1, size, size), dtype="int16")
-    for i in range(n):
-        x[i] = create_image(size, noise, edge_factor)
-        if (i + 1) % 100 == 0:
-            print("Created {} of {} data bunches".format(i + 1, n))
-
+    n_to_sim = np.int(np.ceil(n / 8))
+    x = np.empty((n_to_sim * 8, len(classes) + 1, size, size), dtype="int16")
+    for i in range(n_to_sim):
+        x[i*8] = create_image(size, noise, edge_factor)
+        x[i*8+1] = np.flip(x[i*8], axis=1)
+        x[i*8+2] = np.flip(x[i*8], axis=2)
+        x[i*8+3] = np.flip(x[i*8], axis=(1, 2))
+        x[i*8+4] = np.rot90(x[i*8], axes=(1, 2))
+        x[i*8+5] = np.flip(x[i*8+4], axis=1)
+        x[i*8+6] = np.flip(x[i*8+4], axis=2)
+        x[i*8+7] = np.flip(x[i*8+4], axis=(1, 2))
+    x = x[0:n]
     y = get_y(x, config)
     x = np.sum(x, axis=1, keepdims=True)
     return x, y
@@ -235,39 +241,41 @@ def get_y(x, config):
     ----------
     x: ndarray
         Data array with sources with shape [classes+1, size, size]
-    smooth: boolean
-        True: Generate labels proportional to the occurance of the classes.
-        False: Generate labels with the maximum occurance of one class.
-    faint: float
-        Determines the background strength.
+    mode: "noisy" or "clean"
+        noisy: Generate labels with underlying noise.
+        clean: Generate labels without noise.
 
     Returns
     -------
     y: ndarray
         Labels for segmentation task
     """
-    smooth = config["label_options"]["smooth"]
-    faint = config["label_options"]["faint"]
+    mode = config["label_options"]["mode"]
 
     n, n_class, size, _ = np.shape(x)
-    # delete axis with noise data for the labels, so the labels stay noise free
-    x = np.delete(x, n_class - 1, axis=1)
-    sum_image = np.sum(x, axis=1, keepdims=True)
-    max_of_image = np.max(sum_image, axis=(2, 3)).squeeze()
-    x_faint = (np.ones((n, 1, size, size)).T * max_of_image * faint).T
 
-    if smooth:  # the class distribution is captured: y: [n, n_class+1, size, size]
-        y_0 = np.empty((n, 1, size, size))
-        y_0 = np.where(sum_image < x_faint, 1 - (sum_image / x_faint), 0)
+    epsilon = 1e-5
 
-        mask = np.repeat(sum_image < x_faint, 3, axis=1)
-        y = np.where(mask, x / x_faint, x / sum_image)
+    x_sum = np.sum(x, axis=1, keepdims=True).repeat(n_class, axis=1)
+    x_max = np.max(x_sum, axis=(1, 2, 3)).repeat(size**2).reshape(n, 1, size, size)
 
-        y = np.concatenate((y_0, y), axis=1)
-        y[np.isnan(y)] = 0
-    else:  # takes the largest occurance of one class: y: [n, size, size]
-        x = np.concatenate((x_faint, x), axis=1)
-        y = np.empty((n, size, size), dtype="int8")
-        for i in range(n):
-            y[i] = np.argmax(x[i], axis=0)
+    noise = np.delete(x, (1, 2, 3), axis=1)
+
+    x_clean = np.delete(x, 0, axis=1)
+    x_clean_sum = np.sum(x_clean, axis=1, keepdims=True)
+    x_clean_max = np.max(x_clean_sum, axis=(1, 2, 3)).repeat(size**2).reshape((n, 1, size, size))
+
+    # first part of mask is for high-noise images, second is for low-noise images
+    # 0.317 is 1 - first sigma of norm. dist., 0.7 is empirical
+    mask = np.logical_and(x_clean_sum > 0.7 * noise, x_clean_sum > 0.317 * x_clean_max)
+
+    y_init = np.zeros_like(x)
+    y_init[:, 0] = 1
+
+    if mode == "noisy":
+        mask = mask.repeat(n_class, axis=1)
+        y = np.where(mask, x / (x_sum + epsilon), y_init)
+    elif mode == "clean":
+        y = np.where(mask.squeeze(), np.argmax(x_clean, axis=1) + 1, 0)
+        y = np.eye(n_class)[y].transpose(0, 3, 1, 2)
     return y
