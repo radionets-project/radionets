@@ -25,7 +25,7 @@ setup(
         "ipython",
         "jupyter",
         "jupytext",
-        "h5py == 3.0.0",
+        "h5py <= 3.0.0",
         "scikit-image",
         "pandas=",
         "requests",
