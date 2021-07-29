@@ -28,7 +28,7 @@ def flip_num(a, b):
         return b, a
 
 
-def create_pointsource(size=64, edge_factor=0.1):
+def create_pointsource(size=64, edge_factor=0.1, scale=False):
     """
     Creates very small sources.
 
@@ -42,6 +42,8 @@ def create_pointsource(size=64, edge_factor=0.1):
         If 0:  center of source can be on the edge
         If <0: center of source can be outside the image
         If >0: center of source is inside the image
+    scale: bool
+        The source will be scaled with the size of the image.
 
     Returns
     -------
@@ -49,14 +51,17 @@ def create_pointsource(size=64, edge_factor=0.1):
         2d array of size of image containing one point-source
     """
     mean = np.random.randint(size * edge_factor, size * (1 - edge_factor), size=2)
-    principal_scale = size ** 2 / np.random.uniform(10000, 30000)
+    if scale:
+        principal_scale = size ** 2 / np.random.uniform(10000, 30000)
+    else:
+        principal_scale = np.random.uniform(0.1, 0.4)
     cov = np.zeros((2, 2))
     cov[0][0] = np.random.uniform(1, 1.5) * principal_scale
     cov[1][1] = np.random.uniform(1, 1.5) * principal_scale
     cov[0][1] = np.random.uniform(-1, 1) * principal_scale / 5
     cov[1][0] = np.random.uniform(-1, 1) * principal_scale / 5
     gauss_size = int(
-        size * 100 * ((cov[0][0] + cov[1][1]) / 2 - abs((cov[0][1] + cov[0][1]) / 2))
+        4000 * (cov[0][0] + cov[1][1] - abs(cov[0][1] + cov[0][1]))
     )
     gauss = np.random.multivariate_normal(mean, cov, size=gauss_size)
     hist, _, _ = np.histogram2d(
@@ -65,7 +70,7 @@ def create_pointsource(size=64, edge_factor=0.1):
     return hist
 
 
-def create_gaussian(size=64, edge_factor=0.1):
+def create_gaussian(size=64, edge_factor=0.1, scale=False):
     """
     Creates large, mostly circular sources.
 
@@ -79,6 +84,8 @@ def create_gaussian(size=64, edge_factor=0.1):
         If 0:  center of source can be on the edge
         If <0: center of source can be outside the image
         If >0: center of source is inside the image
+    scale: bool
+        The source will be scaled with the size of the image.
 
     Returns
     -------
@@ -86,14 +93,17 @@ def create_gaussian(size=64, edge_factor=0.1):
         2d array of size of image containing one gauss-source
     """
     mean = np.random.randint(size * edge_factor, size * (1 - edge_factor), size=2)
-    principal_scale = size ** 2 / np.random.uniform(300, 1000)
+    if scale:
+        principal_scale = size ** 2 / np.random.uniform(400, 800)
+    else:
+        principal_scale = np.random.uniform(6, 10)
     cov = np.zeros((2, 2))
     cov[0][0] = np.random.uniform(1, 1.5) * principal_scale
     cov[1][1] = np.random.uniform(1, 1.5) * principal_scale
     cov[0][1] = np.random.uniform(-1, 1) * principal_scale / 5
     cov[1][0] = np.random.uniform(-1, 1) * principal_scale / 5
     gauss_size = int(
-        size * 50 * ((cov[0][0] + cov[1][1]) / 2 - abs((cov[0][1] + cov[0][1]) / 2))
+        2000 * (cov[0][0] + cov[1][1] - abs(cov[0][1] + cov[0][1]))
     )
     gauss = np.random.multivariate_normal(mean, cov, size=gauss_size)
     hist, _, _ = np.histogram2d(
@@ -102,7 +112,7 @@ def create_gaussian(size=64, edge_factor=0.1):
     return hist
 
 
-def create_elongated(size=64, edge_factor=0.1):
+def create_elongated(size=64, edge_factor=0.1, scale=False):
     """
     Creates large, elongated sources
 
@@ -116,6 +126,8 @@ def create_elongated(size=64, edge_factor=0.1):
         If 0:  center of source can be on the edge
         If <0: center of source can be outside the image
         If >0: center of source is inside the image
+    scale: bool
+        The source will be scaled with the size of the image.
 
     Returns
     -------
@@ -123,15 +135,18 @@ def create_elongated(size=64, edge_factor=0.1):
         2d array of size of image containing one elongated source
     """
     mean = np.random.randint(size * edge_factor, size * (1 - edge_factor), size=2)
-    principal_scale = size ** 2 / np.random.uniform(400, 1500)
+    if scale:
+        principal_scale = size ** 2 / np.random.uniform(200, 600)
+    else:
+        principal_scale = np.random.uniform(5, 10)
     cov = np.zeros((2, 2))
     cov[0][0] = np.random.uniform(1, 1.5) * principal_scale
-    cov[1][1] = np.random.uniform(0.2, 0.3) * principal_scale
+    cov[1][1] = np.random.uniform(0.15, 0.2) * principal_scale
     cov[0][0], cov[1][1] = flip_num(cov[0][0], cov[1][1])
     cov[0][1] = np.random.uniform(-1, 1) * principal_scale / 2
     cov[1][0] = np.random.uniform(-1, 1) * principal_scale / 2
     gauss_size = int(
-        size * 50 * ((cov[0][0] + cov[1][1]) / 2 - abs((cov[0][1] + cov[0][1]) / 2))
+        2000 * (cov[0][0] + cov[1][1] - abs(cov[0][1] + cov[0][1]))
     )
     gauss = np.random.multivariate_normal(mean, cov, size=gauss_size)
     hist, _, _ = np.histogram2d(
@@ -140,7 +155,7 @@ def create_elongated(size=64, edge_factor=0.1):
     return hist
 
 
-def create_image(size=64, noise=0, edge_factor=0.1):
+def create_image(size=64, noise=0, edge_factor=0.1, scale=False):
     """
     Combines the simulated sources and adds noise.
 
@@ -156,6 +171,8 @@ def create_image(size=64, noise=0, edge_factor=0.1):
         If 0:  center of source can be on the edge
         If <0: center of source can be outside the image
         If >0: center of source is inside the image
+    scale: bool
+        The source will be scaled with the size of the image.
 
     Returns
     -------
@@ -167,24 +184,31 @@ def create_image(size=64, noise=0, edge_factor=0.1):
     x1 = np.zeros((1, size, size))
     x2 = np.zeros((1, size, size))
     x_noise = np.zeros((1, size, size))
-    for i in range(np.random.randint(5, 10)):
+    if scale:
+        n_sources = 6
+    else:
+        n_sources = np.sqrt(size)
+    for i in range(np.random.randint(np.int(n_sources*0.75), np.int(n_sources*1.25))):
         r = np.random.randint(3)
         if r == 0:  # Class 1: Pointsource
-            x0 += create_pointsource(size, edge_factor).reshape(1, size, size)
+            x0 += create_pointsource(size, edge_factor, scale).reshape(1, size, size)
         if r == 1:  # Class 2: Gaussian
-            x1 += create_gaussian(size, edge_factor).reshape(1, size, size)
+            x1 += create_gaussian(size, edge_factor, scale).reshape(1, size, size)
         if r == 2:  # Class 3: Elongated Gaussian
-            x2 += create_elongated(size, edge_factor).reshape(1, size, size)
+            x2 += create_elongated(size, edge_factor, scale).reshape(1, size, size)
 
     x = np.concatenate((x0, x1, x2), axis=0)
     if noise > 0:
         # large values will increase structure in noise
-        noise_structure = 4
+        if scale:
+            noise_structure = size / 16
+        else:
+            noise_structure = 4
         size_ratio = size / noise_structure
         size_int = np.int(size_ratio)
         size_rescale = size_ratio / size_int * noise_structure
         size_noise = (1, size_int, size_int)
-        max_noise = noise * np.sum(x, axis=0).max()
+        max_noise = noise * np.max(x)
         # make noise strength random
         max_noise_rnd = np.random.uniform(0, max_noise)
         x_noise = np.random.uniform(0, max_noise_rnd, size=size_noise)
@@ -214,12 +238,13 @@ def create_data_bunch(config):
     size = config["image_options"]["img_size"]
     noise = config["image_options"]["noise_level"]
     edge_factor = config["image_options"]["edge_factor"]
+    scale = config["image_options"]["scale"]
     classes = config["gaussians"]
 
     n_to_sim = np.int(np.ceil(n / 8))
     x = np.empty((n_to_sim * 8, len(classes) + 1, size, size), dtype="int16")
     for i in range(n_to_sim):
-        x[i*8] = create_image(size, noise, edge_factor)
+        x[i*8] = create_image(size, noise, edge_factor, scale)
         x[i*8+1] = np.flip(x[i*8], axis=1)
         x[i*8+2] = np.flip(x[i*8], axis=2)
         x[i*8+3] = np.flip(x[i*8], axis=(1, 2))
