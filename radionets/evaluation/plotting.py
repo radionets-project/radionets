@@ -352,25 +352,25 @@ def visualize_source_reconstruction(
 ):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
-    # x_space = torch.arange(0, 511, 1)
+    x_space = torch.arange(0, 511, 1)
 
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
-    # ax1.plot(
-    #     x_space,
-    #     m_pred * x_space + n_pred,
-    #     "w-",
-    #     alpha=0.5,
-    #     label=fr"$\alpha = {np.round(alpha_pred[0], 3)}\,$deg",
-    # )
+    ax1.plot(
+        x_space,
+        m_pred * x_space + n_pred,
+        "w-",
+        alpha=0.5,
+        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}\,$deg",
+    )
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
-    # ax2.plot(
-    #     x_space,
-    #     m_truth * x_space + n_truth,
-    #     "w-",
-    #     alpha=0.5,
-    #     label=fr"$\alpha = {np.round(alpha_truth[0], 3)}\,$deg",
-    # )
+    ax2.plot(
+        x_space,
+        m_truth * x_space + n_truth,
+        "w-",
+        alpha=0.5,
+        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}\,$deg",
+    )
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
@@ -413,8 +413,8 @@ def visualize_source_reconstruction(
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
-    # ax1.legend(loc="best")
-    # ax2.legend(loc="best")
+    ax1.legend(loc="best")
+    ax2.legend(loc="best")
     fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     plt.close('all')
