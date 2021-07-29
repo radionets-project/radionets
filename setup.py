@@ -27,7 +27,7 @@ setup(
         "jupytext",
         "h5py <= 3.0.0",
         "scikit-image",
-        "pandas=",
+        "pandas",
         "requests",
         "toml",
         "pytest",
