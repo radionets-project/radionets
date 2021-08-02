@@ -11,7 +11,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "fastai <= 2.3.0",
-        "fastcore==1.3.1",
+        "fastcore <= 1.3.1",
         "kornia",
         "pytorch-msssim",
         "numpy",
@@ -25,7 +25,7 @@ setup(
         "ipython",
         "jupyter",
         "jupytext",
-        "h5py",
+        "h5py==3.0.0",
         "scikit-imag",
         "pandas",
         "requests",
