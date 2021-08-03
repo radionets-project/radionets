@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="radionets",
-    version="0.1.5",
+    version="0.1.6",
     description="Imaging radio interferometric data with neural networks",
     url="https://github.com/Kevin2/radionets",
     author="Kevin Schmidt, Felix Geyer, Kevin Laudamus",
