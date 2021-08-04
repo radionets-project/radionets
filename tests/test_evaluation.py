@@ -181,7 +181,7 @@ class TestEvaluation:
             (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
         )
 
-        eig_vals_torch, eig_vecs_torch = torch.symeig(cov_w, eigenvectors=True)
+        eig_vals_torch, eig_vecs_torch = torch.linalg.eigh(cov_w, UPLO='U')
 
         assert eig_vals_torch.shape == (10, 2)
         assert eig_vecs_torch.shape == (10, 2, 2)
