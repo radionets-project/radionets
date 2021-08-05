@@ -15,7 +15,7 @@ from radionets.evaluation.plotting import (
     histogram_area,
     plot_contour,
     hist_point,
-    plot_radius_point,
+    plot_length_point,
 )
 from radionets.evaluation.utils import (
     create_databunch,
@@ -530,10 +530,13 @@ def evaluate_point(conf):
         lengths += list(length)
 
     vals = np.concatenate(vals).ravel()
+    lengths = np.array(lengths, dtype="object")
+    mask = lengths < 10
+
     click.echo("\nCreating pointsources histogram.\n")
-    hist_point(vals, out_path, plot_format=conf["format"])
+    hist_point(vals, mask, out_path, plot_format=conf["format"])
     click.echo(f"\nThe mean flux difference is {vals.mean()}.\n")
     click.echo("\nCreating linear extent-mean flux diff plot.\n")
-    plot_radius_point(
-        lengths, vals, out_path, plot_format=conf["format"]
+    plot_length_point(
+        lengths, vals, mask, out_path, plot_format=conf["format"]
     )
