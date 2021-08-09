@@ -704,8 +704,8 @@ def hist_point(vals, mask, out_path, plot_format="png"):
     ax1.legend(
         [extra_1, extra_2],
         [
-            f"Point: $({mean_point}\pm{std_point})\,\%$",
-            f"Extent: $({mean_extent}\pm{std_extent})\,\%$",
+            fr"Point: $({mean_point}\pm{std_point})\,\%$",
+            fr"Extent: $({mean_extent}\pm{std_extent})\,\%$",
         ],
     )
     outpath = str(out_path) + f"/hist_point.{plot_format}"
