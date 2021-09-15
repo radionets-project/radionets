@@ -131,7 +131,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
             orientation="vertical",
             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
-        cbar.set_label("Specific Intensity / a.u.")
+        cbar.set_label("Phase / rad")
     elif phase_diff:
         cbar = fig.colorbar(
             im,
