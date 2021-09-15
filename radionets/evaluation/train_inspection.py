@@ -14,6 +14,8 @@ from radionets.evaluation.plotting import (
     histogram_mean_diff,
     histogram_area,
     plot_contour,
+    hist_point,
+    plot_length_point,
 )
 from radionets.evaluation.utils import (
     create_databunch,
@@ -30,6 +32,7 @@ from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
 from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 from radionets.evaluation.contour import area_of_contour
+from radionets.evaluation.pointsources import flux_comparison
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 
@@ -235,7 +238,11 @@ def create_contour_plots(conf, num_images=3, rand=False):
 
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
         plot_contour(
-            pred, truth, out_path, i, plot_format=conf["format"],
+            pred,
+            truth,
+            out_path,
+            i,
+            plot_format=conf["format"],
         )
 
 
@@ -260,7 +267,6 @@ def evaluate_viewing_angle(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
         pred = eval_model(img_test, model)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
@@ -280,7 +286,10 @@ def evaluate_viewing_angle(conf):
 
     click.echo("\nCreating histogram of jet angles.\n")
     histogram_jet_angles(
-        alpha_truths, alpha_preds, out_path, plot_format=conf["format"],
+        alpha_truths,
+        alpha_preds,
+        out_path,
+        plot_format=conf["format"],
     )
 
 
@@ -329,7 +338,10 @@ def evaluate_dynamic_range(conf):
 
     click.echo("\nCreating histogram of dynamic ranges.\n")
     histogram_dynamic_ranges(
-        dr_truths, dr_preds, out_path, plot_format=conf["format"],
+        dr_truths,
+        dr_preds,
+        out_path,
+        plot_format=conf["format"],
     )
 
 
@@ -382,7 +394,9 @@ def evaluate_ms_ssim(conf):
     click.echo("\nCreating ms-ssim histogram.\n")
     vals = torch.tensor(vals)
     histogram_ms_ssim(
-        vals, out_path, plot_format=conf["format"],
+        vals,
+        out_path,
+        plot_format=conf["format"],
     )
 
     click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
@@ -427,7 +441,9 @@ def evaluate_mean_diff(conf):
     click.echo("\nCreating mean_diff histogram.\n")
     vals = torch.tensor(vals) * 100
     histogram_mean_diff(
-        vals, out_path, plot_format=conf["format"],
+        vals,
+        out_path,
+        plot_format=conf["format"],
     )
 
     click.echo(f"\nThe mean difference is {vals.mean()}.\n")
@@ -469,7 +485,58 @@ def evaluate_area(conf):
     click.echo("\nCreating eval_area histogram.\n")
     vals = torch.tensor(vals)
     histogram_area(
-        vals, out_path, plot_format=conf["format"],
+        vals,
+        out_path,
+        plot_format=conf["format"],
     )
 
     click.echo(f"\nThe mean area ratio is {vals.mean()}.\n")
+
+
+def evaluate_point(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["model_path_2"] != "none":
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    vals = []
+    lengths = []
+
+    for i, (img_test, img_true, source_list) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["model_path_2"] != "none":
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        fluxes_pred, fluxes_truth, length = flux_comparison(
+            ifft_pred, ifft_truth, source_list
+        )
+        val = ((fluxes_pred - fluxes_truth) / fluxes_truth) * 100
+        vals += list(val)
+        lengths += list(length)
+
+    vals = np.concatenate(vals).ravel()
+    lengths = np.array(lengths, dtype="object")
+    mask = lengths < 10
+
+    click.echo("\nCreating pointsources histogram.\n")
+    hist_point(vals, mask, out_path, plot_format=conf["format"])
+    click.echo(f"\nThe mean flux difference is {vals.mean()}.\n")
+    click.echo("\nCreating linear extent-mean flux diff plot.\n")
+    plot_length_point(
+        lengths, vals, mask, out_path, plot_format=conf["format"]
+    )
