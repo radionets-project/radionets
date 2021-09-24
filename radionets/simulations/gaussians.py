@@ -13,34 +13,20 @@ def simulate_gaussian_sources(
     bundle_size,
     img_size,
     num_comp_ext,
-    num_pointlike,
-    num_pointsources,
     noise,
     noise_level,
     source_list,
 ):
     for i in tqdm(range(num_bundles)):
         grid = create_grid(img_size, bundle_size)
-        ext_gaussian = 0
-        pointlike = 0
-        pointsource = 0
         list_sources = None
 
         if num_comp_ext is not None:
-            ext_gaussian = create_ext_gauss_bundle(grid)
-        if num_pointlike is not None:
-            pointlike = create_gauss(
-                grid[:, 0], bundle_size, num_pointlike, True, source_list
-            )
-        if num_pointsources is not None:
-            pointsource = gauss_pointsources(
-                grid[:, 0], bundle_size, num_pointsources, source_list
-            )
-        if source_list:
-            list_sources = pointsource[1]
-            pointsource = pointsource[0]
+            bundle = create_ext_gauss_bundle(grid)
 
-        bundle = ext_gaussian + pointlike + pointsource
+        if source_list:
+            print("Not implemented warning!")
+
         images = bundle.copy()
 
         if noise:

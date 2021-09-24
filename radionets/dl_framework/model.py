@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 from pathlib import Path
 from math import sqrt, pi
-from fastcore.foundation import L
 
 
 class Lambda(nn.Module):
@@ -263,25 +262,22 @@ def load_pre_model(learn, pre_path, visualize=False):
     """
     name_pretrained = Path(pre_path).stem
     print("\nLoad pretrained model: {}\n".format(name_pretrained))
-    checkpoint = torch.load(pre_path)
+    if torch.cuda.is_available():
+        checkpoint = torch.load(pre_path)
+    else:
+        checkpoint = torch.load(pre_path, map_location=torch.device("cpu"))
 
     if visualize:
         learn.load_state_dict(checkpoint["model"])
-
     else:
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
-        learn.loss = checkpoint["loss"]
         learn.avg_loss.loss_train = checkpoint["train_loss"]
         learn.avg_loss.loss_valid = checkpoint["valid_loss"]
         learn.avg_loss.lrs = checkpoint["lrs"]
         learn.recorder.iters = checkpoint["iters"]
         learn.recorder.values = checkpoint["vals"]
-        learn.recorder.train_losses = checkpoint["recorder_train_loss"]
-        learn.recorder.valid_losses = checkpoint["recorder_valid_loss"]
-        learn.recorder.losses = checkpoint["recorder_losses"]
-        learn.recorder.lrs = checkpoint["recorder_lrs"]
 
 
 def save_model(learn, model_path):
@@ -290,16 +286,11 @@ def save_model(learn, model_path):
             "model": learn.model.state_dict(),
             "opt": learn.opt.state_dict(),
             "epoch": learn.epoch,
-            "loss": learn.loss,
             "iters": learn.recorder.iters,
             "vals": learn.recorder.values,
             "train_loss": learn.avg_loss.loss_train,
             "valid_loss": learn.avg_loss.loss_valid,
             "lrs": learn.avg_loss.lrs,
-            "recorder_train_loss": L(learn.recorder.values[0:]).itemgot(0),
-            "recorder_valid_loss": L(learn.recorder.values[0:]).itemgot(1),
-            "recorder_losses": learn.recorder.losses,
-            "recorder_lrs": learn.recorder.lrs,
         },
         model_path,
     )

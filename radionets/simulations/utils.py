@@ -104,25 +104,15 @@ def read_config(config):
         click.echo("Create fft_images from gaussian data set! \n")
 
         sim_conf["type"] = "gaussians"
-        if config["gaussians"]["pointsources"]:
-            sim_conf["num_pointsources"] = config["gaussians"]["num_pointsources"]
-            click.echo("Adding pointsources.")
-        else:
-            sim_conf["num_pointsources"] = None
+        sim_conf["num_components"] = config["gaussians"]["num_components"]
+        click.echo("Adding extended gaussian sources.")
 
-        if config["gaussians"]["pointlike_gaussians"]:
-            sim_conf["num_pointlike_gaussians"] = config["gaussians"][
-                "num_pointlike_gaussians"
-            ]
-            click.echo("Adding pointlike gaussians.")
-        else:
-            sim_conf["num_pointlike_gaussians"] = None
+    if config["point_sources"]["simulate"]:
+        click.echo("Create fft_images from point source data set! \n")
 
-        if config["gaussians"]["extended_gaussians"]:
-            sim_conf["num_components"] = config["gaussians"]["num_components"]
-            click.echo("Adding extended gaussian sources.")
-        else:
-            sim_conf["num_components"] = None
+        sim_conf["type"] = "point_sources"
+        sim_conf["add_extended"] = config["point_sources"]["add_extended"]
+        click.echo("Adding point sources.")
 
     sim_conf["bundles_train"] = config["image_options"]["bundles_train"]
     sim_conf["bundles_valid"] = config["image_options"]["bundles_valid"]

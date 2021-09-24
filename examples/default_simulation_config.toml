@@ -15,12 +15,11 @@ resource = "../../resources/mnist.pkl.gz"
 
 [gaussians]
 simulate = true
-pointsources = false
-num_pointsources = 10
-pointlike_gaussians = false
-num_pointlike_gaussians = 5
-extended_gaussians = true
 num_components = [4, 10]
+
+[point_sources]
+simulate = true
+add_extended = true
 
 [image_options]
 bundles_train = 5

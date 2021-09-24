@@ -55,7 +55,7 @@ def pca(image):
         (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
     )
 
-    eig_vals_torch, eig_vecs_torch = torch.symeig(cov_w, eigenvectors=True)
+    eig_vals_torch, eig_vecs_torch = torch.linalg.eigh(cov_w, UPLO="U")
 
     psi_torch = torch.atan(eig_vecs_torch[:, 1, 1] / eig_vecs_torch[:, 0, 1])
 
@@ -83,7 +83,7 @@ def calc_jet_angle(image):
         image = torch.tensor(image)
     image = image.clone()
     img_size = image.shape[-1]
-    # ignore negagive pixels, which can appear in predictions
+    # ignore negative pixels, which can appear in predictions
     image[image < 0] = 0
 
     if len(image.shape) == 2:
