@@ -153,7 +153,6 @@ def splitted_L1(x, y):
     loss_amp = l1(inp_amp, tar_amp)
     loss_phase = l1(inp_phase, tar_phase)
     loss = loss_amp * 10 + loss_phase
-    print(loss)
     return loss
 
 
