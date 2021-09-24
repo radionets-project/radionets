@@ -239,5 +239,6 @@ def load_data(data_path, mode, fourier=False, source_list=False):
     data = np.sort(
         [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
     )
+    data = sorted(data, key=lambda f: int(''.join(filter(str.isdigit, str(f)))))
     ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)
     return ds
