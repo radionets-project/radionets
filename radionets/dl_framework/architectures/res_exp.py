@@ -18,7 +18,7 @@ class SRResNet_small(nn.Module):
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
         )
 
-        # ResBlock 6
+        # ResBlock 14
         self.blocks = nn.Sequential(
             SRBlock(64, 64),
             SRBlock(64, 64),
@@ -82,7 +82,7 @@ class SRResNet_bigger(nn.Module):
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
         )
 
-        # ResBlock 4
+        # ResBlock 8
         self.blocks = nn.Sequential(
             SRBlock(64, 64),
             SRBlock(64, 64),
@@ -95,7 +95,7 @@ class SRResNet_bigger(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=True), nn.BatchNorm2d(64)
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
         self.final = nn.Sequential(
@@ -130,7 +130,7 @@ class SRResNet_amp(nn.Module):
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
         )
 
-        # ResBlock 4
+        # ResBlock 16
         self.blocks = nn.Sequential(
             SRBlock(64, 64),
             SRBlock(64, 64),
@@ -151,7 +151,7 @@ class SRResNet_amp(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=True), nn.BatchNorm2d(64)
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
         self.final = nn.Sequential(
@@ -182,7 +182,7 @@ class SRResNet_phase(nn.Module):
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
         )
 
-        # ResBlock 4
+        # ResBlock 16
         self.blocks = nn.Sequential(
             SRBlock(64, 64),
             SRBlock(64, 64),
@@ -203,7 +203,7 @@ class SRResNet_phase(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=True), nn.BatchNorm2d(64)
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
         self.final = nn.Sequential(
@@ -238,7 +238,7 @@ class SRResNet_unc(nn.Module):
             nn.Conv2d(2, n_channel, 9, stride=1, padding=4, groups=2), nn.PReLU()
         )
 
-        # ResBlock 4
+        # ResBlock 8
         self.blocks = nn.Sequential(
             SRBlock(n_channel, n_channel),
             SRBlock(n_channel, n_channel),
@@ -251,7 +251,7 @@ class SRResNet_unc(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(n_channel, n_channel, 3, stride=1, padding=1),
+            nn.Conv2d(n_channel, n_channel, 3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(n_channel),
         )
 
@@ -292,7 +292,7 @@ class SRResNet_unc_amp(nn.Module):
             nn.Conv2d(1, n_channel, 9, stride=1, padding=4, groups=1), nn.PReLU()
         )
 
-        # ResBlock 4
+        # ResBlock 8
         self.blocks = nn.Sequential(
             SRBlock(n_channel, n_channel),
             SRBlock(n_channel, n_channel),
@@ -305,7 +305,7 @@ class SRResNet_unc_amp(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(n_channel, n_channel, 3, stride=1, padding=1),
+            nn.Conv2d(n_channel, n_channel, 3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(n_channel),
         )
 
@@ -343,7 +343,7 @@ class SRResNet_unc_phase(nn.Module):
             nn.Conv2d(1, n_channel, 9, stride=1, padding=4, groups=1), nn.PReLU()
         )
 
-        # ResBlock 4
+        # ResBlock 8
         self.blocks = nn.Sequential(
             SRBlock(n_channel, n_channel),
             SRBlock(n_channel, n_channel),
@@ -356,7 +356,7 @@ class SRResNet_unc_phase(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(n_channel, n_channel, 3, stride=1, padding=1),
+            nn.Conv2d(n_channel, n_channel, 3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(n_channel),
         )
 
