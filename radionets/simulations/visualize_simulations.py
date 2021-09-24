@@ -222,9 +222,8 @@ def plot_spectrum_grey(img1, img2, out_path=None):
     ax2.set_xlabel("u")
     ax2.set_ylabel("v")
 
-    # fig.subplots_adjust(wspace=0.2)
     fig.tight_layout(pad=0)
-    # fig.subplots_adjust(wspace=0.5)
+    fig.subplots_adjust(wspace=0.5)
 
     if out_path is not None:
         plt.savefig(out_path, dpi=600, bbox_inches="tight")
