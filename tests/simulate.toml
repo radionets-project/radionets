@@ -43,3 +43,4 @@ compressed = false
 keep_fft_files = true
 source_list = false
 interpolation = true
+multi_channel= false
