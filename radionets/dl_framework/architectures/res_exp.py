@@ -10,7 +10,7 @@ from functools import partial
 from math import pi
 
 
-class SRResNet_small(nn.Module):
+class SRResNet_shuffle(nn.Module):
     def __init__(self):
         super().__init__()
 
