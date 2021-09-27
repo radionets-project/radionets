@@ -64,8 +64,10 @@ class SRResNet_shuffle(nn.Module):
 
         x = self.final(x)
 
-        x0 = self.symmetry_amp(x[:, 0]).reshape(-1, 1, 189, 189)
-        x1 = self.symmetry_imag(x[:, 1]).reshape(-1, 1, 189, 189)
+        s = x.shape[-1]
+
+        x0 = self.symmetry_amp(x[:, 0]).reshape(-1, 1, s, s)
+        x1 = self.symmetry_imag(x[:, 1]).reshape(-1, 1, s, s)
         x1 = self.hardtanh(x1)
 
         return torch.cat([x0, x1], dim=1)
