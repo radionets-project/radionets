@@ -44,9 +44,6 @@ class SRResNet_shuffle(nn.Module):
             nn.Conv2d(64, 252, 3, stride=1, padding=1, bias=True),
             nn.PixelShuffle(3),
             nn.PReLU(),
-            # nn.Conv2d(28, 252, 3, stride=1, padding=1, bias=True),
-            # nn.PixelShuffle(3),
-            # nn.PReLU(),
         )
 
         self.final = nn.Sequential(
