@@ -98,11 +98,14 @@ def calc_jet_angle(image):
 
     _, _, alpha_pca = pca(image)
 
-    x_mid = torch.ones(img_size, img_size).shape[0] // 2
-    y_mid = torch.ones(img_size, img_size).shape[1] // 2
+    vals = torch.tensor(
+        [torch.where(image[i] == image[i].max()) for i in range(image.shape[0])]
+    )
+    x_mid = vals[:, 0]
+    y_mid = vals[:, 1]
 
     m = torch.tan(pi / 2 - alpha_pca)
-    n = torch.tensor(y_mid) - m * torch.tensor(x_mid)
+    n = y_mid - m * x_mid
     alpha = (alpha_pca) * 180 / pi
     return m, n, alpha
 
