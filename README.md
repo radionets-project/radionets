@@ -66,7 +66,7 @@ methods computing characteristic values on large test datasets. In detail:
 * Reconstructed source images with additional features, such as MS-SSIM values or the viewing angle. Example image below.
 ![](resources/source_plot.png)
 * Histogram of differences between predicted and true viewing angles on a dedicated test dataset. Example image below.
-![](resources/hist_jet_axis.png)
+![](resources/hist_jet_offsets.png)
 * Histogram of ratio between predicted and true source areas on a dedicated test dataset. Example image below.
 ![](resources/hist_area_ratios.png)
 * Histogram of flux difference in core component on a dedicated test dataset. Example image below.
