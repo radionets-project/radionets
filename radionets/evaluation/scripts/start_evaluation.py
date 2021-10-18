@@ -35,7 +35,7 @@ def main(configuration_path):
     for entry in conf["inspection"]:
         if (
             conf["inspection"][entry] is not False
-            and isinstance(conf["inspection"][entry], bool)
+            # and isinstance(conf["inspection"][entry], bool)
             and entry != "random"
         ):
             if (
