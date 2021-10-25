@@ -295,9 +295,9 @@ class TestEvaluation:
         from click.testing import CliRunner
         from radionets.evaluation.scripts.start_evaluation import main
 
-        # runner = CliRunner()
-        # result = runner.invoke(main, "tests/evaluate.toml")
-        # assert result.exit_code == 0
+        runner = CliRunner()
+        result = runner.invoke(main, "tests/evaluate.toml")
+        assert result.exit_code == 0
 
         if os.path.exists("tests/model/evaluation"):
             shutil.rmtree("tests/model/evaluation")
