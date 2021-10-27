@@ -10,7 +10,6 @@ import pandas as pd
 from tqdm import tqdm
 from scipy import interpolate
 from skimage.transform import resize
-from scipy import interpolate
 from radionets.dl_framework.data import (
     save_fft_pair,
     open_fft_pair,
@@ -295,11 +294,7 @@ def calc_norm(sim_conf):
     stds_imag = np.array([])
 
     for path in tqdm(bundle_paths):
-        # distinguish between compressed (.npz) and not compressed (.h5) files
-        if re.search(".npz", str(path)):
-            x, _ = open_fft_pair_npz(path)
-        else:
-            x, _ = open_fft_pair(path)
+        x, _ = open_fft_pair(path)
         x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
         mean_amp, std_amp = mean_and_std(x_amp)
         mean_imag, std_imag = mean_and_std(x_imag)
