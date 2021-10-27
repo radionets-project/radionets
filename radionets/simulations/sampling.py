@@ -48,8 +48,11 @@ def sample_frequencies(
             size = fft.shape[-1]
 
             fft_scaled = prepare_fft_images(fft.copy(), amp_phase, real_imag)
+            # truth_fft = np.array(
+            #     [np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(img))) for img in truth]
+            # )
             truth_fft = np.array(
-                [np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(img))) for img in truth]
+                [np.fft.fft2(img) for img in truth]
             )
             fft_scaled_truth = prepare_fft_images(truth_fft, amp_phase, real_imag)
 
