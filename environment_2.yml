@@ -188,4 +188,4 @@ dependencies:
     - webencodings==0.5.1
     - werkzeug==2.0.1
     - widgetsnbextension==3.5.1
-prefix: /home/felix/.local/anaconda3/envs/radionets
+    - -e .
