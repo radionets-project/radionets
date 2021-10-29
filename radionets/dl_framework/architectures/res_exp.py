@@ -178,7 +178,7 @@ class SRResNet_amp(nn.Module):
         super().__init__()
 
         self.preBlock = nn.Sequential(
-            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+            nn.Conv2d(1, 64, 9, stride=1, padding=4, groups=1), nn.PReLU()
         )
 
         # ResBlock 16
@@ -191,14 +191,14 @@ class SRResNet_amp(nn.Module):
             SRBlock(64, 64),
             SRBlock(64, 64),
             SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
         )
 
         self.postBlock = nn.Sequential(
@@ -212,6 +212,7 @@ class SRResNet_amp(nn.Module):
         self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
 
     def forward(self, x):
+        x = x[:, 0].unsqueeze(1)
         s = x.shape[-1]
 
         x = self.preBlock(x)
@@ -230,7 +231,7 @@ class SRResNet_phase(nn.Module):
         super().__init__()
 
         self.preBlock = nn.Sequential(
-            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+            nn.Conv2d(1, 64, 9, stride=1, padding=4, groups=1), nn.PReLU()
         )
 
         # ResBlock 16
@@ -243,14 +244,14 @@ class SRResNet_phase(nn.Module):
             SRBlock(64, 64),
             SRBlock(64, 64),
             SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
         )
 
         self.postBlock = nn.Sequential(
@@ -265,6 +266,7 @@ class SRResNet_phase(nn.Module):
         self.hardtanh = nn.Hardtanh(-pi, pi)
 
     def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
         s = x.shape[-1]
 
         x = self.preBlock(x)
