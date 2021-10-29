@@ -23,7 +23,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          $CONDA/bin/conda env update --file environment.yml --name base
+          $CONDA/bin/conda env update --file environment_2.yml --name base
       
       - name: tests
         run: |
