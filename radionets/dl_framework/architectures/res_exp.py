@@ -94,7 +94,7 @@ class SRResNet_bigger(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(64, 64, 3, stride=1, padding=1), nn.BatchNorm2d(64)
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
         self.final = nn.Sequential(
