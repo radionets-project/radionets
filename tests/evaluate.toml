@@ -8,7 +8,7 @@ gpu = false
 
 [paths]
 data_path = "./tests/build/data/"
-model_path = "./tests/model/test_fix_2.model"
+model_path = "./tests/model/save.model"
 model_path_2 = "none"
 norm_path = "none"
 
