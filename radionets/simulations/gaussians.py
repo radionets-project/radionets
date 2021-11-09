@@ -366,8 +366,7 @@ def create_gauss(img, N, sources, source_list, img_size=63, diffuse = False, bbo
          sy = sx
     else:    
         amp = (
-        np.random.randint(10, 100, size=(N))# * 1 / 10 * np.random.randint(5, 10)
-        )# / 1e2
+        np.random.randint(20, 150, size=(N)))# was 10, 100
         if spherical:
             sx = np.random.uniform(1/2*(img_size**2)/720, 2*(img_size**2)/360, size=(N, sources))
             sy = sx

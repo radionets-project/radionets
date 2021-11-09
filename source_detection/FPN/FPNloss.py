@@ -57,11 +57,11 @@ class detectionLoss(nn.Module):                 #0.6                 #9         
             
             overlap_for_each_prior[prior_for_each_object] = 1.
             label_for_each_prior = data_labels[image_i][0][0][object_for_each_prior]#very ugly shapes watch out
-            label_for_each_prior[overlap_for_each_prior < self.threshold] = 2 #nodiff
+            label_for_each_prior[overlap_for_each_prior < self.threshold] = 1 #nodiff
             true_classes[image_i] = label_for_each_prior
             
             true_locs[image_i] = center_to_offset(boundary_to_center(data_locs[image_i][0][object_for_each_prior]), self.priors_cxcy)
-        positive_priors = true_classes != 2 #nodiff
+        positive_priors = true_classes != 1 #nodiff
         loc_loss = self.smooth_l1(predicted_locs[positive_priors], true_locs[positive_priors])
         n_positives = positive_priors.sum(dim = 1)
         n_hard_negatives = self.neg_pos_ratio * n_positives

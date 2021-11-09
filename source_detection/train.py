@@ -7,8 +7,9 @@ from source_detection.model import SSD300
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-path = get_bundles('//net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/train/')
-iterations = 240000
+path = get_bundles('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/september/ssd')
+valid_path = get_bundles('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/september/valid')
+iterations = 120000
 n_classes = 5 #nodiff
 checkpoint = None
 #checkpoint = '/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300_e120.pth.tar'
@@ -155,6 +156,11 @@ def main():
                                                shuffle = True,
                                                collate_fn = train_dataset.collate_fn)
     
+    valid_dataset = detect_dataset(valid_path)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size,
+                                               shuffle = True,
+                                               collate_fn = valid_dataset.collate_fn)
+    
     epochs = iterations//(len(train_dataset)//batch_size) 
     decay_lr_at = [it // (len(train_dataset)//batch_size) for it in decay_lr_at]
     
@@ -163,42 +169,57 @@ def main():
         if epoch in decay_lr_at:
             adjust_learning_rate(optimizer, decay_lr_to) 
         
-        train(train_loader, model, loss_function, optimizer, epoch)
-        
+        train(valid_loader, model, loss_function, optimizer, epoch, valid = True)
+        train(train_loader, model, loss_function, optimizer, epoch, valid = False)
         print("Epoch:", epoch)
         
         if epoch % 10 == 0:
-            save_checkpoint(epoch, model, optimizer,'/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300' + '_e' + str(epoch)+'.pth.tar')
-        save_checkpoint(epoch, model, optimizer,'/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/checkpoints/checkpoint_ssd300.pth.tar')# apparently not defined
+            save_checkpoint(epoch, model, optimizer,'/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/september/ssdcheckpoints/checkpoint_ssd300' + '_e' + str(epoch)+'.pth.tar')
+        save_checkpoint(epoch, model, optimizer,'/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/september/ssdcheckpoints/checkpoint_ssd300.pth.tar')# apparently not defined
 
 
-def train(data_loader, model, loss_function, optimizer, epochs):
-    
-    model.train()
-    losses = np.zeros(1877)
-    for i, (images, boxes, labels) in enumerate(data_loader):
-        images = images.to('cuda')
-        
-        predicted_locs, predicted_classes_scores= model(images)
-        loss = loss_function(predicted_locs, predicted_classes_scores,
-                    boxes, labels)
-        
-        
-            
-        losses[i] = loss
-        #print('i', i, 'Loss:',loss)
-        optimizer.zero_grad()
-        loss.backward()
-        
-        if grad_clip is not None:
-            clip_gradient(optimizer, grad_clip)
-        
-        optimizer.step()
-        
-    print('Average Loss', np.average(losses))
-    f = open('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/loss.txt', "a")
-    f.write(str(epochs) + '\t' + str(np.average(losses)) +'\n')
-    f.close()
+def train(data_loader, model, loss_function, optimizer, epochs, valid):
+    if valid == False:
+        model.train()
+        losses = np.zeros(939)  
+        for i, (images, boxes, labels) in enumerate(data_loader):
+                images = images.to('cuda')
+
+                predicted_locs, predicted_classes_scores= model(images)
+                loss = loss_function(predicted_locs, predicted_classes_scores,
+                            boxes, labels)
+                losses[i] = loss
+                optimizer.zero_grad()
+                loss.backward()
+
+                if grad_clip is not None:
+                    clip_gradient(optimizer, grad_clip)
+                optimizer.step() 
+    else:
+        model.eval()
+        valid_losses = np.zeros(236)   
+        with torch.no_grad():
+            for i, (images, boxes, labels) in enumerate(data_loader):
+                images = images.to('cuda')
+
+                predicted_locs, predicted_classes_scores= model(images)
+                loss = loss_function(predicted_locs, predicted_classes_scores,
+                            boxes, labels)
+                valid_losses[i] = loss
+#    print('Average Loss', np.average(losses))
+    if valid == False:
+        #print('train',loss)
+        f = open('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/september/ssdloss.txt', "a")
+        f.write(str(epochs) + '\t' + str(np.average(losses)) +'\n')
+        f.close()
+        print('Average train Loss',str(np.average(losses)))
+    else:
+        #print('valid',loss)
+        f = open('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/september/valid_ssdloss.txt', "a")
+        f.write(str(epochs) + '\t' + str(np.average(valid_losses)) +'\n')
+        f.close()
+        print('Average valid Loss',str(np.average(valid_losses)))
+
     del predicted_locs, predicted_classes_scores, images, boxes, labels
 
 
@@ -227,3 +248,33 @@ def clip_gradient(optimizer, grad_clip):
         for param in group['params']:
             if param.grad is not None:
                 param.grad.data.clamp_(-grad_clip, grad_clip)
+
+
+def old_train(data_loader, model, loss_function, optimizer, epochs):
+    
+    model.train()
+    losses = np.zeros(939)
+    for i, (images, boxes, labels) in enumerate(data_loader):
+        images = images.to('cuda')
+        
+        predicted_locs, predicted_classes_scores= model(images)
+        loss = loss_function(predicted_locs, predicted_classes_scores,
+                    boxes, labels)
+        
+        
+            
+        losses[i] = loss
+        print('i', i, 'Loss:',loss)
+        optimizer.zero_grad()
+        loss.backward()
+        
+        if grad_clip is not None:
+            clip_gradient(optimizer, grad_clip)
+        
+        optimizer.step()
+        
+    #print('Average Loss', np.average(losses))
+    #f = open('/net/big-tank/POOL/users/pblomenkamp/radionets/objectdetection/loss.txt', "a")
+    #f.write(str(epochs) + '\t' + str(np.average(losses)) +'\n')
+    #f.close()
+    del predicted_locs, predicted_classes_scores, images, boxes, labels
