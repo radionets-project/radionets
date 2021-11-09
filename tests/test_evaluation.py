@@ -276,8 +276,8 @@ class TestEvaluation:
 
         assert ~np.isnan(blobs_pred).any()
         assert ~np.isnan(blobs_truth).any()
-        assert blobs_pred.all() > 0
-        assert blobs_truth.all() > 0
+        assert blobs_pred.all() >= 0
+        assert blobs_truth.all() >= 0
         assert len(blobs_truth[0]) == 3
 
         flux_pred, flux_truth = crop_first_component(
