@@ -625,9 +625,12 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
 
 
 def histogram_mean_diff(vals, out_path, plot_format="png"):
+    vals = vals.numpy()
+    mean = np.round(np.mean(vals), 3)
+    std = np.round(np.std(vals, ddof=1), 3)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals.numpy(),
+        vals,
         51,
         color="darkorange",
         linewidth=3,
@@ -636,6 +639,9 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     )
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
 
     fig.tight_layout()
 
