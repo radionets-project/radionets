@@ -24,9 +24,9 @@ def image_eval(image): #Evaluate an image with PyBDSF
     img = bdsf.process_image('./temp.fits', rms_map = True)
     img.show_fit()
     img.export_image(img_format = 'fits', img_type = 'gaus_model')
+
     
-    
-    
+
 def precisioneval(sdcset_path):
     #Evaluates an entire SKA Data Challenge Dataset. PyBDSF detections are made on every image and are evaluated. If the predicted source position is further away than 5% of the image resolution, the detection is considered a false positive.
     #Creates a temporary FITS file to since PyBDSF only accepts those.
