@@ -288,7 +288,7 @@ def visualize_with_fourier_diff(
 
     if amp_phase:
         real_pred = 10 ** (10 * real_pred - 10) - 1e-10
-        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
+        real_truth = 10 ** (10 * np.array(real_truth, dtype="float128") - 10) - 1e-10
 
     # plotting
     # plt.style.use('./paper_large_3_2.rc')
