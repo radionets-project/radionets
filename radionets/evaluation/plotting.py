@@ -676,6 +676,10 @@ def histogram_area(vals, out_path, plot_format="png"):
 
 
 def hist_point(vals, mask, out_path, plot_format="png"):
+    binwidth = 5
+    min_all = vals.min()
+    bins = np.arange(min_all, 100 + binwidth, binwidth)
+
     mean_point = np.round(np.mean(vals[mask]), 3)
     std_point = np.round(np.std(vals[mask], ddof=1), 3)
     mean_extent = np.round(np.mean(vals[~mask]), 3)
@@ -683,7 +687,7 @@ def hist_point(vals, mask, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals[mask],
-        50,
+        bins=bins,
         color="darkorange",
         linewidth=2,
         histtype="step",
@@ -691,7 +695,7 @@ def hist_point(vals, mask, out_path, plot_format="png"):
     )
     ax1.hist(
         vals[~mask],
-        50,
+        bins=bins,
         color="#1f77b4",
         linewidth=2,
         histtype="step",
@@ -711,7 +715,7 @@ def hist_point(vals, mask, out_path, plot_format="png"):
         [extra_1, extra_2],
         [
             fr"Point: $({mean_point}\pm{std_point})\,\%$",
-            fr"Extent: $({mean_extent}\pm{std_extent})\,\%$",
+            fr"Extended: $({mean_extent}\pm{std_extent})\,\%$",
         ],
     )
     outpath = str(out_path) + f"/hist_point.{plot_format}"
@@ -737,7 +741,7 @@ def plot_length_point(length, vals, mask, out_path, plot_format="png"):
         label="Extended sources",
     )
     ax1.set_ylabel("Mean specific intensity deviation")
-    ax1.set_xlabel("Linear extent / px")
+    ax1.set_xlabel("Linear extent / pixels")
     plt.grid()
     plt.legend(loc="best", markerscale=10)
 
