@@ -3,8 +3,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 
-def compute_area_difference(CS_pred, CS_truth):
-    """Compute the difference of the areas of truth and prediction.
+def compute_area_ratio(CS_pred, CS_truth):
+    """Compute the ratio of the areas of truth and prediction.
 
     Parameters
     ----------
@@ -16,7 +16,7 @@ def compute_area_difference(CS_pred, CS_truth):
     Returns
     -------
     float
-        difference between area of truth and prediction
+        ratio between area of truth and prediction
     """
     pred_x = CS_pred.collections[0].get_paths()[0].vertices[:, 0]
     pred_y = CS_pred.collections[0].get_paths()[0].vertices[:, 1]
@@ -34,12 +34,12 @@ def compute_area_difference(CS_pred, CS_truth):
     )
     area_truth = np.abs(area_truth)
 
-    return area_pred/area_truth
+    return area_pred / area_truth
 
 
 def area_of_contour(ifft_pred, ifft_truth):
     """Create first contour of prediction and truth and return
-    the area difference.
+    the area ratio.
 
     Parameters
     ----------
@@ -63,6 +63,6 @@ def area_of_contour(ifft_pred, ifft_truth):
 
     CS2 = plt.contour(ifft_truth, levels=levels)
 
-    val = compute_area_difference(CS1, CS2)
+    val = compute_area_ratio(CS1, CS2)
     mpl.rcParams.update(mpl.rcParamsDefault)
     return val

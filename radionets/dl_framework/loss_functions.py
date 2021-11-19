@@ -134,6 +134,15 @@ def l1_phase(x, y):
     return loss
 
 
+def l1_phase_unc(x, y):
+    phase_pred = x[:, 0]
+    y_phase = y[:, 1]
+
+    l1 = nn.SmoothL1Loss()
+    loss = l1(phase_pred, y_phase)
+    return loss
+
+
 def splitted_L1(x, y):
     inp_amp = x[:, 0, :]
     inp_phase = x[:, 1, :]
@@ -144,7 +153,34 @@ def splitted_L1(x, y):
     l1 = nn.L1Loss()
     loss_amp = l1(inp_amp, tar_amp)
     loss_phase = l1(inp_phase, tar_phase)
-    return loss_amp * 10 + loss_phase
+    loss = loss_amp * 10 + loss_phase
+    return loss
+
+
+def splitted_L1_unc(x, y):
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    l1 = nn.L1Loss()
+    loss_amp = l1(pred_amp, tar_amp)
+    loss_phase = l1(pred_phase, tar_phase)
+    return loss_amp + loss_phase * 10
+
+
+def splitted_SmoothL1_unc(x, y):
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    l1 = nn.SmoothL1Loss()
+    loss_amp = l1(pred_amp, tar_amp)
+    loss_phase = l1(pred_phase, tar_phase)
+    return loss_amp + loss_phase * 10
 
 
 def mse(x, y):
@@ -158,6 +194,26 @@ def mse_amp(x, y):
     mse = nn.MSELoss()
     loss = mse(x, tar)
     return loss
+
+
+def amp_likelihood(x, y):
+    amp_pred = x[:, 0]
+    amp_unc = x[:, 1]
+    y_amp = y[:, 0]
+    loss_amp = (
+        2 * torch.log(amp_unc) + ((y_amp - amp_pred).pow(2) / amp_unc.pow(2))
+    ).mean()
+    return loss_amp
+
+
+def phase_likelihood(x, y):
+    phase_pred = x[:, 0]
+    phase_unc = x[:, 1]
+    y_phase = y[:, 1]
+    loss_phase = (
+        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
+    ).mean()
+    return loss_phase
 
 
 def mse_phase(x, y):
@@ -183,10 +239,73 @@ def comb_likelihood(x, y):
     ).mean()
 
     loss = loss_amp + loss_phase
-    print("amp: ", loss_amp)
-    print("phase: ", loss_phase)
+    # print("amp: ", loss_amp)
+    # print("phase: ", loss_phase)
     # print(loss)
     # assert unc.shape == y_pred.shape == y.shape
+    return loss
+
+
+def f(x, mu):
+    return x - mu
+
+
+def g(x, mu, sig):
+    return (sig ** 2 - (x - mu) ** 2) ** 2
+
+
+def new_like(x, y):
+    amp_pred = x[:, 0]
+    amp_unc = x[:, 1]
+    phase_pred = x[:, 2]
+    phase_unc = x[:, 3]
+    y_amp = y[:, 0]
+    y_phase = y[:, 1]
+
+    loss_amp = (f(y_amp, amp_pred) + g(y_amp, amp_pred, amp_unc)).mean()
+    loss_phase = (f(y_phase, phase_pred) + g(y_phase, phase_pred, phase_unc)).mean()
+
+    loss = loss_amp + loss_phase
+    return loss
+
+
+def loss_amp(x, y):
+    tar = y[:, 0, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    mse = nn.MSELoss()
+    loss = mse(x, tar)
+
+    return loss
+
+
+def loss_phase(x, y):
+    tar = y[:, 1, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    mse = nn.MSELoss()
+    loss = mse(x, tar)
+
+    return loss
+
+
+def loss_l1_amp(x, y):
+    tar = y[:, 0, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    l1 = nn.L1Loss()
+    loss = l1(x, tar)
+
+    return loss
+
+
+def loss_l1_phase(x, y):
+    tar = y[:, 1, :].unsqueeze(1)
+    assert tar.shape == x.shape
+
+    l1 = nn.L1Loss()
+    loss = l1(x, tar)
+
     return loss
 
 
@@ -290,6 +409,23 @@ def list_loss(x, y):
     m = nn.MSELoss()
     loss = m(x_pred, x_true)
     # print(x_pred[0], x_true[0])
+    return loss
+
+
+def phase_likelihood_l1(x, y):
+    phase_pred = x[:, 0]
+    phase_unc = x[:, 1]
+
+    y_phase = y[:, 1]
+
+    loss_phase = (
+        2 * torch.log(phase_unc) + ((y_phase - phase_pred).pow(2) / phase_unc.pow(2))
+    ).mean()
+
+    l1 = nn.L1Loss()
+    loss_l1 = l1(phase_pred, y_phase)
+
+    loss = loss_phase + loss_l1
     return loss
 
 

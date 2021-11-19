@@ -6,6 +6,28 @@ import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+import h5py
+from pathlib import Path
+
+
+def source_list_collate(batch):
+    """Collate function for the DataLoader with source list
+
+    Parameters
+    ----------
+    batch : tuple
+        input and target images alongside with the corresponding source_list
+
+    Returns
+    -------
+    tuple
+        stacked images and list for source_list values
+    """
+
+    x = [item[0] for item in batch]
+    y = [item[1] for item in batch]
+    z = [item[2][0] for item in batch]
+    return torch.stack(x), torch.stack(y), z
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):
@@ -17,8 +39,13 @@ def create_databunch(data_path, fourier, source_list, batch_size):
         source_list=source_list,
     )
 
-    # Create databunch with defined batchsize
-    data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+    # Create databunch with defined batchsize and check for source_list
+    if source_list:
+        data = DataLoader(
+            test_ds, batch_size=batch_size, shuffle=True, collate_fn=source_list_collate
+        )
+    else:
+        data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
     return data
 
 
@@ -55,6 +82,7 @@ def read_config(config):
     eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
     eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
+    eval_conf["point"] = config["eval"]["evaluate_point"]
     return eval_conf
 
 
@@ -76,7 +104,7 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
+def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
     Parameters
@@ -103,6 +131,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
             orientation="vertical",
             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
+        cbar.set_label("Phase / rad")
     elif phase_diff:
         cbar = fig.colorbar(
             im,
@@ -110,12 +139,22 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
             orientation="vertical",
             ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
         )
+        cbar.set_label("Specific Intensity / a.u.")
+    elif unc:
+        cbar = fig.colorbar(
+            im,
+            cax=cax,
+            label="Rel. uncertainty / a.u.",
+            ticks=[im.get_array().min() + 0.001, im.get_array().max()],
+        )
+        cbar.ax.set_yticklabels(["Low", "High"])
+        cbar.ax.tick_params(size=0)
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar.set_label("Specific Intensity / a.u.")
         # tick_locator = ticker.MaxNLocator(nbins=5)
         # cbar.locator = tick_locator
 
-    cbar.set_label("Intensity / a.u.")
     # cbar.ax.tick_params(labelsize=16)
     # cbar.ax.yaxis.get_offset_text().set_fontsize(16)
     # cbar.formatter.set_powerlimits((0, 0))
@@ -125,7 +164,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False):
         cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
     elif phase_diff:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-4\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$4\pi$"])
+        cbar.ax.set_yticklabels([r"$-2\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$2\pi$"])
 
 
 def reshape_split(img):
@@ -238,7 +277,7 @@ def get_images(test_ds, num_images, norm_path="none", rand=False):
     return img_test, img_true
 
 
-def eval_model(img, model):
+def eval_model(img, model, test=False):
     """
     Put model into eval mode and evaluate test images.
 
@@ -257,9 +296,13 @@ def eval_model(img, model):
     if len(img.shape) == (3):
         img = img.unsqueeze(0)
     model.eval()
-    model.cuda()
+    if not test:
+        model.cuda()
     with torch.no_grad():
-        pred = model(img.float().cuda())
+        if not test:
+            pred = model(img.float().cuda())
+        else:
+            pred = model(img.float())
     return pred.cpu()
 
 
@@ -274,6 +317,8 @@ def get_ifft(array, amp_phase=False):
         compl = a + b * 1j
     else:
         compl = array[:, 0] + array[:, 1] * 1j
+    if compl.shape[0] == 1:
+        compl = compl.squeeze(0)
     return np.abs(np.fft.ifft2(compl))
 
 
@@ -329,3 +374,37 @@ def fft_pred(pred, truth, amp_phase=True):
     ifft_true = np.fft.ifft2(compl_true)
 
     return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
+
+
+def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
+    """
+    write test data and predictions to h5 file
+    x: truth of test data
+    y: predictions of truth of test data
+    """
+    with h5py.File(path, "w") as hf:
+        hf.create_dataset(name_x, data=x)
+        hf.create_dataset(name_y, data=y)
+        hf.create_dataset(name_z, data=z)
+        hf.close()
+
+
+def read_pred(path):
+    """
+    read data saved with save_pred from h5 file
+    x: truth of test data
+    y: predictions of truth of test data
+    """
+    with h5py.File(path, "r") as hf:
+        x = np.array(hf["pred"])
+        y = np.array(hf["img_test"])
+        z = np.array(hf["img_true"])
+        hf.close()
+    return x, y, z
+
+
+def check_outpath(model_path):
+    model_path = Path(model_path).parent / "evaluation" / "predictions.h5"
+    path = Path(model_path)
+    exists = path.exists()
+    return exists

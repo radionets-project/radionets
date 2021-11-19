@@ -104,25 +104,15 @@ def read_config(config):
         click.echo("Create fft_images from gaussian data set! \n")
 
         sim_conf["type"] = "gaussians"
-        if config["gaussians"]["pointsources"]:
-            sim_conf["num_pointsources"] = config["gaussians"]["num_pointsources"]
-            click.echo("Adding pointsources.")
-        else:
-            sim_conf["num_pointsources"] = None
+        sim_conf["num_components"] = config["gaussians"]["num_components"]
+        click.echo("Adding extended gaussian sources.")
 
-        if config["gaussians"]["pointlike_gaussians"]:
-            sim_conf["num_pointlike_gaussians"] = config["gaussians"][
-                "num_pointlike_gaussians"
-            ]
-            click.echo("Adding pointlike gaussians.")
-        else:
-            sim_conf["num_pointlike_gaussians"] = None
+    if config["point_sources"]["simulate"]:
+        click.echo("Create fft_images from point source data set! \n")
 
-        if config["gaussians"]["extended_gaussians"]:
-            sim_conf["num_components"] = config["gaussians"]["num_components"]
-            click.echo("Adding extended gaussian sources.")
-        else:
-            sim_conf["num_components"] = None
+        sim_conf["type"] = "point_sources"
+        sim_conf["add_extended"] = config["point_sources"]["add_extended"]
+        click.echo("Adding point sources.")
 
     sim_conf["bundles_train"] = config["image_options"]["bundles_train"]
     sim_conf["bundles_valid"] = config["image_options"]["bundles_valid"]
@@ -144,6 +134,7 @@ def read_config(config):
     sim_conf["compressed"] = config["sampling_options"]["compressed"]
     sim_conf["keep_fft_files"] = config["sampling_options"]["keep_fft_files"]
     sim_conf["interpolation"] = config["sampling_options"]["interpolation"]
+    sim_conf["multi_channel"] = config["sampling_options"]["multi_channel"]
     return sim_conf
 
 
@@ -211,7 +202,10 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
         rescaled input image
     """
     y = resize(
-        bundle.swapaxes(0, 2), (pixel, pixel), anti_aliasing=True, mode="constant",
+        bundle.swapaxes(0, 2),
+        (pixel, pixel),
+        anti_aliasing=True,
+        mode="constant",
     ).swapaxes(2, 0)
     y_prep = y.copy()
     if noise:
@@ -286,7 +280,7 @@ def add_noise(bundle, noise_level):
         bundle with noised images
     """
     bundle_noised = np.array(
-        [img + get_noise(img, (img.max() * noise_level/100)) for img in bundle]
+        [img + get_noise(img, (img.max() * noise_level / 100)) for img in bundle]
     )
     return bundle_noised
 
@@ -369,3 +363,11 @@ def interpol(img):
     phase = phase * mask + phase_fl * (1 - mask)
 
     return np.array([amp, phase])
+
+
+def add_white_noise(images):
+    img_size = images.shape[2]
+    noise = np.random.normal(0, 0.05, size=(images.shape[0], img_size, img_size))
+    images.real += noise
+    images.imag += noise
+    return images

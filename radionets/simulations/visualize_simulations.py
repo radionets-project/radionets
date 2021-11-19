@@ -122,6 +122,32 @@ def plot_source(img, log=False, out_path=None):
         plt.savefig(out_path, dpi=600, bbox_inches="tight")
 
 
+def plot_comparison(img1, img2, log=False, out_path=None):
+    fig, (ax1, ax2) = plt.subplots(
+        2,
+        1,
+    )
+    if log is True:
+        im1 = ax1.imshow(img1, cmap="inferno", norm=LogNorm(vmin=1e-8, vmax=img1.max()))
+        im2 = ax2.imshow(img2, cmap="inferno", norm=LogNorm(vmin=1e-8, vmax=img2.max()))
+    else:
+        im1 = ax1.imshow(img1, cmap="inferno")
+        im2 = ax2.imshow(img2, cmap="inferno")
+
+    make_axes_nice(fig, ax1, im1, "")
+    ax1.set_xlabel("l")
+    ax1.set_ylabel("m")
+
+    make_axes_nice(fig, ax2, im2, "")
+    ax2.set_xlabel("l")
+    ax2.set_ylabel("m")
+
+    plt.tight_layout(pad=0)
+
+    if out_path is not None:
+        plt.savefig(out_path, dpi=600, bbox_inches="tight")
+
+
 def plot(img, ax, phase=False, grey=False):
     if grey:
         if phase:
@@ -196,7 +222,7 @@ def plot_spectrum_grey(img1, img2, out_path=None):
     ax2.set_xlabel("u")
     ax2.set_ylabel("v")
 
-    plt.tight_layout(pad=0)
+    fig.tight_layout(pad=0)
 
     if out_path is not None:
         plt.savefig(out_path, dpi=600, bbox_inches="tight")
@@ -222,6 +248,7 @@ def plot_vlba_uv(u, v, out_path=None):
     plt.tick_params(axis="both", labelsize=9)
 
     ax.axis("equal")
+    plt.legend()
     fig.tight_layout()
 
     if out_path is not None:

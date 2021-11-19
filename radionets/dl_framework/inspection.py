@@ -20,9 +20,10 @@ def plot_loss(learn, model_path, output_format="pdf"):
     # plt.style.use('./paper_small.rc')
     save_path = model_path.with_suffix("")
     print(f"\nPlotting Loss for: {model_path.stem}\n")
-    learn.avg_loss.plot_loss()
+    logscale = learn.avg_loss.plot_loss()
     plt.title(r"{}".format(str(model_path.stem).replace("_", " ")))
-    plt.yscale("log")
+    if logscale:
+        plt.yscale("log")
     plt.savefig(
         f"{save_path}_loss.{output_format}", bbox_inches="tight", pad_inches=0.01
     )

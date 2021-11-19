@@ -9,9 +9,9 @@ from radionets.simulations.utils import (
 from radionets.dl_framework.data import (
     open_fft_bundle,
     save_fft_pair,
+    open_bundle_pack,
 )
 from radionets.simulations.uv_simulations import sample_freqs
-import h5py
 import numpy as np
 
 
@@ -27,6 +27,8 @@ def sample_frequencies(
     lon=None,
     lat=None,
     steps=None,
+    multi_channel=False,
+    source_type="point_sources",
 ):
     for mode in ["train", "valid", "test"]:
         print(f"\n Sampling {mode} data set.\n")
@@ -37,10 +39,12 @@ def sample_frequencies(
             print(f"\n No {mode} data set fft images available.\n")
 
         for path in tqdm(bundle_paths):
-            fft, truth = open_fft_bundle(path)
-            # list stuff not working atm
-            # f = h5py.File(path, "r")
-            # z = np.array(f["z"])
+            if source_type != "point_sources":
+                fft, truth = open_fft_bundle(path)
+                source_list = None
+            else:
+                fft, truth, source_list = open_bundle_pack(path)
+
             size = fft.shape[-1]
 
             fft_scaled = prepare_fft_images(fft.copy(), amp_phase, real_imag)
@@ -57,6 +61,7 @@ def sample_frequencies(
                     steps,
                     plot=False,
                     test=False,
+                    multi_channel=multi_channel,
                 )
             else:
                 fft_samp = sample_freqs(
@@ -64,6 +69,7 @@ def sample_frequencies(
                     antenna_config,
                     size=size,
                     specific_mask=False,
+                    multi_channel=multi_channel,
                 )
 
             if interpolation:
@@ -77,6 +83,6 @@ def sample_frequencies(
                     savez_compressed(out, x=fft_samp, y=fft_scaled)
                     os.remove(path)
                 else:
-                    save_fft_pair(out, fft_samp, fft_scaled_truth)
+                    save_fft_pair(out, fft_samp, fft_scaled_truth, source_list)
             else:
                 save_fft_pair(out, fft_samp, truth)
