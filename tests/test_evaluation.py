@@ -194,7 +194,7 @@ class TestEvaluation:
     def test_calc_jet_angle(self):
         import torch
         import toml
-        from radionets.evaluation.jet_angle import pca, calc_jet_angle
+        from radionets.evaluation.jet_angle import calc_jet_angle
         from radionets.evaluation.utils import read_config, read_pred, get_ifft
 
         config = toml.load("./tests/evaluate.toml")
@@ -225,14 +225,6 @@ class TestEvaluation:
         image[image < max_arr] = 0
 
         assert image.shape == (10, 64, 64)
-
-        _, _, alpha_pca = pca(image)
-
-        # x_mid = torch.ones(img_size, img_size).shape[0] // 2
-        # y_mid = torch.ones(img_size, img_size).shape[1] // 2
-
-        # assert x_mid == 31
-        # assert y_mid == 31
 
         m, n, alpha = calc_jet_angle(image)
 
