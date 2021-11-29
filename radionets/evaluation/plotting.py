@@ -287,8 +287,8 @@ def visualize_with_fourier_diff(
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
     if amp_phase:
-        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
-        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
+        real_pred = 10 ** (10 * np.array(real_pred, dtype="float128") - 10) - 1e-10
+        real_truth = 10 ** (10 * np.array(real_truth, dtype="float128") - 10) - 1e-10
 
     # plotting
     # plt.style.use('./paper_large_3_2.rc')
@@ -625,9 +625,12 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
 
 
 def histogram_mean_diff(vals, out_path, plot_format="png"):
+    vals = vals.numpy()
+    mean = np.round(np.mean(vals), 3)
+    std = np.round(np.std(vals, ddof=1), 3)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals.numpy(),
+        vals,
         51,
         color="darkorange",
         linewidth=3,
@@ -636,6 +639,9 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     )
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
 
     fig.tight_layout()
 
@@ -670,6 +676,10 @@ def histogram_area(vals, out_path, plot_format="png"):
 
 
 def hist_point(vals, mask, out_path, plot_format="png"):
+    binwidth = 5
+    min_all = vals.min()
+    bins = np.arange(min_all, 100 + binwidth, binwidth)
+
     mean_point = np.round(np.mean(vals[mask]), 3)
     std_point = np.round(np.std(vals[mask], ddof=1), 3)
     mean_extent = np.round(np.mean(vals[~mask]), 3)
@@ -677,7 +687,7 @@ def hist_point(vals, mask, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals[mask],
-        50,
+        bins=bins,
         color="darkorange",
         linewidth=2,
         histtype="step",
@@ -685,7 +695,7 @@ def hist_point(vals, mask, out_path, plot_format="png"):
     )
     ax1.hist(
         vals[~mask],
-        50,
+        bins=bins,
         color="#1f77b4",
         linewidth=2,
         histtype="step",
@@ -705,7 +715,7 @@ def hist_point(vals, mask, out_path, plot_format="png"):
         [extra_1, extra_2],
         [
             fr"Point: $({mean_point}\pm{std_point})\,\%$",
-            fr"Extent: $({mean_extent}\pm{std_extent})\,\%$",
+            fr"Extended: $({mean_extent}\pm{std_extent})\,\%$",
         ],
     )
     outpath = str(out_path) + f"/hist_point.{plot_format}"
@@ -731,7 +741,7 @@ def plot_length_point(length, vals, mask, out_path, plot_format="png"):
         label="Extended sources",
     )
     ax1.set_ylabel("Mean specific intensity deviation")
-    ax1.set_xlabel("Linear extent / px")
+    ax1.set_xlabel("Linear extent / pixels")
     plt.grid()
     plt.legend(loc="best", markerscale=10)
 

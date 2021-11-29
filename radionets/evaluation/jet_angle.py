@@ -98,9 +98,19 @@ def calc_jet_angle(image):
 
     _, _, alpha_pca = pca(image)
 
-    vals = torch.tensor(
-        [torch.where(image[i] == image[i].max()) for i in range(image.shape[0])]
-    )
+    # Search for sources with two maxima
+    maxima = []
+    for i in range(image.shape[0]):
+        a = torch.where(image[i] == image[i].max())
+        if len(a[0]) > 1:
+            # if two maxima are found, interpolate to the middle in x and y direction
+            mid_x = (a[0][1] - a[0][0]) // 2 + a[0][0]
+            mid_y = (a[1][1] - a[1][0]) // 2 + a[1][0]
+            maxima.extend([(mid_x, mid_y)])
+        else:
+            maxima.extend([a])
+
+    vals = torch.tensor(maxima)
     x_mid = vals[:, 0]
     y_mid = vals[:, 1]
 

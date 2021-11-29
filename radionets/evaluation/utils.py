@@ -319,7 +319,7 @@ def get_ifft(array, amp_phase=False):
         compl = array[:, 0] + array[:, 1] * 1j
     if compl.shape[0] == 1:
         compl = compl.squeeze(0)
-    return np.abs(np.fft.ifft2(compl))
+    return np.abs(np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(compl))))
 
 
 def pad_unsqueeze(tensor):
