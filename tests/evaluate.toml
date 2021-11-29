@@ -8,7 +8,7 @@ gpu = false
 
 [paths]
 data_path = "./tests/build/data/"
-model_path = "./tests/model/model_eval.model"
+model_path = "./tests/model/paper_fixed_64_even.model"
 model_path_2 = "none"
 norm_path = "none"
 
@@ -16,7 +16,7 @@ norm_path = "none"
 fourier = true
 amp_phase = true
 source_list = false
-arch_name = "SRResNet_bigger"
+arch_name = "SRResNet_bigger_no_symmetry"
 arch_name_2 = "none"
 output_format = "png"
 diff = true
