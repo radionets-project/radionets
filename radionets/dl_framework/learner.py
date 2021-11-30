@@ -86,7 +86,7 @@ def define_learner(
                 DataAug(vgg=train_conf["vgg"], physics_informed=train_conf["physics_informed"]),
                 # OverwriteOneBatch_CLEAN(5),
                 # OverwriteOneBatch_CLEAN(10),
-                MixUp(),
+                # MixUp(),
             ]
         )
     if gan:
