@@ -857,6 +857,40 @@ class ConvGRUCell(nn.Module):
 
         return hx
 
+class ConvGRUCellBN(nn.Module):
+    def __init__(self, input_size, hidden_size, kernel_size, dilation=1, bias=True):
+        super().__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.kernel_size = kernel_size
+        self.dilation = dilation
+        self.bias = bias
+
+        self.Wih = nn.Conv2d(input_size, 3*hidden_size, kernel_size, dilation=dilation, bias=bias, padding=dilation*(kernel_size-1)//2)
+        self.Whh = nn.Conv2d(input_size, 3*hidden_size, kernel_size, dilation=dilation, bias=bias, padding=dilation*(kernel_size-1)//2)
+
+        self.bn1 = nn.BatchNorm2d(3*hidden_size)
+        self.bn2 = nn.BatchNorm2d(3*hidden_size)
+
+    def forward(self, x, hx=None):
+        if hx is None:
+            hx = torch.zeros((x.size(0), self.hidden_size) + x.size()[2:], requires_grad=False).to('cuda')
+        
+        ih = self.bn1(self.Wih(x)).chunk(3, dim=1)
+        hh = self.bn2(self.Whh(hx)).chunk(3, dim=1)
+
+        z = torch.sigmoid(ih[0] + hh[0])
+        r = torch.sigmoid(ih[1] + hh[1])
+        n = torch.tanh(ih[2]+ r*hh[2])
+
+        # import matplotlib.pyplot as plt
+        # plt.imshow(torch.abs(hx[0,0]).cpu().detach().numpy())
+        # plt.colorbar()
+        # plt.show()
+        hx = (1-z)*hx + z*n
+
+        return hx
+
 def gradFunc(x, y, A, base_mask, n_tel, base_nums): 
     does_require_grad = x.requires_grad
     with torch.enable_grad():
@@ -961,12 +995,24 @@ def gradFunc_putzky(x, y):
         # plt.colorbar()
         # plt.show()
         difference = pfx-data
+        # import matplotlib.pyplot as plt
+        # plt.imshow(abs(difference[0,0].cpu().detach().numpy()))
+        # plt.colorbar()
+        # plt.show()
 
         # import matplotlib.pyplot as plt
         # plt.imshow((torch.abs(torch.fft.ifftshift(torch.fft.ifft2(data))-torch.fft.ifftshift(torch.fft.ifft2(pfx))))[0,0].cpu().detach().numpy())
         # plt.colorbar()
         # plt.show()
+        #import matplotlib.pyplot as plt
+        #plt.imshow((torch.abs(torch.fft.ifftshift(torch.fft.ifft2(data))))[0,0].cpu().detach().numpy())
+        #plt.colorbar()
+        #plt.show()
 
+        #import matplotlib.pyplot as plt
+        #plt.imshow((torch.abs(torch.fft.ifftshift(torch.fft.ifft2(fx))))[0,0].cpu().detach().numpy())
+        #plt.colorbar()
+        #plt.show()
 
 
         chi2 = torch.sum(torch.square(torch.abs(difference)))
@@ -1024,7 +1070,11 @@ def manual_grad(x, y):
 
     return grad_x
 
-def rnd_dirty_noise(x, basemask):
-    noise = torch.random.normal(size=x.shape)
-    ft_noise = torch.fft.ifftshift(torch.fft.fft2(torch.fft.fftshift(noise)))
-    
+def fft_conv(a,b):
+    multiply = (torch.fft.fft2(torch.fft.fftshift(a))*torch.fft.fft2(torch.fft.fftshift(b), norm="ortho"))
+    ifft =torch.fft.ifftshift(torch.fft.ifft2(multiply))
+    import matplotlib.pyplot as plt
+    # plt.imshow(abs(ifft[0,0].cpu().detach().numpy()))
+    # plt.colorbar()
+    # plt.show()
+    return ifft
