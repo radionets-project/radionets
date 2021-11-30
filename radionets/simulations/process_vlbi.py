@@ -128,8 +128,8 @@ def process_data_dirty_model(data_path, freq, n_positions, fov_asec, layout):
     bundles = dt.get_bundles(data_path)
     freq = freq*10**6 # mhz hard code #eht 227297
     uvfits = dt.get_bundles(bundles[2])
-    imgs = dt.get_bundles(bundles[1])
-    configs = dt.get_bundles(bundles[0])
+    imgs = dt.get_bundles(bundles[4])
+    configs = dt.get_bundles(bundles[1])
     uv_srt = natsorted(uvfits, alg=ns.PATH)
     img_srt = natsorted(imgs, alg=ns.PATH)
     size = 1000
@@ -330,13 +330,11 @@ def process_eht(data_path, file, config, fov_asec):
     size = 1
     N=64
     with fits.open(file) as hdul:
-        n_sampled = hdul[0].data.shape[0] #number of sampled points
         baselines = hdul[0].data['Baseline']
         
         unique_telescopes = 8
         unique_baselines = (unique_telescopes**2 - unique_telescopes)/2
-        freq = 227297e6#hdul[0].header[37]
-        offset = hdul[2].data['IF FREQ']
+        freq = 229071e6#hdul[0].header[37]
         baselines = np.append(baselines,baselines)
     # response matrices
     A = response(configs, N, unique_telescopes, unique_baselines, 'eht')
@@ -354,12 +352,12 @@ def process_eht(data_path, file, config, fov_asec):
         x = np.squeeze(x)
         y = np.squeeze(y)
         w = np.squeeze(w)
-        ap = np.sqrt(x**2+y**2)
-        ph = np.angle(x+1j*y)
+        ap = np.sqrt((x*w)**2+(y*w)**2)
+        ph = np.angle(x*w+1j*y*w)
         u = np.array([])
         v = np.array([])
-        u = np.append(u,data['UU---SIN']*(freq))
-        v = np.append(v,data['VV---SIN']*(freq))
+        u = np.append(u,data['UU']*(freq))
+        v = np.append(v,data['VV']*(freq))
         samps = [np.append(u,-u),np.append(v,-v),np.append(ap,ap),np.append(ph,-ph)]
     
     # plt.plot(samps[0], samps[1], 'x')
@@ -408,7 +406,7 @@ def process_eht(data_path, file, config, fov_asec):
 
     # truth_fft = np.array([np.fft.fft2(np.fft.fftshift(img)) for im in img_resized])
 
-    out = data_path + "/h5/eht_hi.h5"
+    out = data_path + "/eht_hi__startmod_weights.h5"
     save_fft_pair_with_response(out, samp_img, samp_img, np.expand_dims(base_mask,0), np.expand_dims(A,0))
 
 
@@ -418,8 +416,8 @@ def process_data_dirty_model_noisy(data_path, freq, n_positions, fov_asec, layou
     bundles = dt.get_bundles(data_path)
     freq = freq*10**6 # mhz hard code #eht 227297
     uvfits = dt.get_bundles(bundles[2])
-    imgs = dt.get_bundles(bundles[1])
-    configs = dt.get_bundles(bundles[0])
+    imgs = dt.get_bundles(bundles[4])
+    configs = dt.get_bundles(bundles[1])
     uv_srt = natsorted(uvfits, alg=ns.PATH)
     img_srt = natsorted(imgs, alg=ns.PATH)
     size = 1000
@@ -492,7 +490,7 @@ def process_data_dirty_model_noisy(data_path, freq, n_positions, fov_asec, layou
         img_resized = np.zeros((size,N,N))
         for i in range(samps.shape[0]):
             samp_img[i][0] = np.matmul(mask, samps[i][2].T)/points
-            samp_img[i][0] = (np.log10(samp_img[i][0] + 1e-10) / 10) + 1 
+            # samp_img[i][0] = (np.log10(samp_img[i][0] + 1e-10) / 10) + 1 
             samp_img[i][1] = np.matmul(mask, samps[i][3].T)/points
             img_resized[i] = cv2.resize(img[i], (N,N))
             img_resized[i] = img_resized[i]/np.sum(img_resized[i])
@@ -506,11 +504,166 @@ def process_data_dirty_model_noisy(data_path, freq, n_positions, fov_asec, layou
         ft_noise = np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(noise)))
         ft_noise[m == 0] = 0
         noise_dirty = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(ft_noise)))
-        
-        
+
+        compl = samp_img[:,0]*np.exp(1j*samp_img[:,1])    
+        dirty_img = abs(np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(compl))))
+        for idx, d in enumerate(dirty_img):
+            max = np.max(d)
+            std = np.std(noise_dirty[idx])
+            snr = np.random.uniform(2,10)
+            alpha = max/(std*snr)
+            dirty_img[idx] = dirty_img[idx] + abs(noise_dirty[idx]*alpha)
+
+        measured = np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(dirty_img)))
+        mask = np.sum(mask, 2)
+        for idx, m in enumerate(measured):
+            samp_img[idx][0] = (np.log10(np.abs(m) + 1e-10) / 10) + 1 
+            samp_img[idx][0][mask == 0] = 0
+            samp_img[idx][1] = np.angle(m)
+            samp_img[idx][1][mask == 0] = 0
+        import matplotlib.pyplot as plt
+        plt.imshow(samp_img[0][0])
+        plt.colorbar()
+        plt.show()
 
 
         # truth_fft = np.array([np.fft.fft2(np.fft.fftshift(img)) for im in img_resized])
+        truth_fft = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(img_resized, axes=(1,2)), axes=(1,2)), axes=(1,2))
+        fft_scaled_truth = prepare_fft_images(truth_fft, True, False)
+
+        out = data_path + "/h5/samp_train"+ str(p) +".h5"
+        save_fft_pair_with_response(out, samp_img[:800], fft_scaled_truth[:800], np.expand_dims(base_mask,0), np.expand_dims(A,0))
+        out = data_path + "/h5/samp_valid"+ str(p) + ".h5"
+        save_fft_pair_with_response(out, samp_img[800:], fft_scaled_truth[800:], np.expand_dims(base_mask,0), np.expand_dims(A,0))
+
+def process_data_dirty_model_noisy_pointSource(data_path, freq, n_positions, fov_asec, layout):
+    
+    print(f"\n Loading VLBI data set.\n")
+    bundles = dt.get_bundles(data_path)
+    print(bundles)
+    freq = freq*10**6 # mhz hard code #eht 227297
+    uvfits = dt.get_bundles(bundles[2])
+    imgs = dt.get_bundles(bundles[4])
+    configs = dt.get_bundles(bundles[1])
+    uv_srt = natsorted(uvfits, alg=ns.PATH)
+    img_srt = natsorted(imgs, alg=ns.PATH)
+    size = 1000
+    for p in tqdm(range(n_positions)):
+        N = 64 # hard code
+        with fits.open(uv_srt[p*1000]) as hdul:
+            n_sampled = hdul[0].data.shape[0] #number of sampled points
+            baselines = hdul[0].data['Baseline']
+            baselines = np.append(baselines,baselines)
+            unique_telescopes = hdul[3].data.shape[0]
+            unique_baselines = (unique_telescopes**2 - unique_telescopes)/2
+
+        # response matrices
+        A = response(configs[p], N, unique_telescopes, unique_baselines, layout)
+
+        img = np.zeros((size,128,128))
+        samps = np.zeros((size,4,n_sampled*2))
+        print(f"\n Load subset.\n")
+        for i in np.arange(p*1000, p*1000+1000):
+            # print(i)
+            sampled = uv_srt[i]
+            target = img_srt[i] # +1000 because I had to only grid images from 1000-1999
+
+            img[i-p*1000] = np.asarray(Image.open(str(target)))
+        
+            with fits.open(sampled) as hdul:
+                data = hdul[0].data
+                cmplx = data['DATA'] 
+                x = cmplx[...,0,0]
+                y = cmplx[...,0,1]
+                w = cmplx[...,0,2]
+                x = np.squeeze(x)
+                y = np.squeeze(y)
+                w = np.squeeze(w)
+                ap = np.sqrt(x**2+y**2)
+                ph = np.angle(x+1j*y)
+                samps[i-p*1000] = [np.append(data['UU--']*freq,-data['UU--']*freq),np.append(data['VV--']*freq,-data['VV--']*freq),np.append(ap,ap),np.append(ph,-ph)]
+
+        print(f"\n Gridding VLBI data set.\n")
+
+        # Generate Mask
+        u_0 = samps[0][0]
+        v_0 = samps[0][1]
+        mask = np.zeros((N,N,u_0.shape[0]))
+        
+        base_mask = np.zeros((N,N,int(unique_baselines)))
+        
+        fov = fov_asec*np.pi/(3600*180) # hard code #default 0.00018382
+        # delta_u = 1/(fov*N/256) # hard code
+        delta_u = 1/(fov) # with a set N this is the same as zooming in since N*delta_u can be smaller than u_max
+        # delta_u = (2*max(np.max(u_0),np.max(v_0))/N) # test gridding pixel size
+        # biggest_baselines = 8611*1e3 
+        # wave = const.c/(freq/un.second)/un.meter
+        # uv_max = biggest_baselines/wave
+        # delta_u = uv_max/N
+        # print(delta_u)
+        for i in range(N):
+            for j in range(N):
+                u_cell = (j-N/2)*delta_u
+                v_cell = (i-N/2)*delta_u
+                mask[i,j] = ((u_cell <= u_0) & (u_0 <= u_cell+delta_u)) & ((v_cell <= v_0) & (v_0 <= v_cell+delta_u))
+                
+                base = np.unique(baselines[mask[i,j].astype(bool)])
+                base_mask[i,j,:base.shape[0]] = base
+
+        mask = np.flip(mask, [0])
+        points = np.sum(mask, 2)
+        points[points==0] = 1
+        samp_img = np.zeros((size,2,N,N))
+        img_resized = np.zeros((size,N,N))
+        for i in range(samps.shape[0]):
+            samp_img[i][0] = np.matmul(mask, samps[i][2].T)/points
+            # samp_img[i][0] = (np.log10(samp_img[i][0] + 1e-10) / 10) + 1 
+            samp_img[i][1] = np.matmul(mask, samps[i][3].T)/points
+            img_resized[i] = cv2.resize(img[i], (N,N))
+            img_resized[i] = img_resized[i]/np.sum(img_resized[i])
+
+        ### nooiiiiiseeeee
+        np.random.seed(42)
+        noise = np.random.normal(size=(size, N, N))
+        m = np.zeros((1000,64,64))
+        m[:] = np.sum(mask, 2)
+        m[m != 0] = 1
+        ft_noise = np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(noise)))
+        ft_noise[m == 0] = 0
+        noise_dirty = np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(ft_noise)))
+
+        compl = samp_img[:,0]*np.exp(1j*samp_img[:,1])    
+        dirty_img = abs(np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(compl))))
+        for idx, d in enumerate(dirty_img):
+            max = np.max(d)
+            std = np.std(noise_dirty[idx])
+            snr = np.random.uniform(2,10)
+            alpha = max/(std*snr)
+            dirty_img[idx] = dirty_img[idx] + abs(noise_dirty[idx]*alpha)
+
+        measured = np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(dirty_img)))
+        mask = np.sum(mask, 2)
+        for idx, m in enumerate(measured):
+            samp_img[idx][0] = (np.log10(np.abs(m) + 1e-10) / 10) + 1 
+            samp_img[idx][0][mask == 0] = 0
+            samp_img[idx][1] = np.angle(m)
+            samp_img[idx][1][mask == 0] = 0
+        import matplotlib.pyplot as plt
+        plt.imshow(samp_img[0][0])
+        plt.colorbar()
+        plt.show()
+
+
+        #point source label
+        position = np.zeros((size,N,N))
+        result = np.array([np.unravel_index(np.argmax(r), r.shape) for r in img_resized])
+        for i in range(2):
+            position[i,result[i][0],result[i][1]] = 1
+        plt.imshow(position[0])
+        plt.colorbar()
+        plt.show()
+
+
         truth_fft = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(img_resized, axes=(1,2)), axes=(1,2)), axes=(1,2))
         fft_scaled_truth = prepare_fft_images(truth_fft, True, False)
 
