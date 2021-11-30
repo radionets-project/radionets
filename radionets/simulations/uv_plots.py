@@ -100,7 +100,7 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
         x_enu_ant,
         y_enu_ant,
         marker="o",
-        markersize=6,
+        markersize=15,
         color="#1f77b4",
         linestyle="none",
         label="Antenna positions",
@@ -111,7 +111,7 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
         marker="*",
         linestyle="none",
         color="#ff7f0e",
-        markersize=15,
+        markersize=20,
         transform=ccrs.Geodetic(),
         zorder=10,
         label="Projected source",
@@ -120,8 +120,9 @@ def plot_antenna_distribution(source_lon, source_lat, source, antenna, baselines
     if baselines is True:
         plot_baselines(antenna)
 
-    plt.legend(fontsize=16, markerscale=1.5)
+    plt.legend(fontsize=16, markerscale=1.5,loc='lower center',bbox_to_anchor=(-0.2, 0))
     plt.tight_layout()
+    return plt.gcf()
 
 
 def animate_baselines(source, antenna, filename, fps=5):
