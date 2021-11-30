@@ -195,6 +195,7 @@ def visualize_with_fourier(
     out_path: str which contains the output path
     """
     # reshaping and splitting in real and imaginary part if necessary
+    img_pred = img_pred.cpu()
     inp_real, inp_imag = img_input[0], img_input[1]
     real_pred, imag_pred = img_pred[0], img_pred[1]
     real_truth, imag_truth = img_truth[0], img_truth[1]
@@ -353,7 +354,7 @@ def visualize_source_reconstruction(
 ):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
-    x_space = torch.arange(0, 511, 1)
+    x_space = torch.arange(0, 63, 1)
 
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
