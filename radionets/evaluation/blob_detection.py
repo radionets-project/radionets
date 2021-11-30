@@ -25,7 +25,7 @@ def calc_blobs(ifft_pred, ifft_truth):
     return blobs_log_pred, blobs_log_truth
 
 
-def crop_first_component(pred, truth, blob_truth, out_path):
+def crop_first_component(pred, truth, blob_truth):
     """Returns the cropped image with the first component of the
     true image for both prediction and truth.
 
@@ -37,8 +37,6 @@ def crop_first_component(pred, truth, blob_truth, out_path):
         true source image
     blob_truth : list
         list with the coordiantes for the first component
-    out_path : str
-        Outpath
 
     Returns
     -------
@@ -52,7 +50,7 @@ def crop_first_component(pred, truth, blob_truth, out_path):
     return flux_pred, flux_truth
 
 
-def corners(y, x, r):
+def corners(x, y, r):
     """Generates the value range for cropping the first component out of
     the images.
 

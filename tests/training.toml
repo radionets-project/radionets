@@ -1,0 +1,37 @@
+# This is a TOML document.
+
+title = "Train configuration"
+
+[mode]
+quiet = true
+telegram_logger = false
+gpu = false
+
+[paths]
+data_path = "./tests/build/data/"
+model_path = "./tests/build/test_training/test_training.model"
+pre_model = "none"
+norm_path = "none"
+
+[general]
+fourier = true
+amp_phase = true
+source_list = false
+arch_name = "SRResNet_bigger_no_symmetry"
+loss_func = "splitted_L1"
+num_epochs = 2
+inspection = false
+output_format = "pdf"
+
+[hypers]
+batch_size = 64
+lr = 1e-05
+
+[param_scheduling]
+use = true
+lr_start = 1e-4
+lr_max = 3e-5
+lr_stop = 7e-6
+#lr_start = 1e-3
+#lr_max = 7e-4
+#lr_stop = 1e-4

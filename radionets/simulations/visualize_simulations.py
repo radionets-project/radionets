@@ -201,8 +201,8 @@ def plot_spectrum(img, out_path=None):
 
 def plot_spectrum_grey(img1, img2, out_path=None):
     fig, (ax1, ax2) = plt.subplots(
-        1,
         2,
+        1,
     )
     amp1 = np.abs(img1)
     phase1 = np.angle(img1)
@@ -222,9 +222,7 @@ def plot_spectrum_grey(img1, img2, out_path=None):
     ax2.set_xlabel("u")
     ax2.set_ylabel("v")
 
-    # fig.subplots_adjust(wspace=0.2)
     fig.tight_layout(pad=0)
-    fig.subplots_adjust(wspace=0.5)
 
     if out_path is not None:
         plt.savefig(out_path, dpi=600, bbox_inches="tight")
@@ -250,6 +248,7 @@ def plot_vlba_uv(u, v, out_path=None):
     plt.tick_params(axis="both", labelsize=9)
 
     ax.axis("equal")
+    plt.legend()
     fig.tight_layout()
 
     if out_path is not None:

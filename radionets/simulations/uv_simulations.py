@@ -268,7 +268,7 @@ class Antenna:
         return u, v, steps
 
 
-def get_uv_coverage(source, antenna, iterate=False):
+def get_uv_coverage(source, antenna, multi_channel=False, bandwiths=4, iterate=False):
     """
     Converts source position and antenna positions into an (u, v)-coverage.
 
@@ -293,6 +293,18 @@ def get_uv_coverage(source, antenna, iterate=False):
     antenna.to_enu(*source.to_ecef(prop=True))
     u, v, steps = antenna.get_uv()
 
+    if multi_channel:
+        u = np.repeat(u[None], bandwiths, axis=0)
+        v = np.repeat(v[None], bandwiths, axis=0)
+        scales = np.arange(4, dtype=float)
+        scales *= 0.02
+        scales += 1
+        u *= scales[:, None]
+        v *= scales[:, None]
+    else:
+        u = u[None]
+        v = v[None]
+
     if iterate is True:
         num_base = antenna.baselines
         u.resize((steps, num_base))
@@ -308,10 +320,14 @@ def create_mask(u, v, size=63):
     v: array of v coordinates
     size: number of bins
     """
-    uv_hist, _, _ = np.histogram2d(u, v, bins=size)
+    uv_hist, _, _ = np.histogram2d(u.ravel(), v.ravel(), bins=size)
     # exclude center
+    if size % 2 == 0:
+        limit = 2
+    else:
+        limit = 3
     ex_l = size // 2 - 2
-    ex_h = size // 2 + 3
+    ex_h = size // 2 + limit
     uv_hist[ex_l:ex_h, ex_l:ex_h] = 0
     mask = uv_hist > 0
     return np.rot90(mask)
@@ -343,6 +359,7 @@ def sample_freqs(
     plot=False,
     test=False,
     specific_mask=True,
+    multi_channel=False,
 ):
     """
     Sample specific frequencies in 2d Fourier space. Using antenna and source class to
@@ -376,7 +393,7 @@ def sample_freqs(
     def get_mask(lon, lat, num_steps, ant, size):
         s = Source(lon, lat)
         s.propagate(num_steps=num_steps, multi_pointing=False)
-        u, v, _ = get_uv_coverage(s, ant, iterate=False)
+        u, v, _ = get_uv_coverage(s, ant, multi_channel=multi_channel, iterate=False)
         single_mask = create_mask(u, v, size)
         return single_mask
 
@@ -390,7 +407,9 @@ def sample_freqs(
         if specific_mask is True:
             s = Source(lon, lat)
             s.propagate(num_steps=num_steps, multi_pointing=False)
-            u, v, _ = get_uv_coverage(s, ant, iterate=False)
+            u, v, _ = get_uv_coverage(
+                s, ant, multi_channel=multi_channel, iterate=False
+            )
             single_mask = create_mask(u, v, size)
             mask = np.repeat(
                 np.repeat(single_mask[None, None, :, :], num_channel, axis=1),

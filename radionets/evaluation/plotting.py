@@ -16,13 +16,11 @@ from radionets.evaluation.utils import (
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.blob_detection import calc_blobs
-from radionets.evaluation.contour import compute_area_difference
+from radionets.evaluation.contour import compute_area_ratio
 from pytorch_msssim import ms_ssim
 from matplotlib.patches import Rectangle
-from matplotlib.colors import LogNorm
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
-import matplotlib as mpl
 
 # make nice Latex friendly plots
 # mpl.use("pgf")
@@ -290,8 +288,8 @@ def visualize_with_fourier_diff(
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
     if amp_phase:
-        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
-        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
+        real_pred = 10 ** (10 * np.array(real_pred, dtype="float128") - 10) - 1e-10
+        real_truth = 10 ** (10 * np.array(real_truth, dtype="float128") - 10) - 1e-10
 
     # plotting
     # plt.style.use('./paper_large_3_2.rc')
@@ -339,6 +337,7 @@ def visualize_with_fourier_diff(
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close("all")
     return real_pred, imag_pred, real_truth, imag_truth
 
 
@@ -419,6 +418,7 @@ def visualize_source_reconstruction(
     ax2.legend(loc="best")
     fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close("all")
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
@@ -441,7 +441,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
 
     im2 = ax2.imshow(ifft_truth)
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
-    diff = np.round(compute_area_difference(CS1, CS2), 2)
+    diff = np.round(compute_area_ratio(CS1, CS2), 2)
     make_axes_nice(fig, ax2, im2, "Truth, ratio: {}".format(diff))
     outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
@@ -460,6 +460,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
 
     plt.tight_layout(pad=0.75)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close("all")
 
 
 def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
@@ -625,9 +626,12 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
 
 
 def histogram_mean_diff(vals, out_path, plot_format="png"):
+    vals = vals.numpy()
+    mean = np.round(np.mean(vals), 3)
+    std = np.round(np.std(vals, ddof=1), 3)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals.numpy(),
+        vals,
         51,
         color="darkorange",
         linewidth=3,
@@ -636,6 +640,9 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     )
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
 
     fig.tight_layout()
 
@@ -666,4 +673,78 @@ def histogram_area(vals, out_path, plot_format="png"):
     fig.tight_layout()
 
     outpath = str(out_path) + f"/hist_area.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def hist_point(vals, mask, out_path, plot_format="png"):
+    binwidth = 5
+    min_all = vals.min()
+    bins = np.arange(min_all, 100 + binwidth, binwidth)
+
+    mean_point = np.round(np.mean(vals[mask]), 3)
+    std_point = np.round(np.std(vals[mask], ddof=1), 3)
+    mean_extent = np.round(np.mean(vals[~mask]), 3)
+    std_extent = np.round(np.std(vals[~mask], ddof=1), 3)
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.hist(
+        vals[mask],
+        bins=bins,
+        color="darkorange",
+        linewidth=2,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.hist(
+        vals[~mask],
+        bins=bins,
+        color="#1f77b4",
+        linewidth=2,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.axvline(0, linestyle="dotted", color="red")
+    ax1.set_ylabel("Number of sources")
+    ax1.set_xlabel("Mean specific intensity deviation")
+
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=2
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="#1f77b4", linewidth=2
+    )
+    ax1.legend(
+        [extra_1, extra_2],
+        [
+            fr"Point: $({mean_point}\pm{std_point})\,\%$",
+            fr"Extended: $({mean_extent}\pm{std_extent})\,\%$",
+        ],
+    )
+    outpath = str(out_path) + f"/hist_point.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def plot_length_point(length, vals, mask, out_path, plot_format="png"):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.plot(
+        length[mask],
+        vals[mask],
+        ".",
+        markersize=1,
+        color="darkorange",
+        label="Point sources",
+    )
+    ax1.plot(
+        length[~mask],
+        vals[~mask],
+        ".",
+        markersize=1,
+        color="#1f77b4",
+        label="Extended sources",
+    )
+    ax1.set_ylabel("Mean specific intensity deviation")
+    ax1.set_xlabel("Linear extent / pixels")
+    plt.grid()
+    plt.legend(loc="best", markerscale=10)
+
+    outpath = str(out_path) + "/extend_point.png"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

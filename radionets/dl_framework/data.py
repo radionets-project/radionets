@@ -66,7 +66,7 @@ class h5_dataset:
         else:
             x = self.open_image("x", i)
             y = self.open_image("y", i)
-        return x, y
+            return x, y
 
     def open_bundle(self, bundle_path, var):
         bundle = h5py.File(bundle_path, "r")
@@ -87,7 +87,7 @@ class h5_dataset:
         ]
         bundle_paths_str = list(map(str, bundle_paths))
         
-        if var == 'base_mask' or var == 'A': # Baselines and response matrices are the same for every single src_position/bundle
+        if var == 'base_mask' or var == 'A' or var == "z": # Baselines and response matrices are the same for every single src_position/bundle
             image[image != 0] = 0
             
 
@@ -222,7 +222,7 @@ def save_fft_pair(path, x, y, z=None, name_x="x", name_y="y", name_z="z"):
         hf.create_dataset(name_x, data=x)
         hf.create_dataset(name_y, data=y)
         if z is not None:
-            hf.create_dataset(name_z, data=z)
+            [hf.create_dataset(name_z + str(i), data=z[i]) for i in range(len(z))]
         hf.close()
 
 def save_fft_pair_with_response(path, x, y, base_mask, A, name_x="x", name_y="y", name_base_mask="base_mask", name_A='A'):
@@ -246,6 +246,23 @@ def open_fft_pair(path):
     bundle_x = np.array(f["x"])
     bundle_y = np.array(f["y"])
     return bundle_x, bundle_y
+
+
+def open_bundle_pack(path):
+    bundle_x = []
+    bundle_y = []
+    bundle_z = []
+    f = h5py.File(path, "r")
+    bundle_size = len(f) // 3
+    for i in range(bundle_size):
+        bundle_x_i = np.array(f["x" + str(i)])
+        bundle_x.append(bundle_x_i)
+        bundle_y_i = np.array(f["y" + str(i)])
+        bundle_y.append(bundle_y_i)
+        bundle_z_i = np.array(f["z" + str(i)])
+        bundle_z.append(bundle_z_i)
+    f.close()
+    return np.array(bundle_x), np.array(bundle_y), bundle_z
 
 
 def mean_and_std(array):
