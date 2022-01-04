@@ -261,7 +261,7 @@ def load_pre_model(learn, pre_path, visualize=False):
     :param lr_find:     bool which is True if lr_find is used
     """
     name_pretrained = Path(pre_path).stem
-    print("\nLoad pretrained model: {}\n".format(name_pretrained))
+    print(f"\nLoad pretrained model: {name_pretrained}\n")
     if torch.cuda.is_available():
         checkpoint = torch.load(pre_path)
     else:

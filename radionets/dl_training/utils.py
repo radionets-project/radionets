@@ -78,7 +78,7 @@ def pop_interrupt(learn, train_conf):
     if click.confirm("KeyboardInterrupt, do you want to save the model?", abort=False):
         model_path = train_conf["model_path"]
         # save model
-        print("Saving the model after epoch {}".format(learn.epoch))
+        print(f"Saving the model after epoch {learn.epoch}")
         save_model(learn, model_path)
 
         # plot loss
@@ -88,7 +88,7 @@ def pop_interrupt(learn, train_conf):
         if train_conf["inspection"]:
             create_inspection_plots(learn, train_conf)
     else:
-        print("Stopping after epoch {}".format(learn.epoch))
+        print(f"Stopping after epoch {learn.epoch}")
     sys.exit(1)
 
 

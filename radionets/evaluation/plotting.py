@@ -441,7 +441,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     im2 = ax2.imshow(ifft_truth)
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_ratio(CS1, CS2), 2)
-    make_axes_nice(fig, ax2, im2, "Truth, ratio: {}".format(diff))
+    make_axes_nice(fig, ax2, im2, f"Truth, ratio: {diff}")
     outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
     # Assign labels for the levels and save them for the legend
