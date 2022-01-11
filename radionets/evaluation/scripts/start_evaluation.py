@@ -33,7 +33,11 @@ def main(configuration_path):
     print(eval_conf, "\n")
 
     for entry in conf["inspection"]:
-        if conf["inspection"][entry] and entry != "random":
+        if (
+            conf["inspection"][entry] is not False
+            and isinstance(conf["inspection"][entry], bool)
+            and entry != "random"
+        ):
             if (
                 not check_outpath(eval_conf["model_path"])
                 or conf["inspection"]["random"]

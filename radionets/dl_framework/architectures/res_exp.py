@@ -94,7 +94,7 @@ class SRResNet_bigger(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(64, 64, 3, stride=1, padding=1), nn.BatchNorm2d(64)
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
         self.final = nn.Sequential(
@@ -117,6 +117,51 @@ class SRResNet_bigger(nn.Module):
         x0 = self.symmetry_amp(x[:, 0]).reshape(-1, 1, s, s)
         x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s, s)
         x1 = self.symmetry_imag(x1).reshape(-1, 1, s, s)
+
+        return torch.cat([x0, x1], dim=1)
+
+
+class SRResNet_bigger_no_symmetry(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+        )
+
+        # ResBlock 8
+        self.blocks = nn.Sequential(
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
+        )
+
+        self.hardtanh = nn.Hardtanh(-pi, pi)
+
+    def forward(self, x):
+        s = x.shape[-1]
+
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        x0 = x[:, 0].reshape(-1, 1, s, s)
+        x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s, s)
 
         return torch.cat([x0, x1], dim=1)
 
@@ -173,7 +218,7 @@ class SRResNet_bigger_16(nn.Module):
         return torch.cat([x0, x1], dim=1)
 
 
-class SRResNet_amp(nn.Module):
+class SRResNet_bigger_16_no_symmetry(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -205,6 +250,57 @@ class SRResNet_amp(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
+        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),)
+
+        self.hardtanh = nn.Hardtanh(-pi, pi)
+
+    def forward(self, x):
+        s = x.shape[-1]
+
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        x0 = x[:, 0].reshape(-1, 1, s, s)
+        x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s, s)
+
+        return torch.cat([x0, x1], dim=1)
+
+
+class SRResNet_amp(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(1, 64, 9, stride=1, padding=4, groups=1), nn.PReLU()
+        )
+
+        # ResBlock 16
+        self.blocks = nn.Sequential(
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
+        )
+
         self.final = nn.Sequential(
             nn.Conv2d(64, 1, 9, stride=1, padding=4, groups=1),
         )
@@ -212,6 +308,7 @@ class SRResNet_amp(nn.Module):
         self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
 
     def forward(self, x):
+        x = x[:, 0].unsqueeze(1)
         s = x.shape[-1]
 
         x = self.preBlock(x)
@@ -230,7 +327,7 @@ class SRResNet_phase(nn.Module):
         super().__init__()
 
         self.preBlock = nn.Sequential(
-            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+            nn.Conv2d(1, 64, 9, stride=1, padding=4, groups=1), nn.PReLU()
         )
 
         # ResBlock 16
@@ -243,14 +340,14 @@ class SRResNet_phase(nn.Module):
             SRBlock(64, 64),
             SRBlock(64, 64),
             SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
-            SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
+            # SRBlock(64, 64),
         )
 
         self.postBlock = nn.Sequential(
@@ -265,6 +362,7 @@ class SRResNet_phase(nn.Module):
         self.hardtanh = nn.Hardtanh(-pi, pi)
 
     def forward(self, x):
+        x = x[:, 1].unsqueeze(1)
         s = x.shape[-1]
 
         x = self.preBlock(x)

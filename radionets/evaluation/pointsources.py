@@ -82,16 +82,16 @@ def flux_comparison(pred, truth, source_list):
                 x_low = 0
 
             x_high = int(np.ceil(x + sig_x + 1))
-            if x_high > 62:
-                x_high = 62
+            if x_high > 63:
+                x_high = 63
 
             y_low = int(np.floor(y - sig_y))
             if y_low < 0:
                 y_low = 0
 
             y_high = int(np.ceil(y + sig_y + 1))
-            if y_high > 62:
-                y_high = 62
+            if y_high > 63:
+                y_high = 63
 
             flux_truth = truth[i, int(x_low) : int(x_high), int(y_low) : int(y_high)]
             flux_pred = pred[i, int(x_low) : int(x_high), int(y_low) : int(y_high)]
