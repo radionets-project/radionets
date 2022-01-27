@@ -111,8 +111,8 @@ def calc_jet_angle(image):
             maxima.extend([a])
 
     vals = torch.tensor(maxima)
-    x_mid = vals[:, 0]
-    y_mid = vals[:, 1]
+    x_mid = 32
+    y_mid = 32
 
     m = torch.tan(pi / 2 - alpha_pca)
     n = y_mid - m * x_mid
