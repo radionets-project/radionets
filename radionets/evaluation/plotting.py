@@ -350,9 +350,11 @@ def visualize_source_reconstruction(
     msssim=False,
     plot_format="png",
 ):
+    from matplotlib.patches import Arc
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
+    # print(m_truth, n_truth, alpha_truth.numpy())
 
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
@@ -363,6 +365,14 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_pred[0], 3)}\,$deg",
     )
+    ax1.axvline(32, 0, 1, linestyle="--", color="red")
+    if alpha_pred < 0:
+        theta1 = 0
+        theta2 = -alpha_pred.numpy()[0]
+    else:
+        theta1 = -alpha_pred.numpy()[0]
+        theta2 = 0
+    ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="blue",))
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
         x_space,
@@ -371,6 +381,14 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_truth[0], 3)}\,$deg",
     )
+    ax2.axvline(32, 0, 1, linestyle="--", color="red")
+    if alpha_truth < 0:
+        theta1 = 0
+        theta2 = -alpha_truth.numpy()[0]
+    else:
+        theta1 = -alpha_truth.numpy()[0]
+        theta2 = 0
+    ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="blue",))
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
