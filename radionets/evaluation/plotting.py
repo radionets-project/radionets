@@ -365,14 +365,12 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_pred[0], 3)}\,$deg",
     )
-    ax1.axvline(32, 0, 1, linestyle="--", color="red")
-    if alpha_pred < 0:
-        theta1 = 0
-        theta2 = -alpha_pred.numpy()[0]
-    else:
-        theta1 = -alpha_pred.numpy()[0]
-        theta2 = 0
-    ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="blue",))
+    ax1.axvline(32, 0, 1, linestyle="--", color="green")
+
+    theta1 = min(0, -alpha_pred.numpy()[0])
+    theta2 = max(0, -alpha_pred.numpy()[0])
+    ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="green",))
+
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
         x_space,
@@ -381,14 +379,12 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {np.round(alpha_truth[0], 3)}\,$deg",
     )
-    ax2.axvline(32, 0, 1, linestyle="--", color="red")
-    if alpha_truth < 0:
-        theta1 = 0
-        theta2 = -alpha_truth.numpy()[0]
-    else:
-        theta1 = -alpha_truth.numpy()[0]
-        theta2 = 0
-    ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="blue",))
+    ax2.axvline(32, 0, 1, linestyle="--", color="green")
+
+    theta1 = min(0, -alpha_truth.numpy()[0])
+    theta2 = max(0, -alpha_truth.numpy()[0])
+    ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="green",))
+
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
