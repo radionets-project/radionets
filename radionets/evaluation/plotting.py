@@ -18,7 +18,7 @@ from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_ratio
 from pytorch_msssim import ms_ssim
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle, Arc
 from matplotlib import cm
 from matplotlib.colors import ListedColormap
 
@@ -350,11 +350,9 @@ def visualize_source_reconstruction(
     msssim=False,
     plot_format="png",
 ):
-    from matplotlib.patches import Arc
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     x_space = torch.arange(0, 511, 1)
-    # print(m_truth, n_truth, alpha_truth.numpy())
 
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
