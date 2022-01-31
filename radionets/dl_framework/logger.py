@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 file_dir = Path(__file__).parent.resolve()
-file_name = file_dir/"values.yaml"
+file_name = file_dir / "values.yaml"
 if file_name.exists():
     stream = open(file_name, 'r')
     values = yaml.load(stream, Loader=yaml.FullLoader)
@@ -47,7 +47,7 @@ class LogstashFormatter(Formatter):
         to_zone = tz.gettz("Europe/Berlin")
         from_zone = tz.gettz("UTC")
 
-        # transform to whished timezone
+        # transform to desired timezone
         # taken from
         # https://stackoverflow.com/questions/4770297/convert-utc-datetime-string-to-local-datetime
         t = t.replace(tzinfo=from_zone)
