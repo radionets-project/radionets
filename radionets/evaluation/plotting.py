@@ -357,33 +357,23 @@ def visualize_source_reconstruction(
 
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
-    ax1.plot(
-        x_space,
-        m_pred * x_space + n_pred,
-        "w--",
-        alpha=0.5,
-        label=fr"$\alpha = {alpha_pred[0]:.2f}\,$deg",
-    )
-    ax1.axvline(
-        32, 0, 1, linestyle="--", color="white", alpha=0.5,
-    )
 
+    # Plot prediction
+    ax1.plot(x_space, m_pred * x_space + n_pred, "w--", alpha=0.5)
+    ax1.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5)
+
+    # create angle visualization
     theta1 = min(0, -alpha_pred.numpy()[0])
     theta2 = max(0, -alpha_pred.numpy()[0])
     ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white"))
 
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
-    ax2.plot(
-        x_space,
-        m_truth * x_space + n_truth,
-        "w--",
-        alpha=0.5,
-        label=fr"$\alpha = {alpha_truth[0]:.2f}\,$deg",
-    )
-    ax2.axvline(
-        32, 0, 1, linestyle="--", color="white", alpha=0.5,
-    )
 
+    # Plot truth
+    ax2.plot(x_space, m_truth * x_space + n_truth, "w--", alpha=0.5)
+    ax2.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5)
+
+    # create angle visualization
     theta1 = min(0, -alpha_truth.numpy()[0])
     theta2 = max(0, -alpha_truth.numpy()[0])
     ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white",))
