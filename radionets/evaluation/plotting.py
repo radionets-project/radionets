@@ -361,7 +361,7 @@ def visualize_source_reconstruction(
         m_pred * x_space + n_pred,
         "w--",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}\,$deg",
+        label=fr"$\alpha = {alpha_pred[0]:.2f}\,$deg",
     )
     ax1.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5,)
 
@@ -375,7 +375,7 @@ def visualize_source_reconstruction(
         m_truth * x_space + n_truth,
         "w--",
         alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}\,$deg",
+        label=fr"$\alpha = {alpha_truth[0]:.2f}\,$deg",
     )
     ax2.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5,)
 
@@ -453,7 +453,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     im2 = ax2.imshow(ifft_truth)
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_ratio(CS1, CS2), 2)
-    make_axes_nice(fig, ax2, im2, "Truth, ratio: {}".format(diff))
+    make_axes_nice(fig, ax2, im2, f"Truth, ratio: {diff}")
     outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
     # Assign labels for the levels and save them for the legend
@@ -477,8 +477,8 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
 def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
     dif = (alpha_pred - alpha_truth).numpy()
 
-    mean = np.round(np.mean(dif), 3)
-    std = np.round(np.std(dif, ddof=1), 3)
+    mean = np.mean(dif)
+    std = np.std(dif, ddof=1)
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
@@ -494,7 +494,7 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
 
     extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
     extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     ax2.hist(
         dif[(dif > -10) & (dif < 10)],
@@ -638,8 +638,8 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
 
 def histogram_mean_diff(vals, out_path, plot_format="png"):
     vals = vals.numpy()
-    mean = np.round(np.mean(vals), 3)
-    std = np.round(np.std(vals, ddof=1), 3)
+    mean = np.mean(vals)
+    std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals,
@@ -653,7 +653,7 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     ax1.set_ylabel("Number of sources")
     extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
     extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
 
@@ -663,8 +663,8 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
 
 def histogram_area(vals, out_path, plot_format="png"):
     vals = vals.numpy()
-    mean = np.round(np.mean(vals), 3)
-    std = np.round(np.std(vals, ddof=1), 3)
+    mean = np.mean(vals)
+    std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals,
@@ -679,7 +679,7 @@ def histogram_area(vals, out_path, plot_format="png"):
 
     extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
     extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
 
@@ -692,10 +692,10 @@ def hist_point(vals, mask, out_path, plot_format="png"):
     min_all = vals.min()
     bins = np.arange(min_all, 100 + binwidth, binwidth)
 
-    mean_point = np.round(np.mean(vals[mask]), 3)
-    std_point = np.round(np.std(vals[mask], ddof=1), 3)
-    mean_extent = np.round(np.mean(vals[~mask]), 3)
-    std_extent = np.round(np.std(vals[~mask], ddof=1), 3)
+    mean_point = np.mean(vals[mask])
+    std_point = np.std(vals[mask], ddof=1)
+    mean_extent = np.mean(vals[~mask])
+    std_extent = np.std(vals[~mask], ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals[mask],
@@ -726,8 +726,8 @@ def hist_point(vals, mask, out_path, plot_format="png"):
     ax1.legend(
         [extra_1, extra_2],
         [
-            fr"Point: $({mean_point}\pm{std_point})\,\%$",
-            fr"Extended: $({mean_extent}\pm{std_extent})\,\%$",
+            fr"Point: $({mean_point:.2f}\pm{std_point:.2f})\,\%$",
+            fr"Extended: $({mean_extent:.2f}\pm{std_extent:.2f})\,\%$",
         ],
     )
     outpath = str(out_path) + f"/hist_point.{plot_format}"
