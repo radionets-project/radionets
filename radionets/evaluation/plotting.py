@@ -1,26 +1,27 @@
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 from math import pi
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from matplotlib import cm
+from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.lines import Line2D
+from matplotlib.patches import Arc, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from radionets.simulations.utils import adjust_outpath
-from tqdm import tqdm
-from radionets.evaluation.utils import (
-    reshape_2d,
-    make_axes_nice,
-    check_vmin_vmax,
-    pad_unsqueeze,
-    round_n_digits,
-)
-from radionets.evaluation.jet_angle import calc_jet_angle
-from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
+from pytorch_msssim import ms_ssim
 from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_ratio
-from pytorch_msssim import ms_ssim
-from matplotlib.patches import Rectangle, Arc
-from matplotlib import cm
-from matplotlib.colors import ListedColormap
+from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
+from radionets.evaluation.jet_angle import calc_jet_angle
+from radionets.evaluation.utils import (
+    check_vmin_vmax,
+    make_axes_nice,
+    pad_unsqueeze,
+    reshape_2d,
+    round_n_digits,
+)
+from radionets.simulations.utils import adjust_outpath
+from tqdm import tqdm
 
 # make nice Latex friendly plots
 # mpl.use("pgf")
@@ -363,11 +364,13 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {alpha_pred[0]:.2f}\,$deg",
     )
-    ax1.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5,)
+    ax1.axvline(
+        32, 0, 1, linestyle="--", color="white", alpha=0.5,
+    )
 
     theta1 = min(0, -alpha_pred.numpy()[0])
     theta2 = max(0, -alpha_pred.numpy()[0])
-    ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white",))
+    ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white"))
 
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
     ax2.plot(
@@ -377,7 +380,9 @@ def visualize_source_reconstruction(
         alpha=0.5,
         label=fr"$\alpha = {alpha_truth[0]:.2f}\,$deg",
     )
-    ax2.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5,)
+    ax2.axvline(
+        32, 0, 1, linestyle="--", color="white", alpha=0.5,
+    )
 
     theta1 = min(0, -alpha_truth.numpy()[0])
     theta2 = max(0, -alpha_truth.numpy()[0])
@@ -425,8 +430,15 @@ def visualize_source_reconstruction(
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
-    ax1.legend(loc="best")
-    ax2.legend(loc="best")
+    line = Line2D(
+        [], [], linestyle="-", color="w", label=fr"$\alpha = {alpha_pred[0]:.2f}\,$deg"
+    )
+    line_truth = Line2D(
+        [], [], linestyle="-", color="w", label=fr"$\alpha = {alpha_truth[0]:.2f}\,$deg"
+    )
+
+    ax1.legend(loc="best", handles=[line])
+    ax2.legend(loc="best", handles=[line_truth])
     fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     plt.close("all")
@@ -482,12 +494,7 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
-        dif,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dif, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
@@ -520,24 +527,14 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
     ax1.set_title("True Images")
     ax1.hist(
-        dr_truth,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dr_truth, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("Dynamic range")
     ax1.set_ylabel("Number of sources")
 
     ax2.set_title("Predictions")
     ax2.hist(
-        dr_pred,
-        25,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dr_pred, 25, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax2.set_xlabel("Dynamic range")
     ax2.set_ylabel("Number of sources")
@@ -642,12 +639,7 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
@@ -667,12 +659,7 @@ def histogram_area(vals, out_path, plot_format="png"):
     std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")
