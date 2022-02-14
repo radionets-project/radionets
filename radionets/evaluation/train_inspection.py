@@ -54,10 +54,10 @@ def create_predictions(conf):
     save_pred(out_path, pred, img_test, img_true, "pred", "img_test", "img_true")
 
 
-def get_prediction(conf):
+def get_prediction(conf, mode="test"):
     test_ds = load_data(
         conf["data_path"],
-        mode="test",
+        mode=mode,
         fourier=conf["fourier"],
         source_list=conf["source_list"],
     )
@@ -140,15 +140,16 @@ def get_separate_prediction(conf):
     return pred, img_test, img_true
 
 
-def create_inspection_plots(conf, num_images=3, rand=False):
+def create_inspection_plots(conf, num_images=3, rand=False, diff=True):
+    conf["num_images"] = num_images
+    conf["random"] = rand
+    pred, img_test, img_true = get_prediction(conf, mode="train")
+
     model_path = conf["model_path"]
-    path = str(Path(model_path).parent / "evaluation")
-    path += "/predictions.h5"
     out_path = Path(model_path).parent / "evaluation/"
 
-    pred, img_test, img_true = read_pred(path)
     if conf["fourier"]:
-        if conf["diff"]:
+        if diff:
             for i in range(len(img_test)):
                 visualize_with_fourier_diff(
                     i,
