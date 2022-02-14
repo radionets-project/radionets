@@ -141,9 +141,24 @@ def get_separate_prediction(conf):
 
 
 def create_inspection_plots(conf, num_images=3, rand=False, diff=True):
+    """Create quickly inspection plots right after the training finished. Note, that
+    these images are taken from the validation dataset and are therefore known by the
+    network.
+
+    Parameters
+    ----------
+    conf : dict
+        contains configurations
+    num_images : int, optional
+        number of images to plot, by default 3
+    rand : bool, optional
+        take images randomly or from the beginning of the dataset, by default False
+    diff : bool, optional
+        show the difference or the input, by default True
+    """
     conf["num_images"] = num_images
     conf["random"] = rand
-    pred, img_test, img_true = get_prediction(conf, mode="train")
+    pred, img_test, img_true = get_prediction(conf, mode="valid")
 
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation/"
