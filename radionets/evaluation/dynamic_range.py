@@ -66,7 +66,6 @@ def get_rms(ifft_truth, ifft_pred):
 
 def calc_dr(ifft_truth, ifft_pred):
     rms_truth, rms_pred, rms_boxes, corners = get_rms(ifft_truth, ifft_pred)
-    print(rms_pred[rms_pred != 0])
     peak_vals_truth = ifft_truth.reshape(-1, ifft_truth.shape[-1] ** 2).max(axis=1)
     peak_vals_pred = ifft_pred.reshape(-1, ifft_pred.shape[-1] ** 2).max(axis=1)
     dr_truth = peak_vals_truth[rms_truth != 0] / rms_truth[rms_truth != 0]
