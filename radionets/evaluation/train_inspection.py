@@ -140,7 +140,47 @@ def get_separate_prediction(conf):
     return pred, img_test, img_true
 
 
-def create_inspection_plots(conf, num_images=3, rand=False, diff=True):
+def create_inspection_plots(conf, num_images=3, rand=False):
+    model_path = conf["model_path"]
+    path = str(Path(model_path).parent / "evaluation")
+    path += "/predictions.h5"
+    out_path = Path(model_path).parent / "evaluation/"
+
+    pred, img_test, img_true = read_pred(path)
+    if conf["fourier"]:
+        if conf["diff"]:
+            for i in range(len(img_test)):
+                visualize_with_fourier_diff(
+                    i,
+                    pred[i],
+                    img_true[i],
+                    amp_phase=conf["amp_phase"],
+                    out_path=out_path,
+                    plot_format=conf["format"],
+                )
+        else:
+            for i in range(len(img_test)):
+                visualize_with_fourier(
+                    i,
+                    img_test[i],
+                    pred[i],
+                    img_true[i],
+                    amp_phase=conf["amp_phase"],
+                    out_path=out_path,
+                    plot_format=conf["format"],
+                )
+    else:
+        plot_results(
+            img_test.cpu(),
+            reshape_2d(pred.cpu()),
+            reshape_2d(img_true),
+            out_path,
+            save=True,
+            plot_format=conf["format"],
+        )
+
+
+def after_training_plots(conf, num_images=3, rand=False, diff=True):
     """Create quickly inspection plots right after the training finished. Note, that
     these images are taken from the validation dataset and are therefore known by the
     network.
