@@ -353,7 +353,7 @@ def visualize_source_reconstruction(
 ):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
-    x_space = torch.arange(0, 511, 1)
+    x_space = torch.arange(0, 63, 1)
 
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
@@ -550,7 +550,7 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
 
 def plot_box(ax, num_boxes, corners):
     size = get_boxsize(num_boxes)
-    img_size = 63
+    img_size = 64
     if corners[2]:
         ax.axvspan(
             xmin=0,
