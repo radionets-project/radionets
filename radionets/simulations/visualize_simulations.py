@@ -248,7 +248,7 @@ def plot_vlba_uv(u, v, out_path=None):
     plt.tick_params(axis="both", labelsize=9)
 
     ax.axis("equal")
-    plt.legend()
+    # plt.legend()
     fig.tight_layout()
 
     if out_path is not None:
