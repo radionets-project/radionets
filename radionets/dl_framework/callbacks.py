@@ -5,7 +5,7 @@ from radionets.dl_framework.data import do_normalisation
 from radionets.dl_framework.logger import make_notifier
 from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item
-from fastai.callback.core import Callback
+from fastai.callback.core import Callback, TrainEvalCallback
 from pathlib import Path
 from fastcore.foundation import L
 import matplotlib.pyplot as plt
@@ -107,6 +107,13 @@ class NormCallback(Callback):
         # mean for imag and phase is approx 0
         # assert x[:, 1].mean() != a[:, 1].mean()
         return a
+
+
+class CudaCallback(Callback):
+    _order = 3
+
+    def before_fit(self):
+        self.model.cuda()
 
 
 class DataAug(Callback):

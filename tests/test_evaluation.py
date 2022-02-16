@@ -281,7 +281,7 @@ class TestEvaluation:
         assert flux_pred.all() > 0
         assert flux_truth.all() > 0
 
-    @pytest.mark.xfail
+    # @pytest.mark.xfail
     def test_evaluation(self):
         import shutil
         import os
