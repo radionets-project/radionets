@@ -11,7 +11,6 @@ from radionets.dl_framework.callbacks import (
 from fastai.optimizer import Adam
 from fastai.learner import Learner
 from fastai.data.core import DataLoaders
-# from fastai.callback.data import CudaCallback
 from fastai.callback.schedule import ParamScheduler, combined_cos
 import radionets.dl_framework.loss_functions as loss_functions
 

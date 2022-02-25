@@ -5,7 +5,7 @@ from radionets.dl_framework.data import do_normalisation
 from radionets.dl_framework.logger import make_notifier
 from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item
-from fastai.callback.core import Callback, TrainEvalCallback
+from fastai.callback.core import Callback
 from pathlib import Path
 from fastcore.foundation import L
 import matplotlib.pyplot as plt
