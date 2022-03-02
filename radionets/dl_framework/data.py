@@ -73,7 +73,7 @@ class h5_dataset:
         elif isinstance(i, np.ndarray):
             i = torch.tensor(i)
         indices, _ = torch.sort(i)
-        bundle = indices // self.num_img
+        bundle = torch.div(indices, self.num_img, rounding_mode="floor")
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
         bundle_paths = [
