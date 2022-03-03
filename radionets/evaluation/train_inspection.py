@@ -54,10 +54,10 @@ def create_predictions(conf):
     save_pred(out_path, pred, img_test, img_true, "pred", "img_test", "img_true")
 
 
-def get_prediction(conf):
+def get_prediction(conf, mode="test"):
     test_ds = load_data(
         conf["data_path"],
-        mode="test",
+        mode=mode,
         fourier=conf["fourier"],
         source_list=conf["source_list"],
     )
@@ -149,6 +149,62 @@ def create_inspection_plots(conf, num_images=3, rand=False):
     pred, img_test, img_true = read_pred(path)
     if conf["fourier"]:
         if conf["diff"]:
+            for i in range(len(img_test)):
+                visualize_with_fourier_diff(
+                    i,
+                    pred[i],
+                    img_true[i],
+                    amp_phase=conf["amp_phase"],
+                    out_path=out_path,
+                    plot_format=conf["format"],
+                )
+        else:
+            for i in range(len(img_test)):
+                visualize_with_fourier(
+                    i,
+                    img_test[i],
+                    pred[i],
+                    img_true[i],
+                    amp_phase=conf["amp_phase"],
+                    out_path=out_path,
+                    plot_format=conf["format"],
+                )
+    else:
+        plot_results(
+            img_test.cpu(),
+            reshape_2d(pred.cpu()),
+            reshape_2d(img_true),
+            out_path,
+            save=True,
+            plot_format=conf["format"],
+        )
+
+
+def after_training_plots(conf, num_images=3, rand=False, diff=True):
+    """Create quickly inspection plots right after the training finished. Note, that
+    these images are taken from the validation dataset and are therefore known by the
+    network.
+
+    Parameters
+    ----------
+    conf : dict
+        contains configurations
+    num_images : int, optional
+        number of images to plot, by default 3
+    rand : bool, optional
+        take images randomly or from the beginning of the dataset, by default False
+    diff : bool, optional
+        show the difference or the input, by default True
+    """
+    conf["num_images"] = num_images
+    conf["random"] = rand
+    pred, img_test, img_true = get_prediction(conf, mode="valid")
+
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation/"
+
+    if conf["fourier"]:
+        if diff:
             for i in range(len(img_test)):
                 visualize_with_fourier_diff(
                     i,

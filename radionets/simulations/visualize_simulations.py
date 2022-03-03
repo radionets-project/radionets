@@ -229,7 +229,7 @@ def plot_spectrum_grey(img1, img2, out_path=None):
 
 
 def ft(img):
-    return np.fft.fftshift(np.fft.fft2(img))
+    return np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(img)))
 
 
 def plot_uv_coverage(u, v, ax):
@@ -248,7 +248,7 @@ def plot_vlba_uv(u, v, out_path=None):
     plt.tick_params(axis="both", labelsize=9)
 
     ax.axis("equal")
-    plt.legend()
+    # plt.legend()
     fig.tight_layout()
 
     if out_path is not None:
