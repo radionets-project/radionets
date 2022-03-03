@@ -288,8 +288,8 @@ def visualize_with_fourier_diff(
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
     if amp_phase:
-        real_pred = 10 ** (10 * np.array(real_pred, dtype="float128") - 10) - 1e-10
-        real_truth = 10 ** (10 * np.array(real_truth, dtype="float128") - 10) - 1e-10
+        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
+        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
 
     # plotting
     # plt.style.use('./paper_large_3_2.rc')
@@ -353,7 +353,7 @@ def visualize_source_reconstruction(
 ):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
-    x_space = torch.arange(0, 511, 1)
+    x_space = torch.arange(0, 63, 1)
 
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
@@ -550,7 +550,7 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
 
 def plot_box(ax, num_boxes, corners):
     size = get_boxsize(num_boxes)
-    img_size = 63
+    img_size = 64
     if corners[2]:
         ax.axvspan(
             xmin=0,
