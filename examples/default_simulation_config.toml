@@ -18,8 +18,8 @@ simulate = true
 num_components = [4, 10]
 
 [point_sources]
-simulate = true
-add_extended = true
+simulate = false
+add_extended = false
 
 [image_options]
 bundles_train = 5
