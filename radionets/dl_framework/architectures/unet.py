@@ -369,7 +369,127 @@ class UNet_denoise_64(nn.Module):
         return out
 
 
-class UNet_segmentation(nn.Module):
+class UNet_jet(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.channels = 16
+
+        self.dconv_down1 = nn.Sequential(*double_conv(1, self.channels))
+        self.dconv_down2 = nn.Sequential(*double_conv(self.channels, 2*self.channels))
+        self.dconv_down3 = nn.Sequential(*double_conv(2*self.channels, 4*self.channels))
+        self.dconv_down4 = nn.Sequential(*double_conv(4*self.channels, 8*self.channels))
+        self.dconv_down5 = nn.Sequential(*double_conv(8*self.channels, 16*self.channels))
+        self.dconv_down6 = nn.Sequential(*double_conv(16*self.channels, 32*self.channels))
+
+        self.maxpool = nn.MaxPool2d(2)
+        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+
+        self.dconv_up5 = nn.Sequential(*double_conv(48*self.channels, 16*self.channels))
+        self.dconv_up4 = nn.Sequential(*double_conv(24*self.channels, 8*self.channels))
+        self.dconv_up3 = nn.Sequential(*double_conv(12*self.channels, 4*self.channels))
+        self.dconv_up2 = nn.Sequential(*double_conv(6*self.channels, 2*self.channels))
+        self.dconv_up1 = nn.Sequential(*double_conv(3*self.channels, self.channels))
+
+        self.conv_last = nn.Conv2d(self.channels, 6, 1)
+        self.output_activation = nn.Sequential(nn.Softmax(dim=1))
+
+    def forward(self, x):
+        conv1 = self.dconv_down1(x)
+        x = self.maxpool(conv1)
+        conv2 = self.dconv_down2(x)
+        x = self.maxpool(conv2)
+        conv3 = self.dconv_down3(x)
+        x = self.maxpool(conv3)
+        conv4 = self.dconv_down4(x)
+        x = self.maxpool(conv4)
+        conv5 = self.dconv_down5(x)
+        x = self.maxpool(conv5)
+        x = self.dconv_down6(x)
+
+        x = self.upsample(x)
+        x = torch.cat([x, conv5], dim=1)
+        x = self.dconv_up5(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv4], dim=1)
+        x = self.dconv_up4(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv3], dim=1)
+        x = self.dconv_up3(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv2], dim=1)
+        x = self.dconv_up2(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv1], dim=1)
+        x = self.dconv_up1(x)
+
+        out = self.conv_last(x)
+        out = self.output_activation(out)
+
+        return out
+
+
+class UNet_clean(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.channels = 16
+
+        self.dconv_down1 = nn.Sequential(*double_conv(1, self.channels))
+        self.dconv_down2 = nn.Sequential(*double_conv(self.channels, 2*self.channels))
+        self.dconv_down3 = nn.Sequential(*double_conv(2*self.channels, 4*self.channels))
+        self.dconv_down4 = nn.Sequential(*double_conv(4*self.channels, 8*self.channels))
+        self.dconv_down5 = nn.Sequential(*double_conv(8*self.channels, 16*self.channels))
+        self.dconv_down6 = nn.Sequential(*double_conv(16*self.channels, 32*self.channels))
+
+        self.maxpool = nn.MaxPool2d(2)
+        self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
+
+        self.dconv_up5 = nn.Sequential(*double_conv(48*self.channels, 16*self.channels))
+        self.dconv_up4 = nn.Sequential(*double_conv(24*self.channels, 8*self.channels))
+        self.dconv_up3 = nn.Sequential(*double_conv(12*self.channels, 4*self.channels))
+        self.dconv_up2 = nn.Sequential(*double_conv(6*self.channels, 2*self.channels))
+        self.dconv_up1 = nn.Sequential(*double_conv(3*self.channels, self.channels))
+
+        self.conv_last = nn.Conv2d(self.channels, 2, 1)
+        self.output_activation = nn.Sequential(nn.Softmax(dim=1))
+
+    def forward(self, x):
+        conv1 = self.dconv_down1(x)
+        x = self.maxpool(conv1)
+        conv2 = self.dconv_down2(x)
+        x = self.maxpool(conv2)
+        conv3 = self.dconv_down3(x)
+        x = self.maxpool(conv3)
+        conv4 = self.dconv_down4(x)
+        x = self.maxpool(conv4)
+        conv5 = self.dconv_down5(x)
+        x = self.maxpool(conv5)
+        x = self.dconv_down6(x)
+
+        x = self.upsample(x)
+        x = torch.cat([x, conv5], dim=1)
+        x = self.dconv_up5(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv4], dim=1)
+        x = self.dconv_up4(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv3], dim=1)
+        x = self.dconv_up3(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv2], dim=1)
+        x = self.dconv_up2(x)
+        x = self.upsample(x)
+        x = torch.cat([x, conv1], dim=1)
+        x = self.dconv_up1(x)
+
+        out = self.conv_last(x)
+        out = self.output_activation(out)
+
+        return out
+    
+
+class UNet_survey(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -380,16 +500,18 @@ class UNet_segmentation(nn.Module):
         self.dconv_down3 = nn.Sequential(*double_conv(2*self.channels, 4*self.channels))
         self.dconv_down4 = nn.Sequential(*double_conv(4*self.channels, 8*self.channels))
         self.dconv_down5 = nn.Sequential(*double_conv(8*self.channels, 16*self.channels))
+        #self.dconv_down6 = nn.Sequential(*double_conv(16*self.channels, 32*self.channels))
 
         self.maxpool = nn.MaxPool2d(2)
         self.upsample = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=True)
 
+        #self.dconv_up5 = nn.Sequential(*double_conv(48*self.channels, 16*self.channels))
         self.dconv_up4 = nn.Sequential(*double_conv(24*self.channels, 8*self.channels))
         self.dconv_up3 = nn.Sequential(*double_conv(12*self.channels, 4*self.channels))
         self.dconv_up2 = nn.Sequential(*double_conv(6*self.channels, 2*self.channels))
         self.dconv_up1 = nn.Sequential(*double_conv(3*self.channels, self.channels))
 
-        self.conv_last = nn.Conv2d(8, 4, 1)
+        self.conv_last = nn.Conv2d(self.channels, 4, 1)
         self.output_activation = nn.Sequential(nn.Softmax(dim=1))
 
     def forward(self, x):
@@ -402,7 +524,12 @@ class UNet_segmentation(nn.Module):
         conv4 = self.dconv_down4(x)
         x = self.maxpool(conv4)
         x = self.dconv_down5(x)
+#        x = self.maxpool(conv5)
+#        x = self.dconv_down6(x)
 
+#        x = self.upsample(x)
+#        x = torch.cat([x, conv5], dim=1)
+#        x = self.dconv_up5(x)
         x = self.upsample(x)
         x = torch.cat([x, conv4], dim=1)
         x = self.dconv_up4(x)

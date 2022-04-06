@@ -485,3 +485,87 @@ def pos_loss(x, y):
 
 def sort(x, permutation):
     return x[permutation, :]
+
+
+def jet_seg(x, y):
+    loss_mse = l1(x, y)
+
+    channels = x.shape[1]
+    conv_hor = nn.Conv2d(channels, channels, 3, padding=1, bias=False)
+    conv_ver = nn.Conv2d(channels, channels, 3, padding=1, bias=False)
+    # sobel kernels
+    conv_hor.weight = nn.Parameter(torch.cuda.FloatTensor([
+        [1, 0, -1], 
+        [2, 0, -2], 
+        [1, 0, -1]
+    ]).repeat(10, 10, 1, 1))
+    conv_ver.weight = nn.Parameter(torch.cuda.FloatTensor([
+        [1, 2, 1], 
+        [0, 0, 0], 
+        [-1, -2, -1]
+    ]).repeat(10, 10, 1, 1))
+    grad_hor_x = conv_hor(x)
+    grad_hor_y = conv_hor(y)
+    grad_ver_x = conv_ver(x)
+    grad_ver_y = conv_ver(y)
+    grad_x = torch.sqrt(grad_hor_x**2 + grad_ver_x**2)
+    grad_y = torch.sqrt(grad_hor_y**2 + grad_ver_y**2)
+    loss_grad = l1(grad_x, grad_y)
+    #print('mse loss:', loss_mse)
+    #print('grad loss:', loss_grad)
+
+    return loss_mse + loss_grad
+
+    
+def jet_list(x, y):
+    y = y[:, :, 1:3]
+    x = x.reshape(y.shape)
+    
+    y = y[:, 0:3]
+    x = x[:, 0:3]
+    
+    loss = l1(x, y)
+    return loss
+
+
+# def jet_list2comp(x, y):
+    # x: output from NN as a list (shape: 9x5; 9 componontes, amp, x, y, sx, sy)
+    # y: compontents (shape: 9x256x256), 
+    # y could be list as well -> less disc space, more time for loss calculation
+    
+    
+
+
+def l1_jet_prob(x, y):
+    # DOES NOT TRAIN AT ALL
+    # probability distribution loss
+
+    x_sy = x.reshape(y.shape)
+    # initialize outs in a way that backpropagation is possible, but size=0
+    out_x = torch.distributions.multivariate_normal.MultivariateNormal(
+        x_sy[0, 0, 1:3],
+        torch.diag(x_sy[0, 0, 3:5])
+        ).rsample(sample_shape=torch.Size([0]))
+    out_y = torch.distributions.multivariate_normal.MultivariateNormal(
+        y[0, 0, 1:3],
+        torch.diag(y[0, 0, 3:5])
+        ).rsample(sample_shape=torch.Size([0]))
+
+    loss = 0
+    pdist = nn.PairwiseDistance(p=2)
+    n_samples = 10000
+    for i in range(y.shape[0]):
+        for j in range(y.shape[1]):
+            out_x = torch.cat((out_x, torch.distributions.multivariate_normal.MultivariateNormal(
+                x_sy[i, j, 1:3],
+                torch.diag(x_sy[i, j, 3:5])
+                ).rsample(sample_shape=torch.Size([n_samples]))))
+            out_y = torch.cat((out_y, torch.distributions.multivariate_normal.MultivariateNormal(
+                y[i, j, 1:3],
+                torch.diag(y[i, j, 3:5])
+                ).rsample(sample_shape=torch.Size([n_samples]))))
+            loss += torch.mean(pdist(out_x, out_y))
+            # loss += y[i, j, 0] * torch.mean(pdist(out_x, out_y))
+    loss /= y.shape[0] * y.shape[1]
+    print(loss)
+    return loss
