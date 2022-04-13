@@ -112,6 +112,10 @@ class NormCallback(Callback):
 class CudaCallback(Callback):
     _order = 3
 
+    def before_batch(self):
+        self.learn.xb = [self.xb[0].cuda()]
+        self.learn.yb = [self.yb[0].cuda()]
+
     def before_fit(self):
         self.model.cuda()
 

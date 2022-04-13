@@ -5,6 +5,7 @@ from radionets.dl_framework.utils import children
 import torch.nn.functional as F
 from pytorch_msssim import MS_SSIM
 from scipy.optimize import linear_sum_assignment
+import numpy as np
 
 
 class FeatureLoss(nn.Module):
@@ -142,12 +143,32 @@ def l1_phase_unc(x, y):
     return loss
 
 
+def create_circular_mask(h, w, center=None, radius=None, bs=64):
+    if center is None:
+        center = (int(w/2), int(h/2))
+    if radius is None:
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+
+    mask = dist_from_center <= radius
+    return np.repeat([mask], bs, axis=0)
+
+
 def splitted_L1(x, y):
     inp_amp = x[:, 0, :]
     inp_phase = x[:, 1, :]
 
     tar_amp = y[:, 0, :]
     tar_phase = y[:, 1, :]
+
+    # mask = torch.tensor(create_circular_mask(64, 64, radius=15, bs=y.shape[0]))
+
+    # inp_amp[~mask] = 0
+    # inp_phase[~mask] = 0
+    # tar_amp[~mask] = 0
+    # tar_phase[~mask] = 0
 
     l1 = nn.L1Loss()
     loss_amp = l1(inp_amp, tar_amp)

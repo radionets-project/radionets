@@ -27,6 +27,7 @@ from pathlib import Path
     type=click.Choice(
         [
             "train",
+            "fine_tune",
             "lr_find",
             "plot_loss",
         ],
@@ -99,6 +100,37 @@ def main(configuration_path, mode):
 
         if train_conf["inspection"]:
             after_training_plots(train_conf, rand=True)
+
+
+    if mode == "fine_tune":
+        click.echo("Start fine tuning of the model.\n")
+
+        # define_learner
+        learn = define_learner(
+            data,
+            arch,
+            train_conf,
+        )
+
+        # load pretrained model
+        if train_conf["pre_model"] == "none":
+            click.echo("Need a pre-trained modle for fine tuning!")
+            return
+
+        learn.create_opt()
+        load_pre_model(learn, train_conf["pre_model"])
+
+        # Train the model, except interrupt
+        try:
+            learn.fine_tune(train_conf["num_epochs"])
+        except KeyboardInterrupt:
+            pop_interrupt(learn, train_conf)
+
+        end_training(learn, train_conf)
+
+        if train_conf["inspection"]:
+            after_training_plots(train_conf, rand=True)
+
 
     if mode == "lr_find":
         click.echo("Start lr_find.\n")
