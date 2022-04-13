@@ -32,7 +32,7 @@ def do_normalisation(x, norm):
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False):
+    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False, vgg=False, physics_informed=False):
         """
         Save the bundle paths and the number of bundles in one file.
         """
@@ -41,6 +41,8 @@ class h5_dataset:
         self.tar_fourier = tar_fourier
         self.amp_phase = amp_phase
         self.source_list = source_list
+        self.vgg = vgg
+        self.physics_informed = physics_informed
 
     def __call__(self):
         return print("This is the h5_dataset class.")
@@ -54,9 +56,13 @@ class h5_dataset:
     def __getitem__(self, i):
         if self.source_list:
             x = self.open_image("x", i)
+            y = self.open_image("z", i)
+        elif self.physics_informed:
+            x = self.open_image("x", i)
             y = self.open_image("y", i)
-            z = self.open_image("z", i)
-            return x, y, z
+            base_mask = self.open_image("base_mask", i)
+            A = self.open_image("A", i)
+            return (x, base_mask.squeeze(0), A.squeeze(0)), y #x, (y, base_mask.squeeze(0), A.squeeze(0))
         else:
             x = self.open_image("x", i)
             y = self.open_image("y", i)
@@ -80,31 +86,26 @@ class h5_dataset:
             h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
         ]
         bundle_paths_str = list(map(str, bundle_paths))
-        if not var == "z":
-            data = torch.tensor(
-                np.array(
-                    [
-                        bund[var][img]
-                        for bund, bund_str in zip(bundle_paths, bundle_paths_str)
-                        for img in image[
-                            bundle == bundle_unique[bundle_paths_str.index(bund_str)]
-                        ]
-                    ]
-                )
-            )
+        
+        if var == 'base_mask' or var == 'A' or var == "z": # Baselines and response matrices are the same for every single src_position/bundle
+            image[image != 0] = 0
+            
 
-        else:
-            data = [
-                np.array(bund[var + str(int(img))])
+
+        data = torch.tensor(
+            [
+                bund[var][img]
                 for bund, bund_str in zip(bundle_paths, bundle_paths_str)
                 for img in image[
                     bundle == bundle_unique[bundle_paths_str.index(bund_str)]
                 ]
             ]
-            return data
+        )
+        if var == "x" or var == 'y':
+            if data.shape[1] == 1:
 
-        if var == "x" or self.tar_fourier is True:
-            if len(i) == 1:
+                data_channel = data
+            elif len(i) == 1:
                 data_amp, data_phase = data[:, 0], data[:, 1]
 
                 data_channel = torch.cat([data_amp, data_phase], dim=0)
@@ -113,15 +114,24 @@ class h5_dataset:
 
                 data_channel = torch.cat([data_amp, data_phase], dim=1)
         else:
-            if data.shape[1] == 2:
-                raise ValueError(
-                    "Two channeled data is used despite Fourier being False.\
-                        Set Fourier to True!"
-                )
-            if len(i) == 1:
-                data_channel = data.reshape(data.shape[-1] ** 2)
+            if self.source_list:
+                data_channel = data
+            elif self.vgg:
+                data_channel = data
+            elif self.physics_informed:
+                data_channel = data
             else:
-                data_channel = data.reshape(-1, data.shape[-1] ** 2)
+                if data.shape[1] == 2:
+                    raise ValueError(
+                        "Two channeled data is used despite Fourier being False.\
+                            Set Fourier to True!"
+                    )
+                if len(i) == 1:
+                    data_channel = data.reshape(data.shape[-1] ** 2)
+                else:
+                    data_channel = data.reshape(-1, data.shape[-1] ** 2)
+        # if var == 'base_mask' or var == 'A':
+        #     print(data_channel.shape)
         return data_channel.float()
 
 
@@ -215,6 +225,18 @@ def save_fft_pair(path, x, y, z=None, name_x="x", name_y="y", name_z="z"):
             [hf.create_dataset(name_z + str(i), data=z[i]) for i in range(len(z))]
         hf.close()
 
+def save_fft_pair_with_response(path, x, y, base_mask, A, name_x="x", name_y="y", name_base_mask="base_mask", name_A='A'):
+    """
+    write fft_pairs created in second analysis step to h5 file
+    write response matrices & baselines 
+    """
+    with h5py.File(path, "w") as hf:
+        hf.create_dataset(name_x, data=x)
+        hf.create_dataset(name_y, data=y)
+        hf.create_dataset(name_base_mask, data=base_mask)
+        hf.create_dataset(name_A, data=A)
+        hf.close()
+
 
 def open_fft_pair(path):
     """
@@ -247,7 +269,7 @@ def mean_and_std(array):
     return array.mean(), array.std()
 
 
-def load_data(data_path, mode, fourier=False, source_list=False):
+def load_data(data_path, mode, fourier=False, source_list=False, vgg=False, physics_informed=False):
     """
     Load data set from a directory and return it as h5_dataset.
 
@@ -266,9 +288,6 @@ def load_data(data_path, mode, fourier=False, source_list=False):
         dataset containing x and y images
     """
     bundle_paths = get_bundles(data_path)
-    data = np.sort(
-        [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
-    )
-    data = sorted(data, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
-    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)
+    data = [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
+    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list, vgg=vgg, physics_informed=physics_informed)
     return ds

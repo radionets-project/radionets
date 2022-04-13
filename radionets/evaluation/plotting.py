@@ -194,6 +194,7 @@ def visualize_with_fourier(
     out_path: str which contains the output path
     """
     # reshaping and splitting in real and imaginary part if necessary
+    img_pred = img_pred.cpu()
     inp_real, inp_imag = img_input[0], img_input[1]
     real_pred, imag_pred = img_pred[0], img_pred[1]
     real_truth, imag_truth = img_truth[0], img_truth[1]

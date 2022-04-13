@@ -329,7 +329,7 @@ def evaluate_viewing_angle(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred.cpu(), amp_phase=conf["amp_phase"])
 
         m_truth, n_truth, alpha_truth = calc_jet_angle(torch.tensor(ifft_truth))
         m_pred, n_pred, alpha_pred = calc_jet_angle(torch.tensor(ifft_pred))
@@ -377,7 +377,7 @@ def evaluate_dynamic_range(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred.cpu(), amp_phase=conf["amp_phase"])
 
         dr_truth, dr_pred, _, _ = calc_dr(ifft_truth, ifft_pred)
         dr_truths = np.append(dr_truths, dr_truth)
@@ -434,7 +434,7 @@ def evaluate_ms_ssim(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred.cpu(), amp_phase=conf["amp_phase"])
 
         if img_size < 160:
             ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
@@ -461,7 +461,7 @@ def evaluate_ms_ssim(conf):
 def evaluate_mean_diff(conf):
     # create DataLoader
     loader = create_databunch(
-        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"], conf["rim"],
     )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
@@ -478,15 +478,25 @@ def evaluate_mean_diff(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
+        
+        if conf["rim"]:
+            pred = eval_model(img_test, model)[9]
+        else:
+            pred = eval_model(img_test, model)
 
-        pred = eval_model(img_test, model)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
 
-        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
-
+        ifft_truth = np.fft.ifftshift(get_ifft(img_true, amp_phase=conf["amp_phase"]))
+        if conf["rim"]:
+            ifft_pred = abs(pred.cpu())
+        else:    
+            ifft_pred = get_ifft(pred.cpu(), amp_phase=conf["amp_phase"])
+        # import matplotlib.pyplot as plt
+        # plt.imshow(ifft_truth[0])
+        # plt.colorbar()
+        # plt.show()
         for pred, truth in zip(ifft_pred, ifft_truth):
             blobs_pred, blobs_truth = calc_blobs(pred, truth)
             flux_pred, flux_truth = crop_first_component(
@@ -532,7 +542,7 @@ def evaluate_area(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred.cpu(), amp_phase=conf["amp_phase"])
 
         for pred, truth in zip(ifft_pred, ifft_truth):
             val = area_of_contour(pred, truth)

@@ -30,13 +30,18 @@ def source_list_collate(batch):
     return torch.stack(x), torch.stack(y), z
 
 
-def create_databunch(data_path, fourier, source_list, batch_size):
+def create_databunch(data_path, fourier, source_list, batch_size, rim):
     # Load data sets
+    if rim:
+        mode = "valid"
+    else:
+        mode = "test"
     test_ds = load_data(
         data_path,
-        mode="test",
+        mode=mode,
         fourier=fourier,
         source_list=source_list,
+        physics_informed=rim
     )
 
     # Create databunch with defined batchsize and check for source_list
@@ -66,6 +71,7 @@ def read_config(config):
     eval_conf["source_list"] = config["general"]["source_list"]
     eval_conf["arch_name_2"] = config["general"]["arch_name_2"]
     eval_conf["diff"] = config["general"]["diff"]
+    eval_conf["rim"] = config["general"]["rim"]
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
@@ -237,7 +243,21 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     arch: architecture object
         architecture with pretrained weigths
     """
-    if "filter_deep" in arch_name or "resnet" in arch_name:
+    if 'vgg19' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'GANCS' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'CLEANNN' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'RIM' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'RIM_SR' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'putzky' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif 'automap' in arch_name:
+        arch = getattr(architecture, arch_name)()
+    elif "filter_deep" in arch_name or "resnet" or "Res" in arch_name:
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
@@ -293,17 +313,20 @@ def eval_model(img, model, test=False):
     pred: n 1d arrays
         predicted images
     """
-    if len(img.shape) == (3):
-        img = img.unsqueeze(0)
     model.eval()
-    if not test:
-        model.cuda()
-    with torch.no_grad():
-        if not test:
+    model.cuda()
+    if isinstance(img, tuple) or isinstance(img, list):
+        img = (img[0].float().cuda(), img[1].float().cuda(), img[2].float().cuda()) #img[0].unsqueeze(0)
+        with torch.no_grad():
+            pred = model(img)
+    else:
+        if len(img.shape) == (3):
+            img = img.unsqueeze(0)
+        with torch.no_grad():
             pred = model(img.float().cuda())
-        else:
-            pred = model(img.float())
-    return pred.cpu()
+        if isinstance(pred, tuple):
+            return pred
+    return pred
 
 
 def get_ifft(array, amp_phase=False):
@@ -354,8 +377,8 @@ def fft_pred(pred, truth, amp_phase=True):
     a = pred[:, 0, :, :]
     b = pred[:, 1, :, :]
 
-    a_true = truth[0, :, :]
-    b_true = truth[1, :, :]
+    a_true = truth[:, 0, :, :]
+    b_true = truth[:, 1, :, :]
 
     if amp_phase:
         amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
@@ -370,10 +393,10 @@ def fft_pred(pred, truth, amp_phase=True):
         compl_pred = a + 1j * b
         compl_true = a_true + 1j * b_true
 
-    ifft_pred = np.fft.ifft2(compl_pred)
-    ifft_true = np.fft.ifft2(compl_true)
-
-    return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
+    ifft_pred = np.fft.ifft2(np.fft.fftshift(compl_pred))
+    ifft_true = np.fft.ifft2(np.fft.fftshift(compl_true))
+    # return ifft_pred.real, ifft_true.real
+    return np.absolute(ifft_pred), np.absolute(ifft_true)
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):

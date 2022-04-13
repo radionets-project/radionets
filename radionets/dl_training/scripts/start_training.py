@@ -18,6 +18,8 @@ from radionets.dl_framework.inspection import (
 )
 from radionets.evaluation.train_inspection import after_training_plots
 from pathlib import Path
+import os
+os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 
 
 @click.command()
@@ -29,6 +31,7 @@ from pathlib import Path
             "train",
             "lr_find",
             "plot_loss",
+            "gan",
         ],
         case_sensitive=False,
     ),
@@ -61,6 +64,8 @@ def main(configuration_path, mode):
         fourier=train_conf["fourier"],
         batch_size=train_conf["bs"],
         source_list=train_conf["source_list"],
+        vgg=train_conf["vgg"],
+        physics_informed=train_conf["physics_informed"]
     )
 
     # get image size
@@ -87,15 +92,47 @@ def main(configuration_path, mode):
         # load pretrained model
         if train_conf["pre_model"] != "none":
             learn.create_opt()
-            load_pre_model(learn, train_conf["pre_model"])
+            load_pre_model(learn, train_conf["pre_model"], gan=False)
 
         # Train the model, except interrupt
         try:
-            learn.fit(train_conf["num_epochs"])
+            # learn.fine_tune(train_conf["num_epochs"])
+            learn.fit(train_conf["num_epochs"]) 
         except KeyboardInterrupt:
             pop_interrupt(learn, train_conf)
 
         end_training(learn, train_conf)
+
+        if train_conf["inspection"]:
+            after_training_plots(train_conf, rand=True)
+    
+    if mode == "gan":
+        # check out path and look for existing model files
+        check_outpath(train_conf["model_path"], train_conf)
+
+        click.echo("Start training of the GAN model.\n")
+
+        # define_learner
+        learn = define_learner(
+            data,
+            arch,
+            train_conf,
+            gan=True
+        )
+
+        # load pretrained model
+        if train_conf["pre_model"] != "none":
+            learn.create_opt()
+            load_pre_model(learn, train_conf["pre_model"])
+
+        # Train the model, except interrupt
+        try:
+            # learn.fine_tune(train_conf["num_epochs"])
+            learn.fit(train_conf["num_epochs"]) 
+        except KeyboardInterrupt:
+            pop_interrupt(learn, train_conf, True)
+
+        end_training(learn, train_conf, True)
 
         if train_conf["inspection"]:
             after_training_plots(train_conf, rand=True)

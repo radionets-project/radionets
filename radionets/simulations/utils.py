@@ -10,6 +10,8 @@ import pandas as pd
 from tqdm import tqdm
 from scipy import interpolate
 from skimage.transform import resize
+from scipy import interpolate
+from natsort import natsorted
 from radionets.dl_framework.data import (
     save_fft_pair,
     open_fft_pair,
@@ -221,6 +223,22 @@ def get_fft_bundle_paths(data_path, ftype, mode):
     ]
     return bundle_paths
 
+
+def get_real_bundle_paths(data_path):
+    bundles = get_bundles(data_path)
+    bundles_target = get_bundles(bundles[3])
+    bundles_input = get_bundles(bundles[1])
+    bundle_paths_target = [
+        path for path in bundles_target if re.findall(f"[0-9].fits", path.name)
+    ]
+    bundle_paths_input = [
+        path for path in bundles_input if re.findall(f"[0-9].oifits", path.name)
+    ]
+    bundle_paths_input = natsorted(bundle_paths_input)
+    bundle_paths_target = natsorted(bundle_paths_target)
+
+    return [bundle_paths_input, bundle_paths_target]
+    
 
 def prepare_fft_images(fft_images, amp_phase, real_imag):
     if amp_phase:

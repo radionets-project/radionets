@@ -5,6 +5,9 @@ from radionets.dl_framework.utils import children
 import torch.nn.functional as F
 from pytorch_msssim import MS_SSIM
 from scipy.optimize import linear_sum_assignment
+from radionets.dl_framework.architectures import superRes
+from fastai.vision.gan import _tk_mean
+import matplotlib.pyplot as plt
 
 
 class FeatureLoss(nn.Module):
@@ -119,6 +122,301 @@ def l1(x, y):
     l1 = nn.L1Loss()
     loss = l1(x, y)
     return loss
+
+def l1_phyinfo(x, y):
+    l1 = nn.L1Loss()
+    return l1(x[1],y[0])
+
+def l1_GANCS(x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    spatial = torch.fft.ifftshift(ifft).unsqueeze(1)
+    # change to two channels real/imag
+    # input = torch.zeros(y.shape)
+    # input[:,0] = spatial.real
+    # input[:,1] = spatial.imag
+
+    l1 = nn.L1Loss()
+
+    return l1(x,spatial)
+
+def l1_CLEAN(x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    spatial = torch.fft.ifftshift(ifft).unsqueeze(1)
+
+
+    l1 = nn.L1Loss()
+
+    return l1((x[1][:,0]+1j*x[1][:,1]).unsqueeze(1),spatial)
+
+def l1_RIM(x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    spatial = torch.fft.ifftshift(ifft).unsqueeze(1)
+
+
+    l1 = nn.L1Loss()
+    loss = 0
+    for eta in x:
+        loss += l1((eta[:,0]+1j*eta[:,1]).unsqueeze(1),spatial)
+
+    loss = loss/len(x)
+    return loss
+
+def mse_RIM(x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    compl_shift = torch.fft.fftshift(compl)
+    ifft = torch.fft.ifft2(compl_shift, norm="forward")
+    true = torch.fft.ifftshift(ifft).unsqueeze(1)
+
+    
+    complex2channels_y = torch.cat((true.real,true.imag), dim=1)
+    
+    mse = nn.MSELoss()
+    loss = 0
+    for eta in x:
+        complex2channels_x = torch.cat((eta.real,eta.imag), dim=1)
+        loss += mse(complex2channels_x*eta.shape[2]**2,complex2channels_y)
+
+    loss = loss/len(x)
+    return loss
+
+def l1_wgan_GANCS(fake_pred,x,y):
+    amp = y[:,0].clone().detach()
+    phase = y[:,1].clone().detach()
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    spatial = torch.fft.ifftshift(ifft).unsqueeze(1)
+
+    l1 = nn.L1Loss()
+    lamb = 1e-5
+
+    return l1(x,spatial)+lamb*_tk_mean(fake_pred, x, spatial)
+
+def dirty_model(x, y):
+    amp = x[1][:,0]
+    phase = x[1][:,1]
+    amp_rescaled = (10 ** (10 * amp) - 1) / 10 ** 10
+    compl = amp_rescaled * torch.exp(1j * phase)
+    ifft = torch.fft.ifft2(compl)
+    pred = torch.fft.ifftshift(torch.absolute(ifft)).unsqueeze(1)
+    
+    # amp_t = y[0][:,0]
+    # phase_t = y[0][:,1]
+    # amp_rescaled_t = (10 ** (10 * amp_t) - 1) / 10 ** 10
+    # compl_t = amp_rescaled_t * torch.exp(1j * phase_t)
+    # ifft_t = torch.fft.ifft2(compl_t)
+    # true = torch.fft.ifftshift(torch.absolute(ifft_t)).unsqueeze(1)
+
+    
+    base_nums = torch.zeros(45) #hard code
+    n_tel = 10 #hardcode
+    c = 0
+    for i in range(n_tel):
+        for j in range(n_tel):
+            if j<=i:
+                continue
+            base_nums[c] = 256 * (i + 1) + j + 1
+            c += 1
+
+    base_mask = y[1]
+    A = y[2]
+    MD = torch.zeros(pred.shape, dtype=torch.complex64).to('cuda')
+
+      
+    for idx, bn in enumerate(base_nums):
+        s_uv = torch.sum((base_mask == bn),3)
+        if not (base_mask == bn).any():
+            continue
+        AI = torch.einsum('blm,bclm->bclm',A[...,idx],pred)
+        MD += torch.einsum('blm,bclm->bclm',s_uv,torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(AI)))) #spatial
+    
+    points = base_mask.clone()
+    points[points != 0] = 1
+    points = torch.sum(points,3)
+    points[points == 0] = 1
+    
+    MD = torch.fft.ifftshift(torch.absolute(torch.fft.ifft2(MD/points.unsqueeze(1))))
+    
+    l1 = nn.L1Loss()
+    mse = nn.MSELoss()
+    loss = l1(pred, x[0])
+    # loss = vgg19_feature_loss(MD,x[0])
+    return loss
+
+# vgg19 = superRes.vgg19_feature_maps(5,4).eval().to('cuda:1')
+def vgg19_feature_loss(x, y):
+    print()
+    if 'vgg19_feature_model_12' not in globals():
+        global vgg19_feature_model_12
+        # global vgg19_feature_model_22
+        # global vgg19_feature_model_34
+        # global vgg19_feature_model_44
+        # global vgg19_feature_model_54
+        vgg19_feature_model_12 = superRes.vgg19_feature_maps(1,2).eval().to('cuda:1')
+        # vgg19_feature_model_22 = superRes.vgg19_feature_maps(2,2).eval().to('cuda:1')
+        # vgg19_feature_model_34 = superRes.vgg19_feature_maps(3,4).eval().to('cuda:1')
+        # vgg19_feature_model_44 = superRes.vgg19_feature_maps(4,4).eval().to('cuda:1')
+        # vgg19_feature_model_54 = superRes.vgg19_feature_maps(5,4).eval().to('cuda:1')
+
+    
+    mse = nn.MSELoss()
+    l1 = nn.L1Loss()
+
+    # up1 = nn.Upsample(size=7, mode='nearest').to('cuda:1')
+    # up2 = nn.Upsample(size=15, mode='nearest').to('cuda:1')
+    # up3 = nn.Upsample(size=31, mode='nearest').to('cuda:1')
+    # up4 = nn.Upsample(size=63, mode='nearest').to('cuda:1')
+    # c34 = nn.Conv2d(256, 512, 1).to('cuda:1')
+    # c22 = nn.Conv2d(128, 512, 1).to('cuda:1')
+    # c12 = nn.Conv2d(64, 512, 1).to('cuda:1')
+
+    # upx1 = up1(vgg19_feature_model_54(x))
+    # upy1 = up1(vgg19_feature_model_54(y))
+
+    # upx2 = up2(vgg19_feature_model_44(x) + upx1)
+    # upy2 = up2(vgg19_feature_model_44(y) + upy1)
+
+    # upx3 = up3(c34(vgg19_feature_model_34(x)) + upx2)
+    # upy3 = up3(c34(vgg19_feature_model_34(y)) + upy2)
+
+    # upx4 = up4(c22(vgg19_feature_model_22(x)) + upx3)
+    # upy4 = up4(c22(vgg19_feature_model_22(y)) + upy3)
+
+    # upx5 = (c12(vgg19_feature_model_12(x)) + upx4)
+    # upy5 = (c12(vgg19_feature_model_12(y)) + upy4)
+
+
+    # mix_x = (0.5*x[:,0]+0.5*x[:,1]).unsqueeze(1)
+    # mix_y = (0.5*y[:,0]+0.5*y[:,1]).unsqueeze(1)
+    # ones = torch.ones((x.shape[0], 1, x.shape[2], x.shape[3])).to('cuda:1')
+    # x_3c = torch.cat((x, ones), dim=1)
+    # y_3c = torch.cat((y, ones), dim=1)
+
+    # loss = l1(vgg19_feature_model_22(x), vgg19_feature_model_22(y))# + l1(vgg19_feature_model_12(x), vgg19_feature_model_12(y)) + l1(vgg19_feature_model_34(x), vgg19_feature_model_34(y)) + l1(vgg19_feature_model_44(x), vgg19_feature_model_44(y)) + l1(vgg19_feature_model_54(x), vgg19_feature_model_54(y))
+    loss = l1(vgg19_feature_model_22(x), vgg19_feature_model_22(y))
+    return loss
+
+def gen_loss_func(fake_pred, x, y):
+    l1 = nn.L1Loss()
+    bce = nn.BCELoss()
+
+    # mask = torch.zeros(x.shape).to('cuda:1')
+    # mask[:,:,31-10:31+10,31-10:31+10]=1
+    # xm = torch.einsum('bcij,bcjk->bcik',x,mask)
+    # ym = torch.einsum('bcij,bcjk->bcik',y,mask)
+
+    content_loss = l1(x,y)
+    # content_loss = automap_l2(x,y)
+    # content_loss = vgg19_feature_loss(x,y)
+    adv_loss = bce(fake_pred, torch.ones_like(fake_pred))
+
+    return content_loss + 1e-3*adv_loss
+
+def gen_loss_wgan_l1(fake_pred, x, y):
+    l1 = nn.L1Loss()
+    content_loss = l1(x[1], y[0])
+
+
+    adv_loss = _tk_mean(fake_pred, x, y)
+    lamb = 1.5 # first:0.9
+
+    return lamb*content_loss + (1-lamb)*adv_loss
+
+
+def gen_loss_func_physics_informed(fake_pred, x, y):
+
+
+
+    bce = nn.BCELoss()
+    l1 = nn.L1Loss()
+    ######### physics informed stuff
+    # base_nums = torch.zeros(45) #hard code
+    # n_tel = 10 #hardcode
+    # c = 0
+    # for i in range(n_tel):
+    #     for j in range(n_tel):
+    #         if j<=i:
+    #             continue
+    #         base_nums[c] = 256 * (i + 1) + j + 1
+    #         c += 1
+
+    # base_mask = y[1]
+    # A = y[2]
+    # MD = torch.zeros(x[1].shape, dtype=torch.complex64).to('cuda')
+
+  
+   
+        
+    # for idx, bn in enumerate(base_nums):
+    #     s_uv = torch.sum((base_mask == bn),3)
+    #     if not (base_mask == bn).any():
+    #         continue
+    #     AI = torch.einsum('blm,bclm->bclm',A[...,idx],x[1])
+    #     MD += torch.einsum('blm,bclm->bclm',s_uv,torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(AI)))) #spatial
+    
+    # points = base_mask.clone()
+    # points[points != 0] = 1
+    # points = torch.sum(points,3)
+    # points[points == 0] = 1
+    
+    # MD = torch.fft.ifftshift(torch.absolute(torch.fft.ifft2(MD/points.unsqueeze(1))))
+    
+
+    content_loss = l1(x[1], y[0])
+    # print(fake_pred.requires_grad)
+    adv_loss = bce(fake_pred, torch.ones_like(fake_pred))
+
+    return 1e-3*adv_loss +content_loss
+
+
+
+def crit_loss_func(real_pred, fake_pred):
+    bce = nn.BCELoss()
+    loss = bce(real_pred, torch.ones_like(real_pred)) + bce(fake_pred, torch.zeros_like(fake_pred))
+    # print(fake_pred.requires_grad)
+    return loss
+
+def cross_entropy(x,y):
+    loss = nn.CrossEntropyLoss()
+    return loss(x, y.squeeze().long())
+
+
+def l1_rnn(x, y):
+    l1 = nn.L1Loss()
+    x = torch.chunk(x, 4, dim=0)
+
+    l = 0
+    for i in range(4):
+        l += l1(x[i], y)
+    return l/4
+
+def splitted_l1(x, y):
+    l1 = nn.L1Loss()
+    l = (10*l1(x[:,0], y[:,0]) + l1(x[:,1], y[:,1]))/2
+    return l
+
+def l1_ssim(x,y):
+    fft_x, fft_y = inspec.fft_pred_torch(x,y)
+    l1 = nn.L1Loss()
+    print(inspec.ssim_torch(fft_x, fft_y).shape)
+    l = (l1(fft_x, fft_y) + (1-inspec.ssim_torch(fft_x, fft_y)))/2
+    return l
+
 
 
 def l1_amp(x, y):
