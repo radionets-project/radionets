@@ -5,10 +5,10 @@ channels:
     - pytorch
     - defaults
 dependencies:
-  - python
-  - pytorch
+  - python>=3.6
+  - pytorch>=1.6
   - torchvision
-  - cudatoolkit=11.0
+  - cudatoolkit
   - cartopy
   - natsort
   - pip

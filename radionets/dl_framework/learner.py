@@ -6,12 +6,11 @@ from radionets.dl_framework.callbacks import (
     TelegramLoggerCallback,
     DataAug,
     AvgLossCallback,
-    OverwriteOneBatch_CLEAN,
+    CudaCallback,
 )
 from fastai.optimizer import Adam, RMSProp
 from fastai.learner import Learner
 from fastai.data.core import DataLoaders
-from fastai.callback.data import CudaCallback
 from fastai.callback.schedule import ParamScheduler, combined_cos
 import radionets.dl_framework.loss_functions as loss_functions
 from fastai.vision import models
