@@ -20,6 +20,7 @@ arch_name = "SRResNet_bigger_no_symmetry"
 arch_name_2 = "none"
 output_format = "png"
 diff = true
+rim = false
 
 [inspection]
 visualize_prediction = true
