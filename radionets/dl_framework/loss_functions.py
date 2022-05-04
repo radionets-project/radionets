@@ -169,7 +169,8 @@ def splitted_L1_unc(x, y):
     return loss_amp + loss_phase * 10
 
 
-def L1_mirco(x, y):
+def L1_icecube(x, y):
+    # get components for computation
     pred_amp = x[:, 0, :]
     pred_phase = x[:, 2, :]
 
@@ -179,12 +180,17 @@ def L1_mirco(x, y):
     tar_amp = y[:, 0, :]
     tar_phase = y[:, 1, :]
 
+    # compute L1 Loss on amplitude and phase
     l1 = nn.L1Loss()
     loss_amp = l1(pred_amp, tar_amp)
     loss_phase = l1(pred_phase, tar_phase)
 
-    unc = (unc_amp - (tar_amp - pred_amp).detach())**2 + \
-          (unc_phase - (tar_phase - pred_phase).detach())**2
+    # compute additional uncertainty loss from IceCube
+    unc = (unc_amp - (tar_amp - pred_amp).detach()) ** 2 + (
+        unc_phase - (tar_phase - pred_phase).detach()
+    ) ** 2
+
+    # add up all loss parts
     loss = loss_amp + loss_phase + unc.mean()
 
     return loss
@@ -203,7 +209,8 @@ def splitted_SmoothL1_unc(x, y):
     return loss_amp + loss_phase * 10
 
 
-def splitted_MSE_unc(x, y):
+def MSE_icecube(x, y):
+    # get components for computation
     pred_amp = x[:, 0, :]
     pred_phase = x[:, 2, :]
 
@@ -213,13 +220,17 @@ def splitted_MSE_unc(x, y):
     tar_amp = y[:, 0, :]
     tar_phase = y[:, 1, :]
 
+    # compute MSE Loss on amplitude and phase
     MSE = nn.MSELoss()
     loss_amp = MSE(pred_amp, tar_amp)
     loss_phase = MSE(pred_phase, tar_phase)
 
+    # compute additional uncertainty loss from IceCube
     unc = (unc_amp - (tar_amp - pred_amp).detach()) ** 2 + (
         unc_phase - (tar_phase - pred_phase).detach()
     ) ** 2
+
+    # add up all loss parts
     loss = loss_amp + loss_phase + unc.mean()
 
     return loss
