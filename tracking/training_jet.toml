@@ -1,0 +1,35 @@
+# This is a TOML document.
+
+title = "Train configuration"
+
+[mode]
+quiet = true
+telegram_logger = false
+gpu = true
+
+[paths]
+# data_path = "/net/big-tank/POOL/projects/radio/simulations/jet_components/2022-04-08_n10000_size256"
+data_path = "/net/big-tank/POOL/projects/radio/simulations/jet_components/testing"
+model_path = "/net/big-tank/POOL/users/apoggenpohl/radionets/models/testing.model"
+pre_model = "none"
+norm_path = "none"
+
+[general]
+fourier = false
+amp_phase = false
+source_list = false
+arch_name = "UNet_clean"
+loss_func = "l1"
+num_epochs = 10
+inspection = false
+output_format = "pdf"
+
+[hypers]
+batch_size = 8
+lr = 1e-04
+
+[param_scheduling]
+use = true
+lr_start = 1e-3
+lr_max = 7e-4
+lr_stop = 1e-4
