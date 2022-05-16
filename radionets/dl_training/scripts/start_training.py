@@ -21,7 +21,7 @@ from pathlib import Path
 
 import torch
 
-torch.cuda.set_device(1)
+# torch.cuda.set_device(1)
 
 
 @click.command()
