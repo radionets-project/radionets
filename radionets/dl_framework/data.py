@@ -85,7 +85,7 @@ class h5_dataset:
                 ]
             )
         )
-        if self.tar_fourier is True and data.shape[1] == 2:
+        if self.tar_fourier is False and data.shape[1] == 2:
             raise ValueError(
                 "Two channeled data is used despite Fourier being False.\
                     Set Fourier to True!"
