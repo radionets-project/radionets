@@ -3,7 +3,7 @@ from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
 from scipy import ndimage
 from radionets.dl_framework.data import save_fft_pair
-from radionets.simulations.utils import adjust_outpath, add_noise
+from radionets.simulations.utils import adjust_outpath, add_noise, add_white_noise
 
 
 def simulate_gaussian_sources(
@@ -13,40 +13,29 @@ def simulate_gaussian_sources(
     bundle_size,
     img_size,
     num_comp_ext,
-    num_pointlike,
-    num_pointsources,
     noise,
     noise_level,
     source_list,
 ):
     for i in tqdm(range(num_bundles)):
         grid = create_grid(img_size, bundle_size)
-        ext_gaussian = 0
-        pointlike = 0
-        pointsource = 0
         list_sources = None
 
         if num_comp_ext is not None:
-            ext_gaussian = create_ext_gauss_bundle(grid)
-        if num_pointlike is not None:
-            pointlike = create_gauss(
-                grid[:, 0], bundle_size, num_pointlike, True, source_list
-            )
-        if num_pointsources is not None:
-            pointsource = gauss_pointsources(
-                grid[:, 0], bundle_size, num_pointsources, source_list
-            )
-        if source_list:
-            list_sources = pointsource[1]
-            pointsource = pointsource[0]
+            bundle = create_ext_gauss_bundle(grid)
 
-        bundle = ext_gaussian + pointlike + pointsource
+        if source_list:
+            print("Not implemented warning!")
+
         images = bundle.copy()
 
         if noise:
             images = add_noise(images, noise_level)
 
-        bundle_fft = np.array([np.fft.fftshift(np.fft.fft2(img)) for img in images])
+        bundle_fft = np.array(
+            [np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(img))) for img in images]
+        )
+        bundle_fft = add_white_noise(bundle_fft)
         path = adjust_outpath(data_path, "/fft_" + option)
         save_fft_pair(path, bundle_fft, bundle, list_sources)
 
@@ -69,11 +58,7 @@ def create_grid(pixel, bundle_size):
     y = np.linspace(0, pixel - 1, num=pixel)
     X, Y = np.meshgrid(x, y)
     grid = np.array([np.zeros(X.shape) + 1e-10, X, Y])
-    grid = np.repeat(
-        grid[None, :, :, :],
-        bundle_size,
-        axis=0,
-    )
+    grid = np.repeat(grid[None, :, :, :], bundle_size, axis=0,)
     return grid
 
 
@@ -229,15 +214,7 @@ def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
     X = grid[1]
     Y = grid[2]
     gaussian = grid[0]
-    gaussian += gaussian_component(
-        X,
-        Y,
-        amp,
-        sig_x,
-        sig_y,
-        rot,
-        center=cent,
-    )
+    gaussian += gaussian_component(X, Y, amp, sig_x, sig_y, rot, center=cent,)
 
     return gaussian
 

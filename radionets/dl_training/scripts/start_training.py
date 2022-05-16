@@ -16,7 +16,7 @@ from radionets.dl_framework.inspection import (
     plot_loss,
     plot_lr,
 )
-from radionets.evaluation.train_inspection import create_inspection_plots
+from radionets.evaluation.train_inspection import after_training_plots
 from pathlib import Path
 
 
@@ -91,7 +91,7 @@ def main(configuration_path, mode):
         end_training(learn, train_conf)
 
         if train_conf["inspection"]:
-            create_inspection_plots(train_conf, rand=True)
+            after_training_plots(train_conf, rand=True)
 
     if mode == "lr_find":
         click.echo("Start lr_find.\n")

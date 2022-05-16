@@ -2,15 +2,15 @@ from setuptools import setup, find_packages
 
 setup(
     name="radionets",
-    version="0.1.5",
+    version="0.1.9",
     description="Imaging radio interferometric data with neural networks",
     url="https://github.com/Kevin2/radionets",
-    author="Kevin Schmidt, Felix Geyer, Kevin Laudamus",
-    author_email="kevin3.schmidt@tu-dortmund.de",
+    author="Kevin Schmidt, Felix Geyer",
+    author_email="kevin3.schmidt@tu-dortmund.de, felix.geyer@tu-dortmund.de",
     license="MIT",
     packages=find_packages(),
     install_requires=[
-        "fastai <= 2.3.0",
+        "fastai",
         "fastcore",
         "kornia",
         "pytorch-msssim",

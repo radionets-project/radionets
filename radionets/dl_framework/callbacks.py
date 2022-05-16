@@ -109,6 +109,13 @@ class NormCallback(Callback):
         return a
 
 
+class CudaCallback(Callback):
+    _order = 3
+
+    def before_fit(self):
+        self.model.cuda()
+
+
 class DataAug(Callback):
     _order = 3
 

@@ -261,7 +261,7 @@ def load_pre_model(learn, pre_path, visualize=False):
     :param lr_find:     bool which is True if lr_find is used
     """
     name_pretrained = Path(pre_path).stem
-    print("\nLoad pretrained model: {}\n".format(name_pretrained))
+    print(f"\nLoad pretrained model: {name_pretrained}\n")
     if torch.cuda.is_available():
         checkpoint = torch.load(pre_path)
     else:
@@ -391,9 +391,9 @@ class SRBlock(nn.Module):
 
     def _conv_block(self, ni, nf, stride):
         return nn.Sequential(
-            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
+            nn.Conv2d(ni, nf, 3, stride=stride, padding=1, bias=False),
             nn.BatchNorm2d(nf),
             nn.PReLU(),
-            nn.Conv2d(nf, nf, 3, stride=1, padding=1),
+            nn.Conv2d(nf, nf, 3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(nf),
         )

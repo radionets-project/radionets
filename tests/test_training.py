@@ -82,11 +82,9 @@ def test_save_model():
                             ):
                                 check(value4)
                             else:
-                                assert False, "Unrecognised type {} {}".format(
-                                    key4, type(value4)
-                                )
+                                assert False, f"Unrecognised type {key4} {type(value4)}"
                 else:
-                    assert False, "Unrecognised type {} {}".format(key2, type(value2))
+                    assert False, f"Unrecognised type {key2} {type(value2)}"
         elif isinstance(value, list):
             for ele2 in value:
                 if isinstance(ele2, (int, float)) or torch.is_tensor(ele2):
@@ -96,9 +94,9 @@ def test_save_model():
                         if isinstance(ele3, (float)):
                             check(ele3)
                         else:
-                            assert False, "Unrecognised type {}".format(type(ele3))
+                            assert False, f"Unrecognised type {type(ele3)}"
                 else:
-                    assert False, "Unrecognised type {}".format(type(ele2))
+                    assert False, f"Unrecognised type {type(ele2)}"
         else:
             check(value)
 

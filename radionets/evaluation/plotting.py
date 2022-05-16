@@ -1,26 +1,27 @@
-import torch
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 from math import pi
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+from matplotlib import cm
+from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.lines import Line2D
+from matplotlib.patches import Arc, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from radionets.simulations.utils import adjust_outpath
-from tqdm import tqdm
-from radionets.evaluation.utils import (
-    reshape_2d,
-    make_axes_nice,
-    check_vmin_vmax,
-    pad_unsqueeze,
-    round_n_digits,
-)
-from radionets.evaluation.jet_angle import calc_jet_angle
-from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
+from pytorch_msssim import ms_ssim
 from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_ratio
-from pytorch_msssim import ms_ssim
-from matplotlib.patches import Rectangle
-from matplotlib import cm
-from matplotlib.colors import ListedColormap
+from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
+from radionets.evaluation.jet_angle import calc_jet_angle
+from radionets.evaluation.utils import (
+    check_vmin_vmax,
+    make_axes_nice,
+    pad_unsqueeze,
+    reshape_2d,
+    round_n_digits,
+)
+from radionets.simulations.utils import adjust_outpath
+from tqdm import tqdm
 
 # make nice Latex friendly plots
 # mpl.use("pgf")
@@ -336,7 +337,7 @@ def visualize_with_fourier_diff(
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
-    plt.close('all')
+    plt.close("all")
     return real_pred, imag_pred, real_truth, imag_truth
 
 
@@ -352,25 +353,31 @@ def visualize_source_reconstruction(
 ):
     m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
     m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
-    x_space = torch.arange(0, 511, 1)
+    x_space = torch.arange(0, 63, 1)
 
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
-    ax1.plot(
-        x_space,
-        m_pred * x_space + n_pred,
-        "w-",
-        alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_pred[0], 3)}\,$deg",
-    )
+
+    # Plot prediction
+    ax1.plot(x_space, m_pred * x_space + n_pred, "w--", alpha=0.5)
+    ax1.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5)
+
+    # create angle visualization
+    theta1 = min(0, -alpha_pred.numpy()[0])
+    theta2 = max(0, -alpha_pred.numpy()[0])
+    ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white"))
+
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
-    ax2.plot(
-        x_space,
-        m_truth * x_space + n_truth,
-        "w-",
-        alpha=0.5,
-        label=fr"$\alpha = {np.round(alpha_truth[0], 3)}\,$deg",
-    )
+
+    # Plot truth
+    ax2.plot(x_space, m_truth * x_space + n_truth, "w--", alpha=0.5)
+    ax2.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5)
+
+    # create angle visualization
+    theta1 = min(0, -alpha_truth.numpy()[0])
+    theta2 = max(0, -alpha_truth.numpy()[0])
+    ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white",))
+
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
@@ -413,11 +420,18 @@ def visualize_source_reconstruction(
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
-    ax1.legend(loc="best")
-    ax2.legend(loc="best")
+    line = Line2D(
+        [], [], linestyle="-", color="w", label=fr"$\alpha = {alpha_pred[0]:.2f}\,$deg"
+    )
+    line_truth = Line2D(
+        [], [], linestyle="-", color="w", label=fr"$\alpha = {alpha_truth[0]:.2f}\,$deg"
+    )
+
+    ax1.legend(loc="best", handles=[line])
+    ax2.legend(loc="best", handles=[line_truth])
     fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
-    plt.close('all')
+    plt.close("all")
     return np.abs(ifft_pred), np.abs(ifft_truth)
 
 
@@ -441,7 +455,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     im2 = ax2.imshow(ifft_truth)
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_ratio(CS1, CS2), 2)
-    make_axes_nice(fig, ax2, im2, "Truth, ratio: {}".format(diff))
+    make_axes_nice(fig, ax2, im2, f"Truth, ratio: {diff}")
     outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
     # Assign labels for the levels and save them for the legend
@@ -459,30 +473,25 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
 
     plt.tight_layout(pad=0.75)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
-    plt.close('all')
+    plt.close("all")
 
 
 def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
     dif = (alpha_pred - alpha_truth).numpy()
 
-    mean = np.round(np.mean(dif), 3)
-    std = np.round(np.std(dif, ddof=1), 3)
+    mean = np.mean(dif)
+    std = np.std(dif, ddof=1)
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
-        dif,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dif, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
 
     extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
     extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     ax2.hist(
         dif[(dif > -10) & (dif < 10)],
@@ -508,24 +517,14 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
     ax1.set_title("True Images")
     ax1.hist(
-        dr_truth,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dr_truth, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("Dynamic range")
     ax1.set_ylabel("Number of sources")
 
     ax2.set_title("Predictions")
     ax2.hist(
-        dr_pred,
-        25,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        dr_pred, 25, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax2.set_xlabel("Dynamic range")
     ax2.set_ylabel("Number of sources")
@@ -551,7 +550,7 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
 
 def plot_box(ax, num_boxes, corners):
     size = get_boxsize(num_boxes)
-    img_size = 63
+    img_size = 64
     if corners[2]:
         ax.axvspan(
             xmin=0,
@@ -625,17 +624,18 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
 
 
 def histogram_mean_diff(vals, out_path, plot_format="png"):
+    vals = vals.numpy()
+    mean = np.mean(vals)
+    std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals.numpy(),
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
 
@@ -645,25 +645,94 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
 
 def histogram_area(vals, out_path, plot_format="png"):
     vals = vals.numpy()
-    mean = np.round(np.mean(vals), 3)
-    std = np.round(np.std(vals, ddof=1), 3)
+    mean = np.mean(vals)
+    std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
     ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")
 
     extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
     extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    ax1.legend([extra_1, extra_2], ("Mean: {}".format(mean), "Std: {}".format(std)))
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
 
     outpath = str(out_path) + f"/hist_area.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def hist_point(vals, mask, out_path, plot_format="png"):
+    binwidth = 5
+    min_all = vals.min()
+    bins = np.arange(min_all, 100 + binwidth, binwidth)
+
+    mean_point = np.mean(vals[mask])
+    std_point = np.std(vals[mask], ddof=1)
+    mean_extent = np.mean(vals[~mask])
+    std_extent = np.std(vals[~mask], ddof=1)
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.hist(
+        vals[mask],
+        bins=bins,
+        color="darkorange",
+        linewidth=2,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.hist(
+        vals[~mask],
+        bins=bins,
+        color="#1f77b4",
+        linewidth=2,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.axvline(0, linestyle="dotted", color="red")
+    ax1.set_ylabel("Number of sources")
+    ax1.set_xlabel("Mean specific intensity deviation")
+
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=2
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="#1f77b4", linewidth=2
+    )
+    ax1.legend(
+        [extra_1, extra_2],
+        [
+            fr"Point: $({mean_point:.2f}\pm{std_point:.2f})\,\%$",
+            fr"Extended: $({mean_extent:.2f}\pm{std_extent:.2f})\,\%$",
+        ],
+    )
+    outpath = str(out_path) + f"/hist_point.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def plot_length_point(length, vals, mask, out_path, plot_format="png"):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.plot(
+        length[mask],
+        vals[mask],
+        ".",
+        markersize=1,
+        color="darkorange",
+        label="Point sources",
+    )
+    ax1.plot(
+        length[~mask],
+        vals[~mask],
+        ".",
+        markersize=1,
+        color="#1f77b4",
+        label="Extended sources",
+    )
+    ax1.set_ylabel("Mean specific intensity deviation")
+    ax1.set_xlabel("Linear extent / pixels")
+    plt.grid()
+    plt.legend(loc="best", markerscale=10)
+
+    outpath = str(out_path) + "/extend_point.png"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

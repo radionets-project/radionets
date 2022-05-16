@@ -7,6 +7,27 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import h5py
+from pathlib import Path
+
+
+def source_list_collate(batch):
+    """Collate function for the DataLoader with source list
+
+    Parameters
+    ----------
+    batch : tuple
+        input and target images alongside with the corresponding source_list
+
+    Returns
+    -------
+    tuple
+        stacked images and list for source_list values
+    """
+
+    x = [item[0] for item in batch]
+    y = [item[1] for item in batch]
+    z = [item[2][0] for item in batch]
+    return torch.stack(x), torch.stack(y), z
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):
@@ -18,8 +39,13 @@ def create_databunch(data_path, fourier, source_list, batch_size):
         source_list=source_list,
     )
 
-    # Create databunch with defined batchsize
-    data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+    # Create databunch with defined batchsize and check for source_list
+    if source_list:
+        data = DataLoader(
+            test_ds, batch_size=batch_size, shuffle=True, collate_fn=source_list_collate
+        )
+    else:
+        data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
     return data
 
 
@@ -56,6 +82,7 @@ def read_config(config):
     eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
     eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
+    eval_conf["point"] = config["eval"]["evaluate_point"]
     return eval_conf
 
 
@@ -104,7 +131,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
             orientation="vertical",
             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
         )
-        cbar.set_label("Specific Intensity / a.u.")
+        cbar.set_label("Phase / rad")
     elif phase_diff:
         cbar = fig.colorbar(
             im,
@@ -290,7 +317,9 @@ def get_ifft(array, amp_phase=False):
         compl = a + b * 1j
     else:
         compl = array[:, 0] + array[:, 1] * 1j
-    return np.abs(np.fft.ifft2(compl))
+    if compl.shape[0] == 1:
+        compl = compl.squeeze(0)
+    return np.abs(np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(compl))))
 
 
 def pad_unsqueeze(tensor):
@@ -372,3 +401,10 @@ def read_pred(path):
         z = np.array(hf["img_true"])
         hf.close()
     return x, y, z
+
+
+def check_outpath(model_path):
+    model_path = Path(model_path).parent / "evaluation" / "predictions.h5"
+    path = Path(model_path)
+    exists = path.exists()
+    return exists

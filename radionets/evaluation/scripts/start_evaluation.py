@@ -1,6 +1,6 @@
 import click
 import toml
-from radionets.evaluation.utils import read_config
+from radionets.evaluation.utils import read_config, check_outpath
 from radionets.evaluation.train_inspection import (
     create_inspection_plots,
     create_source_plots,
@@ -10,6 +10,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_ms_ssim,
     evaluate_mean_diff,
     evaluate_area,
+    evaluate_point,
     create_predictions,
 )
 
@@ -31,7 +32,18 @@ def main(configuration_path):
     click.echo("\nEvaluation config:")
     print(eval_conf, "\n")
 
-    create_predictions(eval_conf)
+    for entry in conf["inspection"]:
+        if (
+            conf["inspection"][entry] is not False
+            and isinstance(conf["inspection"][entry], bool)
+            and entry != "random"
+        ):
+            if (
+                not check_outpath(eval_conf["model_path"])
+                or conf["inspection"]["random"]
+            ):
+                create_predictions(eval_conf)
+                break
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(
@@ -84,3 +96,7 @@ def main(configuration_path):
     if eval_conf["area"]:
         click.echo("\nStart evaluation of the area.\n")
         evaluate_area(eval_conf)
+
+    if eval_conf["point"]:
+        click.echo("\nStart evaluation of point sources.\n")
+        evaluate_point(eval_conf)
