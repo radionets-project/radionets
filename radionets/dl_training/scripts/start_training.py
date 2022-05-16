@@ -19,16 +19,16 @@ from radionets.dl_framework.inspection import (
 from radionets.evaluation.train_inspection import after_training_plots
 from pathlib import Path
 
+import torch
+
+torch.cuda.set_device(1)
+
 
 @click.command()
-@click.argument(
-    "configuration_path", type=click.Path(exists=True, dir_okay=False)
-)
+@click.argument("configuration_path", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--mode",
-    type=click.Choice(
-        ["train", "lr_find", "plot_loss",], case_sensitive=False,
-    ),
+    type=click.Choice(["train", "lr_find", "plot_loss",], case_sensitive=False,),
     default="train",
 )
 def main(configuration_path, mode):
@@ -130,14 +130,10 @@ def main(configuration_path, mode):
             sys.exit()
 
         plot_lr(
-            learn,
-            Path(train_conf["model_path"]),
-            output_format=train_conf["format"],
+            learn, Path(train_conf["model_path"]), output_format=train_conf["format"],
         )
         plot_loss(
-            learn,
-            Path(train_conf["model_path"]),
-            output_format=train_conf["format"],
+            learn, Path(train_conf["model_path"]), output_format=train_conf["format"],
         )
 
 
