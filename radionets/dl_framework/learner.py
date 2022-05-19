@@ -7,6 +7,7 @@ from radionets.dl_framework.callbacks import (
     DataAug,
     AvgLossCallback,
     CudaCallback,
+    CometCallback,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -69,6 +70,7 @@ def define_learner(
                 SaveTempCallback(model_path=model_path),
                 AvgLossCallback,
                 DataAug,
+                CometCallback(name="pytorch"),
             ]
         )
     if train_conf["telegram_logger"] and not lr_find:

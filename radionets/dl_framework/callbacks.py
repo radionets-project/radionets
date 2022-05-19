@@ -9,6 +9,18 @@ from fastai.callback.core import Callback
 from pathlib import Path
 from fastcore.foundation import L
 import matplotlib.pyplot as plt
+from comet_ml import Experiment
+
+
+class CometCallback(Callback):
+    def __init__(self, name):
+        self.experiment = Experiment(project_name=name)
+
+    def after_train(self):
+        self.experiment.log_metric("Train Loss", self.recorder._train_mets.map(_maybe_item), epoch=self.epoch + 1)
+
+    def after_validate(self):
+        self.experiment.log_metric("Validation Loss", self.recorder._valid_mets.map(_maybe_item), epoch=self.epoch + 1)
 
 
 class TelegramLoggerCallback(Callback):

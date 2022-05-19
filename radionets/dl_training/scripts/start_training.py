@@ -92,14 +92,14 @@ def main(configuration_path, mode):
             load_pre_model(learn, train_conf["pre_model"])
 
         # Train the model, except interrupt
+        train_conf["comet_ml"] = True
         try:
             if train_conf["comet_ml"]:
-                experiment = Experiment(project_name=train_conf["comet_ml"])
-                experiment.log_parameters(hyper_params)
-                with experiment.train():
+                learn.comet.experiment.log_parameters(train_conf)
+                with learn.comet.experiment.train():
                     learn.fit(train_conf["num_epochs"])
             else:
-                learn.fit()
+                learn.fit(train_conf["num_epochs"])
         except KeyboardInterrupt:
             pop_interrupt(learn, train_conf)
 
@@ -146,8 +146,8 @@ def main(configuration_path, mode):
         )
         # load pretrained model
         if Path(train_conf["model_path"]).exists:
-            learn.create_opt()
-            load_pre_model(learn, train_conf["model_path"])
+            # learn.create_opt()
+            load_pre_model(learn, train_conf["model_path"], plot_loss=True)
         else:
             click.echo("Selected model does not exist.")
             click.echo("Exiting.\n")
