@@ -383,8 +383,9 @@ def fft_pred(pred, truth, amp_phase=True):
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
     """
     write test data and predictions to h5 file
-    x: truth of test data
-    y: predictions of truth of test data
+    x: predictions of truth of test data
+    y: input image of the test data
+    z: truth of the test data
     """
     with h5py.File(path, "w") as hf:
         hf.create_dataset(name_x, data=x)
@@ -396,8 +397,9 @@ def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
 def read_pred(path):
     """
     read data saved with save_pred from h5 file
-    x: truth of test data
-    y: predictions of truth of test data
+    x: predictions of truth of test data
+    y: input image of the test data
+    z: truth of the test data
     """
     with h5py.File(path, "r") as hf:
         x = np.array(hf["pred"])
