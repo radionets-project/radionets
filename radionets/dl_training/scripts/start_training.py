@@ -18,6 +18,7 @@ from radionets.dl_framework.inspection import (
 )
 from radionets.evaluation.train_inspection import after_training_plots
 from pathlib import Path
+from comet_ml import Experiment
 
 
 @click.command()
@@ -27,6 +28,7 @@ from pathlib import Path
     type=click.Choice(
         [
             "train",
+            "fine_tune",
             "lr_find",
             "plot_loss",
         ],
@@ -91,7 +93,13 @@ def main(configuration_path, mode):
 
         # Train the model, except interrupt
         try:
-            learn.fit(train_conf["num_epochs"])
+            if train_conf["comet_ml"]:
+                experiment = Experiment(project_name=train_conf["comet_ml"])
+                experiment.log_parameters(hyper_params)
+                with experiment.train():
+                    learn.fit(train_conf["num_epochs"])
+            else:
+                learn.fit()
         except KeyboardInterrupt:
             pop_interrupt(learn, train_conf)
 
@@ -139,7 +147,7 @@ def main(configuration_path, mode):
         # load pretrained model
         if Path(train_conf["model_path"]).exists:
             learn.create_opt()
-            load_pre_model(learn, train_conf["model_path"], plot_loss=True)
+            load_pre_model(learn, train_conf["model_path"])
         else:
             click.echo("Selected model does not exist.")
             click.echo("Exiting.\n")
