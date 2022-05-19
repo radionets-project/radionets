@@ -177,8 +177,8 @@ def plot(img, ax, phase=False, grey=False):
 
 def plot_spectrum(img, out_path=None):
     fig, (ax1, ax2) = plt.subplots(
-        2,
         1,
+        2,
     )
     amp = np.abs(img)
     phase = np.angle(img)
@@ -223,6 +223,7 @@ def plot_spectrum_grey(img1, img2, out_path=None):
     ax2.set_ylabel("v")
 
     fig.tight_layout(pad=0)
+    plt.subplots_adjust(hspace=0.22)
 
     if out_path is not None:
         plt.savefig(out_path, dpi=600, bbox_inches="tight")
@@ -236,8 +237,8 @@ def plot_uv_coverage(u, v, ax):
     ax.plot(
         u, v, marker="o", linestyle="none", markersize=2, color="#1f77b4", label="Data"
     )
-    ax.set_xlabel(r"u / $\lambda$", fontsize=9)
-    ax.set_ylabel(r"v / $\lambda$", fontsize=9)
+    ax.set_xlabel(r"u / $\lambda$")
+    ax.set_ylabel(r"v / $\lambda$")
 
 
 def plot_vlba_uv(u, v, out_path=None):
@@ -245,7 +246,7 @@ def plot_vlba_uv(u, v, out_path=None):
     plot_uv_coverage(u, v, ax)
     ax.set_ylim(-5e8, 5e8)
     ax.set_xlim(-5e8, 5e8)
-    plt.tick_params(axis="both", labelsize=9)
+    plt.tick_params(axis="both")
 
     ax.axis("equal")
     # plt.legend()
