@@ -254,17 +254,11 @@ def visualize_with_fourier(
         im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
 
-    ax1.set_ylabel(r"Pixels", fontsize=20)
-    ax4.set_ylabel(r"Pixels", fontsize=20)
-    ax4.set_xlabel(r"Pixels", fontsize=20)
-    ax5.set_xlabel(r"Pixels", fontsize=20)
-    ax6.set_xlabel(r"Pixels", fontsize=20)
-    ax1.tick_params(axis="both", labelsize=20)
-    ax2.tick_params(axis="both", labelsize=20)
-    ax3.tick_params(axis="both", labelsize=20)
-    ax4.tick_params(axis="both", labelsize=20)
-    ax5.tick_params(axis="both", labelsize=20)
-    ax6.tick_params(axis="both", labelsize=20)
+    ax1.set_ylabel(r"Pixels")
+    ax4.set_ylabel(r"Pixels")
+    ax4.set_xlabel(r"Pixels")
+    ax5.set_xlabel(r"Pixels")
+    ax6.set_xlabel(r"Pixels")
     plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
