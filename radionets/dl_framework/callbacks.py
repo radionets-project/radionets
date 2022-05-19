@@ -10,6 +10,7 @@ from pathlib import Path
 from fastcore.foundation import L
 import matplotlib.pyplot as plt
 from comet_ml import Experiment
+from radionets.evaluation.utils import load_data, get_images, eval_model
 
 
 class CometCallback(Callback):
@@ -17,10 +18,43 @@ class CometCallback(Callback):
         self.experiment = Experiment(project_name=name)
 
     def after_train(self):
-        self.experiment.log_metric("Train Loss", self.recorder._train_mets.map(_maybe_item), epoch=self.epoch + 1)
+        self.experiment.log_metric(
+            "Train Loss",
+            self.recorder._train_mets.map(_maybe_item),
+            epoch=self.epoch + 1,
+        )
 
     def after_validate(self):
-        self.experiment.log_metric("Validation Loss", self.recorder._valid_mets.map(_maybe_item), epoch=self.epoch + 1)
+        self.experiment.log_metric(
+            "Validation Loss",
+            self.recorder._valid_mets.map(_maybe_item),
+            epoch=self.epoch + 1,
+        )
+
+    def after_epoch(self):
+        test_ds = load_data(
+            "/home/kschmidt_local/radio_nets/benchmark_data/test_data",
+            mode="test",
+            fourier=True,
+            source_list=False,
+        )
+        img_test, img_true = get_images(test_ds, 1, norm_path="none", rand=False)
+        model = self.model
+        with self.experiment.test():
+            with torch.no_grad():
+                pred = eval_model(img_test, model)
+        self.experiment.log_image(
+            pred[0, 0],
+            image_colormap="inferno",
+            name=f"pred_amp_{self.epoch + 1}",
+            step=self.epoch + 1,
+        )
+        self.experiment.log_image(
+            pred[0, 1],
+            image_colormap="inferno",
+            name=f"pred_phase_{self.epoch + 1}",
+            step=self.epoch + 1,
+        )
 
 
 class TelegramLoggerCallback(Callback):
@@ -132,8 +166,8 @@ class DataAug(Callback):
     _order = 3
 
     def before_batch(self):
-        x = self.xb[0].clone()
-        y = self.yb[0].clone()
+        x = self.xb[0].clone().cuda()
+        y = self.yb[0].clone().cuda()
         randint = np.random.randint(0, 4, x.shape[0])
         for i in range(x.shape[0]):
             x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
