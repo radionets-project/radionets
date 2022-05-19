@@ -725,78 +725,25 @@ class List_jet(nn.Module):
         self.channels = 4
 
         self.conv1 = nn.Sequential(*double_conv(1, self.channels))
-        self.conv2 = nn.Sequential(*double_conv(self.channels, 2*self.channels))
-        self.conv3 = nn.Sequential(*double_conv(2*self.channels, 4*self.channels))
-        self.conv4 = nn.Sequential(*double_conv(4*self.channels, 8*self.channels))
-        self.conv5 = nn.Sequential(*double_conv(8*self.channels, 16*self.channels))
-        self.conv6 = nn.Sequential(*double_conv(16*self.channels, 32*self.channels))
+        self.conv2 = nn.Sequential(*double_conv(self.channels, 2 * self.channels))
+        self.conv3 = nn.Sequential(*double_conv(2 * self.channels, 4 * self.channels))
+        self.conv4 = nn.Sequential(*double_conv(4 * self.channels, 8 * self.channels))
+        self.conv5 = nn.Sequential(*double_conv(8 * self.channels, 16 * self.channels))
+        self.conv6 = nn.Sequential(*double_conv(16 * self.channels, 32 * self.channels))
         self.maxpool = nn.MaxPool2d(2)
-        
+
         # 256x256 input is now 8x8 -> 64
         self.lin1 = nn.Sequential(
-            nn.Linear(64*32*self.channels, 64*8*self.channels),
-            nn.BatchNorm1d(64*8*self.channels),
+            nn.Linear(64 * 32 * self.channels, 64 * 8 * self.channels),
+            nn.BatchNorm1d(64 * 8 * self.channels),
             GeneralELU(),
         )
         self.lin2 = nn.Sequential(
-            nn.Linear(64*8*self.channels, 64*self.channels),
-            nn.BatchNorm1d(64*self.channels),
+            nn.Linear(64 * 8 * self.channels, 64 * self.channels),
+            nn.BatchNorm1d(64 * self.channels),
             GeneralELU(),
         )
-        self.lin3 = nn.Sequential(
-            nn.Linear(64*self.channels, 18),
-        )
-
-        self.output_activation = nn.Sequential(nn.Sigmoid())
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.maxpool(x)
-        x = self.conv2(x)
-        x = self.maxpool(x)
-        x = self.conv3(x)
-        x = self.maxpool(x)
-        x = self.conv4(x)
-        x = self.maxpool(x)
-        x = self.conv5(x)
-        x = self.maxpool(x)
-        x = self.conv6(x)
-
-        x = self.lin1(flatten(x))
-        x = self.lin2(x)
-        x = self.lin3(x)
-        out = self.output_activation(x)
-        return out
-
-
-class Counts_jet(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-        self.channels = 4
-
-        self.conv1 = nn.Sequential(*double_conv(1, self.channels))
-        self.conv2 = nn.Sequential(*double_conv(self.channels, 2*self.channels))
-        self.conv3 = nn.Sequential(*double_conv(2*self.channels, 4*self.channels))
-        self.conv4 = nn.Sequential(*double_conv(4*self.channels, 8*self.channels))
-        self.conv5 = nn.Sequential(*double_conv(8*self.channels, 16*self.channels))
-        self.conv6 = nn.Sequential(*double_conv(16*self.channels, 32*self.channels))
-        self.maxpool = nn.MaxPool2d(2)
-        
-        # 256x256 input is now 8x8 -> 64
-        self.lin1 = nn.Sequential(
-            nn.Linear(64*32*self.channels, 64*8*self.channels),
-            nn.BatchNorm1d(64*8*self.channels),
-            GeneralELU(),
-        )
-        self.lin2 = nn.Sequential(
-            nn.Linear(64*8*self.channels, 64*self.channels),
-            nn.BatchNorm1d(64*self.channels),
-            GeneralELU(),
-        )
-        self.lin3 = nn.Sequential(
-            nn.Linear(64*self.channels, 1),
-        )
+        self.lin3 = nn.Sequential(nn.Linear(64 * self.channels, 18),)
 
         self.output_activation = nn.Sequential(nn.Sigmoid())
 
