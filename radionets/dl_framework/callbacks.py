@@ -168,8 +168,8 @@ class DataAug(Callback):
     _order = 3
 
     def before_batch(self):
-        x = self.xb[0].clone().cuda()
-        y = self.yb[0].clone().cuda()
+        x = self.xb[0].clone()
+        y = self.yb[0].clone()
         randint = np.random.randint(0, 4, x.shape[0])
         for i in range(x.shape[0]):
             x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
