@@ -64,13 +64,18 @@ def define_learner(
                 CudaCallback,
             ]
         )
+    if train_conf["comet_ml"]:
+        cbfs.extend(
+            [
+                CometCallback(name="pytorch", test_data=train_conf["data_path"]),
+            ]
+        )
     if not test:
         cbfs.extend(
             [
                 SaveTempCallback(model_path=model_path),
                 AvgLossCallback,
                 DataAug,
-                CometCallback(name="pytorch", test_data=train_conf["data_path"]),
             ]
         )
         if train_conf["telegram_logger"] and not lr_find:

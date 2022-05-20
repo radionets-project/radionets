@@ -9,7 +9,6 @@ from fastai.callback.core import Callback
 from pathlib import Path
 from fastcore.foundation import L
 import matplotlib.pyplot as plt
-from comet_ml import Experiment
 from radionets.evaluation.utils import load_data, get_images, eval_model, make_axes_nice
 from radionets.evaluation.plotting import create_OrBu
 
@@ -18,6 +17,7 @@ OrBu = create_OrBu()
 
 class CometCallback(Callback):
     def __init__(self, name, test_data):
+        from comet_ml import Experiment
         self.experiment = Experiment(project_name=name)
         self.data_path = test_data
 
