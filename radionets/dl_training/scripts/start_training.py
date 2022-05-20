@@ -91,7 +91,7 @@ def main(configuration_path, mode):
             load_pre_model(learn, train_conf["pre_model"])
 
         # Train the model, except interrupt
-        train_conf["comet_ml"] = True
+        # train_conf["comet_ml"] = True
         try:
             if train_conf["comet_ml"]:
                 learn.comet.experiment.log_parameters(train_conf)
