@@ -6,6 +6,7 @@ title = "Train configuration"
 quiet = true
 telegram_logger = false
 gpu = false
+comet_ml = false
 
 [paths]
 data_path = "./tests/build/data/"
