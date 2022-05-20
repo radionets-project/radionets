@@ -73,12 +73,12 @@ def define_learner(
                 CometCallback(name="pytorch", test_data=train_conf["data_path"]),
             ]
         )
-    if train_conf["telegram_logger"] and not lr_find:
-        cbfs.extend(
-            [
-                TelegramLoggerCallback(model_name=model_name),
-            ]
-        )
+        if train_conf["telegram_logger"] and not lr_find:
+            cbfs.extend(
+                [
+                    TelegramLoggerCallback(model_name=model_name),
+                ]
+            )
 
     # get loss func
     if train_conf["loss_func"] == "feature_loss":
