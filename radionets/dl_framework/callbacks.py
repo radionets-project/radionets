@@ -10,12 +10,13 @@ from pathlib import Path
 from fastcore.foundation import L
 import matplotlib.pyplot as plt
 from comet_ml import Experiment
-from radionets.evaluation.utils import load_data, get_images, eval_model
+from radionets.evaluation.utils import load_data, get_images, eval_model, make_axes_nice
 
 
 class CometCallback(Callback):
-    def __init__(self, name):
+    def __init__(self, name, test_data):
         self.experiment = Experiment(project_name=name)
+        self.data_path = test_data
 
     def after_train(self):
         self.experiment.log_metric(
@@ -33,28 +34,25 @@ class CometCallback(Callback):
 
     def after_epoch(self):
         test_ds = load_data(
-            "/home/kschmidt_local/radio_nets/benchmark_data/test_data",
-            mode="test",
-            fourier=True,
-            source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False,
         )
         img_test, img_true = get_images(test_ds, 1, norm_path="none", rand=False)
         model = self.model
         with self.experiment.test():
             with torch.no_grad():
                 pred = eval_model(img_test, model)
-        self.experiment.log_image(
-            pred[0, 0],
-            image_colormap="inferno",
-            name=f"pred_amp_{self.epoch + 1}",
-            step=self.epoch + 1,
-        )
-        self.experiment.log_image(
-            pred[0, 1],
-            image_colormap="inferno",
-            name=f"pred_phase_{self.epoch + 1}",
-            step=self.epoch + 1,
-        )
+
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
+        im1 = ax1.imshow(pred[0, 0])
+        im2 = ax2.imshow(pred[0, 1])
+        im3 = ax3.imshow(img_true[0])
+        im4 = ax4.imshow(img_true[1])
+        make_axes_nice(fig, ax1, im1, "Amplitude")
+        make_axes_nice(fig, ax2, im2, "Phase", phase=True)
+        make_axes_nice(fig, ax3, im3, "Org. Amplitude")
+        make_axes_nice(fig, ax4, im4, "Org. Phase", phase=True)
+        fig.tight_layout(pad=0.1)
+        self.experiment.log_figure(figure=fig)
 
 
 class TelegramLoggerCallback(Callback):
