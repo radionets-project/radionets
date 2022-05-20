@@ -18,7 +18,6 @@ from radionets.dl_framework.inspection import (
 )
 from radionets.evaluation.train_inspection import after_training_plots
 from pathlib import Path
-from comet_ml import Experiment
 
 
 @click.command()
