@@ -33,6 +33,7 @@ setup(
         "pytest",
         "pytest-cov",
         "pytest-order",
+        "comet_ml"
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
