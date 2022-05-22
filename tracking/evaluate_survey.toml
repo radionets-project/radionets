@@ -1,0 +1,43 @@
+# This is a TOML document.
+
+title = "Evaluation configuration"
+
+[mode]
+quiet = false
+gpu = false
+
+[paths]
+data_path = "/net/big-tank/POOL/projects/radio/simulations/survey/testing"
+outpath = "/net/big-tank/POOL/projects/radio/simulations/survey/testing"
+model_path = "/net/big-tank/POOL/users/apoggenpohl/radionets/models/2022-03-11_unet_jet_clean.model"
+model_path_2 = "none"
+norm_path = "none"
+
+[general]
+fourier = false
+amp_phase = false
+source_list = false
+arch_name = "UNet_clean"
+arch_name_2 = "none"
+output_format = "png"
+diff = true
+
+[inspection]
+visualize_prediction = true
+visualize_source_reconstruction = true
+visualize_contour = false
+visualize_dynamic_range = false
+visualize_blobs = false
+visualize_ms_ssim = false
+random = true
+num_images = 5
+
+[eval]
+batch_size = 100
+alpha = 0.1  # at least 10% counter jet strength
+gauss_acc = 100  # empirical (smaller -> faster, larger -> more precise)
+evaluate_viewing_angle = false
+evaluate_dynamic_range = false
+evaluate_ms_ssim = false
+evaluate_mean_diff = false
+evaluate_area = false
