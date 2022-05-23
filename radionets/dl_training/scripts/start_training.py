@@ -142,6 +142,7 @@ def main(configuration_path, mode):
             data,
             arch,
             train_conf,
+            plot_loss=True,
         )
         # load pretrained model
         if Path(train_conf["model_path"]).exists:

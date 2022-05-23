@@ -35,6 +35,7 @@ def define_learner(
     cbfs=[],
     test=False,
     lr_find=False,
+    plot_loss=False,
 ):
     model_path = train_conf["model_path"]
     model_name = (
@@ -64,7 +65,7 @@ def define_learner(
                 CudaCallback,
             ]
         )
-    if train_conf["comet_ml"]:
+    if train_conf["comet_ml"] and not lr_find and not plot_loss:
         cbfs.extend(
             [
                 CometCallback(name="pytorch", test_data=train_conf["data_path"]),
