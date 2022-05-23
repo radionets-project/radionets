@@ -36,27 +36,28 @@ class CometCallback(Callback):
         )
 
     def after_epoch(self):
-        test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False,
-        )
-        img_test, img_true = get_images(test_ds, 1, norm_path="none", rand=False)
-        model = self.model
-        with self.experiment.test():
-            with torch.no_grad():
-                pred = eval_model(img_test, model)
+        if (self.epoch + 1) % 50 == 0:
+            test_ds = load_data(
+                self.data_path, mode="test", fourier=True, source_list=False,
+            )
+            img_test, img_true = get_images(test_ds, 1, norm_path="none", rand=False)
+            model = self.model
+            with self.experiment.test():
+                with torch.no_grad():
+                    pred = eval_model(img_test, model)
 
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
-        im1 = ax1.imshow(pred[0, 0], cmap="inferno")
-        im2 = ax2.imshow(pred[0, 1], cmap=OrBu)
-        im3 = ax3.imshow(img_true[0], cmap="inferno")
-        im4 = ax4.imshow(img_true[1], cmap=OrBu)
-        make_axes_nice(fig, ax1, im1, "Amplitude")
-        make_axes_nice(fig, ax2, im2, "Phase", phase=True)
-        make_axes_nice(fig, ax3, im3, "Org. Amplitude")
-        make_axes_nice(fig, ax4, im4, "Org. Phase", phase=True)
-        fig.tight_layout(pad=0.1)
-        self.experiment.log_figure(figure=fig)
-        plt.close("all")
+            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
+            im1 = ax1.imshow(pred[0, 0], cmap="inferno")
+            im2 = ax2.imshow(pred[0, 1], cmap=OrBu)
+            im3 = ax3.imshow(img_true[0], cmap="inferno")
+            im4 = ax4.imshow(img_true[1], cmap=OrBu)
+            make_axes_nice(fig, ax1, im1, "Amplitude")
+            make_axes_nice(fig, ax2, im2, "Phase", phase=True)
+            make_axes_nice(fig, ax3, im3, "Org. Amplitude")
+            make_axes_nice(fig, ax4, im4, "Org. Phase", phase=True)
+            fig.tight_layout(pad=0.1)
+            self.experiment.log_figure(figure=fig)
+            plt.close("all")
 
 
 class TelegramLoggerCallback(Callback):
