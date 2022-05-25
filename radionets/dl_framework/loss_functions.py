@@ -156,19 +156,33 @@ def create_circular_mask(h, w, center=None, radius=None, bs=64):
     return np.repeat([mask], bs, axis=0)
 
 
-def splitted_L1(x, y):
+def splitted_L1_masked(x, y):
     inp_amp = x[:, 0, :]
     inp_phase = x[:, 1, :]
 
     tar_amp = y[:, 0, :]
     tar_phase = y[:, 1, :]
 
-    # mask = torch.tensor(create_circular_mask(64, 64, radius=15, bs=y.shape[0]))
+    mask = torch.tensor(create_circular_mask(256, 256, radius=50, bs=y.shape[0]))
 
-    # inp_amp[~mask] = 0
-    # inp_phase[~mask] = 0
-    # tar_amp[~mask] = 0
-    # tar_phase[~mask] = 0
+    inp_amp[~mask] *= 0.3
+    inp_phase[~mask] *= 0.3
+    tar_amp[~mask] *= 0.3
+    tar_phase[~mask] *= 0.3
+
+    l1 = nn.L1Loss()
+    loss_amp = l1(inp_amp, tar_amp)
+    loss_phase = l1(inp_phase, tar_phase)
+    loss = loss_amp + loss_phase
+    return loss
+
+
+def splitted_L1(x, y):
+    inp_amp = x[:, 0, :]
+    inp_phase = x[:, 1, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
 
     l1 = nn.L1Loss()
     loss_amp = l1(inp_amp, tar_amp)
