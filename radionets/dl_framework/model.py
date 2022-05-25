@@ -254,7 +254,7 @@ def deconv(ni, nc, ks, stride, padding, out_padding):
     return layers
 
 
-def load_pre_model(learn, pre_path, visualize=False):
+def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
     """
     :param learn:       object of type learner
     :param pre_path:    string wich contains the path of the model
@@ -262,13 +262,17 @@ def load_pre_model(learn, pre_path, visualize=False):
     """
     name_pretrained = Path(pre_path).stem
     print(f"\nLoad pretrained model: {name_pretrained}\n")
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and not plot_loss:
         checkpoint = torch.load(pre_path)
     else:
         checkpoint = torch.load(pre_path, map_location=torch.device("cpu"))
 
     if visualize:
         learn.load_state_dict(checkpoint["model"])
+    elif plot_loss:
+        learn.avg_loss.loss_train = checkpoint["train_loss"]
+        learn.avg_loss.loss_valid = checkpoint["valid_loss"]
+        learn.avg_loss.lrs = checkpoint["lrs"]
     else:
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])
