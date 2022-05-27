@@ -263,7 +263,6 @@ def visualize_with_fourier(
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
-    return real_pred, imag_pred, real_truth, imag_truth
 
 
 def visualize_with_fourier_diff(
@@ -326,7 +325,6 @@ def visualize_with_fourier_diff(
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     plt.close("all")
-    return real_pred, imag_pred, real_truth, imag_truth
 
 
 def visualize_source_reconstruction(
