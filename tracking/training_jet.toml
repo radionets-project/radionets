@@ -8,9 +8,9 @@ telegram_logger = false
 gpu = true
 
 [paths]
-# data_path = "/net/big-tank/POOL/projects/radio/simulations/jet_components/2022-04-08_n10000_size256"
-data_path = "/net/big-tank/POOL/projects/radio/simulations/jet_components/testing"
-model_path = "/net/big-tank/POOL/users/apoggenpohl/radionets/models/testing.model"
+data_path = "/net/big-tank/POOL/projects/radio/simulations/jet_components/220527_n10000_s256"
+# model_path = "/net/big-tank/POOL/projects/radio/models/jet/220527_unet_jet_segmentation_c7.model"
+model_path = "/net/big-tank/POOL/users/apoggenpohl/radionets/models/220527_unet_jet_segmentation_c7.model"
 pre_model = "none"
 norm_path = "none"
 
@@ -18,9 +18,9 @@ norm_path = "none"
 fourier = false
 amp_phase = false
 source_list = false
-arch_name = "UNet_clean"
-loss_func = "l1"
-num_epochs = 10
+arch_name = "UNet_jet"
+loss_func = "jet_seg"
+num_epochs = 30
 inspection = false
 output_format = "pdf"
 

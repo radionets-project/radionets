@@ -2,6 +2,7 @@ from math import pi
 
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 import torch
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LogNorm
@@ -730,3 +731,195 @@ def plot_length_point(length, vals, mask, out_path, plot_format="png"):
 
     outpath = str(out_path) + "/extend_point.png"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def plot_jet_results(inp, pred, truth, path, save=False, plot_format="pdf"):
+    """
+    Plot input images, prediction, true and diff image of the overall prediction.
+    (Not component wise)
+    Parameters
+    ----------
+    inp: n 4d arrays with 1 channel
+        input images
+    pred: n 4d arrays with multiple channels
+        predicted images
+    truth:n 4d arrays with multiple channels
+        true images
+    """
+    if truth.shape[1] > 2:
+        truth = torch.sum(truth[:, 0:-1], axis=1)
+        pred = torch.sum(pred[:, 0:-1], axis=1)
+    elif truth.shape[1] == 2:
+        truth = truth[:, 0:-1].squeeze()
+        pred = pred[:, 0:-1].squeeze()
+    else:
+        truth = truth.squeeze()
+        pred = pred.squeeze()
+
+    for i in tqdm(range(len(inp))):
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 7))
+
+        real = inp[i, 0]
+        im1 = ax1.imshow(real, cmap=plt.cm.inferno)
+        divider = make_axes_locatable(ax1)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax1.set_title(r"Real Input")
+        fig.colorbar(im1, cax=cax, orientation="vertical")
+
+        true = truth[i]
+        im2 = ax2.imshow(true, cmap=plt.cm.inferno)
+        divider = make_axes_locatable(ax2)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax2.set_title(r"Truth")
+        fig.colorbar(im2, cax=cax, orientation="vertical")
+
+        pre = pred[i]
+        im3 = ax3.imshow(pre, cmap=plt.cm.inferno)
+        divider = make_axes_locatable(ax3)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax3.set_title(r"Prediction")
+        fig.colorbar(im3, cax=cax, orientation="vertical")
+
+        diff = truth[i] - pred[i]
+        im4 = ax4.imshow(diff, cmap=plt.cm.inferno)
+        divider = make_axes_locatable(ax4)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        ax4.set_title(r"Diff (Truth - Prediction)")
+        fig.colorbar(im4, cax=cax, orientation="vertical")
+
+        plt.tight_layout()
+
+        if save:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            outpath = str(path) + f"/prediction_{i}.{plot_format}"
+            fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format="pdf"):
+    """
+    Plot input images, prediction and true image.
+    Parameters
+    ----------
+    inp: n 4d arrays with 1 channel
+        input images
+    pred: n 4d arrays with multiple channels
+        predicted images
+    truth:n 4d arrays with multiple channels
+        true images
+    """
+    for i in tqdm(range(len(inp))):
+        c = truth.shape[1] - 1  # -1 because last one is the background
+        fig, axs = plt.subplots(c, 3, figsize=(12, 3.5 * c))
+        for j in range(c):
+            im1 = axs[j, 0].imshow(truth[i, j], cmap=plt.cm.inferno)
+            divider = make_axes_locatable(axs[j, 0])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            axs[j, 0].set_title(r"Truth")
+            t = axs[j, 0].text(
+                truth.shape[-1] / 10, truth.shape[-1] / 10, r"c = {}".format(j)
+            )
+            t.set_bbox(dict(facecolor="white", alpha=0.6))
+            fig.colorbar(im1, cax=cax, orientation="vertical")
+
+            im1 = axs[j, 1].imshow(pred[i, j], cmap=plt.cm.inferno)
+            divider = make_axes_locatable(axs[j, 1])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            axs[j, 1].set_title(r"Prediction")
+            fig.colorbar(im1, cax=cax, orientation="vertical")
+
+            im1 = axs[j, 2].imshow(truth[i, j] - pred[i, j], cmap=plt.cm.inferno)
+            divider = make_axes_locatable(axs[j, 2])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            axs[j, 2].set_title(r"Diff (Truth - Prediction)")
+            fig.colorbar(im1, cax=cax, orientation="vertical")
+
+        plt.tight_layout()
+
+        if save:
+            Path(path).mkdir(parents=True, exist_ok=True)
+            outpath = str(path) + f"/prediction_comp_{i}.{plot_format}"
+            fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_fitgaussian(data, fit_list, params_list, iteration, path, save=False, plot_format="pdf"):
+    """
+    Plotting the sky image with the fitted gaussian distributian and the related
+    parameters.
+    Parameters
+    ----------
+    data: 2d array
+        skymap, usually the prediction of the NN
+    fit: 2d array
+        gaussian fit around the maxima
+    params: list
+        parameters related to the gaussian: height, x, y, width_x, width_y, theta
+    """
+    fig, axs = plt.subplots(1, len(params_list), figsize=(3.5 * len(params_list), 5))
+    for i, (fit, params) in enumerate(zip(fit_list, params_list)):
+        im = axs[i].imshow(data, cmap=plt.cm.inferno)
+        divider = make_axes_locatable(axs[i])
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        axs[i].set_title(f"{i}-th pred. comp.")
+        fig.colorbar(im, cax=cax, orientation="vertical")
+        axs[i].contour(fit, cmap=plt.cm.gray_r)
+        data -= fit
+        (height, x, y, width_x, width_y, theta) = params.parameters
+        plt.text(
+            0.95,
+            0.02,
+            """
+        height : %.2f
+        x : %.1f
+        y : %.1f
+        width_x : %.1f
+        width_y : %.1f
+        theta : %.2f"""
+            % (height, x, y, width_x, width_y, theta),
+            fontsize=8,
+            horizontalalignment="right",
+            c="w",
+            verticalalignment="bottom",
+            transform=axs[i].transAxes,
+        )
+
+    plt.tight_layout()
+
+    if save:
+        Path(path).mkdir(parents=True, exist_ok=True)
+        outpath = str(path) + f"/eval_iterativ_gaussian_{iteration}.{plot_format}"
+        plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+
+
+def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
+    """
+    Plotting the distances between predicted and true component of several images.
+    Parameters
+    ----------
+    dist: 2d array
+        array of shape (n, 2), where n is the number of distances
+    fit: 2d array
+        gaussian fit around the maxima
+    """
+    ran = [0, 50]
+
+    plt.figure()
+    plt.title('Euclidian distance between simulation and evaluation')
+    plt.hist(dist[dist[:, 0] == 0][:, 1], bins=20, range=ran, alpha=0.7, label='Component 0')
+    plt.hist(dist[dist[:, 0] == 1][:, 1], bins=20, range=ran, alpha=0.7, label='Component 1')
+    plt.hist(dist[dist[:, 0] == 2][:, 1], bins=20, range=ran, alpha=0.7, label='Component 2')
+    plt.hist(dist[dist[:, 0] == 3][:, 1], bins=20, range=ran, alpha=0.7, label='Component 3')
+    plt.hist(dist[dist[:, 0] == 4][:, 1], bins=20, range=ran, alpha=0.7, label='Component 4')
+    plt.hist(dist[dist[:, 0] == 5][:, 1], bins=20, range=ran, alpha=0.7, label='Component 5')
+    plt.hist(dist[dist[:, 0] == 6][:, 1], bins=20, range=ran, alpha=0.7, label='Component 6')
+    plt.hist(dist[dist[:, 0] == 7][:, 1], bins=20, range=ran, alpha=0.7, label='Component 7')
+    plt.hist(dist[dist[:, 0] == 8][:, 1], bins=20, range=ran, alpha=0.7, label='Component 8')
+    plt.hist(dist[dist[:, 0] == 9][:, 1], bins=20, range=ran, alpha=0.7, label='Component 9')
+    plt.hist(dist[dist[:, 0] == 10][:, 1], bins=20, range=ran, alpha=0.7, label='Component 10')
+    plt.xlabel('distance')
+    plt.ylabel('counts')
+    plt.legend()
+
+    if save:
+        Path(path).mkdir(parents=True, exist_ok=True)
+        outpath = str(path) + f"/hist_jet_gaussian_distance.{plot_format}"
+        plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
