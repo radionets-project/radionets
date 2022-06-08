@@ -8,6 +8,7 @@ from radionets.dl_framework.model import (
     LocallyConnected2d,
 )
 from functools import partial
+from math import pi
 
 
 class SRResNet_pred(nn.Module):
@@ -64,6 +65,51 @@ class SRResNet_pred(nn.Module):
         return torch.cat([x0, x1], dim=1)
 
 
+class SRResNet_bigger_no_symmetry(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+        )
+
+        # ResBlock 8
+        self.blocks = nn.Sequential(
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
+        )
+
+        self.hardtanh = nn.Hardtanh(-pi, pi)
+
+    def forward(self, x):
+        s = x.shape[-1]
+
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        x0 = x[:, 0].reshape(-1, 1, s, s)
+        x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s, s)
+
+        return torch.cat([x0, x1], dim=1)
+
+
 class Uncertainty(nn.Module):
     def __init__(self, img_size):
         super().__init__()
@@ -102,25 +148,19 @@ class Uncertainty(nn.Module):
         self.elu = GeneralELU(add=+(1 + 1e-7))
 
     def forward(self, x):
-        s = x.shape[-1]
-
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
 
         x = self.final(x)
 
-        x0_unc = self.symmetry(x[:, 0]).reshape(-1, 1, s, s)
-        x0_unc = self.elu(x0_unc)
-        x1_unc = self.symmetry(x[:, 1]).reshape(-1, 1, s, s)
-        x1_unc = self.elu(x1_unc)
-        return torch.cat([x0_unc, x1_unc], dim=1)
+        return self.elu(x)
 
 
 class UncertaintyWrapper(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        self.pred = SRResNet_pred()
+        self.pred = SRResNet_bigger_no_symmetry()
 
         self.uncertainty = Uncertainty(img_size)
 

@@ -166,7 +166,7 @@ def splitted_L1_unc(x, y):
     l1 = nn.L1Loss()
     loss_amp = l1(pred_amp, tar_amp)
     loss_phase = l1(pred_phase, tar_phase)
-    return loss_amp + loss_phase * 10
+    return loss_amp + loss_phase
 
 
 def L1_icecube(x, y):
