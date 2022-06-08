@@ -101,7 +101,7 @@ def fitgaussian_iterativ(data, i=0, visualize=False, path=None, save=False, plot
         params[3], params[4] = params[4], params[3]
         result_lmf.parameters = params
         # save, if gauss is not too narrow (e.g. one large pixel isn't meaningful here)
-        if not np.array(params[3:5] < data.shape[-1] / 50).any():
+        if not np.array(params[3:5] < data.shape[-1] / 40).any():
             params_list.append(result_lmf)
             fit_list.append(fit)
         data -= fit

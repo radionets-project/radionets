@@ -763,7 +763,7 @@ def plot_jet_results(inp, pred, truth, path, save=False, plot_format="pdf"):
         im1 = ax1.imshow(real, cmap=plt.cm.inferno)
         divider = make_axes_locatable(ax1)
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax1.set_title(r"Real Input")
+        ax1.set_title(r"Input")
         fig.colorbar(im1, cax=cax, orientation="vertical")
 
         true = truth[i]
@@ -804,33 +804,33 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
         input images
     pred: n 4d arrays with multiple channels
         predicted images
-    truth:n 4d arrays with multiple channels
+    truth: n 4d arrays with multiple channels
         true images
     """
     for i in tqdm(range(len(inp))):
         c = truth.shape[1] - 1  # -1 because last one is the background
-        fig, axs = plt.subplots(c, 3, figsize=(12, 3.5 * c))
+        fig, axs = plt.subplots(3, c, figsize=(3.5 * c, 10))
         for j in range(c):
-            im1 = axs[j, 0].imshow(truth[i, j], cmap=plt.cm.inferno)
-            divider = make_axes_locatable(axs[j, 0])
+            im1 = axs[0, j].imshow(truth[i, j], cmap=plt.cm.inferno)
+            divider = make_axes_locatable(axs[0, j])
             cax = divider.append_axes("right", size="5%", pad=0.05)
-            axs[j, 0].set_title(r"Truth")
-            t = axs[j, 0].text(
+            axs[0, j].set_title(r"Truth")
+            t = axs[0, j].text(
                 truth.shape[-1] / 10, truth.shape[-1] / 10, r"c = {}".format(j)
             )
             t.set_bbox(dict(facecolor="white", alpha=0.6))
             fig.colorbar(im1, cax=cax, orientation="vertical")
 
-            im1 = axs[j, 1].imshow(pred[i, j], cmap=plt.cm.inferno)
-            divider = make_axes_locatable(axs[j, 1])
+            im1 = axs[1, j].imshow(pred[i, j], cmap=plt.cm.inferno)
+            divider = make_axes_locatable(axs[1, j])
             cax = divider.append_axes("right", size="5%", pad=0.05)
-            axs[j, 1].set_title(r"Prediction")
+            axs[1, j].set_title(r"Prediction")
             fig.colorbar(im1, cax=cax, orientation="vertical")
 
-            im1 = axs[j, 2].imshow(truth[i, j] - pred[i, j], cmap=plt.cm.inferno)
-            divider = make_axes_locatable(axs[j, 2])
+            im1 = axs[2, j].imshow(truth[i, j] - pred[i, j], cmap=plt.cm.inferno)
+            divider = make_axes_locatable(axs[2, j])
             cax = divider.append_axes("right", size="5%", pad=0.05)
-            axs[j, 2].set_title(r"Diff (Truth - Prediction)")
+            axs[2, j].set_title(r"Diff (Truth - Prediction)")
             fig.colorbar(im1, cax=cax, orientation="vertical")
 
         plt.tight_layout()
@@ -897,8 +897,6 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
     ----------
     dist: 2d array
         array of shape (n, 2), where n is the number of distances
-    fit: 2d array
-        gaussian fit around the maxima
     """
     ran = [0, 50]
 
@@ -922,4 +920,32 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
     if save:
         Path(path).mkdir(parents=True, exist_ok=True)
         outpath = str(path) + f"/hist_jet_gaussian_distance.{plot_format}"
+        plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
+    """
+    Plotting image of the dataset
+    ----------
+    x: array
+        array of shape (n, 1, size, size), n must be at least rows * cols
+    rows: int
+        number of rows in the plot
+    cols: int
+        number of cols in the plot
+    """
+    fig, ax = plt.subplots(rows, cols, figsize=(15, 7))
+    for i in range(rows):
+        for j in range(cols):
+            img = ax[i, j].imshow(x[i * cols + j, 0], cmap=plt.cm.inferno)
+            divider = make_axes_locatable(ax[i, j])
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            fig.colorbar(img, cax=cax, orientation="vertical")
+
+    plt.tight_layout()
+
+    if save:
+        print("saving")
+        Path(path).mkdir(parents=True, exist_ok=True)
+        outpath = str(path) + f"/simulation_examples.{plot_format}"
         plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
