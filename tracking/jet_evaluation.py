@@ -76,6 +76,7 @@ pred_for_gauss = torch.sum(pred[:, 0:-1], axis=1)
 for i, pred_img in enumerate(pred_for_gauss[0:n]):
     fitgaussian_iterativ(pred_img, i, visualize=True, path=outpath, save=True)
 
+print("Plotting the histogram for iterative gaussian evaluation")
 all_params = []
 for prediction in pred_for_gauss:
     all_params.append(fitgaussian_iterativ(prediction))
@@ -89,7 +90,6 @@ for trues, preds in zip(jet_list, all_params):
         distances.append((minimum, diff[minimum]))
 distances = np.array(distances)
 
-print("Plotting the histogram for iterative gaussian evaluation")
 hist_jet_gaussian_distance(distances, path=outpath, save=True)
 
 print("Plotting the iterative gaussian algorythm for real image")

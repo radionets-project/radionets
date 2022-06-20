@@ -757,35 +757,24 @@ def plot_jet_results(inp, pred, truth, path, save=False, plot_format="pdf"):
         pred = pred.squeeze()
 
     for i in tqdm(range(len(inp))):
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 7))
+        fig, ax = plt.subplots(2, 1, sharex=True, sharey=True, figsize=(4, 7))
 
-        real = inp[i, 0]
-        im1 = ax1.imshow(real, cmap=plt.cm.inferno)
-        divider = make_axes_locatable(ax1)
+        im1 = ax[0].imshow(inp[i, 0], cmap=plt.cm.inferno)
+        ax[0].set_xlabel(r"Pixels")
+        ax[0].set_ylabel(r"Pixels")
+        divider = make_axes_locatable(ax[0])
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax1.set_title(r"Input")
-        fig.colorbar(im1, cax=cax, orientation="vertical")
+        cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
+        cbar.set_label(r'Specific Intensity (a.u.)')
 
-        true = truth[i]
-        im2 = ax2.imshow(true, cmap=plt.cm.inferno)
-        divider = make_axes_locatable(ax2)
+        diff = pred[i] - truth[i]
+        im2 = ax[1].imshow(diff, cmap=plt.cm.inferno)
+        ax[1].set_xlabel(r"Pixels")
+        ax[1].set_ylabel(r"Pixels")
+        divider = make_axes_locatable(ax[1])
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax2.set_title(r"Truth")
-        fig.colorbar(im2, cax=cax, orientation="vertical")
-
-        pre = pred[i]
-        im3 = ax3.imshow(pre, cmap=plt.cm.inferno)
-        divider = make_axes_locatable(ax3)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax3.set_title(r"Prediction")
-        fig.colorbar(im3, cax=cax, orientation="vertical")
-
-        diff = truth[i] - pred[i]
-        im4 = ax4.imshow(diff, cmap=plt.cm.inferno)
-        divider = make_axes_locatable(ax4)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax4.set_title(r"Diff (Truth - Prediction)")
-        fig.colorbar(im4, cax=cax, orientation="vertical")
+        cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
+        cbar.set_label(r'Specific Intensity (a.u.)')
 
         plt.tight_layout()
 
@@ -793,6 +782,7 @@ def plot_jet_results(inp, pred, truth, path, save=False, plot_format="pdf"):
             Path(path).mkdir(parents=True, exist_ok=True)
             outpath = str(path) + f"/prediction_{i}.{plot_format}"
             fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+        plt.close()
 
 
 def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format="pdf"):
@@ -807,38 +797,58 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
     truth: n 4d arrays with multiple channels
         true images
     """
+    X, Y = np.meshgrid(np.arange(inp.shape[-1]), np.arange(inp.shape[-1]))
     for i in tqdm(range(len(inp))):
         c = truth.shape[1] - 1  # -1 because last one is the background
-        fig, axs = plt.subplots(3, c, figsize=(3.5 * c, 10))
         for j in range(c):
-            im1 = axs[0, j].imshow(truth[i, j], cmap=plt.cm.inferno)
-            divider = make_axes_locatable(axs[0, j])
+            truth_max = torch.max(truth[i, j])
+            fig, axs = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(8, 7))
+            if not truth_max == 0:
+                pred_max = torch.max(pred[i, j])
+                axs[0, 0].contour(X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white")
+                axs[0, 1].contour(X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white")
+                axs[1, 0].contour(X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white")
+                axs[1, 0].contour(X, Y, pred[i, j], levels=[pred_max * 0.32], colors="cyan", linestyles="dashed")
+
+            im1 = axs[0, 0].imshow(inp[i, 0], cmap=plt.cm.inferno)
+            axs[0, 0].set_xlabel(r"Pixels")
+            axs[0, 0].set_ylabel(r"Pixels")
+            divider = make_axes_locatable(axs[0, 0])
             cax = divider.append_axes("right", size="5%", pad=0.05)
-            axs[0, j].set_title(r"Truth")
-            t = axs[0, j].text(
-                truth.shape[-1] / 10, truth.shape[-1] / 10, r"c = {}".format(j)
-            )
-            t.set_bbox(dict(facecolor="white", alpha=0.6))
-            fig.colorbar(im1, cax=cax, orientation="vertical")
+            cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
+            cbar.set_label(r'Specific Intensity (a.u.)')
 
-            im1 = axs[1, j].imshow(pred[i, j], cmap=plt.cm.inferno)
-            divider = make_axes_locatable(axs[1, j])
+            im2 = axs[0, 1].imshow(truth[i, j], cmap=plt.cm.inferno)
+            axs[0, 1].set_xlabel(r"Pixels")
+            axs[0, 1].set_ylabel(r"Pixels")
+            divider = make_axes_locatable(axs[0, 1])
             cax = divider.append_axes("right", size="5%", pad=0.05)
-            axs[1, j].set_title(r"Prediction")
-            fig.colorbar(im1, cax=cax, orientation="vertical")
+            cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
+            cbar.set_label(r'Specific Intensity (a.u.)')
 
-            im1 = axs[2, j].imshow(truth[i, j] - pred[i, j], cmap=plt.cm.inferno)
-            divider = make_axes_locatable(axs[2, j])
+            im1 = axs[1, 0].imshow(pred[i, j], cmap=plt.cm.inferno)
+            axs[1, 0].set_xlabel(r"Pixels")
+            axs[1, 0].set_ylabel(r"Pixels")
+            divider = make_axes_locatable(axs[1, 0])
             cax = divider.append_axes("right", size="5%", pad=0.05)
-            axs[2, j].set_title(r"Diff (Truth - Prediction)")
-            fig.colorbar(im1, cax=cax, orientation="vertical")
+            cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
+            cbar.set_label(r'Specific Intensity (a.u.)')
 
-        plt.tight_layout()
+            im4 = axs[1, 1].imshow(pred[i, j] - truth[i, j], cmap=plt.cm.inferno)
+            divider = make_axes_locatable(axs[1, 1])
+            axs[1, 1].set_xlabel(r"Pixels")
+            axs[1, 1].set_ylabel(r"Pixels")
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cbar = fig.colorbar(im4, cax=cax, orientation="vertical")
+            cbar.set_label(r'Specific Intensity (a.u.)')
 
-        if save:
-            Path(path).mkdir(parents=True, exist_ok=True)
-            outpath = str(path) + f"/prediction_comp_{i}.{plot_format}"
-            fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+            plt.tight_layout(w_pad=2)
+
+            if save:
+                Path(path).mkdir(parents=True, exist_ok=True)
+                outpath = str(path) + f"/prediction_{i}_comp_{j}.{plot_format}"
+                fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+            plt.close()
 
 
 def plot_fitgaussian(data, fit_list, params_list, iteration, path, save=False, plot_format="pdf"):
@@ -854,13 +864,15 @@ def plot_fitgaussian(data, fit_list, params_list, iteration, path, save=False, p
     params: list
         parameters related to the gaussian: height, x, y, width_x, width_y, theta
     """
-    fig, axs = plt.subplots(1, len(params_list), figsize=(3.5 * len(params_list), 5))
+    fig, axs = plt.subplots(1, len(params_list), sharex=True, sharey=True, figsize=(4 * len(params_list), 3.5))
     for i, (fit, params) in enumerate(zip(fit_list, params_list)):
         im = axs[i].imshow(data, cmap=plt.cm.inferno)
+        axs[i].set_xlabel(r"Pixels")
+        axs[i].set_ylabel(r"Pixels")
         divider = make_axes_locatable(axs[i])
         cax = divider.append_axes("right", size="5%", pad=0.05)
-        axs[i].set_title(f"{i}-th pred. comp.")
-        fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar.set_label(r'Specific Intensity (a.u.)')
         axs[i].contour(fit, cmap=plt.cm.gray_r)
         data -= fit
         (height, x, y, width_x, width_y, theta) = params.parameters
@@ -887,7 +899,8 @@ def plot_fitgaussian(data, fit_list, params_list, iteration, path, save=False, p
     if save:
         Path(path).mkdir(parents=True, exist_ok=True)
         outpath = str(path) + f"/eval_iterativ_gaussian_{iteration}.{plot_format}"
-        plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+        fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    plt.close()
 
 
 def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
@@ -901,7 +914,6 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
     ran = [0, 50]
 
     plt.figure()
-    plt.title('Euclidian distance between simulation and evaluation')
     plt.hist(dist[dist[:, 0] == 0][:, 1], bins=20, range=ran, alpha=0.7, label='Component 0')
     plt.hist(dist[dist[:, 0] == 1][:, 1], bins=20, range=ran, alpha=0.7, label='Component 1')
     plt.hist(dist[dist[:, 0] == 2][:, 1], bins=20, range=ran, alpha=0.7, label='Component 2')
@@ -913,14 +925,15 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
     plt.hist(dist[dist[:, 0] == 8][:, 1], bins=20, range=ran, alpha=0.7, label='Component 8')
     plt.hist(dist[dist[:, 0] == 9][:, 1], bins=20, range=ran, alpha=0.7, label='Component 9')
     plt.hist(dist[dist[:, 0] == 10][:, 1], bins=20, range=ran, alpha=0.7, label='Component 10')
-    plt.xlabel('distance')
-    plt.ylabel('counts')
+    plt.xlabel('Distance')
+    plt.ylabel('Counts')
     plt.legend()
 
     if save:
         Path(path).mkdir(parents=True, exist_ok=True)
         outpath = str(path) + f"/hist_jet_gaussian_distance.{plot_format}"
         plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    plt.close()
 
 
 def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
@@ -934,18 +947,21 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
     cols: int
         number of cols in the plot
     """
-    fig, ax = plt.subplots(rows, cols, figsize=(15, 7))
+    fig, ax = plt.subplots(rows, cols, sharex=True, sharey=True, figsize=(4 * cols, 3.5 * rows))
     for i in range(rows):
         for j in range(cols):
             img = ax[i, j].imshow(x[i * cols + j, 0], cmap=plt.cm.inferno)
+            ax[i, j].set_xlabel(r"Pixels")
+            ax[i, j].set_ylabel(r"Pixels")
             divider = make_axes_locatable(ax[i, j])
             cax = divider.append_axes("right", size="5%", pad=0.05)
-            fig.colorbar(img, cax=cax, orientation="vertical")
+            cbar = fig.colorbar(img, cax=cax, orientation="vertical")
+            cbar.set_label(r'Specific Intensity (a.u.)')
 
     plt.tight_layout()
 
     if save:
-        print("saving")
         Path(path).mkdir(parents=True, exist_ok=True)
         outpath = str(path) + f"/simulation_examples.{plot_format}"
-        plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+        fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
+    plt.close()
