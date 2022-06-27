@@ -765,7 +765,7 @@ def plot_jet_results(inp, pred, truth, path, save=False, plot_format="pdf"):
         divider = make_axes_locatable(ax[0])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
-        cbar.set_label(r'Specific Intensity (a.u.)')
+        cbar.set_label(r'Specific Intensity / a.u.')
 
         diff = pred[i] - truth[i]
         im2 = ax[1].imshow(diff, cmap=plt.cm.inferno)
@@ -774,7 +774,7 @@ def plot_jet_results(inp, pred, truth, path, save=False, plot_format="pdf"):
         divider = make_axes_locatable(ax[1])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
-        cbar.set_label(r'Specific Intensity (a.u.)')
+        cbar.set_label(r'Specific Intensity / a.u.')
 
         plt.tight_layout()
 
@@ -816,7 +816,7 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             divider = make_axes_locatable(axs[0, 0])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity (a.u.)')
+            cbar.set_label(r'Specific Intensity / a.u.')
 
             im2 = axs[0, 1].imshow(truth[i, j], cmap=plt.cm.inferno)
             axs[0, 1].set_xlabel(r"Pixels")
@@ -824,7 +824,7 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             divider = make_axes_locatable(axs[0, 1])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity (a.u.)')
+            cbar.set_label(r'Specific Intensity / a.u.')
 
             im1 = axs[1, 0].imshow(pred[i, j], cmap=plt.cm.inferno)
             axs[1, 0].set_xlabel(r"Pixels")
@@ -832,7 +832,7 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             divider = make_axes_locatable(axs[1, 0])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity (a.u.)')
+            cbar.set_label(r'Specific Intensity / a.u.')
 
             im4 = axs[1, 1].imshow(pred[i, j] - truth[i, j], cmap=plt.cm.inferno)
             divider = make_axes_locatable(axs[1, 1])
@@ -840,7 +840,7 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             axs[1, 1].set_ylabel(r"Pixels")
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(im4, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity (a.u.)')
+            cbar.set_label(r'Specific Intensity / a.u.')
 
             plt.tight_layout(w_pad=2)
 
@@ -872,7 +872,7 @@ def plot_fitgaussian(data, fit_list, params_list, iteration, path, save=False, p
         divider = make_axes_locatable(axs[i])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label(r'Specific Intensity (a.u.)')
+        cbar.set_label(r'Specific Intensity / a.u.')
         axs[i].contour(fit, cmap=plt.cm.gray_r)
         data -= fit
         (height, x, y, width_x, width_y, theta) = params.parameters
@@ -956,7 +956,7 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
             divider = make_axes_locatable(ax[i, j])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(img, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity (a.u.)')
+            cbar.set_label(r'Specific Intensity / a.u.')
 
     plt.tight_layout()
 
