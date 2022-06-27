@@ -7,7 +7,6 @@ from radionets.dl_framework.model import (
     GeneralELU,
     conv_phase,
     conv_amp,
-    double_conv,
     euler,
     fft,
     shape,
