@@ -9,7 +9,6 @@ gpu = true
 
 [paths]
 data_path = "/net/big-tank/POOL/projects/radio/simulations/jet_components/220527_n10000_s256"
-# model_path = "/net/big-tank/POOL/projects/radio/models/jet/220527_unet_jet_segmentation_c7.model"
 model_path = "/net/big-tank/POOL/users/apoggenpohl/radionets/models/220527_unet_jet_segmentation_c7.model"
 pre_model = "none"
 norm_path = "none"
