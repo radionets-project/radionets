@@ -22,7 +22,7 @@ loss_func = "splitted_L1"
 num_epochs = 5
 inspection = true
 output_format = "png"
-switch_loss = true
+switch_loss = false
 when_switch = 25
 
 [hypers]

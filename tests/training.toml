@@ -22,6 +22,8 @@ loss_func = "splitted_L1"
 num_epochs = 2
 inspection = false
 output_format = "pdf"
+switch_loss = false
+when_switch = 25
 
 [hypers]
 batch_size = 64
