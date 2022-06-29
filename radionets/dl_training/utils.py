@@ -41,6 +41,8 @@ def read_config(config):
     train_conf["inspection"] = config["general"]["inspection"]
     train_conf["separate"] = False
     train_conf["format"] = config["general"]["output_format"]
+    train_conf["switch_loss"] = config["general"]["switch_loss"]
+    train_conf["when_switch"] = config["general"]["when_switch"]
 
     train_conf["param_scheduling"] = config["param_scheduling"]["use"]
     train_conf["lr_start"] = config["param_scheduling"]["lr_start"]

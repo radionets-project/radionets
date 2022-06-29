@@ -150,9 +150,10 @@ class SaveTempCallback(Callback):
 class SwitchLoss(Callback):
     _order = 5
 
-    def __init__(self, second_loss):
+    def __init__(self, second_loss, when_switch):
         self.second_loss = second_loss
+        self.when_switch = when_switch
 
     def before_epoch(self):
-        if (self.epoch + 1) > 25:
+        if (self.epoch + 1) > self.when_switch:
             self.learn.loss_func = self.second_loss

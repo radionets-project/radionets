@@ -65,14 +65,25 @@ def define_learner(
             ]
         )
     if not test:
-        cbfs.extend(
-            [
-                SaveTempCallback(model_path=model_path),
-                AvgLossCallback,
-                DataAug,
-                SwitchLoss(second_loss=getattr(loss_functions, "comb_likelihood")),
-            ]
-        )
+        # use switch loss
+        if train_conf["switch_loss"]==True:
+            cbfs.extend(
+                [
+                    SaveTempCallback(model_path=model_path),
+                    AvgLossCallback,
+                    DataAug,
+                    SwitchLoss(second_loss=getattr(loss_functions, "comb_likelihood"),when_switch=train_conf["when_switch"]),
+                ]
+            )
+        # no switch loss
+        if train_conf["switch_loss"]==False: 
+            cbfs.extend(
+                [
+                    SaveTempCallback(model_path=model_path),
+                    AvgLossCallback,
+                    DataAug,
+                ]
+            )
     if train_conf["telegram_logger"] and not lr_find:
         cbfs.extend(
             [
