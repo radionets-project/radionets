@@ -33,10 +33,7 @@ def source_list_collate(batch):
 def create_databunch(data_path, fourier, source_list, batch_size):
     # Load data sets
     test_ds = load_data(
-        data_path,
-        mode="test",
-        fourier=fourier,
-        source_list=source_list,
+        data_path, mode="test", fourier=fourier, source_list=source_list,
     )
 
     # Create databunch with defined batchsize and check for source_list
