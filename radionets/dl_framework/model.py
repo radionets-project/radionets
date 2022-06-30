@@ -137,6 +137,14 @@ def init_cnn(m, uniform=False):
     init_cnn_(m, f)
 
 
+def linear(in_features, out_features):
+    lin = (nn.Linear(in_features, out_features),)
+    bn = (nn.BatchNorm2d(),)
+    act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
+    layers = [*lin, *bn, act]
+    return layers
+
+
 def conv_layer(ni, nf, ks=3, stride=2, bn=True, **kwargs):
     layers = [
         nn.Conv2d(ni, nf, ks, padding=ks // 2, stride=stride, bias=not bn),
