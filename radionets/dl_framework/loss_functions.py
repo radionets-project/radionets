@@ -1,11 +1,12 @@
+from cmath import nan
 import torch
 from torch import nn
 from torchvision.models import vgg16_bn
 from radionets.dl_framework.utils import children
+from radionets.dl_framework.metrics import bbox_iou
 import torch.nn.functional as F
 from pytorch_msssim import MS_SSIM
 from scipy.optimize import linear_sum_assignment
-import math
 
 
 class FeatureLoss(nn.Module):
@@ -489,117 +490,56 @@ def sort(x, permutation):
     return x[permutation, :]
 
 
+def jet_seg(x, y):
+    # weight components farer outside more
+    loss_l1_weighted = 0
+    for i in range(x.shape[1]):
+        loss_l1_weighted += l1(x[:, i], y[:, i]) * (i + 1)
+
+    return loss_l1_weighted
+
+
 def yolo(x, y):
     """
     Loss for YOLO training
     """
-    print(x.shape)
+    d = x.get_device()
+
+    weight_box = 1
+    weight_amp = 1
+    weight_angle = 0    # need to implement and scale jet first correctly (take into account, that 2*pi is same as 0)
+    scale_box_by_amp = True
+    box_size = 2
+
     x = x.view(y.shape)
-    print(x.shape)
-    loss = 0
-    for img_x, img_y in zip(x, y):
-        for comp_x, comp_y in zip(img_x, img_y):
-            box_x = comp_x[1:5]
-            box_y = comp_y[1:5]
-            loss += bbox_iou(box_x, box_y, CIoU=True)
-    
+
+    # IoU-loss for the box
+    x_box = x[..., 1:5].view(-1, 4)
+    x_box_packed = [x_box[:, 0], x_box[:, 1], x_box[:, 2] * box_size, x_box[:, 3] * box_size]
+    y_box = y[..., 1:5].view(-1, 4)
+    y_box_packed = [y_box[:, 0], y_box[:, 1], y_box[:, 2] * box_size, y_box[:, 3] * box_size]
+    if scale_box_by_amp:
+        amp_scale = y[..., 0].view(-1).bool()
+        iou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
+        iou = iou[amp_scale]
+    else:
+        iou = bbox_iou(x_box_packed, y_box_packed, CIoU=False)
+
+    loss_box = (1.0 - iou).mean()
+
+    # L1-loss for the amplitude
+    loss_amp = l1(x[..., 0], y[..., 0])
+
+    # L1-loss for the jet-angle
+    loss_angle = l1(x[..., 6], y[..., 6])
+
+    loss = loss_box * weight_box + loss_amp * weight_amp + loss_angle * weight_angle
+    #print('Loss:', loss)
+    if torch.isnan(loss): exit()
     return loss
 
 
-# def CIoU(pred, true, eps=1e-7):
-#     """
-#     Complete Intersection over Union
-
-#     pred: Predictions (bs, components * params)
-#     true: Truth (bs, components, params)
-    
-#     params: (x, y, width, height)
-#     """
-
-#     # Get the coordinates of bounding boxes
-#     pred_x = pred[..., 0]
-#     pred_y = pred[..., 1]
-#     pred_h = pred[..., 2]
-#     pred_w = pred[..., 3]
-#     pred_x1 = pred_x - pred_h / 2
-#     pred_x2 = pred_x + pred_h / 2
-#     pred_y1 = pred_y - pred_w / 2
-#     pred_y2 = pred_y + pred_w / 2
-#     true_x = true[..., 0]
-#     true_y = true[..., 1]
-#     true_h = true[..., 2]
-#     true_w = true[..., 3]
-#     true_x1 = true_x - true_h / 2
-#     true_x2 = true_x + true_h / 2
-#     true_y1 = true_y - true_w / 2
-#     true_y2 = true_y + true_w / 2
-
-#     # Intersection area
-#     inter = (torch.min(pred_x2, true_x2) - torch.max(pred_x1, true_x1)).clamp(0) * \
-#             (torch.min(pred_y2, true_y2) - torch.max(pred_y1, true_y1)).clamp(0)
-
-#     # Union Area
-#     union = pred_h * pred_w + true_h * true_w - inter + eps
-
-#     # IoU
-#     iou = inter / union
-
-#     # CIoU
-#     # convex (smallest enclosing box) width
-#     cw = torch.max(pred_x2, true_x2) - torch.min(pred_x1, true_x1)
-#     # convex height
-#     ch = torch.max(pred_y2, true_y2) - torch.min(pred_y1, true_y1)
-
-#     # convex diagonal squared
-#     c2 = cw ** 2 + ch ** 2 + eps
-#     # center dist ** 2
-#     rho2 = ((true_x1 + true_x2 - pred_x1 - pred_x2) ** 2 + \
-#             (true_y1 + true_y2 - pred_y1 - pred_y2) ** 2) / 4 
-
-#     v = (4 / math.pi ** 2) * \
-#         torch.pow(torch.atan(true_w / true_h) - torch.atan(pred_w / pred_h), 2)
-
-#     with torch.no_grad():
-#         alpha = v / (v - iou + (1 + eps))
-#     return iou - (rho2 / c2 + v * alpha)  # CIoU
-
-
-def bbox_iou(box1, box2, xywh=True, GIoU=False, DIoU=False, CIoU=False, eps=1e-7):
-    # Returns Intersection over Union (IoU) of box1(1,4) to box2(n,4)
-
-    # Get the coordinates of bounding boxes
-    if xywh:  # transform from xywh to xyxy
-        (x1, y1, w1, h1), (x2, y2, w2, h2) = box1.chunk(4, 1), box2.chunk(4, 1)
-        w1_, h1_, w2_, h2_ = w1 / 2, h1 / 2, w2 / 2, h2 / 2
-        b1_x1, b1_x2, b1_y1, b1_y2 = x1 - w1_, x1 + w1_, y1 - h1_, y1 + h1_
-        b2_x1, b2_x2, b2_y1, b2_y2 = x2 - w2_, x2 + w2_, y2 - h2_, y2 + h2_
-    else:  # x1, y1, x2, y2 = box1
-        b1_x1, b1_y1, b1_x2, b1_y2 = box1.chunk(4, 1)
-        b2_x1, b2_y1, b2_x2, b2_y2 = box2.chunk(4, 1)
-        w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
-        w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
-
-    # Intersection area
-    inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * \
-            (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
-
-    # Union Area
-    union = w1 * h1 + w2 * h2 - inter + eps
-
-    # IoU
-    iou = inter / union
-    if CIoU or DIoU or GIoU:
-        cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)  # convex (smallest enclosing box) width
-        ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)  # convex height
-        if CIoU or DIoU:  # Distance or Complete IoU https://arxiv.org/abs/1911.08287v1
-            c2 = cw ** 2 + ch ** 2 + eps  # convex diagonal squared
-            rho2 = ((b2_x1 + b2_x2 - b1_x1 - b1_x2) ** 2 + (b2_y1 + b2_y2 - b1_y1 - b1_y2) ** 2) / 4  # center dist ** 2
-            if CIoU:  # https://github.com/Zzh-tju/DIoU-SSD-pytorch/blob/master/utils/box/box_utils.py#L47
-                v = (4 / math.pi ** 2) * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
-                with torch.no_grad():
-                    alpha = v / (v - iou + (1 + eps))
-                return iou - (rho2 / c2 + v * alpha)  # CIoU
-            return iou - rho2 / c2  # DIoU
-        c_area = cw * ch + eps  # convex area
-        return iou - (c_area - union) / c_area  # GIoU https://arxiv.org/pdf/1902.09630.pdf
-    return iou  # IoU
+def l1_yolo(x, y):
+    x = x.view(y.shape)
+    loss = l1(x[..., 1:5], y[..., 1:5])
+    return loss

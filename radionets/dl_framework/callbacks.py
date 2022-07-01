@@ -122,12 +122,14 @@ class DataAug(Callback):
     def before_batch(self):
         x = self.xb[0].clone()
         y = self.yb[0].clone()
-        randint = np.random.randint(0, 4, x.shape[0])
-        for i in range(x.shape[0]):
-            x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
-            x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
-            y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
-            y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
+        # DOES NOT WORK WITH LIST
+        # randint = np.random.randint(0, 4, x.shape[0])
+        # last_axis = len(x.shape) - 1
+        # for i in range(x.shape[0]):
+        #     x[i] = torch.rot90(x[i], int(randint[i]), [last_axis - 2, last_axis - 1])
+        #     y[i] = torch.rot90(y[i], int(randint[i]), [last_axis - 2, last_axis - 1])
+        x = x.squeeze(1)
+        y = y.squeeze(1)
         self.learn.xb = [x]
         self.learn.yb = [y]
 

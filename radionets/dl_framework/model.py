@@ -139,7 +139,7 @@ def init_cnn(m, uniform=False):
 
 def linear(in_features, out_features):
     lin = (nn.Linear(in_features, out_features),)
-    bn = (nn.BatchNorm2d(),)
+    bn = (nn.BatchNorm1d(out_features),)
     act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
     layers = [*lin, *bn, act]
     return layers
