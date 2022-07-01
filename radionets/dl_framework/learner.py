@@ -8,7 +8,6 @@ from radionets.dl_framework.callbacks import (
     AvgLossCallback,
     SwitchLoss,
     CudaCallback,
-    CometCallback,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -52,9 +51,6 @@ def define_learner(
 
     if train_conf["gpu"]:
         cbfs.extend([CudaCallback])
-
-    if train_conf["comet_ml"] and not lr_find and not plot_loss:
-        cbfs.extend([CometCallback(name="pytorch", test_data=train_conf["data_path"])])
 
     if not test:
         cbfs.extend([SaveTempCallback(model_path=model_path), AvgLossCallback, DataAug])
