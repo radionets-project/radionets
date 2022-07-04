@@ -521,3 +521,12 @@ def pos_loss(x, y):
 
 def sort(x, permutation):
     return x[permutation, :]
+
+
+def jet_seg(x, y):
+    # weight components farer outside more
+    loss_l1_weighted = 0
+    for i in range(x.shape[1]):
+        loss_l1_weighted += l1(x[:, i], y[:, i]) * (i + 1)
+
+    return loss_l1_weighted
