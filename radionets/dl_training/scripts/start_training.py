@@ -24,14 +24,7 @@ from pathlib import Path
 @click.argument("configuration_path", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--mode",
-    type=click.Choice(
-        [
-            "train",
-            "lr_find",
-            "plot_loss",
-        ],
-        case_sensitive=False,
-    ),
+    type=click.Choice(["train", "lr_find", "plot_loss"], case_sensitive=False,),
     default="train",
 )
 def main(configuration_path, mode):
@@ -78,11 +71,7 @@ def main(configuration_path, mode):
         click.echo("Start training of the model.\n")
 
         # define_learner
-        learn = define_learner(
-            data,
-            arch,
-            train_conf,
-        )
+        learn = define_learner(data, arch, train_conf,)
 
         # load pretrained model
         if train_conf["pre_model"] != "none":
@@ -110,12 +99,7 @@ def main(configuration_path, mode):
         click.echo("Start lr_find.\n")
 
         # define_learner
-        learn = define_learner(
-            data,
-            arch,
-            train_conf,
-            lr_find=True,
-        )
+        learn = define_learner(data, arch, train_conf, lr_find=True,)
 
         # load pretrained model
         if train_conf["pre_model"] != "none":
@@ -137,15 +121,9 @@ def main(configuration_path, mode):
         click.echo("Start plotting loss.\n")
 
         # define_learner
-        learn = define_learner(
-            data,
-            arch,
-            train_conf,
-            plot_loss=True,
-        )
+        learn = define_learner(data, arch, train_conf, plot_loss=True,)
         # load pretrained model
         if Path(train_conf["model_path"]).exists:
-            # learn.create_opt()
             load_pre_model(learn, train_conf["model_path"], plot_loss=True)
         else:
             click.echo("Selected model does not exist.")
@@ -153,14 +131,10 @@ def main(configuration_path, mode):
             sys.exit()
 
         plot_lr(
-            learn,
-            Path(train_conf["model_path"]),
-            output_format=train_conf["format"],
+            learn, Path(train_conf["model_path"]), output_format=train_conf["format"],
         )
         plot_loss(
-            learn,
-            Path(train_conf["model_path"]),
-            output_format=train_conf["format"],
+            learn, Path(train_conf["model_path"]), output_format=train_conf["format"],
         )
 
 
