@@ -27,7 +27,6 @@ from pathlib import Path
     type=click.Choice(
         [
             "train",
-            "fine_tune",
             "lr_find",
             "plot_loss",
         ],
