@@ -68,7 +68,12 @@ def define_learner(
     if train_conf["comet_ml"] and not lr_find and not plot_loss:
         cbfs.extend(
             [
-                CometCallback(name="pytorch", test_data=train_conf["data_path"]),
+                CometCallback(
+                    name=train_conf["project_name"],
+                    test_data=train_conf["data_path"],
+                    plot_n_epochs=train_conf["plot_n_epochs"],
+                    scale=train_conf["scale"],
+                ),
             ]
         )
     if not test:
