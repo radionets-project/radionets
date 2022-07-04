@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torchvision.models import vgg16_bn
-from radionets.dl_framework.utils import children
+from radionets.dl_framework.utils import children, get_ifft_torch
 import torch.nn.functional as F
 from pytorch_msssim import MS_SSIM
 from scipy.optimize import linear_sum_assignment
@@ -174,6 +174,17 @@ def splitted_L1_masked(x, y):
     loss_amp = l1(inp_amp, tar_amp)
     loss_phase = l1(inp_phase, tar_phase)
     loss = loss_amp + loss_phase
+    return loss
+
+
+def fft_L1(x, y):
+    ifft_pred = get_ifft_torch(x, amp_phase=True)
+    ifft_truth = get_ifft_torch(y, amp_phase=True)
+
+    print(torch.isnan(ifft_pred))
+
+    l1 = nn.L1Loss()
+    loss = l1(ifft_pred, ifft_truth)
     return loss
 
 
