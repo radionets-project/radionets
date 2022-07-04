@@ -6,7 +6,12 @@ title = "Train configuration"
 quiet = true
 telegram_logger = false
 gpu = false
+
+[logging]
 comet_ml = false
+project_name = "pytorch"
+plot_n_epochs = 50
+scale = true
 
 [paths]
 data_path = "./tests/build/data/"
