@@ -38,7 +38,7 @@ def test_define_learner():
         source_list=train_conf["source_list"],
     )
 
-    learn = define_learner(data, arch, train_conf)
+    learn = define_learner(data, arch, train_conf, test=True)
 
     assert learn.loss_func is not None
     assert str(learn.cbs[0]) == "TrainEvalCallback"

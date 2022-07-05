@@ -264,7 +264,6 @@ def visualize_with_fourier(
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
-    return real_pred, imag_pred, real_truth, imag_truth
 
 
 def visualize_with_fourier_diff(
@@ -322,18 +321,11 @@ def visualize_with_fourier_diff(
     ax4.set_xlabel(r"Pixels")
     ax5.set_xlabel(r"Pixels")
     ax6.set_xlabel(r"Pixels")
-    # ax1.tick_params(axis="both", labelsize=20)
-    # ax2.tick_params(axis="both", labelsize=20)
-    # ax3.tick_params(axis="both", labelsize=20)
-    # ax4.tick_params(axis="both", labelsize=20)
-    # ax5.tick_params(axis="both", labelsize=20)
-    # ax6.tick_params(axis="both", labelsize=20)
     plt.tight_layout(pad=1)
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     plt.close("all")
-    return real_pred, imag_pred, real_truth, imag_truth
 
 
 def visualize_source_reconstruction(

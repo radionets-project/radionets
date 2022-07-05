@@ -7,6 +7,7 @@ from radionets.dl_framework.callbacks import (
     DataAug,
     AvgLossCallback,
     CudaCallback,
+    CometCallback,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -34,6 +35,7 @@ def define_learner(
     cbfs=[],
     test=False,
     lr_find=False,
+    plot_loss=False,
 ):
     model_path = train_conf["model_path"]
     model_name = (
@@ -63,6 +65,18 @@ def define_learner(
                 CudaCallback,
             ]
         )
+    if train_conf["comet_ml"] and not lr_find and not plot_loss:
+        cbfs.extend(
+            [
+                CometCallback(
+                    name=train_conf["project_name"],
+                    test_data=train_conf["data_path"],
+                    plot_n_epochs=train_conf["plot_n_epochs"],
+                    amp_phase=train_conf["amp_phase"],
+                    scale=train_conf["scale"],
+                ),
+            ]
+        )
     if not test:
         cbfs.extend(
             [
@@ -71,12 +85,12 @@ def define_learner(
                 DataAug,
             ]
         )
-    if train_conf["telegram_logger"] and not lr_find:
-        cbfs.extend(
-            [
-                TelegramLoggerCallback(model_name=model_name),
-            ]
-        )
+        if train_conf["telegram_logger"] and not lr_find:
+            cbfs.extend(
+                [
+                    TelegramLoggerCallback(model_name=model_name),
+                ]
+            )
 
     # get loss func
     if train_conf["loss_func"] == "feature_loss":
