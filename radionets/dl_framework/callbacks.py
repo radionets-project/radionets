@@ -23,7 +23,7 @@ OrBu = create_OrBu()
 
 
 class CometCallback(Callback):
-    def __init__(self, name, test_data, plot_n_epochs, scale):
+    def __init__(self, name, test_data, plot_n_epochs, amp_phase, scale):
         from comet_ml import Experiment
 
         self.experiment = Experiment(project_name=name)
@@ -35,6 +35,7 @@ class CometCallback(Callback):
             fourier=True,
             source_list=False,
         )
+        self.amp_phase = amp_phase
         self.scale = scale
 
     def after_train(self):
@@ -81,8 +82,10 @@ class CometCallback(Callback):
             with torch.no_grad():
                 pred = eval_model(img_test, model)
 
-        ifft_pred = get_ifft_torch(pred, amp_phase=self.scale)
-        ifft_truth = get_ifft_torch(img_true, amp_phase=self.scale)
+        ifft_pred = get_ifft_torch(pred, amp_phase=self.amp_phase, scale=self.scale)
+        ifft_truth = get_ifft_torch(
+            img_true, amp_phase=self.amp_phase, scale=self.scale
+        )
 
         fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10))
         im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
