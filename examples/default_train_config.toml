@@ -7,6 +7,12 @@ quiet = true
 gpu = false
 telegram_logger = false
 
+[logging]
+comet_ml = true
+project_name = "VLA"
+plot_n_epochs = 2
+scale = true
+
 [paths]
 data_path = "./example_data/"
 model_path = "./build/example_model/example.model"

@@ -272,6 +272,7 @@ def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
     elif plot_loss:
         learn.avg_loss.loss_train = checkpoint["train_loss"]
         learn.avg_loss.loss_valid = checkpoint["valid_loss"]
+        learn.avg_loss.lrs = checkpoint["lrs"]
     else:
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])

@@ -30,6 +30,11 @@ def read_config(config):
     train_conf["gpu"] = config["mode"]["gpu"]
     train_conf["telegram_logger"] = config["mode"]["telegram_logger"]
 
+    train_conf["comet_ml"] = config["logging"]["comet_ml"]
+    train_conf["plot_n_epochs"] = config["logging"]["plot_n_epochs"]
+    train_conf["project_name"] = config["logging"]["project_name"]
+    train_conf["scale"] = config["logging"]["scale"]
+
     train_conf["bs"] = config["hypers"]["batch_size"]
     train_conf["lr"] = config["hypers"]["lr"]
 

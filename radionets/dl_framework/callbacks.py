@@ -9,6 +9,109 @@ from fastai.callback.core import Callback
 from pathlib import Path
 from fastcore.foundation import L
 import matplotlib.pyplot as plt
+from radionets.evaluation.utils import (
+    load_data,
+    get_images,
+    eval_model,
+    make_axes_nice,
+    check_vmin_vmax,
+)
+from radionets.evaluation.plotting import create_OrBu
+from radionets.dl_framework.utils import get_ifft_torch
+
+OrBu = create_OrBu()
+
+
+class CometCallback(Callback):
+    def __init__(self, name, test_data, plot_n_epochs, amp_phase, scale):
+        from comet_ml import Experiment
+
+        self.experiment = Experiment(project_name=name)
+        self.data_path = test_data
+        self.plot_epoch = plot_n_epochs
+        self.test_ds = load_data(
+            self.data_path,
+            mode="test",
+            fourier=True,
+            source_list=False,
+        )
+        self.amp_phase = amp_phase
+        self.scale = scale
+
+    def after_train(self):
+        self.experiment.log_metric(
+            "Train Loss",
+            self.recorder._train_mets.map(_maybe_item),
+            epoch=self.epoch + 1,
+        )
+
+    def after_validate(self):
+        self.experiment.log_metric(
+            "Validation Loss",
+            self.recorder._valid_mets.map(_maybe_item),
+            epoch=self.epoch + 1,
+        )
+
+    def plot_test_pred(self):
+        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        model = self.model
+        with self.experiment.test():
+            with torch.no_grad():
+                pred = eval_model(img_test, model)
+
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
+        lim_phase = check_vmin_vmax(img_true[0, 1])
+        im1 = ax1.imshow(pred[0, 0], cmap="inferno")
+        im2 = ax2.imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        im3 = ax3.imshow(img_true[0, 0], cmap="inferno")
+        im4 = ax4.imshow(img_true[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        make_axes_nice(fig, ax1, im1, "Amplitude")
+        make_axes_nice(fig, ax2, im2, "Phase", phase=True)
+        make_axes_nice(fig, ax3, im3, "Org. Amplitude")
+        make_axes_nice(fig, ax4, im4, "Org. Phase", phase=True)
+        fig.tight_layout(pad=0.1)
+        self.experiment.log_figure(
+            figure=fig, figure_name=f"{self.epoch + 1}_pred_epoch"
+        )
+        plt.close("all")
+
+    def plot_test_fft(self):
+        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        model = self.model
+        with self.experiment.test():
+            with torch.no_grad():
+                pred = eval_model(img_test, model)
+
+        ifft_pred = get_ifft_torch(pred, amp_phase=self.amp_phase, scale=self.scale)
+        ifft_truth = get_ifft_torch(
+            img_true, amp_phase=self.amp_phase, scale=self.scale
+        )
+
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10))
+        im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
+        im2 = ax2.imshow(ifft_truth, cmap="inferno")
+        a = check_vmin_vmax(ifft_pred - ifft_truth)
+        im3 = ax3.imshow(ifft_pred - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
+
+        make_axes_nice(fig, ax1, im1, r"FFT Prediction")
+        make_axes_nice(fig, ax2, im2, r"FFT Truth")
+        make_axes_nice(fig, ax3, im3, r"FFT Diff")
+
+        ax1.set_ylabel(r"Pixels")
+        ax1.set_xlabel(r"Pixels")
+        ax2.set_xlabel(r"Pixels")
+        ax3.set_xlabel(r"Pixels")
+
+        fig.tight_layout(pad=0.1)
+        self.experiment.log_figure(
+            figure=fig, figure_name=f"{self.epoch + 1}_fft_epoch"
+        )
+        plt.close("all")
+
+    def after_epoch(self):
+        if (self.epoch + 1) % self.plot_epoch == 0:
+            self.plot_test_pred()
+            self.plot_test_fft()
 
 
 class TelegramLoggerCallback(Callback):
@@ -123,11 +226,12 @@ class DataAug(Callback):
         x = self.xb[0].clone()
         y = self.yb[0].clone()
         randint = np.random.randint(0, 4, x.shape[0])
+        last_axis = len(x.shape) - 1
         for i in range(x.shape[0]):
-            x[i, 0] = torch.rot90(x[i, 0], int(randint[i]))
-            x[i, 1] = torch.rot90(x[i, 1], int(randint[i]))
-            y[i, 0] = torch.rot90(y[i, 0], int(randint[i]))
-            y[i, 1] = torch.rot90(y[i, 1], int(randint[i]))
+            x[i] = torch.rot90(x[i], int(randint[i]), [last_axis - 2, last_axis - 1])
+            y[i] = torch.rot90(y[i], int(randint[i]), [last_axis - 2, last_axis - 1])
+        x = x.squeeze(1)
+        y = y.squeeze(1)
         self.learn.xb = [x]
         self.learn.yb = [y]
 
