@@ -121,6 +121,8 @@ def get_ifft_torch(array, amp_phase=False, scale=False):
     if amp_phase:
         if scale:
             amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        else:
+            amp = array[:, 0]
 
         a = amp * torch.cos(array[:, 1])
         b = amp * torch.sin(array[:, 1])
