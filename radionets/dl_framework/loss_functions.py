@@ -178,8 +178,8 @@ def splitted_L1_masked(x, y):
 
 
 def fft_L1(x, y):
-    ifft_pred = get_ifft_torch(x.clamp(0, 2), amp_phase=True)
-    ifft_truth = get_ifft_torch(y, amp_phase=True)
+    ifft_pred = get_ifft_torch(x.clamp(0, 2), amp_phase=True, scale=True)
+    ifft_truth = get_ifft_torch(y, amp_phase=True, scale=True)
 
     # ifft_pred *= 1e4
     # ifft_truth *= 1e4
