@@ -115,11 +115,12 @@ def _maybe_item(t):
     return t.item() if isinstance(t, torch.Tensor) and t.numel() == 1 else t
 
 
-def get_ifft_torch(array, amp_phase=False):
+def get_ifft_torch(array, amp_phase=False, scale=False):
     if len(array.shape) == 3:
         array = array.unsqueeze(0)
     if amp_phase:
-        amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        if scale:
+            amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
 
         a = amp * torch.cos(array[:, 1])
         b = amp * torch.sin(array[:, 1])
