@@ -178,13 +178,31 @@ def splitted_L1_masked(x, y):
 
 
 def fft_L1(x, y):
-    ifft_pred = get_ifft_torch(x, amp_phase=True)
+    ifft_pred = get_ifft_torch(x.clamp(0, 2), amp_phase=True)
     ifft_truth = get_ifft_torch(y, amp_phase=True)
 
-    print(torch.isnan(ifft_pred))
+    # ifft_pred *= 1e4
+    # ifft_truth *= 1e4
+
+    ifft_pred[torch.isnan(ifft_pred)] = 1
+    ifft_pred[torch.isinf(ifft_pred)] = 1
+    # ifft_pred[ifft_pred == 0] = 1
+
+    inp_amp = x[:, 0, :]
+    inp_phase = x[:, 1, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
 
     l1 = nn.L1Loss()
-    loss = l1(ifft_pred, ifft_truth)
+    # mse = nn.MSELoss()
+    loss_amp = l1(inp_amp, tar_amp)
+    loss_phase = l1(inp_phase, tar_phase)
+    loss_fft = l1(ifft_pred[ifft_truth > 0], ifft_truth[ifft_truth > 0])
+    # print("amp", loss_amp)
+    # print("phase", loss_phase)
+    # print("fft", loss_fft)
+    loss = 10 * loss_amp + loss_phase + loss_fft
     return loss
 
 
