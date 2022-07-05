@@ -160,7 +160,7 @@ class SRResNet_bigger_no_symmetry(nn.Module):
 
         x = self.final(x)
 
-        x0 = x[:, 0].reshape(-1, 1, s, s)
+        x0 = nn.functional.relu(x[:, 0]).reshape(-1, 1, s, s)
         x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s, s)
 
         return torch.cat([x0, x1], dim=1)
