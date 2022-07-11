@@ -7,7 +7,6 @@ from radionets.dl_framework.logger import make_notifier
 from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item
 from fastai.callback.core import Callback, CancelBackwardException
-from radionets.dl_framework.architectures.unc_archs
 from pathlib import Path
 from fastcore.foundation import L
 import matplotlib.pyplot as plt
