@@ -80,6 +80,7 @@ def read_config(config):
     eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
     eval_conf["point"] = config["eval"]["evaluate_point"]
+    eval_conf["predict_grad"] = config["eval"]["predict_grad"]
     return eval_conf
 
 

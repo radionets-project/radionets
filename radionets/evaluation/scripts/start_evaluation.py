@@ -1,6 +1,9 @@
 import click
 import toml
+import matplotlib.pyplot as plt
+import numpy as np
 from radionets.evaluation.utils import read_config, check_outpath
+from radionets.dl_framework.callbacks import PredictionImageGradient
 from radionets.evaluation.train_inspection import (
     create_inspection_plots,
     create_source_plots,
@@ -100,3 +103,16 @@ def main(configuration_path):
     if eval_conf["point"]:
         click.echo("\nStart evaluation of point sources.\n")
         evaluate_point(eval_conf)
+
+    if eval_conf["predict_grad"]:
+        output = PredictionImageGradient(test_data=eval_conf["data_path"], model=eval_conf["model_path"], amp_phase=eval_conf["amp_phase"], arch_name= eval_conf["arch_name"])
+        output = output.save_output_pred()
+        grads_x, grads_y = output
+
+        # specify names of saved gradients in x and y 
+        np.savetxt("grads_x.csv", grads_x, delimiter=",")
+        np.savetxt("grads_y.csv", grads_y, delimiter=",")
+
+        # # save image (no gradients)
+        # plt.imshow(grads_x, cmap="inferno")
+        # plt.savefig("img.png")
