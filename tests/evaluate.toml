@@ -39,3 +39,4 @@ evaluate_ms_ssim = false
 evaluate_mean_diff = false
 evaluate_area = false
 evaluate_point = false
+predict_grad = false 
