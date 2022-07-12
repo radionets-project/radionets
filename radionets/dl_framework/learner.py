@@ -42,7 +42,7 @@ def define_learner(
     if train_conf["param_scheduling"]:
         sched = {
             "lr": combined_cos(
-                0.25,
+                train_conf["lr_ratio"],
                 train_conf["lr_start"],
                 train_conf["lr_max"],
                 train_conf["lr_stop"],
