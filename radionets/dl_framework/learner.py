@@ -29,7 +29,7 @@ def get_learner(
 
 
 def define_learner(
-    data, arch, train_conf, cbfs=[], test=False, lr_find=False, plot_loss=False,
+    data, arch, train_conf, cbfs=[], lr_find=False, plot_loss=False,
 ):
     cbfs = []
     model_path = train_conf["model_path"]
@@ -44,7 +44,7 @@ def define_learner(
     if train_conf["param_scheduling"]:
         sched = {
             "lr": combined_cos(
-                0.25,
+                train_conf["lr_ratio"],
                 train_conf["lr_start"],
                 train_conf["lr_max"],
                 train_conf["lr_stop"],
@@ -64,17 +64,16 @@ def define_learner(
         ]
     )
 
-    if not test:
-        # use switch loss
-        if train_conf["switch_loss"]:
-            cbfs.extend(
-                [
-                    SwitchLoss(
-                        second_loss=getattr(loss_functions, "comb_likelihood"),
-                        when_switch=train_conf["when_switch"],
-                    ),
-                ]
-            )
+    # use switch loss
+    if train_conf["switch_loss"]:
+        cbfs.extend(
+            [
+                SwitchLoss(
+                    second_loss=getattr(loss_functions, "comb_likelihood"),
+                    when_switch=train_conf["when_switch"],
+                ),
+            ]
+        )
 
     if train_conf["telegram_logger"] and not lr_find:
         cbfs.extend([TelegramLoggerCallback(model_name=model_name)])

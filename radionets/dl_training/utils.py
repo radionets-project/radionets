@@ -53,6 +53,7 @@ def read_config(config):
     train_conf["lr_start"] = config["param_scheduling"]["lr_start"]
     train_conf["lr_max"] = config["param_scheduling"]["lr_max"]
     train_conf["lr_stop"] = config["param_scheduling"]["lr_stop"]
+    train_conf["lr_ratio"] = config["param_scheduling"]["lr_ratio"]
 
     train_conf["source_list"] = config["general"]["source_list"]
     return train_conf
