@@ -114,5 +114,14 @@ def main(configuration_path):
         np.savetxt("grads_y.csv", grads_y, delimiter=",")
 
         # # save image (no gradients)
-        # plt.imshow(grads_x, cmap="inferno")
-        # plt.savefig("img.png")
+        # np.savetxt("test_img.csv", output, delimiter=",")
+
+        # # save x and y grads for fourier amplitude and phase
+        # grads_x_amp = grads_x[0][0].cpu().numpy()
+        # grads_x_phase = grads_x[0][1].cpu().numpy()
+        # grads_y_amp = grads_y[0][0].cpu().numpy()
+        # grads_y_phase = grads_y[0][1].cpu().numpy()
+        # np.savetxt("grads_x_amp.csv", grads_x_amp, delimiter=",")
+        # np.savetxt("grads_x_phase.csv", grads_x_phase, delimiter=",")
+        # np.savetxt("grads_y_amp.csv", grads_y_amp, delimiter=",")
+        # np.savetxt("grads_y_phase.csv", grads_y_phase, delimiter=",")
