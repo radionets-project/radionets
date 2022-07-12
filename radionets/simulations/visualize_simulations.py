@@ -119,7 +119,7 @@ def plot_source(img, log=False, out_path=None):
     plt.tight_layout(pad=0)
 
     if out_path is not None:
-        plt.savefig(out_path, dpi=600, bbox_inches="tight")
+        plt.savefig(out_path, bbox_inches="tight")
 
 
 def plot_comparison(img1, img2, log=False, out_path=None):
@@ -345,7 +345,7 @@ def plot_antenna_distribution(
 
 
 def plot_mask(mask):
-    fig = plt.figure(figsize=(5.78, 3.57), dpi=100)
+    fig = plt.figure()
     ax = fig.add_subplot(111)
 
     im = ax.imshow(mask, cmap="inferno")
@@ -355,14 +355,14 @@ def plot_mask(mask):
     patches = [
         mpatches.Patch(color=colors[i], label=f"{names[i]}") for i in range(len(values))
     ]
-    plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.0)
+    plt.legend(handles=patches, loc=0, framealpha=1)
 
     ax.set_yticklabels([])
     ax.set_xticklabels([])
     ax.xaxis.set_ticks_position("none")
     ax.yaxis.set_ticks_position("none")
-    ax.set_xlabel("u", fontsize=9)
-    ax.set_ylabel("v", fontsize=9)
+    ax.set_xlabel("u")
+    ax.set_ylabel("v")
     plt.tight_layout()
 
 
