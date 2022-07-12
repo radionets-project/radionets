@@ -202,21 +202,21 @@ def fft_L1(x, y):
     # print("amp", loss_amp)
     # print("phase", loss_phase)
     # print("fft", loss_fft)
-    loss = 10 * loss_amp + loss_phase + loss_fft
+    loss = loss_amp + 10 * loss_phase + loss_fft
     return loss
 
 
 def splitted_L1(x, y):
     inp_amp = x[:, 0, :]
-    inp_phase = x[:, 1, :]
+    # inp_phase = x[:, 1, :]
 
     tar_amp = y[:, 0, :]
-    tar_phase = y[:, 1, :]
+    # tar_phase = y[:, 1, :]
 
     l1 = nn.L1Loss()
     loss_amp = l1(inp_amp, tar_amp)
-    loss_phase = l1(inp_phase, tar_phase)
-    loss = loss_amp + loss_phase
+    # loss_phase = l1(inp_phase, tar_phase)
+    loss = loss_amp  # + 100 * loss_phase
     return loss
 
 

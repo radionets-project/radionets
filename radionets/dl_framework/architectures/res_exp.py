@@ -5,6 +5,7 @@ from radionets.dl_framework.model import (
     Lambda,
     symmetry,
     GeneralELU,
+    LocallyConnected2d,
 )
 from functools import partial
 from math import pi
@@ -166,6 +167,63 @@ class SRResNet_bigger_no_symmetry(nn.Module):
         return torch.cat([x0, x1], dim=1)
 
 
+class SRResNet_mixed(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(1, 64, 9, stride=1, padding=4, groups=1),
+            nn.BatchNorm2d(64),
+            nn.PReLU(),
+        )
+
+        # ResBlock 8
+        self.blocks = nn.Sequential(
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+            SRBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
+        )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 1, 9, stride=1, padding=4, groups=1),
+        )
+
+        # self.postBlock = nn.Sequential(
+        #     nn.Conv2d(8, 2, 3, stride=1, padding=1, bias=True)
+        # )
+
+        # self.final = nn.Sequential(
+        #     LocallyConnected2d(32, 8, (128, 128), 1, 1), nn.BatchNorm2d(8), nn.PReLU(),
+        # )
+
+        self.hardtanh = nn.Hardtanh(-pi, pi)
+
+    def forward(self, x):
+        s = x.shape[-1]
+
+        x = self.preBlock(x[:, 0].reshape(-1, 1, s, s))
+
+        x = x + self.postBlock(self.blocks(x))
+
+        # x = self.postBlock(x)
+
+        x0 = self.final(x)
+
+        x0 = nn.functional.relu(x)  # .reshape(-1, 1, s, s)
+        # x1 = self.hardtanh(x1)  # .reshape(-1, 1, s, s)
+
+        return torch.cat([x0, torch.zeros(x0.shape).cuda()], dim=1)
+
+
 class SRResNet_bigger_16(nn.Module):
     def __init__(self):
         super().__init__()
@@ -198,7 +256,9 @@ class SRResNet_bigger_16(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
-        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),)
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
+        )
 
         self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
         self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
@@ -250,7 +310,9 @@ class SRResNet_bigger_16_no_symmetry(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
-        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),)
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
+        )
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
 
