@@ -21,20 +21,13 @@ def get_learner(
 ):
     init_cnn(arch)
     dls = DataLoaders.from_dsets(
-        data.train_ds,
-        data.valid_ds,
-        bs=data.train_dl.batch_size,
+        data.train_ds, data.valid_ds, bs=data.train_dl.batch_size,
     )
     return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
 
 
 def define_learner(
-    data,
-    arch,
-    train_conf,
-    cbfs=[],
-    lr_find=False,
-    plot_loss=False,
+    data, arch, train_conf, cbfs=[], lr_find=False, plot_loss=False,
 ):
     model_path = train_conf["model_path"]
     model_name = (
@@ -44,9 +37,7 @@ def define_learner(
     opt_func = Adam
     if train_conf["norm_path"] != "none":
         cbfs.extend(
-            [
-                NormCallback(train_conf["norm_path"]),
-            ]
+            [NormCallback(train_conf["norm_path"])]
         )
     if train_conf["param_scheduling"]:
         sched = {
@@ -60,9 +51,7 @@ def define_learner(
         cbfs.extend([ParamScheduler(sched)])
     if train_conf["gpu"]:
         cbfs.extend(
-            [
-                CudaCallback,
-            ]
+            [CudaCallback]
         )
     if train_conf["comet_ml"] and not lr_find and not plot_loss:
         cbfs.extend(
@@ -77,17 +66,11 @@ def define_learner(
             ]
         )
     cbfs.extend(
-        [
-            SaveTempCallback(model_path=model_path),
-            AvgLossCallback,
-            DataAug,
-        ]
+        [SaveTempCallback(model_path=model_path), AvgLossCallback, DataAug]
     )
     if train_conf["telegram_logger"] and not lr_find:
         cbfs.extend(
-            [
-                TelegramLoggerCallback(model_name=model_name),
-            ]
+            [TelegramLoggerCallback(model_name=model_name)]
         )
 
     # get loss func
