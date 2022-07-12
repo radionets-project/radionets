@@ -17,7 +17,7 @@ from radionets.evaluation.utils import (
     make_axes_nice,
     check_vmin_vmax,
     get_ifft,
-    load_pretrained_model, 
+    load_pretrained_model,
 )
 from radionets.evaluation.plotting import create_OrBu
 from radionets.dl_framework.utils import get_ifft_torch
@@ -33,10 +33,7 @@ class CometCallback(Callback):
         self.data_path = test_data
         self.plot_epoch = plot_n_epochs
         self.test_ds = load_data(
-            self.data_path,
-            mode="test",
-            fourier=True,
-            source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False,
         )
         self.amp_phase = amp_phase
         self.scale = scale
@@ -85,7 +82,9 @@ class CometCallback(Callback):
             with torch.no_grad():
                 pred = eval_model(img_test, model)
 
-        ifft_pred = get_ifft_torch(pred, amp_phase=self.amp_phase, scale=self.scale, uncertainty=True)
+        ifft_pred = get_ifft_torch(
+            pred, amp_phase=self.amp_phase, scale=self.scale, uncertainty=True
+        )
         ifft_truth = get_ifft_torch(
             img_true, amp_phase=self.amp_phase, scale=self.scale
         )
@@ -267,7 +266,6 @@ class SwitchLoss(Callback):
 
 
 class GradientCallback(Callback):
-
     def __init__(self, num_epochs):
         self.num_epochs = num_epochs
 
@@ -278,27 +276,23 @@ class GradientCallback(Callback):
         self.learn.loss.backward()
 
         # print gradients of weights of layers (with specified batch and epoch)
-        # if self.epoch == self.num_epochs - 1: 
+        # if self.epoch == self.num_epochs - 1:
         #     if self.iter == self.n_iter - 1:
         #         grads = []
         #         for param in self.learn.model.parameters():
-        #             grads.append(param.grad.view(-1)) 
+        #             grads.append(param.grad.view(-1))
 
-        #         grad = grads[-17]        
+        #         grad = grads[-17]
         #         grad_np = grad.cpu().numpy()
         #         save_grad = pd.DataFrame(data={"grads": grad_np})
         #         save_grad.to_csv("./layer_weight_grads.csv", index=False)
 
 
 class PredictionImageGradient(Callback):
-
     def __init__(self, test_data, model, amp_phase, arch_name):
         self.data_path = test_data
         self.test_ds = load_data(
-            self.data_path,
-            mode="test",
-            fourier=True,
-            source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False,
         )
         self.model = model
         self.amp_phase = amp_phase
