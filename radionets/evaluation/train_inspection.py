@@ -260,6 +260,10 @@ def create_source_plots(conf, num_images=3, rand=False):
     # inverse fourier transform for truth
     ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
 
+    if len(ifft_pred.shape) == 2:
+        ifft_pred = np.expand_dims(ifft_pred, axis=0)
+        ifft_truth = np.expand_dims(ifft_truth, axis=0)
+
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
         visualize_source_reconstruction(
             pred,

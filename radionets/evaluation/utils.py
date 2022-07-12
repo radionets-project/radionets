@@ -271,6 +271,8 @@ def get_images(test_ds, num_images, norm_path="none", rand=False):
         norm = pd.read_csv(norm_path)
     img_test = do_normalisation(img_test, norm)
     img_true = test_ds[indices][1]
+    if len(img_true.shape) == 3:
+        img_true = img_true.unsqueeze(0)
     return img_test, img_true
 
 
