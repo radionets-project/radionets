@@ -33,7 +33,6 @@ def define_learner(
     arch,
     train_conf,
     cbfs=[],
-    test=False,
     lr_find=False,
     plot_loss=False,
 ):
@@ -77,20 +76,19 @@ def define_learner(
                 ),
             ]
         )
-    if not test:
+    cbfs.extend(
+        [
+            SaveTempCallback(model_path=model_path),
+            AvgLossCallback,
+            DataAug,
+        ]
+    )
+    if train_conf["telegram_logger"] and not lr_find:
         cbfs.extend(
             [
-                SaveTempCallback(model_path=model_path),
-                AvgLossCallback,
-                DataAug,
+                TelegramLoggerCallback(model_name=model_name),
             ]
         )
-        if train_conf["telegram_logger"] and not lr_find:
-            cbfs.extend(
-                [
-                    TelegramLoggerCallback(model_name=model_name),
-                ]
-            )
 
     # get loss func
     if train_conf["loss_func"] == "feature_loss":
