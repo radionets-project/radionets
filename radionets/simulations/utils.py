@@ -120,6 +120,7 @@ def read_config(config):
     sim_conf["img_size"] = config["image_options"]["img_size"]
     sim_conf["noise"] = config["image_options"]["noise"]
     sim_conf["noise_level"] = config["image_options"]["noise_level"]
+    sim_conf["white_noise"] = config["image_options"]["white_noise"]
 
     sim_conf["amp_phase"] = config["sampling_options"]["amp_phase"]
     sim_conf["real_imag"] = config["sampling_options"]["real_imag"]

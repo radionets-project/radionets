@@ -35,6 +35,7 @@ def create_fft_images(sim_conf):
                 num_comp_ext=sim_conf["num_components"],
                 noise=sim_conf["noise"],
                 noise_level=sim_conf["noise_level"],
+                white_noise=sim_conf["white_noise"],
                 source_list=sim_conf["source_list"],
             )
 
