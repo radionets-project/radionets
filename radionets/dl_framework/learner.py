@@ -31,6 +31,7 @@ def get_learner(
 def define_learner(
     data, arch, train_conf, cbfs=[], test=False, lr_find=False, plot_loss=False,
 ):
+    cbfs = []
     model_path = train_conf["model_path"]
     model_name = (
         model_path.split("build/")[-1].split("/")[-1].split("/")[0].split(".")[0]
@@ -54,8 +55,16 @@ def define_learner(
     if train_conf["gpu"]:
         cbfs.extend([CudaCallback])
 
+    cbfs.extend(
+        [
+            SaveTempCallback(model_path=model_path),
+            AvgLossCallback,
+            DataAug,
+            GradientCallback(num_epochs=train_conf["num_epochs"]),
+        ]
+    )
+
     if not test:
-        cbfs.extend([SaveTempCallback(model_path=model_path), AvgLossCallback, DataAug, GradientCallback(num_epochs=train_conf["num_epochs"])])
         # use switch loss
         if train_conf["switch_loss"]:
             cbfs.extend(
