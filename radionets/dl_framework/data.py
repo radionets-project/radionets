@@ -93,6 +93,9 @@ class h5_dataset:
                     Set Fourier to True!"
             )
 
+        if data.shape[0] == 1:
+            data = data.squeeze(0)
+
         return data.float()
 
 
