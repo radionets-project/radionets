@@ -155,8 +155,16 @@ def conv_layer(ni, nf, ks=3, stride=2, bn=True, **kwargs):
     return nn.Sequential(*layers)
 
 
-def conv(ni, nc, ks, stride, padding):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding),)
+def conv_bn(in_channels, out_channels, kernel_size, stride=1, padding=0, groups=1):
+    result = nn.Sequential()
+    result.add_module('conv', nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
+                                                  kernel_size=kernel_size, stride=stride, padding=padding, groups=groups, bias=False))
+    result.add_module('bn', nn.BatchNorm2d(num_features=out_channels))
+    return result
+
+
+def conv(ni, nc, ks, stride=1, padding=0, dilation=1, groups=1):
+    conv = (nn.Conv2d(ni, nc, ks, stride=stride, padding=padding, dilation=dilation, groups=groups),)
     bn = (nn.BatchNorm2d(nc),)
     act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
     layers = [*conv, *bn, act]
@@ -231,14 +239,6 @@ def conv_phase(ni, nc, ks, stride, padding, dilation, add):
     )
     bn = (nn.BatchNorm2d(nc),)
     act = GeneralELU(add)
-    layers = [*conv, *bn, act]
-    return layers
-
-
-def depth_conv(ni, nc, ks, stride, padding, dilation):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation=dilation, groups=ni),)
-    bn = (nn.BatchNorm2d(nc),)
-    act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
     layers = [*conv, *bn, act]
     return layers
 
@@ -408,3 +408,37 @@ class SRBlock(nn.Module):
             nn.Conv2d(nf, nf, 3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(nf),
         )
+
+
+class MultiBlock(nn.Module):
+    def __init__(self, ni, nc, n=1):
+        super().__init__()
+        self.conv = MultiBlockConv(ni, nc)
+        self.block = nn.Sequential(*(MultiBlockConv(nc, nc) for _ in range(n - 1))) if n > 1 else None
+
+    def forward(self, x):
+        x = self.conv(x)
+        if self.block is not None:
+            x = self.block(x)
+        return x
+
+
+class MultiBlockConv(nn.Module):
+    def __init__(self, ni, nc):
+        super(MultiBlockConv, self).__init__()
+        self.ni = ni
+        self.nc = nc
+
+        self.nonlinearity = nn.ReLU()
+
+        self.rbr_identity = nn.BatchNorm2d(ni) if ni == nc else None
+        self.rbr_dense = conv_bn(ni, nc, kernel_size=3, padding=1)
+        self.rbr_1x1 = conv_bn(ni, nc, kernel_size=1)
+
+    def forward(self, inputs):
+        if self.rbr_identity is None:
+            id_out = 0
+        else:
+            id_out = self.rbr_identity(inputs)
+
+        return self.nonlinearity(self.rbr_dense(inputs) + self.rbr_1x1(inputs) + id_out)

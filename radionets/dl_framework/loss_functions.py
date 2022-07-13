@@ -492,11 +492,49 @@ def sort(x, permutation):
 
 def jet_seg(x, y):
     # weight components farer outside more
+    loss_main_comp = l1(x[:, 0], y[:, 0])
+    loss_all_comps_summed = l1(x[:, -1], y[:, -1])
     loss_l1_weighted = 0
-    for i in range(x.shape[1]):
-        loss_l1_weighted += l1(x[:, i], y[:, i]) * (i + 1)
+    for i in range(int((x.shape[1] - 2) / 2)): # -2: main component and summed component, /2: two sides
+        loss_l1_weighted += l1(x[:, i + 1], y[:, i + 1]) * (i + 2)
+        loss_l1_weighted += l1(x[:, i + 6], y[:, i + 6]) * (i + 2)
 
-    return loss_l1_weighted
+    loss = loss_main_comp + loss_all_comps_summed + loss_l1_weighted
+    return loss
+
+
+def jet_list(x, y):
+    x_comp, x_list = x
+    y_comp, y_axis = torch.split(y, [y.shape[1] - 1, 1], dim=1)
+
+    loss_image = jet_seg(x_comp, y_comp)
+
+    y_axis = y_axis.squeeze()
+    for i_row in range(len(y_axis[0])):
+        if y_axis[0, i_row, 0].isnan(): break
+    for i_col in range(len(y_axis[0])):
+        if y_axis[0, 0, i_col].isnan(): break
+    y_axis = y_axis[:, 0:i_row, 0:i_col]
+    #y_axis = y_axis[~torch.all(y_axis.isnan(), dim=1)]
+
+    y_list = y_axis[..., 1:5] / 256
+
+    # IoU-loss for the box
+    box_size_scale = 2
+    x_box = x_list[..., 1:5].reshape(-1, 4)
+    x_box_packed = [x_box[:, 0], x_box[:, 1], x_box[:, 2] * box_size_scale, x_box[:, 3] * box_size_scale]
+    y_box = y_list.reshape(-1, 4)
+    y_box_packed = [y_box[:, 0], y_box[:, 1], y_box[:, 2] * box_size_scale, y_box[:, 3] * box_size_scale]
+
+    ciou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
+    ciou = ciou[y_list[..., 0].reshape(-1).bool()]  # no loss, if amplitude is 0
+    loss_box = (1.0 - ciou).mean()
+    confidence = bbox_iou(x_box_packed, y_box_packed)
+    loss_confidence = l1(x_list[..., 0].reshape(-1), confidence)
+    
+    loss = loss_image * 0.2 + loss_box + loss_confidence * 0.2
+    # print(loss)
+    return loss
 
 
 def yolo(x, y):
