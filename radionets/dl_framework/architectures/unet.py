@@ -367,7 +367,7 @@ class UNet_jet_advanced(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.channels = 16
+        self.channels = 16  # 16 is enough to predict all (12) components as an image
         self.components = 12
 
         self.dconv_down1 = nn.Sequential(*double_conv(1, self.channels))
@@ -399,22 +399,30 @@ class UNet_jet_advanced(nn.Module):
         self.conv_last = conv_bn(self.channels, self.components, 1)
         self.activation_unet = nn.Sequential(nn.Softmax(dim=1))
 
-        # self.conv1 = nn.Conv2d(
-        #     in_channels=self.components, 
-        #     out_channels=self.components, 
-        #     kernel_size=3, 
-        #     stride=2, 
-        #     groups=self.components
-        #     )
-        # self.conv2 = nn.Conv2d(
-        #     in_channels=self.components, 
-        #     out_channels=self.components, 
-        #     kernel_size=3, 
-        #     stride=2, 
-        #     groups=self.components
-        #     )
+        self.avgpool = nn.AvgPool2d(2)
 
-        self.linears = nn.ModuleList([nn.Linear(256 ** 2, 5) for _ in range(self.components - 1)])
+        # self.conv1 = nn.Sequential(*conv(
+        #     ni=self.components,
+        #     nc=self.components,
+        #     ks=3,
+        #     stride=2, 
+        #     padding=1,
+        #     groups=self.components,
+        #     ))
+        # self.conv2 = nn.Sequential(*conv(
+        #     ni=self.components,
+        #     nc=self.components,
+        #     ks=3,
+        #     stride=2,
+        #     padding=1,
+        #     groups=self.components,
+        #     ))
+
+        # 6 for each component: confidence, x, y, width, height, velocity (beta)
+        self.linear_comp = nn.ModuleList(
+            [nn.Linear(128 ** 2, 6) for _ in range(self.components - 1)]
+        )
+        self.linear_angle = nn.Linear(128 ** 2, 1)
         self.sigmoid = nn.Sigmoid()
 
 
@@ -444,7 +452,13 @@ class UNet_jet_advanced(nn.Module):
         x = self.conv_last(x)
         out_unet = self.activation_unet(x)
 
-        x = torch.flatten(out_unet, start_dim=2)
+        # x = self.conv1(out_unet)
+        # x = self.conv2(x)
+        x = self.avgpool(out_unet)
+        # print(out_unet.shape)
+        # print(x.shape)
+
+        x = torch.flatten(x, start_dim=2)
 
         d = str(x.get_device())
         if d == '-1':
@@ -453,15 +467,16 @@ class UNet_jet_advanced(nn.Module):
             device = 'cuda:' + d
 
         out_list = torch.zeros(
-            (x.shape[0], x.shape[1] - 1, 5), 
+            (x.shape[0], x.shape[1] - 1, 6), 
             device=torch.device(device)
             )
-        for i, linear in enumerate(self.linears):
-            out_list[:, i] = linear(x[:, i])
+        for i, linear in enumerate(self.linear_comp):
+            out_list[:, i] = self.sigmoid(linear(x[:, i]))
 
-        out_list = self.sigmoid(out_list)
+        # last component is background -> same information as clean image
+        out_param = self.sigmoid(self.linear_angle(x[:, -1]))
 
-        return out_unet, out_list
+        return out_unet, out_list, out_param
 
 
 class UNet_clean(nn.Module):
