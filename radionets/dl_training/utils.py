@@ -1,11 +1,17 @@
+from asyncio import subprocess
 import sys
 import click
+from io import StringIO
+import pandas as pd
 from pathlib import Path
 from radionets.dl_framework.data import load_data, DataBunch, get_dls
 import radionets.dl_framework.architecture as architecture
 from radionets.dl_framework.inspection import plot_loss
 from radionets.dl_framework.model import save_model
 from radionets.evaluation.train_inspection import create_inspection_plots
+import subprocess
+import sys
+import torch
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):
@@ -98,3 +104,21 @@ def end_training(learn, train_conf):
 
     # Plot loss
     plot_loss(learn, Path(train_conf["model_path"]))
+
+
+def set_decive():
+    if torch.cuda.is_available():
+        free_gpu_id = get_free_gpu()
+        torch.cuda.set_device(free_gpu_id)
+
+
+def get_free_gpu():
+    # https://discuss.pytorch.org/t/it-there-anyway-to-let-program-select-free-gpu-automatically/17560/2
+    gpu_stats = subprocess.check_output(["nvidia-smi", "--format=csv", "--query-gpu=memory.used,memory.free"]).decode("utf-8") 
+    gpu_df = pd.read_csv(StringIO(gpu_stats),
+                         names=['memory.used', 'memory.free'],
+                         skiprows=1)
+    gpu_df['memory.free'] = gpu_df['memory.free'].map(lambda x: x.rstrip(' [MiB]'))
+    gpu_df['memory.free'] = pd.to_numeric(gpu_df['memory.free'])
+    idx = gpu_df['memory.free'].idxmax()
+    return idx

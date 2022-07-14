@@ -8,6 +8,7 @@ from radionets.dl_training.utils import (
     define_arch,
     pop_interrupt,
     end_training,
+    set_decive,
 )
 from radionets.dl_framework.learner import define_learner
 from radionets.dl_framework.model import load_pre_model
@@ -20,6 +21,7 @@ from radionets.evaluation.train_inspection import after_training_plots
 from pathlib import Path
 
 import torch
+#torch.cuda.set_device(1)
 
 @click.command()
 @click.argument("configuration_path", type=click.Path(exists=True, dir_okay=False))
@@ -48,6 +50,8 @@ def main(configuration_path, mode):
 
     click.echo("\n Train config:")
     print(train_conf, "\n")
+
+    set_decive()
 
     # create databunch
     data = create_databunch(
