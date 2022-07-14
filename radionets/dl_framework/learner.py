@@ -29,7 +29,7 @@ def get_learner(
 
 
 def define_learner(
-    data, arch, train_conf, cbfs=[], lr_find=False, plot_loss=False,
+    data, arch, train_conf, lr_find=False, plot_loss=False,
 ):
     cbfs = []
     model_path = train_conf["model_path"]
