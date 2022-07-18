@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch
 from torch import nn
 from torchvision.models import vgg16_bn
@@ -430,6 +431,12 @@ def phase_likelihood_l1(x, y):
 
 def vektor_abs(a):
     return (a[0] ** 2 + a[1] ** 2) ** (1 / 2)
+
+
+def classifier_loss(x, y):
+    criterion = nn.CrossEntropyLoss()
+    loss = criterion(x, y.squeeze(1).long())
+    return loss
 
 
 class HungarianMatcher(nn.Module):

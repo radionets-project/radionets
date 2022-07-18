@@ -330,40 +330,41 @@ def create_ext_gauss_bundle(grid):
 # pointlike gaussians
 
 
-def create_gauss(img, N, sources, spherical, source_list):
-    # img = [img]
-    mx = np.random.randint(1, 63, size=(N, sources))
-    my = np.random.randint(1, 63, size=(N, sources))
-    amp = (
-        np.random.randint(0.001, 100, size=(N)) * 1 / 10 * np.random.randint(5, 10)
-    ) / 1e2
+def create_gauss(img, N, sources, source_list, img_size=63, diffuse = False, bboxes = False, mosaic_factor = 1, spherical = True):
 
-    if spherical:
-        sx = np.random.randint(3, 8, size=(N, sources))
-        sy = sx
-    else:
-        sx = np.random.randint(1, 15, size=(N, sources))
-        sy = np.random.randint(1, 15, size=(N, sources))
-        theta = np.random.randint(0, 360, size=(N, sources))
+
+    mx = np.random.randint(1, img_size*mosaic_factor, size=(N, sources))
+    my = np.random.randint(1, img_size*mosaic_factor, size=(N, sources))
+    if diffuse:
+         amp = (
+            np.random.randint(5, 10, size=(N))# * 1 / 10 * np.random.randint(3, 5)#1,5
+            ) #/ 1e2
+         sx = np.random.uniform((img_size**2)/200, (img_size**2)/100, size=(N, sources))*10
+         sy = sx
+    else:    
+        amp = (
+        np.random.randint(20, 150, size=(N)))# was 10, 100
+        if spherical:
+            sx = np.random.uniform(1/2*(img_size**2)/720, 2*(img_size**2)/360, size=(N, sources))
+            sy = sx
+        else:
+            sx = np.random.uniform(1/16*(img_size**2)/720, 1/2*(img_size**2)/360, size=(N, sources))
+            sy = np.random.uniform(1/16*(img_size**2)/720, 1/2*(img_size**2)/360, size=(N, sources))
+            
 
     s = np.zeros((N, sources, 1))  # changed from 5
     for i in range(N):
         for j in range(sources):
-            g = gauss(mx[i, j], my[i, j], sx[i, j], sy[i, j], amp[i])
-            # s[i,j] = np.array([mx[i,j],my[i,j],sx[i,j],sy[i,j],amp[i]])
+            g, theta = gauss(img_size*mosaic_factor, mx[i, j], my[i, j], sx[i, j], sy[i, j], amp[i], spherical) #DPG
             s[i, j] = np.array([mx[i, j]])
-            if spherical:
-                img[i] += g
-            else:
-                # rotation around center of the source
-                padX = [g.shape[0] - mx[i, j], mx[i, j]]
-                padY = [g.shape[1] - my[i, j], my[i, j]]
-                imgP = np.pad(g, [padY, padX], "constant")
-                imgR = ndimage.rotate(imgP, theta[i, j], reshape=False)
-                imgC = imgR[padY[0] : -padY[1], padX[0] : -padX[1]]
-                img[i] += imgC
+            img[i] += g
     if source_list:
         return img, s
+    elif bboxes:
+        if spherical:
+            return img, [mx[0][0],my[0][0]], [sx[0][0],sy[0][0]]  
+        else:
+            return img, [mx[0][0],my[0][0]], [sx[0][0],sy[0][0]], theta  
     else:
         return img
 
@@ -382,13 +383,67 @@ def gauss_pointsources(img, N, sources, source_list):
             g = gauss(mx[i, j], my[i, j], sigma, sigma, amp[i])
             s[i, j] = np.array([mx[i, j], my[i, j], amp[i]])
             img[i] += g
-    print(s.shape)
     if source_list:
         return img, s
     return np.array(img)
 
 
-def gauss(mx, my, sx, sy, amp=0.01):
-    x = np.arange(63)[None].astype(np.float)
+def gauss(img_size, mx, my, sx, sy, amp=0.01, spherical = True):
+    x = np.arange(img_size)[None].astype(np.float)
     y = x.T
-    return amp * np.exp(-((y - my) ** 2) / sy).dot(np.exp(-((x - mx) ** 2) / sx))
+    if spherical:
+        theta = 0
+        return amp * np.exp(-((y - my) ** 2) / sy).dot(np.exp(-((x - mx) ** 2) / sx)), theta
+    else:
+        theta = np.random.uniform(0, 2*np.pi)
+        a = np.cos(theta)**2/(2*sx)+np.sin(theta)**2/(2*sy)
+        b = -np.sin(2*theta)/(4*sx)+np.sin(2*theta)/(4*sy)
+        c = np.sin(theta)**2/(2*sx)+np.cos(theta)**2/(2*sy)
+        return amp * np.exp(-(a*(x-mx)**2+2*b*(x-mx)*(y-my)+c*(y-my)**2)), theta
+
+def create_diamond(img, num_img, sources, pixel, bboxes = False, mosaic = False):
+    mos = 1
+    if mosaic:
+             mos = 10
+    mx = np.random.randint(0, pixel*mos, size=(num_img, sources))
+    my = np.random.randint(0, pixel*mos, size=(num_img, sources))
+    amp = (np.random.randint(50, 100, size=(num_img)))# * np.random.random()) / 1e2
+    sigma = np.random.randint(5, 10)
+    for i in range(num_img):
+        targets = sources
+        # targets = np.random.randint(2, sources + 1)
+        for j in range(targets):
+            g = diamond(mx[i, j], my[i, j], sigma, sigma, amp[i], pixel*mos)
+            img[i] += g
+   
+    if bboxes:
+        return np.array(img)/amp, [mx[0][0],my[0][0]], [sigma,sigma]
+    else:
+         return np.array(img)
+def diamond(mx, my, sx, sy, amp, pixel):
+    x = np.arange(pixel)[None].astype(np.float)
+    y = x.T
+    return amp* np.exp(-(np.abs(y - my)) / sy).dot(np.exp(-(np.abs(x - mx)) / sx))
+
+def create_square(img, num_img, sources, pixel, bboxes = False, mosaic = False):
+    mos = 1
+    if mosaic:
+             mos = 10
+    mx = np.random.randint(0, pixel*mos, size=(num_img, sources))
+    my = np.random.randint(0, pixel*mos, size=(num_img, sources))
+    amp = (np.random.randint(50, 100, size=(num_img)))# * np.random.random()) / 1e2
+    for i in range(num_img):
+        targets = sources
+        # targets = np.random.randint(2, sources + 1)
+        for j in range(targets):
+            g = square(mx[i, j], my[i, j], amp[i], pixel*mos,mos)
+            img[i] += g
+    if bboxes:
+        return np.array(img)/amp, [mx[0][0],my[0][0]] 
+    else:
+        return np.array(img)
+def square(mx, my, amp, pixel, mos):
+    x = np.arange(pixel)[None].astype(np.float)
+    y = x.T
+    return amp* np.where(abs(y-my)<=pixel*0.02/mos, 1, 0).dot(np.where(abs(x-mx)<=pixel*0.02/mos, 1, 0))
+
