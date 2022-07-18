@@ -495,7 +495,9 @@ def jet_seg(x, y):
     loss_main_comp = l1(x[:, 0], y[:, 0])
     loss_all_comps_summed = l1(x[:, -1], y[:, -1])
     loss_l1_weighted = 0
-    for i in range(int((x.shape[1] - 2) / 2)): # -2: main component and summed component, /2: two sides
+    for i in range(
+        int((x.shape[1] - 2) / 2)
+    ):  # -2: main component and summed component, /2: two sides
         loss_l1_weighted += l1(x[:, i + 1], y[:, i + 1]) * (i + 2)
         loss_l1_weighted += l1(x[:, i + 6], y[:, i + 6]) * (i + 2)
 
@@ -504,40 +506,55 @@ def jet_seg(x, y):
 
 
 def jet_list(x, y):
-    '''
+    """
     Loss function for architecture UNet_jet_advanced
-    '''
+    """
     x_comp, x_list, x_angle = x
     y_comp, y_param = torch.split(y, [y.shape[1] - 1, 1], dim=1)
 
-    w_image = 5     # weight image loss
-    w_box = 1     # weight image loss
-    w_conf = 0.5     # weight image loss
-    w_angle = 0.2     # weight image loss
-    w_beta = 0.2     # weight image loss
+    w_image = 5  # weight image loss
+    w_box = 1  # weight box loss
+    w_conf = 1  # weight confidence loss
+    w_amp = 0.4  # weight amplidute loss
+    w_angle = 0.2  # weight angle loss
+    w_beta = 0.2  # weight velocity loss
 
     if w_image:
         loss_image = jet_seg(x_comp, y_comp) * w_image
 
     y_param = y_param.squeeze()
     for i_row in range(len(y_param[0])):
-        if y_param[0, i_row, 0].isnan(): break
+        if y_param[0, i_row, 0].isnan():
+            break
     for i_col in range(len(y_param[0])):
-        if y_param[0, 0, i_col].isnan(): break
+        if y_param[0, 0, i_col].isnan():
+            break
     y_param = y_param[:, 0:i_row, 0:i_col]
 
-    assert y_param.shape[2] == 8, "Number of parameters for the components has \
-    changed. Check simulations and/or indexing in loss function!"
+    assert (
+        y_param.shape[2] == 8
+    ), "Number of parameters for the components has changed. Check simulations and/or \
+        indexing in loss function!"
 
     y_list = y_param[..., 1:5] / 256
 
     # IoU-loss for the box
     if w_box:
         box_size_scale = 2
-        x_box = x_list[..., 1:5].reshape(-1, 4)
-        x_box_packed = [x_box[:, 0], x_box[:, 1], x_box[:, 2] * box_size_scale, x_box[:, 3] * box_size_scale]
+        x_box = x_list[..., 2:6].reshape(-1, 4)
+        x_box_packed = [
+            x_box[:, 0],
+            x_box[:, 1],
+            x_box[:, 2] * box_size_scale,
+            x_box[:, 3] * box_size_scale,
+        ]
         y_box = y_list.reshape(-1, 4)
-        y_box_packed = [y_box[:, 0], y_box[:, 1], y_box[:, 2] * box_size_scale, y_box[:, 3] * box_size_scale]
+        y_box_packed = [
+            y_box[:, 0],
+            y_box[:, 1],
+            y_box[:, 2] * box_size_scale,
+            y_box[:, 3] * box_size_scale,
+        ]
 
         ciou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
         ciou = ciou[y_list[..., 0].reshape(-1).bool()]  # no loss, if amplitude is 0
@@ -550,16 +567,17 @@ def jet_list(x, y):
     # print(x_angle.shape, y_param.shape)
     # print(x_angle[..., 0].shape, y_param[..., 6].shape)
 
-    y_angle = y_param[:, 0, 6] / (torch.pi / 2)
-    # print(y_angle.shape, x_angle.squeeze().shape)
+    if w_amp:
+        loss_amp = l1(x_list[..., 1], y_param[..., 0]) * w_amp
 
+    y_angle = y_param[:, 0, 6] / (torch.pi / 2)
     if w_angle:
         loss_angle = l1(x_angle.squeeze(), y_angle) * w_angle
 
     if w_beta:
-        loss_beta = l1(x_list[..., 5], y_param[..., 7]) * w_beta
+        loss_beta = l1(x_list[..., 6], y_param[..., 7]) * w_beta
 
-    loss = loss_image + loss_box + loss_conf + loss_angle + loss_beta
+    loss = loss_image + loss_box + loss_conf + loss_amp + loss_angle + loss_beta
     # print(loss)
     return loss
 
@@ -572,7 +590,7 @@ def yolo(x, y):
 
     weight_box = 1
     weight_amp = 1
-    weight_angle = 0    # need to implement and scale jet first correctly (take into account, that 2*pi is same as 0)
+    weight_angle = 0  # need to implement and scale jet first correctly (take into account, that 2*pi is same as 0)
     scale_box_by_amp = True
     box_size = 2
 
@@ -580,9 +598,19 @@ def yolo(x, y):
 
     # IoU-loss for the box
     x_box = x[..., 1:5].view(-1, 4)
-    x_box_packed = [x_box[:, 0], x_box[:, 1], x_box[:, 2] * box_size, x_box[:, 3] * box_size]
+    x_box_packed = [
+        x_box[:, 0],
+        x_box[:, 1],
+        x_box[:, 2] * box_size,
+        x_box[:, 3] * box_size,
+    ]
     y_box = y[..., 1:5].view(-1, 4)
-    y_box_packed = [y_box[:, 0], y_box[:, 1], y_box[:, 2] * box_size, y_box[:, 3] * box_size]
+    y_box_packed = [
+        y_box[:, 0],
+        y_box[:, 1],
+        y_box[:, 2] * box_size,
+        y_box[:, 3] * box_size,
+    ]
     if scale_box_by_amp:
         amp_scale = y[..., 0].view(-1).bool()
         iou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
@@ -599,8 +627,9 @@ def yolo(x, y):
     loss_angle = l1(x[..., 6], y[..., 6])
 
     loss = loss_box * weight_box + loss_amp * weight_amp + loss_angle * weight_angle
-    #print('Loss:', loss)
-    if torch.isnan(loss): exit()
+    # print('Loss:', loss)
+    if torch.isnan(loss):
+        exit()
     return loss
 
 

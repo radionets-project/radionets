@@ -405,7 +405,7 @@ class UNet_jet_advanced(nn.Module):
         #     ni=self.components,
         #     nc=self.components,
         #     ks=3,
-        #     stride=2, 
+        #     stride=2,
         #     padding=1,
         #     groups=self.components,
         #     ))
@@ -418,13 +418,12 @@ class UNet_jet_advanced(nn.Module):
         #     groups=self.components,
         #     ))
 
-        # 6 for each component: confidence, x, y, width, height, velocity (beta)
+        # 6 for each component: confidence, amplitude, x, y, width, height, velocity (beta)
         self.linear_comp = nn.ModuleList(
-            [nn.Linear(128 ** 2, 6) for _ in range(self.components - 1)]
+            [nn.Linear(128 ** 2, 7) for _ in range(self.components - 1)]
         )
         self.linear_angle = nn.Linear(128 ** 2, 1)
         self.sigmoid = nn.Sigmoid()
-
 
     def forward(self, x):
         conv1 = self.dconv_down1(x)
@@ -461,20 +460,19 @@ class UNet_jet_advanced(nn.Module):
         x = torch.flatten(x, start_dim=2)
 
         d = str(x.get_device())
-        if d == '-1':
-            device = 'cpu'
+        if d == "-1":
+            device = "cpu"
         else:
-            device = 'cuda:' + d
+            device = "cuda:" + d
 
         out_list = torch.zeros(
-            (x.shape[0], x.shape[1] - 1, 6), 
-            device=torch.device(device)
-            )
+            (x.shape[0], x.shape[1] - 1, 7), device=torch.device(device)
+        )
         for i, linear in enumerate(self.linear_comp):
             out_list[:, i] = self.sigmoid(linear(x[:, i]))
 
         # last component is background -> same information as clean image
-        out_param = self.sigmoid(self.linear_angle(x[:, -1]))
+        out_param = self.sigmoid(self.linear_angle(1 - x[:, -1]))
 
         return out_unet, out_list, out_param
 
