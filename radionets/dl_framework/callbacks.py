@@ -266,8 +266,14 @@ class SwitchLoss(Callback):
 
 
 class GradientCallback(Callback):
-    def __init__(self, num_epochs):
+    def __init__(self, num_epochs, test_data, arch_name, amp_phase):
         self.num_epochs = num_epochs
+        self.data_path = test_data
+        self.test_ds = load_data(
+            self.data_path, mode="test", fourier=True, source_list=False,
+        )
+        self.arch_name = arch_name
+        self.amp_phase = amp_phase
 
     def before_backward(self):
         raise CancelBackwardException
@@ -288,6 +294,23 @@ class GradientCallback(Callback):
         #         save_grad.to_csv("./layer_weight_grads.csv", index=False)
 
 
+# fix loop 
+# happens in lr_find mode 
+# want fourier amp / phase 
+
+    # def after_epoch(self): 
+    #     img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+    #     fname_template = "pred_{i}.csv"
+
+    #     # for each epoch put test image through model and save to csv
+    #     np.savetxt(fname_template.format(i=self.epoch), get_ifft(eval_model(img_test, self.model), self.amp_phase), delimiter=",") 
+
+    #     # fourier space
+    #     amp = eval_model(img_test, self.model)
+    #     phase = eval_model(img_test, self.model)
+    #     np.savetxt(fname_template.format(i=self.epoch), , delimiter=",") 
+
+
 class PredictionImageGradient(Callback):
     def __init__(self, test_data, model, amp_phase, arch_name):
         self.data_path = test_data
@@ -299,15 +322,15 @@ class PredictionImageGradient(Callback):
         self.arch_name = arch_name
 
     def save_output_pred(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 5, norm_path="none", rand=False)
 
-        img_size = img_test.shape[-1]
+        img_size = img_test[0].shape[-1]
         model_used = load_pretrained_model(self.arch_name, self.model, img_size)
 
         # # get image but not gradients
-        # output = get_ifft(eval_model(img_test, model_used), self.amp_phase)
+        # output = get_ifft(eval_model(img_test[1], model_used), self.amp_phase)
 
-        output = eval_model(img_test, model_used)
+        output = eval_model(img_test[1], model_used)
         gradient = K.filters.spatial_gradient(output)
 
         grads_x = get_ifft(gradient[:, :, 0], self.amp_phase)

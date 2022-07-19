@@ -62,7 +62,7 @@ def sample_frequencies(
                     lat,
                     steps,
                     plot=False,
-                    test=False,
+                    test=True,
                     multi_channel=multi_channel,
                 )
             else:

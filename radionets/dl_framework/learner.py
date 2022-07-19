@@ -60,7 +60,7 @@ def define_learner(
             SaveTempCallback(model_path=model_path),
             AvgLossCallback,
             DataAug,
-            GradientCallback(num_epochs=train_conf["num_epochs"]),
+            GradientCallback(num_epochs=train_conf["num_epochs"],test_data=train_conf["data_path"], arch_name= train_conf["arch_name"],amp_phase=train_conf["amp_phase"]),
         ]
     )
 
