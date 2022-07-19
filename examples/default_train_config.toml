@@ -40,3 +40,4 @@ use = true
 lr_start = 7e-2
 lr_max = 3e-1
 lr_stop = 5e-2
+lr_ratio = 0.25

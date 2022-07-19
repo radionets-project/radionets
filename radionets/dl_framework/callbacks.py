@@ -288,10 +288,9 @@ class GradientCallback(Callback):
         #         for param in self.learn.model.parameters():
         #             grads.append(param.grad.view(-1))
 
-        #         grad = grads[-17]
-        #         grad_np = grad.cpu().numpy()
+        #         grad_np = dict([(i, grad.cpu().numpy()) for i, grad in enumerate(grads)])
         #         save_grad = pd.DataFrame(data={"grads": grad_np})
-        #         save_grad.to_csv("./layer_weight_grads.csv", index=False)
+        #         save_grad.to_pickle("./layer_weight_grads.pkl")
 
 
 # fix loop 
