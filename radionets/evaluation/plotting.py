@@ -757,7 +757,7 @@ def plot_jet_results(inp, pred, truth, path, save=False, plot_format="pdf"):
         divider = make_axes_locatable(ax[0])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
-        cbar.set_label(r'Specific Intensity / a.u.')
+        cbar.set_label(r"Specific Intensity / a.u.")
 
         diff = pred[i] - truth[i]
         im2 = ax[1].imshow(diff, cmap=plt.cm.inferno)
@@ -766,7 +766,7 @@ def plot_jet_results(inp, pred, truth, path, save=False, plot_format="pdf"):
         divider = make_axes_locatable(ax[1])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
-        cbar.set_label(r'Specific Intensity / a.u.')
+        cbar.set_label(r"Specific Intensity / a.u.")
 
         plt.tight_layout()
 
@@ -797,10 +797,23 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             fig, axs = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(8, 7))
             if not truth_max == 0:
                 pred_max = torch.max(pred[i, j])
-                axs[0, 0].contour(X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white")
-                axs[0, 1].contour(X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white")
-                axs[1, 0].contour(X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white")
-                axs[1, 0].contour(X, Y, pred[i, j], levels=[pred_max * 0.32], colors="cyan", linestyles="dashed")
+                axs[0, 0].contour(
+                    X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white"
+                )
+                axs[0, 1].contour(
+                    X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white"
+                )
+                axs[1, 0].contour(
+                    X, Y, truth[i, j], levels=[truth_max * 0.32], colors="white"
+                )
+                axs[1, 0].contour(
+                    X,
+                    Y,
+                    pred[i, j],
+                    levels=[pred_max * 0.32],
+                    colors="cyan",
+                    linestyles="dashed",
+                )
 
             im1 = axs[0, 0].imshow(inp[i, 0], cmap=plt.cm.inferno)
             axs[0, 0].set_xlabel(r"Pixels")
@@ -808,7 +821,7 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             divider = make_axes_locatable(axs[0, 0])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity / a.u.')
+            cbar.set_label(r"Specific Intensity / a.u.")
 
             im2 = axs[0, 1].imshow(truth[i, j], cmap=plt.cm.inferno)
             axs[0, 1].set_xlabel(r"Pixels")
@@ -816,7 +829,7 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             divider = make_axes_locatable(axs[0, 1])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(im2, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity / a.u.')
+            cbar.set_label(r"Specific Intensity / a.u.")
 
             im1 = axs[1, 0].imshow(pred[i, j], cmap=plt.cm.inferno)
             axs[1, 0].set_xlabel(r"Pixels")
@@ -824,7 +837,7 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             divider = make_axes_locatable(axs[1, 0])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(im1, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity / a.u.')
+            cbar.set_label(r"Specific Intensity / a.u.")
 
             im4 = axs[1, 1].imshow(pred[i, j] - truth[i, j], cmap=plt.cm.inferno)
             divider = make_axes_locatable(axs[1, 1])
@@ -832,7 +845,7 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             axs[1, 1].set_ylabel(r"Pixels")
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(im4, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity / a.u.')
+            cbar.set_label(r"Specific Intensity / a.u.")
 
             plt.tight_layout(w_pad=2)
 
@@ -843,7 +856,9 @@ def plot_jet_components_results(inp, pred, truth, path, save=False, plot_format=
             plt.close()
 
 
-def plot_fitgaussian(data, fit_list, params_list, iteration, path, save=False, plot_format="pdf"):
+def plot_fitgaussian(
+    data, fit_list, params_list, iteration, path, save=False, plot_format="pdf"
+):
     """
     Plotting the sky image with the fitted gaussian distributian and the related
     parameters.
@@ -856,7 +871,13 @@ def plot_fitgaussian(data, fit_list, params_list, iteration, path, save=False, p
     params: list
         parameters related to the gaussian: height, x, y, width_x, width_y, theta
     """
-    fig, axs = plt.subplots(1, len(params_list), sharex=True, sharey=True, figsize=(4 * len(params_list), 3.5))
+    fig, axs = plt.subplots(
+        1,
+        len(params_list),
+        sharex=True,
+        sharey=True,
+        figsize=(4 * len(params_list), 3.5),
+    )
     for i, (fit, params) in enumerate(zip(fit_list, params_list)):
         im = axs[i].imshow(data, cmap=plt.cm.inferno)
         axs[i].set_xlabel(r"Pixels")
@@ -864,7 +885,7 @@ def plot_fitgaussian(data, fit_list, params_list, iteration, path, save=False, p
         divider = make_axes_locatable(axs[i])
         cax = divider.append_axes("right", size="5%", pad=0.05)
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label(r'Specific Intensity / a.u.')
+        cbar.set_label(r"Specific Intensity / a.u.")
         axs[i].contour(fit, cmap=plt.cm.gray_r)
         data -= fit
         (height, x, y, width_x, width_y, theta) = params.parameters
@@ -906,19 +927,45 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
     ran = [0, 50]
 
     plt.figure()
-    plt.hist(dist[dist[:, 0] == 0][:, 1], bins=20, range=ran, alpha=0.7, label='Component 0')
-    plt.hist(dist[dist[:, 0] == 1][:, 1], bins=20, range=ran, alpha=0.7, label='Component 1')
-    plt.hist(dist[dist[:, 0] == 2][:, 1], bins=20, range=ran, alpha=0.7, label='Component 2')
-    plt.hist(dist[dist[:, 0] == 3][:, 1], bins=20, range=ran, alpha=0.7, label='Component 3')
-    plt.hist(dist[dist[:, 0] == 4][:, 1], bins=20, range=ran, alpha=0.7, label='Component 4')
-    plt.hist(dist[dist[:, 0] == 5][:, 1], bins=20, range=ran, alpha=0.7, label='Component 5')
-    plt.hist(dist[dist[:, 0] == 6][:, 1], bins=20, range=ran, alpha=0.7, label='Component 6')
-    plt.hist(dist[dist[:, 0] == 7][:, 1], bins=20, range=ran, alpha=0.7, label='Component 7')
-    plt.hist(dist[dist[:, 0] == 8][:, 1], bins=20, range=ran, alpha=0.7, label='Component 8')
-    plt.hist(dist[dist[:, 0] == 9][:, 1], bins=20, range=ran, alpha=0.7, label='Component 9')
-    plt.hist(dist[dist[:, 0] == 10][:, 1], bins=20, range=ran, alpha=0.7, label='Component 10')
-    plt.xlabel('Distance')
-    plt.ylabel('Counts')
+    plt.hist(
+        dist[dist[:, 0] == 0][:, 1], bins=20, range=ran, alpha=0.7, label="Component 0"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 1][:, 1], bins=20, range=ran, alpha=0.7, label="Component 1"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 2][:, 1], bins=20, range=ran, alpha=0.7, label="Component 2"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 3][:, 1], bins=20, range=ran, alpha=0.7, label="Component 3"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 4][:, 1], bins=20, range=ran, alpha=0.7, label="Component 4"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 5][:, 1], bins=20, range=ran, alpha=0.7, label="Component 5"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 6][:, 1], bins=20, range=ran, alpha=0.7, label="Component 6"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 7][:, 1], bins=20, range=ran, alpha=0.7, label="Component 7"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 8][:, 1], bins=20, range=ran, alpha=0.7, label="Component 8"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 9][:, 1], bins=20, range=ran, alpha=0.7, label="Component 9"
+    )
+    plt.hist(
+        dist[dist[:, 0] == 10][:, 1],
+        bins=20,
+        range=ran,
+        alpha=0.7,
+        label="Component 10",
+    )
+    plt.xlabel("Distance")
+    plt.ylabel("Counts")
     plt.legend()
 
     if save:
@@ -939,7 +986,9 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
     cols: int
         number of cols in the plot
     """
-    fig, ax = plt.subplots(rows, cols, sharex=True, sharey=True, figsize=(4 * cols, 3.5 * rows))
+    fig, ax = plt.subplots(
+        rows, cols, sharex=True, sharey=True, figsize=(4 * cols, 3.5 * rows)
+    )
     for i in range(rows):
         for j in range(cols):
             img = ax[i, j].imshow(x[i * cols + j, 0], cmap=plt.cm.inferno)
@@ -948,7 +997,7 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
             divider = make_axes_locatable(ax[i, j])
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cbar = fig.colorbar(img, cax=cax, orientation="vertical")
-            cbar.set_label(r'Specific Intensity / a.u.')
+            cbar.set_label(r"Specific Intensity / a.u.")
 
     plt.tight_layout()
 
@@ -964,11 +1013,19 @@ def histogram_gan_sources(diff, num_zero, out_path, plot_format="png"):
     num_zero = np.array([num_zero]).reshape(-1)
 
     bins = np.arange(0, diff.max(), 5)
-    plt.hist(diff, bins=bins, histtype="step", label=fr"No Masks, mean: {diff.mean():.2f}\,\%, max: {diff.max():.2f}\,\%")
+    plt.hist(
+        diff,
+        bins=bins,
+        histtype="step",
+        label=fr"mean: {diff.mean():.2f}\,\%, max: {diff.max():.2f}\,\%",
+    )
     plt.xlabel(r"Difference from maximum flux")
     plt.ylabel(r"Number of sources")
     plt.legend(loc="best")
-    plt.xticks([0, 50, 100, 150, 200, 250], [r"0\,\%", r"50\,\%", r"100\,\%", r"150\,\%", r"200\,\%", r"250\,\%"])
+    plt.xticks(
+        [0, 50, 100, 150, 200, 250],
+        [r"0\,\%", r"50\,\%", r"100\,\%", r"150\,\%", r"200\,\%", r"250\,\%"],
+    )
 
     plt.tight_layout()
 
@@ -978,11 +1035,19 @@ def histogram_gan_sources(diff, num_zero, out_path, plot_format="png"):
     plt.clf()
 
     bins = np.arange(0, 100, 1)
-    plt.hist(num_zero, bins=bins, histtype="step", label=fr"No Masks, mean: {num_zero.mean():.2f}\,\%, max: {num_zero.max():.2f}\,\%")
+    plt.hist(
+        num_zero,
+        bins=bins,
+        histtype="step",
+        label=fr"mean: {num_zero.mean():.2f}\,\%, max: {num_zero.max():.2f}\,\%",
+    )
     plt.xlabel(r"Proportion of pixels close to 0")
     plt.ylabel(r"Number of sources")
     plt.legend(loc="best")
-    plt.xticks([0, 20, 40, 60, 80, 100], [r"0\,\%", r"20\,\%", r"40\,\%", r"60\,\%", r"80\,\%", r"100\,\%"])
+    plt.xticks(
+        [0, 20, 40, 60, 80, 100],
+        [r"0\,\%", r"20\,\%", r"40\,\%", r"60\,\%", r"80\,\%", r"100\,\%"],
+    )
 
     plt.tight_layout()
 

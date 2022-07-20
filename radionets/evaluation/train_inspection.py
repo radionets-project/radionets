@@ -298,13 +298,7 @@ def create_contour_plots(conf, num_images=3, rand=False):
     ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
 
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
-        plot_contour(
-            pred,
-            truth,
-            out_path,
-            i,
-            plot_format=conf["format"],
-        )
+        plot_contour(pred, truth, out_path, i, plot_format=conf["format"])
 
 
 def evaluate_viewing_angle(conf):
@@ -347,10 +341,7 @@ def evaluate_viewing_angle(conf):
 
     click.echo("\nCreating histogram of jet angles.\n")
     histogram_jet_angles(
-        alpha_truths,
-        alpha_preds,
-        out_path,
-        plot_format=conf["format"],
+        alpha_truths, alpha_preds, out_path, plot_format=conf["format"]
     )
 
 
@@ -398,12 +389,7 @@ def evaluate_dynamic_range(conf):
     )
 
     click.echo("\nCreating histogram of dynamic ranges.\n")
-    histogram_dynamic_ranges(
-        dr_truths,
-        dr_preds,
-        out_path,
-        plot_format=conf["format"],
-    )
+    histogram_dynamic_ranges(dr_truths, dr_preds, out_path, plot_format=conf["format"])
 
 
 def evaluate_ms_ssim(conf):
@@ -454,11 +440,7 @@ def evaluate_ms_ssim(conf):
 
     click.echo("\nCreating ms-ssim histogram.\n")
     vals = torch.tensor(vals)
-    histogram_ms_ssim(
-        vals,
-        out_path,
-        plot_format=conf["format"],
-    )
+    histogram_ms_ssim(vals, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
 
@@ -494,18 +476,12 @@ def evaluate_mean_diff(conf):
 
         for pred, truth in zip(ifft_pred, ifft_truth):
             blobs_pred, blobs_truth = calc_blobs(pred, truth)
-            flux_pred, flux_truth = crop_first_component(
-                pred, truth, blobs_truth[0]
-            )
+            flux_pred, flux_truth = crop_first_component(pred, truth, blobs_truth[0])
             vals.extend([(flux_pred.mean() - flux_truth.mean()) / flux_truth.mean()])
 
     click.echo("\nCreating mean_diff histogram.\n")
     vals = torch.tensor(vals) * 100
-    histogram_mean_diff(
-        vals,
-        out_path,
-        plot_format=conf["format"],
-    )
+    histogram_mean_diff(vals, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean difference is {vals.mean()}.\n")
 
@@ -545,11 +521,7 @@ def evaluate_area(conf):
 
     click.echo("\nCreating eval_area histogram.\n")
     vals = torch.tensor(vals)
-    histogram_area(
-        vals,
-        out_path,
-        plot_format=conf["format"],
-    )
+    histogram_area(vals, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean area ratio is {vals.mean()}.\n")
 
@@ -598,9 +570,7 @@ def evaluate_point(conf):
     hist_point(vals, mask, out_path, plot_format=conf["format"])
     click.echo(f"\nThe mean flux difference is {vals.mean()}.\n")
     click.echo("\nCreating linear extent-mean flux diff plot.\n")
-    plot_length_point(
-        lengths, vals, mask, out_path, plot_format=conf["format"]
-    )
+    plot_length_point(lengths, vals, mask, out_path, plot_format=conf["format"])
 
 
 def evaluate_gan_sources(conf):
@@ -635,7 +605,9 @@ def evaluate_gan_sources(conf):
         diff = ifft_pred - ifft_truth
         zero = np.isclose((np.zeros((ifft_truth.shape[0], 128, 128))), diff, atol=1e-3)
         num_zero = zero.sum(axis=-1).sum(axis=-1) / (128 * 128) * 100
-        val = diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1) * 100
+        val = (
+            diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1) * 100
+        )
         vals += list(val)
         num_zeros += list(num_zero)
 
