@@ -957,3 +957,34 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
         outpath = str(path) + f"/simulation_examples.{plot_format}"
         fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.close()
+
+
+def histogram_gan_sources(diff, num_zero, out_path, plot_format="png"):
+    diff = np.array([diff]).reshape(-1)
+    num_zero = np.array([num_zero]).reshape(-1)
+
+    bins = np.arange(0, diff.max(), 5)
+    plt.hist(diff, bins=bins, histtype="step", label=fr"No Masks, mean: {diff.mean():.2f}\,\%, max: {diff.max():.2f}\,\%")
+    plt.xlabel(r"Difference from maximum flux")
+    plt.ylabel(r"Number of sources")
+    plt.legend(loc="best")
+    plt.xticks([0, 50, 100, 150, 200, 250], [r"0\,\%", r"50\,\%", r"100\,\%", r"150\,\%", r"200\,\%", r"250\,\%"])
+
+    plt.tight_layout()
+
+    outpath = str(out_path) + f"/diff.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+    plt.clf()
+
+    bins = np.arange(0, 100, 1)
+    plt.hist(num_zero, bins=bins, histtype="step", label=fr"No Masks, mean: {num_zero.mean():.2f}\,\%, max: {num_zero.max():.2f}\,\%")
+    plt.xlabel(r"Proportion of pixels close to 0")
+    plt.ylabel(r"Number of sources")
+    plt.legend(loc="best")
+    plt.xticks([0, 20, 40, 60, 80, 100], [r"0\,\%", r"20\,\%", r"40\,\%", r"60\,\%", r"80\,\%", r"100\,\%"])
+
+    plt.tight_layout()
+
+    outpath = str(out_path) + f"/num_zeros.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

@@ -13,6 +13,7 @@ from radionets.evaluation.plotting import (
     histogram_ms_ssim,
     histogram_mean_diff,
     histogram_area,
+    histogram_gan_sources,
     plot_contour,
     hist_point,
     plot_length_point,
@@ -600,3 +601,45 @@ def evaluate_point(conf):
     plot_length_point(
         lengths, vals, mask, out_path, plot_format=conf["format"]
     )
+
+
+def evaluate_gan_sources(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["model_path_2"] != "none":
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    vals = []
+    num_zeros = []
+
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["model_path_2"] != "none":
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+        diff = ifft_pred - ifft_truth
+        zero = np.isclose((np.zeros((ifft_truth.shape[0], 128, 128))), diff, atol=1e-3)
+        num_zero = zero.sum(axis=-1).sum(axis=-1) / (128 * 128) * 100
+        val = diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1) * 100
+        vals += list(val)
+        num_zeros += list(num_zero)
+
+    # click.echo("\nCreating pointsources histogram.\n")
+    histogram_gan_sources(vals, num_zeros, out_path, plot_format=conf["format"])
+    # click.echo(f"\nThe mean flux difference is {vals.mean()}.\n")
+    return vals, num_zeros
