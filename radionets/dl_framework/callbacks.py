@@ -177,6 +177,7 @@ class AvgLossCallback(Callback):
     def plot_loss(self):
         plt.plot(self.loss_train, label="Training loss")
         plt.plot(self.loss_valid, label="Validation loss")
+        plt.axhline(0, color="red", linestyle="dashed")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
@@ -281,33 +282,27 @@ class GradientCallback(Callback):
     def after_cancel_backward(self):
         self.learn.loss.backward()
 
-        # print gradients of weights of layers (with specified batch and epoch)
+        # access gradients of weights of layers (with specified batch and epoch)
         # if self.epoch == self.num_epochs - 1:
         #     if self.iter == self.n_iter - 1:
         #         grads = []
         #         for param in self.learn.model.parameters():
         #             grads.append(param.grad.view(-1))
-
-        #         grad_np = dict([(i, grad.cpu().numpy()) for i, grad in enumerate(grads)])
-        #         save_grad = pd.DataFrame(data={"grads": grad_np})
-        #         save_grad.to_pickle("./layer_weight_grads.pkl")
-
-
-# fix loop 
-# happens in lr_find mode 
-# want fourier amp / phase 
+        # print or save
 
     # def after_epoch(self): 
     #     img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
-    #     fname_template = "pred_{i}.csv"
 
     #     # for each epoch put test image through model and save to csv
+    #     fname_template = "pred_{i}.csv"
     #     np.savetxt(fname_template.format(i=self.epoch), get_ifft(eval_model(img_test, self.model), self.amp_phase), delimiter=",") 
 
-    #     # fourier space
-    #     amp = eval_model(img_test, self.model)
-    #     phase = eval_model(img_test, self.model)
-    #     np.savetxt(fname_template.format(i=self.epoch), , delimiter=",") 
+    #     # # fourier space
+    #     # amp_names = "pred_amp_{i}.csv"
+    #     # phase_names = "pred_phase_{i}.csv"
+    #     # output = eval_model(img_test, self.model)
+    #     # np.savetxt(amp_names.format(i=self.epoch), output[0][0].cpu().numpy(), delimiter=",")
+    #     # np.savetxt(phase_names.format(i=self.epoch), output[0][1].cpu().numpy(), delimiter=",")
 
 
 class PredictionImageGradient(Callback):
@@ -327,15 +322,15 @@ class PredictionImageGradient(Callback):
         model_used = load_pretrained_model(self.arch_name, self.model, img_size)
 
         # # get image but not gradients
-        # output = get_ifft(eval_model(img_test[1], model_used), self.amp_phase)
+        # output = get_ifft(eval_model(img_test[0], model_used), self.amp_phase)
 
-        output = eval_model(img_test[1], model_used)
+        output = eval_model(img_test[0], model_used)
         gradient = K.filters.spatial_gradient(output)
 
         grads_x = get_ifft(gradient[:, :, 0], self.amp_phase)
         grads_y = get_ifft(gradient[:, :, 1], self.amp_phase)
 
-        # # fourier 
+        # # fourier space
         # grads_x = gradient[:, :, 0]
         # grads_y = gradient[:, :, 1]
 
