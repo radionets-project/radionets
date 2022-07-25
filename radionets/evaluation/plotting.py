@@ -1017,15 +1017,11 @@ def histogram_gan_sources(diff, num_zero, out_path, plot_format="png"):
         diff,
         bins=bins,
         histtype="step",
-        label=fr"mean: {diff.mean():.2f}\,\%, max: {diff.max():.2f}\,\%",
+        label=f"mean: {diff.mean():.2f}%, max: {diff.max():.2f}%",
     )
-    plt.xlabel(r"Difference from maximum flux")
+    plt.xlabel(r"Difference from maximum flux / %")
     plt.ylabel(r"Number of sources")
     plt.legend(loc="best")
-    plt.xticks(
-        [0, 50, 100, 150, 200, 250],
-        [r"0\,\%", r"50\,\%", r"100\,\%", r"150\,\%", r"200\,\%", r"250\,\%"],
-    )
 
     plt.tight_layout()
 
@@ -1039,15 +1035,11 @@ def histogram_gan_sources(diff, num_zero, out_path, plot_format="png"):
         num_zero,
         bins=bins,
         histtype="step",
-        label=fr"mean: {num_zero.mean():.2f}\,\%, max: {num_zero.max():.2f}\,\%",
+        label=f"mean: {num_zero.mean():.2f}%, max: {num_zero.max():.2f}%",
     )
-    plt.xlabel(r"Proportion of pixels close to 0")
+    plt.xlabel(r"Proportion of pixels close to 0 / %")
     plt.ylabel(r"Number of sources")
     plt.legend(loc="best")
-    plt.xticks(
-        [0, 20, 40, 60, 80, 100],
-        [r"0\,\%", r"20\,\%", r"40\,\%", r"60\,\%", r"80\,\%", r"100\,\%"],
-    )
 
     plt.tight_layout()
 
