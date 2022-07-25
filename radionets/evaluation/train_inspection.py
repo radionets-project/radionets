@@ -603,8 +603,8 @@ def evaluate_gan_sources(conf):
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
         diff = ifft_pred - ifft_truth
-        zero = np.isclose((np.zeros((ifft_truth.shape[0], 128, 128))), diff, atol=1e-3)
-        num_zero = zero.sum(axis=-1).sum(axis=-1) / (128 * 128) * 100
+        zero = np.isclose((np.zeros((ifft_truth.shape[0], img_size, img_size))), diff, atol=1e-3)
+        num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
         val = (
             diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1) * 100
         )
