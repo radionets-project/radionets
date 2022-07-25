@@ -508,19 +508,46 @@ def jet_seg(x, y):
 def jet_list(x, y):
     """
     Loss function for architecture UNet_jet_advanced
+
+    Parameters
+    ----------
+    x: tuple
+        Output of the network
+        (component images, components parameters (confidence, amplitude, x, y, width, height, velocity), jet parameters (angle))
+        shapes: (bs, 12, 256, 256), (bs, 11, 7), (bs, 1)
+    y: tuple
+        Simulated values
+        (compnent images, all parameters (amplitude, x, y, width, height, comp-rotation, jet-rotation, velocity))
+        shapes: (bs, 12, 256, 256), (bs, 1, 256, 256) -> (bs, 11, 8)
+
+    Returns
+    -------
+    loss: float
     """
     x_comp, x_list, x_angle = x
+
     y_comp, y_param = torch.split(y, [y.shape[1] - 1, 1], dim=1)
 
-    w_image = 5  # weight image loss
-    w_box = 1  # weight box loss
-    w_conf = 1  # weight confidence loss
-    w_amp = 0.4  # weight amplidute loss
-    w_angle = 0.2  # weight angle loss
-    w_beta = 0.2  # weight velocity loss
+    # # setting weights to 0 doesn't work, because fastai returns an error
+    # w_image = 5 if x_comp.requires_grad else 1e-10  # weight image loss
+    # w_box = 1 if x_list.requires_grad else 1e-10  # weight image loss
+    # w_conf = 0.5 if x_list.requires_grad else 1e-10  # weight image loss
+    # w_amp = 0.2 if x_list.requires_grad else 1e-10  # weight image loss
+    # w_angle = 0.2 if x_angle.requires_grad else 1e-10  # weight image loss
+    # w_beta = 0.2 if x_list.requires_grad else 1e-10  # weight image loss
+
+    w_image = 1  # weight image loss
+    w_box = 1  # weight image loss
+    w_conf = 1  # weight image losss
+    w_amp = 1  # weight image loss
+    w_angle = 1  # weight image loss
+    w_beta = 1  # weight image loss
+    # print(w_image, w_box, w_conf, w_amp, w_angle, w_beta)
+    # print(x_comp.requires_grad, x_list.requires_grad, x_angle.requires_grad)
+    loss = 0
 
     if w_image:
-        loss_image = jet_seg(x_comp, y_comp) * w_image
+        loss += jet_seg(x_comp, y_comp) * w_image
 
     y_param = y_param.squeeze()
     for i_row in range(len(y_param[0])):
@@ -536,7 +563,7 @@ def jet_list(x, y):
     ), "Number of parameters for the components has changed. Check simulations and/or \
         indexing in loss function!"
 
-    y_list = y_param[..., 1:5] / 256
+    y_box_list = y_param[..., 1:5] / 256
 
     # IoU-loss for the box
     if w_box:
@@ -548,7 +575,7 @@ def jet_list(x, y):
             x_box[:, 2] * box_size_scale,
             x_box[:, 3] * box_size_scale,
         ]
-        y_box = y_list.reshape(-1, 4)
+        y_box = y_box_list.reshape(-1, 4)
         y_box_packed = [
             y_box[:, 0],
             y_box[:, 1],
@@ -557,27 +584,27 @@ def jet_list(x, y):
         ]
 
         ciou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
-        ciou = ciou[y_list[..., 0].reshape(-1).bool()]  # no loss, if amplitude is 0
-        loss_box = (1.0 - ciou).mean() * w_box
+        ciou = ciou[y_box_list[..., 0].reshape(-1).bool()]  # no loss, if amplitude is 0
+        loss += (1.0 - ciou).mean() * w_box
 
     if w_conf:
         confidence = bbox_iou(x_box_packed, y_box_packed)
-        loss_conf = l1(x_list[..., 0].reshape(-1), confidence) * w_box
+        loss += l1(x_list[..., 0].reshape(-1), confidence) * w_box
 
     # print(x_angle.shape, y_param.shape)
     # print(x_angle[..., 0].shape, y_param[..., 6].shape)
 
     if w_amp:
-        loss_amp = l1(x_list[..., 1], y_param[..., 0]) * w_amp
+        loss += l1(x_list[..., 1], y_param[..., 0]) * w_amp
 
     y_angle = y_param[:, 0, 6] / (torch.pi / 2)
     if w_angle:
-        loss_angle = l1(x_angle.squeeze(), y_angle) * w_angle
+        loss += l1(x_angle.squeeze(), y_angle) * w_angle
 
     if w_beta:
-        loss_beta = l1(x_list[..., 6], y_param[..., 7]) * w_beta
+        loss += l1(x_list[..., 6], y_param[..., 7]) * w_beta
 
-    loss = loss_image + loss_box + loss_conf + loss_amp + loss_angle + loss_beta
+    # loss = loss_image + loss_box + loss_conf + loss_amp + loss_angle + loss_beta
     # print(loss)
     return loss
 
