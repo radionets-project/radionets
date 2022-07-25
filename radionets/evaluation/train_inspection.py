@@ -611,7 +611,10 @@ def evaluate_gan_sources(conf):
         vals += list(val)
         num_zeros += list(num_zero)
 
-    # click.echo("\nCreating pointsources histogram.\n")
-    histogram_gan_sources(vals, num_zeros, out_path, plot_format=conf["format"])
-    # click.echo(f"\nThe mean flux difference is {vals.mean()}.\n")
-    return vals, num_zeros
+    diff = np.array([vals]).reshape(-1)
+    num_zeros = np.array([num_zeros]).reshape(-1)
+    click.echo("\nCreating GAN histograms.\n")
+    histogram_gan_sources(diff, num_zeros, out_path, plot_format=conf["format"])
+    click.echo(f"\nThe mean difference from maximum flux is {diff.mean()}.\n")
+    click.echo(f"\nThe mean proportion of pixels close to 0 is {num_zeros.mean()}.\n")
+    return diff, num_zeros

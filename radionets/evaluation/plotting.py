@@ -1009,9 +1009,6 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
 
 
 def histogram_gan_sources(diff, num_zero, out_path, plot_format="png"):
-    diff = np.array([diff]).reshape(-1)
-    num_zero = np.array([num_zero]).reshape(-1)
-
     bins = np.arange(0, diff.max(), 5)
     plt.hist(
         diff,
