@@ -591,6 +591,8 @@ def evaluate_gan_sources(conf):
 
     vals = []
     num_zeros = []
+    above_zeros = []
+    below_zeros = []
 
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
@@ -603,18 +605,28 @@ def evaluate_gan_sources(conf):
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
         diff = ifft_pred - ifft_truth
+
         zero = np.isclose((np.zeros((ifft_truth.shape[0], img_size, img_size))), diff, atol=1e-3)
         num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
+
         val = (
             diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1) * 100
         )
+
+        below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
+        above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
+
         vals += list(val)
         num_zeros += list(num_zero)
+        above_zeros += list(above_zero)
+        below_zeros += list(below_zero)
 
-    diff = np.array([vals]).reshape(-1)
+    vals = np.array([vals]).reshape(-1)
     num_zeros = np.array([num_zeros]).reshape(-1)
+    above_zeros = np.array([above_zeros]).reshape(-1)
+    below_zeros = np.array([below_zeros]).reshape(-1)
     click.echo("\nCreating GAN histograms.\n")
     histogram_gan_sources(diff, num_zeros, out_path, plot_format=conf["format"])
     click.echo(f"\nThe mean difference from maximum flux is {diff.mean()}.\n")
     click.echo(f"\nThe mean proportion of pixels close to 0 is {num_zeros.mean()}.\n")
-    return diff, num_zeros
+    return vals, num_zeros, above_zeros, below_zeros
