@@ -1008,7 +1008,7 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
     plt.close()
 
 
-def histogram_gan_sources(diff, num_zero, out_path, plot_format="png"):
+def histogram_gan_sources(diff, num_zero, num_images, out_path, plot_format="png"):
     bins = np.arange(0, diff.max(), 5)
     plt.hist(
         diff,
@@ -1027,16 +1027,18 @@ def histogram_gan_sources(diff, num_zero, out_path, plot_format="png"):
 
     plt.clf()
 
-    bins = np.arange(0, 100, 1)
-    plt.hist(
-        num_zero,
-        bins=bins,
-        histtype="step",
-        label=f"mean: {num_zero.mean():.2f}%, max: {num_zero.max():.2f}%",
-    )
+    bins = np.arange(0, 102, 2)
+    num_zero = num_zero.reshape(4, num_images)
+    for i, label in enumerate(["1e-4", "1e-3", "1e-2", "1e-1"]):
+        plt.hist(
+            num_zero[i],
+            bins=bins,
+            histtype="step",
+            label=label,
+        )
     plt.xlabel(r"Proportion of pixels close to 0 / %")
     plt.ylabel(r"Number of sources")
-    plt.legend(loc="best")
+    plt.legend(loc="upper center")
 
     plt.tight_layout()
 
