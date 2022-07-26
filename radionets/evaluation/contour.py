@@ -18,23 +18,30 @@ def compute_area_ratio(CS_pred, CS_truth):
     float
         ratio between area of truth and prediction
     """
-    pred_x = CS_pred.collections[0].get_paths()[0].vertices[:, 0]
-    pred_y = CS_pred.collections[0].get_paths()[0].vertices[:, 1]
+    areas_truth = np.array([])
+    areas_pred = np.array([])
+    for area in CS_truth.collections[0].get_paths():
+        truth_x = area.vertices[:, 0]
+        truth_y = area.vertices[:, 1]
 
-    truth_x = CS_truth.collections[0].get_paths()[0].vertices[:, 0]
-    truth_y = CS_truth.collections[0].get_paths()[0].vertices[:, 1]
+        area_truth = 0.5 * np.sum(
+            truth_y[:-1] * np.diff(truth_x) - truth_x[:-1] * np.diff(truth_y)
+        )
+        area_truth = np.abs(area_truth)
+        areas_truth = np.append(areas_truth, area_truth)
 
-    area_pred = 0.5 * np.sum(
-        pred_y[:-1] * np.diff(pred_x) - pred_x[:-1] * np.diff(pred_y)
-    )
-    area_pred = np.abs(area_pred)
+    areas_pred = np.array([])
+    for area in CS_pred.collections[0].get_paths():
+        pred_x = area.vertices[:, 0]
+        pred_y = area.vertices[:, 1]
 
-    area_truth = 0.5 * np.sum(
-        truth_y[:-1] * np.diff(truth_x) - truth_x[:-1] * np.diff(truth_y)
-    )
-    area_truth = np.abs(area_truth)
+        area_pred = 0.5 * np.sum(
+            pred_y[:-1] * np.diff(pred_x) - pred_x[:-1] * np.diff(pred_y)
+        )
+        area_pred = np.abs(area_pred)
+        areas_pred = np.append(areas_pred, area_pred)
 
-    return area_pred / area_truth
+    return areas_pred.sum() / areas_truth.sum()
 
 
 def area_of_contour(ifft_pred, ifft_truth):

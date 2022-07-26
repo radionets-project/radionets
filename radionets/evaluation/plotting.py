@@ -634,10 +634,12 @@ def histogram_area(vals, out_path, plot_format="png"):
     vals = vals.numpy()
     mean = np.mean(vals)
     std = np.std(vals, ddof=1)
+    bins = np.arange(0, vals.max() + 0.1, 0.1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
     )
+    ax1.axvline(1, color="red", linestyle="dashed")
     ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")
 
