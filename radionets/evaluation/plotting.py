@@ -1008,21 +1008,21 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
     plt.close()
 
 
-def histogram_gan_sources(diff, num_zero, num_images, out_path, plot_format="png"):
-    bins = np.arange(0, diff.max(), 5)
+def histogram_gan_sources(ratio, num_zero, num_images, out_path, plot_format="png"):
+    bins = np.arange(0, ratio.max() + 0.1, 0.1)
     plt.hist(
-        diff,
+        ratio,
         bins=bins,
         histtype="step",
-        label=f"mean: {diff.mean():.2f}%, max: {diff.max():.2f}%",
+        label=f"mean: {ratio.mean():.2f}, max: {ratio.max():.2f}",
     )
-    plt.xlabel(r"Difference from maximum flux / %")
+    plt.xlabel(r"Maximum difference to maximum true flux ratio")
     plt.ylabel(r"Number of sources")
     plt.legend(loc="best")
 
     plt.tight_layout()
 
-    outpath = str(out_path) + f"/diff.{plot_format}"
+    outpath = str(out_path) + f"/ratio.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
 
     plt.clf()
