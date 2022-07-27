@@ -308,6 +308,7 @@ def get_ifft(array, amp_phase=False):
         array = array.unsqueeze(0)
     if amp_phase:
         amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        # amp = array[:, 0]
 
         a = amp * np.cos(array[:, 1])
         b = amp * np.sin(array[:, 1])
