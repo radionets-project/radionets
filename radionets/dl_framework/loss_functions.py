@@ -208,15 +208,36 @@ def fft_L1(x, y):
 
 def splitted_L1(x, y):
     inp_amp = x[:, 0, :]
-    # inp_phase = x[:, 1, :]
+    inp_phase = x[:, 1, :]
 
     tar_amp = y[:, 0, :]
-    # tar_phase = y[:, 1, :]
+    tar_phase = y[:, 1, :]
 
     l1 = nn.L1Loss()
     loss_amp = l1(inp_amp, tar_amp)
-    # loss_phase = l1(inp_phase, tar_phase)
-    loss = loss_amp  # + 100 * loss_phase
+    loss_phase = l1(inp_phase, tar_phase)
+    loss = loss_amp + loss_phase
+    return loss
+
+
+def splitted_MSE_masked(x, y):
+    inp_amp = x[:, 0, :]
+    inp_phase = x[:, 1, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    # mask = torch.tensor(create_circular_mask(128, 128, radius=30, bs=y.shape[0]))
+
+    # inp_amp[~mask] *= 0.1
+    # inp_phase[~mask] *= 0.1
+    # tar_amp[~mask] *= 0.1
+    # tar_phase[~mask] *= 0.1
+
+    l1 = nn.MSELoss()
+    loss_amp = l1(inp_amp, tar_amp)
+    loss_phase = l1(inp_phase, tar_phase)
+    loss = loss_amp + loss_phase
     return loss
 
 
