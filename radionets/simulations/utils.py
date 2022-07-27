@@ -217,9 +217,12 @@ def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
 
 def get_fft_bundle_paths(data_path, ftype, mode):
     bundles = get_bundles(data_path)
-    bundle_paths = [
-        path for path in bundles if re.findall(f"{ftype}_{mode}", path.name)
-    ]
+    bundle_paths = np.sort(
+        [path for path in bundles if re.findall(f"{ftype}_{mode}", path.name)]
+    )
+    bundle_paths = sorted(
+        bundle_paths, key=lambda f: int("".join(filter(str.isdigit, str(f))))
+    )
     return bundle_paths
 
 
@@ -363,7 +366,7 @@ def interpol(img):
 
 def add_white_noise(images):
     img_size = images.shape[2]
-    noise = np.random.normal(0, 0.05, size=(images.shape[0], img_size, img_size))
+    noise = np.random.normal(0, 0.5, size=(images.shape[0], img_size, img_size))
     images.real += noise
     images.imag += noise
     return images
