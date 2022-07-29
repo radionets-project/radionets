@@ -614,9 +614,7 @@ def evaluate_gan_sources(conf):
             num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
             num_zeros += list(num_zero)
 
-        ratio = (
-            diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
-        )
+        ratio = diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
 
         below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
         above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
@@ -632,7 +630,13 @@ def evaluate_gan_sources(conf):
     below_zeros = np.array([below_zeros]).reshape(-1)
     click.echo("\nCreating GAN histograms.\n")
     histogram_gan_sources(
-        ratios, num_zeros, num_images, out_path, plot_format=conf["format"]
+        ratios,
+        num_zeros,
+        above_zeros,
+        below_zeros,
+        num_images,
+        out_path,
+        plot_format=conf["format"],
     )
     click.echo(f"\nThe mean difference from maximum flux is {diff.mean()}.\n")
     click.echo(f"\nThe mean proportion of pixels close to 0 is {num_zeros.mean()}.\n")

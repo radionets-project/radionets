@@ -1010,7 +1010,9 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
     plt.close()
 
 
-def histogram_gan_sources(ratio, num_zero, num_images, out_path, plot_format="png"):
+def histogram_gan_sources(
+    ratio, num_zero, above_zero, below_zero, num_images, out_path, plot_format="png"
+):
     bins = np.arange(0, ratio.max() + 0.1, 0.1)
     plt.hist(
         ratio,
@@ -1032,12 +1034,7 @@ def histogram_gan_sources(ratio, num_zero, num_images, out_path, plot_format="pn
     bins = np.arange(0, 102, 2)
     num_zero = num_zero.reshape(4, num_images)
     for i, label in enumerate(["1e-4", "1e-3", "1e-2", "1e-1"]):
-        plt.hist(
-            num_zero[i],
-            bins=bins,
-            histtype="step",
-            label=label,
-        )
+        plt.hist(num_zero[i], bins=bins, histtype="step", label=label)
     plt.xlabel(r"Proportion of pixels close to 0 / %")
     plt.ylabel(r"Number of sources")
     plt.legend(loc="upper center")
@@ -1045,4 +1042,26 @@ def histogram_gan_sources(ratio, num_zero, num_images, out_path, plot_format="pn
     plt.tight_layout()
 
     outpath = str(out_path) + f"/num_zeros.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+    plt.clf()
+
+    bins = np.arange(0, 102, 2)
+    plt.hist(
+        above_zero,
+        bins=bins,
+        histtype="step",
+        label=f"Above, mean: {above_zero.mean():.2f}%, max: {above_zero.max():.2f}%",
+    )
+    plt.hist(
+        below_zero,
+        bins=bins,
+        histtype="step",
+        label=f"Below, mean: {below_zero.mean():.2f}%, max: {below_zero.max():.2f}%",
+    )
+    plt.xlabel(r"Proportion of pixels below or above 0%")
+    plt.ylabel(r"Number of sources")
+    plt.legend(loc="upper center")
+
+    outpath = str(out_path) + f"/above_below.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
