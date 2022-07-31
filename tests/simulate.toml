@@ -29,6 +29,8 @@ bundle_size = 100
 img_size = 64
 noise = true
 noise_level = 5
+white_noise = true
+white_noise_level = 0.5
 
 [sampling_options]
 fourier = true
