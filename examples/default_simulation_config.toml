@@ -30,6 +30,7 @@ img_size = 63
 noise = false
 noise_level = 5
 white_noise = false
+white_noise_level = 0.5
 
 [sampling_options]
 fourier = true

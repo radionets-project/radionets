@@ -121,6 +121,7 @@ def read_config(config):
     sim_conf["noise"] = config["image_options"]["noise"]
     sim_conf["noise_level"] = config["image_options"]["noise_level"]
     sim_conf["white_noise"] = config["image_options"]["white_noise"]
+    sim_conf["white_noise_level"] = config["image_options"]["white_noise_level"]
 
     sim_conf["amp_phase"] = config["sampling_options"]["amp_phase"]
     sim_conf["real_imag"] = config["sampling_options"]["real_imag"]
@@ -364,9 +365,9 @@ def interpol(img):
     return np.array([amp, phase])
 
 
-def add_white_noise(images):
+def add_white_noise(images, noise_level):
     img_size = images.shape[2]
-    noise = np.random.normal(0, 0.5, size=(images.shape[0], img_size, img_size))
+    noise = np.random.normal(0, noise_level, size=(images.shape[0], img_size, img_size))
     images.real += noise
     images.imag += noise
     return images
