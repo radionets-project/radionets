@@ -313,7 +313,7 @@ def get_uv_coverage(source, antenna, multi_channel=False, bandwiths=4, iterate=F
     return u, v, steps
 
 
-def create_mask(u, v, size=63):
+def create_mask(u, v, size=64):
     """Create 2d mask from a given (uv)-coverage
 
     u: array of u coordinates
@@ -352,7 +352,7 @@ def test_mask():
 def sample_freqs(
     img,
     ant_config,
-    size=63,
+    size=64,
     lon=None,
     lat=None,
     num_steps=None,
@@ -422,9 +422,10 @@ def sample_freqs(
                 lon = np.random.randint(-90, -70, size=(bundle_size,))
             if lat is None:
                 lat = np.random.randint(30, 80, size=(bundle_size,))
+            num_steps = np.random.randint(40, 60, size=(bundle_size,))
             mask_woc = np.asarray(
                 [
-                    get_mask(lon[i], lat[i], num_steps, ant, size)
+                    get_mask(lon[i], lat[i], num_steps[i], ant, size)
                     for i in range(bundle_size)
                 ]
             )
