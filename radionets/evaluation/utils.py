@@ -296,10 +296,10 @@ def eval_model(img, model, test=False):
     if len(img.shape) == (3):
         img = img.unsqueeze(0)
     model.eval()
-    if not test:
+    if torch.cuda.is_available():
         model.cuda()
     with torch.no_grad():
-        if not test:
+        if torch.cuda.is_available():
             pred = model(img.float().cuda())
         else:
             pred = model(img.float())
