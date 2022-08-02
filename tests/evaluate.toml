@@ -24,7 +24,7 @@ diff = true
 [inspection]
 visualize_prediction = true
 visualize_source_reconstruction = true
-visualize_contour = true
+visualize_contour = false
 visualize_dynamic_range = false
 visualize_blobs = false
 visualize_ms_ssim = false
