@@ -640,4 +640,3 @@ def evaluate_gan_sources(conf):
     )
     click.echo(f"\nThe mean difference from maximum flux is {diff.mean()}.\n")
     click.echo(f"\nThe mean proportion of pixels close to 0 is {num_zeros.mean()}.\n")
-    return ratios, num_zeros, above_zeros, below_zeros
