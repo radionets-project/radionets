@@ -285,6 +285,7 @@ class TestEvaluation:
         import toml
         import torch
         import numpy as np
+        from radionets.evaluation.train_inspection import evaluate_gan_sources
         from radionets.evaluation.utils import read_config, get_ifft, read_pred
 
         config = toml.load("./tests/evaluate.toml")
@@ -327,6 +328,8 @@ class TestEvaluation:
         assert ~np.isnan(above_zero)
         assert above_zero.dtype == "float64"
         assert np.isclose(below_zero + above_zero, 100)
+
+        assert evaluate_gan_sources(conf) is None
 
     def test_evaluation(self):
         import shutil
