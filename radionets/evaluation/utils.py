@@ -373,6 +373,47 @@ def fft_pred(pred, truth, amp_phase=True):
     return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
 
 
+def calc_velocity(pos, times, mas):
+    """
+    Calculation of velocities from jet components
+
+    Parameters
+    ----------
+    pos: 3d-array
+        x and y positions of one component; (n, c, 2), with n timesteps and c components
+    times: 1d-array
+        timesteps (date) of the images; (n,)
+    mas: 1d-array
+        milliarcseconds in x and y; (2,)
+
+    Returns
+    -------
+    v: 1d-array
+        mean velocities of each component in mas/year
+    """
+    # postition from x, y coordinates to mas
+
+
+    # calculate distances to main component and difference between timesteps
+    p0 = pos[0]
+    t0 = times[0]
+    print(pos.shape)
+    print(p0.shape)
+    print(pos[1:].shape)
+    dist_p = np.array([])
+    diff_t = np.array([])
+    for p, t in zip(pos[1:], times[1:]):
+        print(p.shape)
+        print(t.shape)
+        # Referenzpunkt für Geschwindigkeitsberechnung?
+        dist_p.append(np.linalg.norm(p0 - p))
+        diff_t.append(t0 - t)
+
+    # calculate the mean velocity of each component
+    v = np.mean((dist_p.T / diff_t).T, axis=0)
+    return v
+
+
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
     """
     write test data and predictions to h5 file

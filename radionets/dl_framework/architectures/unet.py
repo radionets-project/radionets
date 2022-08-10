@@ -11,6 +11,7 @@ from radionets.dl_framework.model import (
     cut_off,
     flatten_with_channel,
     shape,
+    linear,
 )
 
 
@@ -367,10 +368,10 @@ class UNet_jet_advanced(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.channels = 16  # 16 is enough to predict all (12) components as an image
+        self.channels = 32  # 32 is enough to predict all (12) components as an image
         self.components = 12
         self.grad_backbone = True
-        self.grad_regressor = True
+        self.grad_regressor = True 
 
         self.dconv_down1 = nn.Sequential(*double_conv(1, self.channels))
         self.dconv_down2 = nn.Sequential(*double_conv(self.channels, 2 * self.channels))
@@ -397,34 +398,35 @@ class UNet_jet_advanced(nn.Module):
             *double_conv(6 * self.channels, 2 * self.channels)
         )
         self.dconv_up1 = nn.Sequential(*double_conv(3 * self.channels, self.channels))
-
         self.conv_last = conv_bn(self.channels, self.components, 1)
-        self.activation_unet = nn.Sequential(nn.Softmax(dim=1))
+        self.activation_unet = nn.Softmax(dim=1)
 
-        # self.avgpool = nn.AvgPool2d(2)
+        self.conv1 = nn.Sequential(*conv(
+            ni=self.components,
+            nc=self.components,
+            ks=3,
+            stride=2,
+            padding=1,
+            groups=self.components,
+            ))
+        self.conv2 = nn.Sequential(*conv(
+            ni=self.components,
+            nc=self.components,
+            ks=3,
+            stride=2,
+            padding=1,
+            groups=self.components,
+            ))
 
-        # self.conv1 = nn.Sequential(*conv(
-        #     ni=self.components,
-        #     nc=self.components,
-        #     ks=3,
-        #     stride=2,
-        #     padding=1,
-        #     groups=self.components,
-        #     ))
-        # self.conv2 = nn.Sequential(*conv(
-        #     ni=self.components,
-        #     nc=self.components,
-        #     ks=3,
-        #     stride=2,
-        #     padding=1,
-        #     groups=self.components,
-        #     ))
-
-        # 6 for each component: confidence, amplitude, x, y, width, height, velocity (beta)
+        # 6 for each component: confidence, amplitude, x, y, width, height
         self.linear_comp = nn.ModuleList(
-            [nn.Linear(256 ** 2, 7) for _ in range(self.components - 1)]
+            [nn.Linear(64 ** 2, 6) for _ in range(self.components - 1)]
         )
-        self.linear_angle = nn.Linear(256 ** 2, 1)
+        # self.linear_comp = nn.Linear(64 ** 2, 6)
+
+        # av: angle & velocity, 12: 11x velocity and 1 angle
+        self.linear_av1 = linear(64 ** 2 * self.components, 64)
+        self.linear_av2 = nn.Linear(64, 12)
         self.sigmoid = nn.Sigmoid()
     
     def apply_grad(self, layer, x, gradient):
@@ -436,67 +438,60 @@ class UNet_jet_advanced(nn.Module):
         return y
 
     def forward(self, x):
-        # conv1 = self.dconv_down1(x)
         conv1 = self.apply_grad(self.dconv_down1, x, self.grad_backbone)
         x = self.maxpool(conv1)
-        # conv2 = self.dconv_down2(x)
         conv2 = self.apply_grad(self.dconv_down2, x, self.grad_backbone)
         x = self.maxpool(conv2)
-        # conv3 = self.dconv_down3(x)
         conv3 = self.apply_grad(self.dconv_down3, x, self.grad_backbone)
         x = self.maxpool(conv3)
-        # conv4 = self.dconv_down4(x)
         conv4 = self.apply_grad(self.dconv_down4, x, self.grad_backbone)
         x = self.maxpool(conv4)
-        # x = self.dconv_down5(x)
         x = self.apply_grad(self.dconv_down5, x, self.grad_backbone)
 
         x = self.upsample(x)
         x = torch.cat([x, conv4], dim=1)
-        # x = self.dconv_up4(x)
         x = self.apply_grad(self.dconv_up4, x, self.grad_backbone)
         x = self.upsample(x)
         x = torch.cat([x, conv3], dim=1)
-        # x = self.dconv_up3(x)
         x = self.apply_grad(self.dconv_up3, x, self.grad_backbone)
         x = self.upsample(x)
         x = torch.cat([x, conv2], dim=1)
-        # x = self.dconv_up2(x)
         x = self.apply_grad(self.dconv_up2, x, self.grad_backbone)
         x = self.upsample(x)
         x = torch.cat([x, conv1], dim=1)
-        # x = self.dconv_up1(x)
         x = self.apply_grad(self.dconv_up1, x, self.grad_backbone)
-        x = self.conv_last(x)
-        # out_unet = self.activation_unet(x)
-        out_unet = self.apply_grad(self.activation_unet, x, self.grad_backbone)
+        x = self.apply_grad(self.conv_last, x, self.grad_backbone)
+        out_unet = self.activation_unet(x)
 
-        # x = self.conv1(out_unet)
-        # x = self.conv2(x)
-        # x = self.avgpool(out_unet)
-        # print(out_unet.shape)
-        # print(x.shape)
+        # x = self.maxpool(out_unet)
+        x = self.apply_grad(self.conv1, out_unet, self.grad_regressor)
+        x = self.apply_grad(self.conv2, x, self.grad_regressor)
 
-        x = torch.flatten(out_unet, start_dim=2)
+        x = torch.flatten(x, start_dim=2)
 
-        d = str(x.get_device())
+        d = str(x.get_device()) 
         if d == "-1":
             device = "cpu"
         else:
             device = "cuda:" + d
 
-        out_list = torch.zeros(
-            (x.shape[0], x.shape[1] - 1, 7), device=torch.device(device)
+        out_comp = torch.zeros(
+            (x.shape[0], x.shape[1] - 1, 6), device=torch.device(device)
         )
         for i, linear in enumerate(self.linear_comp):
-            # out_list[:, i] = self.sigmoid(linear(x[:, i]))
-            out_list[:, i] = self.sigmoid(self.apply_grad(linear, x[:, i], self.grad_regressor))
+            out_comp[:, i] = self.sigmoid(self.apply_grad(linear, x[:, i], self.grad_regressor))
+        # for i in range(self.components - 1):
+        #     out_comp[:, i] = self.sigmoid(self.apply_grad(self.linear_comp, x[:, i], self.grad_regressor))
+        # print(out_comp.shape)
+        # print(x.shape)
 
         # last component is background -> same information as clean image
-        # out_param = self.sigmoid(self.linear_angle(1 - x[:, -1]))
-        out_param = self.sigmoid(self.apply_grad(self.linear_angle, 1 - x[:, -1], self.grad_regressor))
+        x = torch.flatten(x, start_dim=1)
+        out_av = self.apply_grad(self.linear_av1, x, self.grad_regressor)
+        out_av = self.sigmoid(self.apply_grad(self.linear_av2, out_av, self.grad_regressor))
+        # print(out_av.shape)
 
-        return out_unet, out_list, out_param
+        return out_unet, out_comp, out_av
 
 
 class UNet_clean(nn.Module):

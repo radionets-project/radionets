@@ -498,8 +498,8 @@ def jet_seg(x, y):
     for i in range(
         int((x.shape[1] - 2) / 2)
     ):  # -2: main component and summed component, /2: two sides
-        loss_l1_weighted += l1(x[:, i + 1], y[:, i + 1]) * (i + 2)
-        loss_l1_weighted += l1(x[:, i + 6], y[:, i + 6]) * (i + 2)
+        loss_l1_weighted += l1(x[:, i + 1], y[:, i + 1]) * (i / 2 + 1.5)
+        loss_l1_weighted += l1(x[:, i + 6], y[:, i + 6]) * (i / 2 + 1.5)
 
     loss = loss_main_comp + loss_all_comps_summed + loss_l1_weighted
     return loss
@@ -513,12 +513,12 @@ def jet_list(x, y):
     ----------
     x: tuple
         Output of the network
-        (component images, components parameters (confidence, amplitude, x, y, width, height, velocity), jet parameters (angle))
-        shapes: (bs, 12, 256, 256), (bs, 11, 7), (bs, 1)
+        (component images, components parameters (confidence, amplitude, x, y, width, height), jet parameters (velocity, angle))
+        shapes: (bs, 12, 256, 256), (bs, 11, 6), (bs, 12)
     y: tuple
         Simulated values
         (compnent images, all parameters (amplitude, x, y, width, height, comp-rotation, jet-rotation, velocity))
-        shapes: (bs, 12, 256, 256), (bs, 1, 256, 256) -> (bs, 11, 8)
+        shapes: (bs, 13, 256, 256)
 
     Returns
     -------
@@ -528,22 +528,15 @@ def jet_list(x, y):
 
     y_comp, y_param = torch.split(y, [y.shape[1] - 1, 1], dim=1)
 
-    # # setting weights to 0 doesn't work, because fastai returns an error
-    # w_image = 5 if x_comp.requires_grad else 1e-10  # weight image loss
-    # w_box = 1 if x_list.requires_grad else 1e-10  # weight image loss
-    # w_conf = 0.5 if x_list.requires_grad else 1e-10  # weight image loss
-    # w_amp = 0.2 if x_list.requires_grad else 1e-10  # weight image loss
-    # w_angle = 0.2 if x_angle.requires_grad else 1e-10  # weight image loss
-    # w_beta = 0.2 if x_list.requires_grad else 1e-10  # weight image loss
+    w_regressor = 1
 
-    w_image = 1  # weight image loss
-    w_box = 1  # weight image loss
-    w_conf = 1  # weight image losss
-    w_amp = 1  # weight image loss
-    w_angle = 1  # weight image loss
-    w_beta = 1  # weight image loss
-    # print(w_image, w_box, w_conf, w_amp, w_angle, w_beta)
-    # print(x_comp.requires_grad, x_list.requires_grad, x_angle.requires_grad)
+    w_image = 0.2  # weight image loss
+    w_box = min(1, w_regressor)  # weight image loss
+    w_conf = min(0.5, w_regressor)  # weight image losss
+    w_amp = min(0.3, w_regressor)  # weight image loss
+    w_angle = min(0.2, w_regressor)  # weight image loss
+    w_beta = min(0.2, w_regressor) # weight image loss
+
     loss = 0
 
     if w_image:
@@ -567,7 +560,7 @@ def jet_list(x, y):
 
     # IoU-loss for the box
     if w_box:
-        box_size_scale = 2
+        box_size_scale = 1
         x_box = x_list[..., 2:6].reshape(-1, 4)
         x_box_packed = [
             x_box[:, 0],
@@ -586,25 +579,27 @@ def jet_list(x, y):
         ciou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
         ciou = ciou[y_box_list[..., 0].reshape(-1).bool()]  # no loss, if amplitude is 0
         loss += (1.0 - ciou).mean() * w_box
+        # print('loss box:', (1.0 - ciou).mean() * w_box)
 
     if w_conf:
         confidence = bbox_iou(x_box_packed, y_box_packed)
         loss += l1(x_list[..., 0].reshape(-1), confidence) * w_box
-
-    # print(x_angle.shape, y_param.shape)
-    # print(x_angle[..., 0].shape, y_param[..., 6].shape)
+        # print('loss confidence:', l1(x_list[..., 0].reshape(-1), confidence) * w_box)
 
     if w_amp:
         loss += l1(x_list[..., 1], y_param[..., 0]) * w_amp
+        # print('loss amplitude:', l1(x_list[..., 1], y_param[..., 0]) * w_amp)
 
     y_angle = y_param[:, 0, 6] / (torch.pi / 2)
     if w_angle:
-        loss += l1(x_angle.squeeze(), y_angle) * w_angle
+        loss += l1(x_angle[..., -1], y_angle) * w_angle
+        # print('loss angle:', l1(x_angle[..., -1], y_angle) * w_angle)
 
     if w_beta:
-        loss += l1(x_list[..., 6], y_param[..., 7]) * w_beta
-
-    # loss = loss_image + loss_box + loss_conf + loss_amp + loss_angle + loss_beta
+        loss += l1(x_angle[..., 0:-1], y_param[..., 7]) * w_beta
+        # print('loss velocity:', l1(x_angle[..., 0:-1], y_param[..., 7]) * w_beta)
+    
+    # print()
     # print(loss)
     return loss
 
