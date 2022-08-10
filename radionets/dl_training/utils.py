@@ -114,13 +114,17 @@ def set_decive():
 
 def get_free_gpu():
     # https://discuss.pytorch.org/t/it-there-anyway-to-let-program-select-free-gpu-automatically/17560/2
-    gpu_stats = subprocess.check_output(
-        ["nvidia-smi", "--format=csv", "--query-gpu=memory.used,memory.free"]
-    ).decode("utf-8")
-    gpu_df = pd.read_csv(
-        StringIO(gpu_stats), names=["memory.used", "memory.free"], skiprows=1
-    )
-    gpu_df["memory.free"] = gpu_df["memory.free"].map(lambda x: x.rstrip(" [MiB]"))
-    gpu_df["memory.free"] = pd.to_numeric(gpu_df["memory.free"])
-    idx = gpu_df["memory.free"].idxmax()
+    try:
+        gpu_stats = subprocess.check_output(
+            ["nvidia-smi", "--format=csv", "--query-gpu=memory.used,memory.free"]
+        ).decode("utf-8")
+        gpu_df = pd.read_csv(
+            StringIO(gpu_stats), names=["memory.used", "memory.free"], skiprows=1
+        )
+        gpu_df["memory.free"] = gpu_df["memory.free"].map(lambda x: x.rstrip(" [MiB]"))
+        gpu_df["memory.free"] = pd.to_numeric(gpu_df["memory.free"])
+        idx = gpu_df["memory.free"].idxmax()
+    except subprocess.CalledProcessError: # accures, if nvidia-smi is not working
+        click.echo("nvidia-smi not availabe! Device is set to cuda:0. \n")
+        idx = 1
     return idx
