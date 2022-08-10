@@ -411,11 +411,11 @@ class SRBlock(nn.Module):
         )
 
 
-class MultiBlock(nn.Module):
+class RepBlock(nn.Module):
     def __init__(self, ni, nc, n=1):
         super().__init__()
-        self.conv = MultiBlockConv(ni, nc)
-        self.block = nn.Sequential(*(MultiBlockConv(nc, nc) for _ in range(n - 1))) if n > 1 else None
+        self.conv = RepVGGBlock(ni, nc)
+        self.block = nn.Sequential(*(RepVGGBlock(nc, nc) for _ in range(n - 1))) if n > 1 else None
 
     def forward(self, x):
         x = self.conv(x)
@@ -424,16 +424,20 @@ class MultiBlock(nn.Module):
         return x
 
 
-class MultiBlockConv(nn.Module):
-    def __init__(self, ni, nc):
-        super(MultiBlockConv, self).__init__()
+class RepVGGBlock(nn.Module):
+    '''
+    RepVGGBlock is a basic rep-style block, including training and deploy status
+    This code is based on https://github.com/DingXiaoH/RepVGG/blob/main/repvgg.py
+    '''
+    def __init__(self, ni, nc, kernel_size=3, stride=1, padding=1):
+        super(RepVGGBlock, self).__init__()
         self.ni = ni
         self.nc = nc
 
         self.nonlinearity = nn.ReLU()
 
-        self.rbr_identity = nn.BatchNorm2d(ni) if ni == nc else None
-        self.rbr_dense = conv_bn(ni, nc, kernel_size=3, padding=1)
+        self.rbr_identity = nn.BatchNorm2d(ni) if ni == nc and stride == 1 else None
+        self.rbr_dense = conv_bn(ni, nc, kernel_size=kernel_size, stride=stride, padding=padding)
         self.rbr_1x1 = conv_bn(ni, nc, kernel_size=1)
 
     def forward(self, inputs):
@@ -443,3 +447,25 @@ class MultiBlockConv(nn.Module):
             id_out = self.rbr_identity(inputs)
 
         return self.nonlinearity(self.rbr_dense(inputs) + self.rbr_1x1(inputs) + id_out)
+
+
+class SimSPPF(nn.Module):
+    '''Simplified SPPF with ReLU activation'''
+    def __init__(self, ni, nc, kernel_size=5):
+        super().__init__()
+        c_ = ni // 2  # hidden channels
+        self.cv1 = conv(ni, c_, 1, 1)
+        self.cv2 = conv(c_ * 4, nc, 1, 1)
+        self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+
+    def forward(self, x):
+        print(f'Shape in SimSPPF {x.shape}')
+        x = self.cv1(x)
+        print(f'Shape in SimSPPF {x.shape}')
+        # with warnings.catch_warnings():
+        #     warnings.simplefilter('ignore')
+        y1 = self.m(x)
+        print(f'Shape in SimSPPF {y1.shape}')
+        y2 = self.m(y1)
+        print(f'Shape in SimSPPF {y2.shape}')
+        return self.cv2(torch.cat([x, y1, y2, self.m(y2)], 1))

@@ -370,7 +370,7 @@ class UNet_jet_advanced(nn.Module):
 
         self.channels = 32  # 32 is enough to predict all (12) components as an image
         self.components = 12
-        self.grad_backbone = True
+        self.grad_backbone = False
         self.grad_regressor = True 
 
         self.dconv_down1 = nn.Sequential(*double_conv(1, self.channels))

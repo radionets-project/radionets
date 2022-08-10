@@ -528,9 +528,9 @@ def jet_list(x, y):
 
     y_comp, y_param = torch.split(y, [y.shape[1] - 1, 1], dim=1)
 
-    w_regressor = 1
 
-    w_image = 0.2  # weight image loss
+    w_image = 0.0  # weight image loss
+    w_regressor = 1
     w_box = min(1, w_regressor)  # weight image loss
     w_conf = min(0.5, w_regressor)  # weight image losss
     w_amp = min(0.3, w_regressor)  # weight image loss
@@ -577,7 +577,7 @@ def jet_list(x, y):
         ]
 
         ciou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
-        ciou = ciou[y_box_list[..., 0].reshape(-1).bool()]  # no loss, if amplitude is 0
+        ciou = ciou[y_param[..., 0].reshape(-1).bool()]  # no loss, if amplitude is 0
         loss += (1.0 - ciou).mean() * w_box
         # print('loss box:', (1.0 - ciou).mean() * w_box)
 
@@ -652,10 +652,4 @@ def yolo(x, y):
     # print('Loss:', loss)
     if torch.isnan(loss):
         exit()
-    return loss
-
-
-def l1_yolo(x, y):
-    x = x.view(y.shape)
-    loss = l1(x[..., 1:5], y[..., 1:5])
     return loss
