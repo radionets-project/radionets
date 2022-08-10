@@ -434,17 +434,22 @@ class RepVGGBlock(nn.Module):
         self.ni = ni
         self.nc = nc
 
+        padding_11 = padding - kernel_size // 2
+
         self.nonlinearity = nn.ReLU()
 
         self.rbr_identity = nn.BatchNorm2d(ni) if ni == nc and stride == 1 else None
         self.rbr_dense = conv_bn(ni, nc, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.rbr_1x1 = conv_bn(ni, nc, kernel_size=1)
+        self.rbr_1x1 = conv_bn(ni, nc, kernel_size=1, stride=stride, padding=padding_11)
 
     def forward(self, inputs):
         if self.rbr_identity is None:
             id_out = 0
         else:
             id_out = self.rbr_identity(inputs)
+        #     print(f'id_out: {id_out.shape}')
+        # print(f'rbr_dense: {self.rbr_dense(inputs).shape}')
+        # print(f'rbr_1x1: {self.rbr_1x1(inputs).shape}')
 
         return self.nonlinearity(self.rbr_dense(inputs) + self.rbr_1x1(inputs) + id_out)
 
@@ -454,18 +459,19 @@ class SimSPPF(nn.Module):
     def __init__(self, ni, nc, kernel_size=5):
         super().__init__()
         c_ = ni // 2  # hidden channels
-        self.cv1 = conv(ni, c_, 1, 1)
-        self.cv2 = conv(c_ * 4, nc, 1, 1)
+        self.cv1 = nn.Sequential(*conv(ni, c_, 1, 1))
+        self.cv2 = nn.Sequential(*conv(c_ * 4, nc, 1, 1))
         self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
 
     def forward(self, x):
-        print(f'Shape in SimSPPF {x.shape}')
+        # print(f'Shape in SimSPPF {x.shape}')
         x = self.cv1(x)
-        print(f'Shape in SimSPPF {x.shape}')
+        # print(f'Shape in SimSPPF {x.shape}')
         # with warnings.catch_warnings():
         #     warnings.simplefilter('ignore')
         y1 = self.m(x)
-        print(f'Shape in SimSPPF {y1.shape}')
+        # print(f'Shape in SimSPPF {y1.shape}')
         y2 = self.m(y1)
-        print(f'Shape in SimSPPF {y2.shape}')
+        # print(f'Shape in SimSPPF {y2.shape}')
+        # print(f'Shape in SimSPPF {torch.cat([x, y1, y2, self.m(y2)], 1).shape}')
         return self.cv2(torch.cat([x, y1, y2, self.m(y2)], 1))

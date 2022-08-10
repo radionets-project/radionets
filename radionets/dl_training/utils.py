@@ -126,5 +126,5 @@ def get_free_gpu():
         idx = gpu_df["memory.free"].idxmax()
     except subprocess.CalledProcessError: # accures, if nvidia-smi is not working
         click.echo("nvidia-smi not availabe! Device is set to cuda:0. \n")
-        idx = 1
+        idx = 0
     return idx
