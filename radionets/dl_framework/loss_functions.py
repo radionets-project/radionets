@@ -607,49 +607,110 @@ def jet_list(x, y):
 def yolo(x, y):
     """
     Loss for YOLO training
+    x of shape (bs, 1344, 5): 1344 = 32*32 + 16*16 + 8*8
     """
-    d = x.get_device()
+    w_box = 1
+    w_obj = 1
 
-    weight_box = 1
-    weight_amp = 1
-    weight_angle = 0  # need to implement and scale jet first correctly (take into account, that 2*pi is same as 0)
-    scale_box_by_amp = True
-    box_size = 2
+    bs, npixel, npred = x.shape
+    strides_head = torch.tensor([8, 16, 32])                    # how much the image got reduced
 
-    x = x.view(y.shape)
+    in_img_size = torch.sqrt(npixel / torch.sum(1 / strides_head ** 2))    # input image size
+    out_img_size = (in_img_size / strides_head).type(torch.int)
 
-    # IoU-loss for the box
-    x_box = x[..., 1:5].view(-1, 4)
-    x_box_packed = [
-        x_box[:, 0],
-        x_box[:, 1],
-        x_box[:, 2] * box_size,
-        x_box[:, 3] * box_size,
-    ]
-    y_box = y[..., 1:5].view(-1, 4)
-    y_box_packed = [
-        y_box[:, 0],
-        y_box[:, 1],
-        y_box[:, 2] * box_size,
-        y_box[:, 3] * box_size,
-    ]
-    if scale_box_by_amp:
-        amp_scale = y[..., 0].view(-1).bool()
-        iou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
-        iou = iou[amp_scale]
-    else:
-        iou = bbox_iou(x_box_packed, y_box_packed, CIoU=False)
+    splits = out_img_size ** 2
+    x2, x1, x0 = torch.split(x, tuple(splits.tolist()), dim=1)
 
-    loss_box = (1.0 - iou).mean()
+    x2 = x2.view(bs, out_img_size[0], out_img_size[0], npred)
+    x1 = x1.view(bs, out_img_size[1], out_img_size[1], npred)
+    x0 = x0.view(bs, out_img_size[2], out_img_size[2], npred)
 
-    # L1-loss for the amplitude
-    loss_amp = l1(x[..., 0], y[..., 0])
+    y2_idx = (y[..., 1:3] / strides_head[0]).type(torch.LongTensor)
+    y1_idx = (y[..., 1:3] / strides_head[1]).type(torch.LongTensor)
+    y0_idx = (y[..., 1:3] / strides_head[2]).type(torch.LongTensor)
 
-    # L1-loss for the jet-angle
-    loss_angle = l1(x[..., 6], y[..., 6])
+    y2 = torch.zeros_like(x2)
+    y1 = torch.zeros_like(x1)
+    y0 = torch.zeros_like(x0)
 
-    loss = loss_box * weight_box + loss_amp * weight_amp + loss_angle * weight_angle
-    # print('Loss:', loss)
+    for i in range(bs):
+        for j in range(y2_idx.shape[1]):
+            if y[i, j, 0] > 0:  # only assign when amplitude exists
+                # print(y2_idx[i, j, 0])
+                try:
+                    y2[i, y2_idx[i, j, 0], y2_idx[i, j, 1], 4] = 1
+                    y2[i, y2_idx[i, j, 0], y2_idx[i, j, 1], 0:4] = y[i, j, 1:5]# / 256
+                    y1[i, y1_idx[i, j, 0], y1_idx[i, j, 1], 4] = 1
+                    y1[i, y1_idx[i, j, 0], y1_idx[i, j, 1], 0:4] = y[i, j, 1:5]# / 256
+                    y0[i, y0_idx[i, j, 0], y0_idx[i, j, 1], 4] = 1
+                    y0[i, y0_idx[i, j, 0], y0_idx[i, j, 1], 0:4] = y[i, j, 1:5]# / 256
+                except IndexError:  # index error if components lies on the edge
+                    continue
+
+
+    if w_box:
+        box_size_scale = 1
+        x2_box = x2[..., 0:4].reshape(-1, 4)
+        x1_box = x1[..., 0:4].reshape(-1, 4)
+        x0_box = x0[..., 0:4].reshape(-1, 4)
+        x_box = torch.cat([x2_box, x1_box, x0_box], dim=0)
+        x_box_packed = [
+            x_box[:, 0],
+            x_box[:, 1],
+            x_box[:, 2] * box_size_scale,
+            x_box[:, 3] * box_size_scale,
+        ]
+        y2_box = y2[..., 0:4].reshape(-1, 4)
+        y1_box = y1[..., 0:4].reshape(-1, 4)
+        y0_box = y0[..., 0:4].reshape(-1, 4)
+        y_box = torch.cat([y2_box, y1_box, y0_box], dim=0)
+        y_box_packed = [
+            y_box[:, 0],
+            y_box[:, 1],
+            y_box[:, 2] * box_size_scale,
+            y_box[:, 3] * box_size_scale,
+        ]
+
+        y2_obj = y2[..., 4].reshape(-1)
+        y1_obj = y1[..., 4].reshape(-1)
+        y0_obj = y0[..., 4].reshape(-1)
+        y_obj = torch.cat([y2_obj, y1_obj, y0_obj], dim=0)
+
+        print(f'x_box_packed: {x_box[y_obj.bool()][0].cpu().detach().numpy()}')
+        print(f'y_box_packed: {y_box[y_obj.bool()][0].cpu().detach().numpy()}')
+        ciou = bbox_iou(x_box_packed, y_box_packed, CIoU=True)
+
+        ciou = ciou[y_obj.bool()]  # no loss, if no object
+        # print(f'CIoU: ', ciou[0].item())
+        loss_box = (1.0 - ciou).mean() * w_box
+        # print(f'loss box: {loss_box}')
+
+    if w_obj:
+        x2_obj = x2[..., 4].reshape(-1)
+        x1_obj = x1[..., 4].reshape(-1)
+        x0_obj = x0[..., 4].reshape(-1)
+        x_obj = torch.cat([x2_obj, x1_obj, x0_obj], dim=0)
+
+        if not w_box:
+            y2_obj = y2[..., 4].reshape(-1)
+            y1_obj = y1[..., 4].reshape(-1)
+            y0_obj = y0[..., 4].reshape(-1)
+            y_obj = torch.cat([y2_obj, y1_obj, y0_obj], dim=0)
+
+        w_class_obj = torch.ones_like(y_obj)
+        w_class_obj[~y_obj.bool()] = w_class_obj[~y_obj.bool()] * torch.mean(y_obj)
+
+        bcewithlog_loss = nn.BCEWithLogitsLoss(pos_weight=w_class_obj)
+        loss_obj = bcewithlog_loss(x_obj, y_obj) * w_obj
+        # print(f'loss obj: {loss_obj}')
+    
+    print(f'loss box: {loss_box:.4f}, obj: {loss_obj:.4f}')
+
+    loss = loss_box + loss_obj
     if torch.isnan(loss):
-        exit()
+        print(f'Loss got nan. Box loss: {loss_box}, Obj loss: {loss_obj}')
+        print(f'x_box_packed {torch.isnan(x_box_packed).sum()}')
+        print(f'x_obj {torch.isnan(x_obj).sum()}')
+        quit()
+
     return loss
