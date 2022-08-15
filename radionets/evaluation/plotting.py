@@ -1013,18 +1013,19 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
 def histogram_gan_sources(
     ratio, num_zero, above_zero, below_zero, num_images, out_path, plot_format="png"
 ):
+    fig, ax1 = plt.subplots(1)
     bins = np.arange(0, ratio.max() + 0.1, 0.1)
-    plt.hist(
+    ax1.hist(
         ratio,
         bins=bins,
         histtype="step",
         label=f"mean: {ratio.mean():.2f}, max: {ratio.max():.2f}",
     )
-    plt.xlabel(r"Maximum difference to maximum true flux ratio")
-    plt.ylabel(r"Number of sources")
-    plt.legend(loc="best")
+    ax1.set_xlabel(r"Maximum difference to maximum true flux ratio")
+    ax1.set_ylabel(r"Number of sources")
+    ax1.legend(loc="best")
 
-    plt.tight_layout()
+    fig.tight_layout()
 
     outpath = str(out_path) + f"/ratio.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
@@ -1062,6 +1063,7 @@ def histogram_gan_sources(
     plt.xlabel(r"Proportion of pixels below or above 0%")
     plt.ylabel(r"Number of sources")
     plt.legend(loc="upper center")
+    plt.tight_layout()
 
     outpath = str(out_path) + f"/above_below.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
