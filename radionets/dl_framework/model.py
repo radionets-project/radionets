@@ -74,12 +74,8 @@ def symmetry(x, mode="real"):
     diag_indices = torch.stack((diag1, diag2))
     grid = torch.tril_indices(x.shape[1], x.shape[1], -1)
 
-    x_sym = torch.cat(
-        (grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),
-    )
-    y_sym = torch.cat(
-        (grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),
-    )
+    x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),)
+    y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),)
     x = torch.rot90(x, 1, dims=(1, 2))
     i = center + (center - x_sym)
     j = center + (center - y_sym)
@@ -401,3 +397,20 @@ class SRBlock(nn.Module):
             nn.Conv2d(nf, nf, 3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(nf),
         )
+
+
+def even_better_symmetry(x):
+    upper_half = x[:, :, 0 : x.shape[2] // 2, :].clone()
+    upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].clone()
+    upper_right = upper_half[:, :, :, upper_half.shape[3] // 2 :].clone()
+    a = torch.flip(upper_left, dims=[-2, -1])
+    b = torch.flip(upper_right, dims=[-2, -1])
+
+    upper_half[:, :, :, 0 : upper_half.shape[3] // 2] = b
+    upper_half[:, :, :, upper_half.shape[3] // 2 :] = a
+
+    # a = torch.zeros((x.shape))
+    # a[:, :, 0 : x.shape[2] // 2, :] = x[:, :, 0 : x.shape[2] // 2, :]
+    x[:, 0, x.shape[2] // 2 :, :] = upper_half[:, 0]
+    x[:, 1, x.shape[2] // 2 :, :] = -upper_half[:, 1]
+    return x
