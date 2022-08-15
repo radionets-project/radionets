@@ -281,6 +281,56 @@ class TestEvaluation:
         assert flux_pred.all() > 0
         assert flux_truth.all() > 0
 
+    def test_gan_sources(self):
+        import toml
+        import torch
+        import numpy as np
+        from radionets.evaluation.train_inspection import evaluate_gan_sources
+        from radionets.evaluation.utils import read_config, get_ifft, read_pred
+
+        config = toml.load("./tests/evaluate.toml")
+        conf = read_config(config)
+
+        pred, _, img_true = read_pred(
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
+        )
+
+        ifft_pred = get_ifft(torch.tensor(pred[0]), conf["amp_phase"])
+        ifft_truth = get_ifft(torch.tensor(img_true[0]), conf["amp_phase"])
+
+        img_size = ifft_pred.shape[-1]
+
+        diff = (ifft_pred - ifft_truth).reshape(1, img_size, img_size)
+
+        zero = np.isclose(
+            (np.zeros((1, img_size, img_size))), diff, atol=1e-3
+        )
+        assert zero.shape == (1, 64, 64)
+
+        num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
+        assert num_zero > 0
+        assert num_zero < 100
+        assert ~np.isnan(num_zero)
+        assert num_zero.dtype == "float64"
+
+        ratio = diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
+        assert ratio.dtype == "float64"
+        assert ratio > 0
+
+        below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
+        above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
+        assert below_zero > 0
+        assert below_zero < 100
+        assert ~np.isnan(below_zero)
+        assert below_zero.dtype == "float64"
+        assert above_zero > 0
+        assert above_zero < 100
+        assert ~np.isnan(above_zero)
+        assert above_zero.dtype == "float64"
+        assert np.isclose(below_zero + above_zero, 100)
+
+        assert evaluate_gan_sources(conf) is None
+
     def test_evaluation(self):
         import shutil
         import os

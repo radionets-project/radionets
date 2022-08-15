@@ -15,6 +15,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_area,
     evaluate_point,
     create_predictions,
+    evaluate_gan_sources,
 )
 
 
@@ -121,3 +122,7 @@ def main(configuration_path):
         # np.savetxt("grads_x_phase.csv", grads_x[0][1].cpu().numpy(), delimiter=",")
         # np.savetxt("grads_y_amp.csv", grads_y[0][0].cpu().numpy(), delimiter=",")
         # np.savetxt("grads_y_phase.csv", grads_y[0][1].cpu().numpy(), delimiter=",")
+
+    if eval_conf["gan"]:
+        click.echo("\nStart evaluation of GAN sources.\n")
+        evaluate_gan_sources(eval_conf)

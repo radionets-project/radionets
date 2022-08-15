@@ -81,6 +81,7 @@ def read_config(config):
     eval_conf["batch_size"] = config["eval"]["batch_size"]
     eval_conf["point"] = config["eval"]["evaluate_point"]
     eval_conf["predict_grad"] = config["eval"]["predict_grad"]
+    eval_conf["gan"] = config["eval"]["evaluate_gan"]
     return eval_conf
 
 
@@ -300,10 +301,10 @@ def eval_model(img, model, test=False):
     if len(img.shape) == (3):
         img = img.unsqueeze(0)
     model.eval()
-    if not test:
+    if torch.cuda.is_available():
         model.cuda()
     with torch.no_grad():
-        if not test:
+        if torch.cuda.is_available():
             pred = model(img.float().cuda())
         else:
             pred = model(img.float())

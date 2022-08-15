@@ -40,3 +40,4 @@ evaluate_mean_diff = true
 evaluate_area = true
 evaluate_point = false
 predict_grad = false
+evaluate_gan = false
