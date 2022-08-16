@@ -25,7 +25,7 @@ amp_phase = true
 source_list = false
 arch_name = "SRResNet"
 loss_func = "splitted_L1"
-num_epochs = 2
+num_epochs = 5
 inspection = false
 output_format = "pdf"
 switch_loss = false
@@ -33,7 +33,7 @@ when_switch = 25
 
 [hypers]
 batch_size = 64
-lr = 1e-05
+lr = 1e-04
 
 [param_scheduling]
 use = true
