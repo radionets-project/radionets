@@ -14,9 +14,10 @@ class YOLOv6(nn.Module):
         super().__init__()
 
         self.channels = 8
-        # self.input_size = 256
+        self.anchors = 1
         # self.num_repeats = [1, 6, 12, 18, 6, 12, 12, 12, 12]
-        self.num_repeats = [1, 4, 8, 12, 4, 8, 8, 8, 8]
+        # self.num_repeats = [1, 4, 8, 12, 4, 8, 8, 8, 8]
+        self.num_repeats = [1, 2, 4, 6, 2, 4, 4, 4, 4]
         self.strides_head = torch.tensor([8, 16, 32])
 
         """ backbone """
@@ -91,19 +92,19 @@ class YOLOv6(nn.Module):
         )
         self.head_reg_preds = nn.Sequential(
             # reg_pred0
-            nn.Conv2d(self.channels * 2, 4, 1),
+            nn.Conv2d(self.channels * 2, 4 * self.anchors, 1),
             # reg_pred1
-            nn.Conv2d(self.channels * 4, 4, 1),
+            nn.Conv2d(self.channels * 4, 4 * self.anchors, 1),
             # reg_pred2
-            nn.Conv2d(self.channels * 8, 4, 1),
+            nn.Conv2d(self.channels * 8, 4 * self.anchors, 1),
         )
         self.head_obj_preds = nn.Sequential(
             # obj_pred0
-            nn.Conv2d(self.channels * 2, 1, 1),
+            nn.Conv2d(self.channels * 2, 1 * self.anchors, 1),
             # obj_pred1
-            nn.Conv2d(self.channels * 4, 1, 1),
+            nn.Conv2d(self.channels * 4, 1 * self.anchors, 1),
             # obj_pred2
-            nn.Conv2d(self.channels * 8, 1, 1),
+            nn.Conv2d(self.channels * 8, 1 * self.anchors, 1),
         )
 
     def forward(self, x):
@@ -143,22 +144,12 @@ class YOLOv6(nn.Module):
             reg_output = self.head_reg_preds[i](reg_feat)
             obj_output = self.head_obj_preds[i](reg_feat)
 
-            y = torch.cat([reg_output.sigmoid(), obj_output.sigmoid()], 1)
+            x[i] = torch.cat([reg_output, obj_output], 1)
             bs, _, ny, nx = x[i].shape
-            y = y.view(bs, 5, ny, nx).permute(0, 2, 3, 1).contiguous()
-            d = y.device
-            yv, xv = torch.meshgrid(
-                [torch.arange(ny).to(d), torch.arange(nx).to(d)], indexing="ij"
+            x[i] = (
+                x[i]
+                .view(bs, self.anchors, 5, ny, nx)
+                .permute(0, 1, 3, 4, 2)
+                .contiguous()
             )
-            grid = torch.stack((xv, yv), 2).view(1, ny, nx, 2).float()
-            #print(nx)
-            # y[..., 0:2] = (y[..., 0:2] + grid) * self.strides_head[i].to(d)  # xy, org. YOLOv6
-            #print(y[0, 0, 0:5, 0:2])
-            y[..., 0:2] = (y[..., 0:2] + grid) * self.strides_head[i].to(d)  # xy
-            # y[..., 2:4] = torch.exp(y[..., 2:4]) * self.strides_head[i].to(d)  # wh, org. YOLOv6
-            y[..., 2:4] = y[..., 2:4] * max(nx, ny) * self.strides_head[i].to(d)  # wh
-            #print(y[0, 0, 0:5, 0:2])
-            #print(y[0, 0, 0:5, 2:4])
-            # print(f'Output shape before concat: {y.view(bs, -1, 5).shape}')
-            z.append(y.view(bs, -1, 5))
-        return torch.cat(z, 1)
+        return x

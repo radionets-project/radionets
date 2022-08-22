@@ -113,3 +113,18 @@ def make_padding(kernel_size, stride, dilation):
 def _maybe_item(t):
     t = t.value
     return t.item() if isinstance(t, torch.Tensor) and t.numel() == 1 else t
+
+
+def decode_yolo_box(x, stride_head):
+
+    d = x.device
+    ny, nx = x.shape[-3:-1]
+
+    yv, xv = torch.meshgrid(
+        [torch.arange(ny).to(d), torch.arange(nx).to(d)], indexing="ij"
+    )
+    grid = torch.stack((xv, yv), 2).view(1, ny, nx, 2).float()
+    x[..., 0:2] = (x[..., 0:2] + grid) * stride_head.to(d)  # xy
+    x[..., 2:4] = torch.exp(x[..., 2:4]) * stride_head.to(d)  # wh, org. YOLOv6
+
+    return x
