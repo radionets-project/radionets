@@ -4,7 +4,6 @@ title = "Evaluation configuration"
 
 [mode]
 quiet = false
-gpu = false
 
 [paths]
 data_path = "./tests/build/data/"

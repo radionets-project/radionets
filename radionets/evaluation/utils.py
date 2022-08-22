@@ -54,7 +54,6 @@ def read_config(config):
     eval_conf["norm_path"] = config["paths"]["norm_path"]
 
     eval_conf["quiet"] = config["mode"]["quiet"]
-    eval_conf["gpu"] = config["mode"]["gpu"]
 
     eval_conf["format"] = config["general"]["output_format"]
     eval_conf["fourier"] = config["general"]["fourier"]
@@ -282,7 +281,7 @@ def get_images(test_ds, num_images, norm_path="none", rand=False):
     return img_test, img_true
 
 
-def eval_model(img, model, test=False):
+def eval_model(img, model):
     """
     Put model into eval mode and evaluate test images.
 
