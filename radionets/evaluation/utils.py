@@ -6,6 +6,7 @@ import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+import torchvision
 import h5py
 from pathlib import Path
 
@@ -412,6 +413,40 @@ def calc_velocity(pos, times, mas):
     # calculate the mean velocity of each component
     v = np.mean((dist_p.T / diff_t).T, axis=0)
     return v
+
+
+def non_max_suppression(pred, obj_thres=0.25, iou_thres=0.45, max_det=50):    
+    pred_candidates = pred[..., 4] > obj_thres  # candidates
+    max_nms = 30000  # maximum number of boxes put into torchvision.ops.nms()
+    output = [torch.zeros((0, 5), device=pred.device)] * pred.shape[0]
+    for idx, x in enumerate(pred):
+        x = x[pred_candidates[idx]] # filter candidates
+        # print(f'Shape after applying candidates: {x.shape}')
+
+        if not x.shape[0]:  # if no box remains, skip the next image
+            continue
+        elif x.shape[0] > max_nms:  # if boxes exceeds maximum for nms
+            x = x[x[:, 4].argsort(descending=True)[:max_nms]]
+            # print(f'Shape after applying max_nms: {x.shape}')
+
+        boxes, scores = xywh2xyxy(x[:, :4]), x[:, 4]
+        keep_box_idx = torchvision.ops.nms(boxes, scores, iou_thres)  # NMS
+        if keep_box_idx.shape[0] > max_det:  # limit detections
+            keep_box_idx = keep_box_idx[:max_det]
+            # print(f'Reducing number of boxes from {keep_box_idx.shape[0]} to {max_det}')
+
+        output[idx] = x[keep_box_idx]
+
+    return output
+
+def xywh2xyxy(x):
+    # Convert boxes with shape [n, 4] from [x, y, w, h] to [x1, y1, x2, y2] where x1y1 is top-left, x2y2=bottom-right
+    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
+    y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
+    y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
+    y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
+    y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
+    return y
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):

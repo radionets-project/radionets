@@ -615,7 +615,7 @@ def yolo(x, y):
     x list of (3) output layers of shape (bs, n_anchors, ny, nx, 5)
     """
     w_box = 1
-    w_obj = 1
+    w_obj = 3
     strides_head = torch.tensor([8, 16, 32])  # how much the image got reduced
 
     loss_box = 0
@@ -677,10 +677,8 @@ def yolo(x, y):
                 ~target_obj.bool()
             ] * torch.mean(target_obj)
 
-            weight_for_bce_pos_weight = 0.2
-            bcewithlog_loss = nn.BCEWithLogitsLoss(
-                pos_weight=1 / torch.mean(target_obj) * weight_for_bce_pos_weight
-            )
+            scale_pos_weight = torch.sqrt((target_obj == 0).sum() / (target_obj == 1).sum())
+            bcewithlog_loss = nn.BCEWithLogitsLoss(pos_weight=scale_pos_weight)
             loss_obj_bce = bcewithlog_loss(output_obj, target_obj) * w_obj / len(x)
             # loss_obj_l1 = torch.mean(torch.abs(x_obj - y_obj) * w_class_obj) * w_obj # weighted l1 loss
             loss_obj += loss_obj_bce  # + loss_obj_l1

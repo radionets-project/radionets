@@ -1,16 +1,16 @@
 import torch
 import math
+import shapely
+from shapely.geometry import box
+from shapely.ops import unary_union
+from radionets.evaluation.utils import (
+    xywh2xyxy
+)
 
-
-def bbox_iou(box1, box2, xywh=True, iou_type="ciou", eps=1e-7):
-    # https://github.com/ultralytics/yolov5/blob/0537e8dd13859c4b44db3bf6f39b9ff20eaf163b/utils/metrics.py#L216
-    # Returns Intersection over Union (IoU) of box1(n,4) to box2(n,4)
-
-    if not torch.is_tensor(box1):
-        box1 = torch.tensor(box1)
-    if not torch.is_tensor(box2):
-        box2 = torch.tensor(box2)
-
+def bbox_iou(box1, box2, xywh=True, iou_type='ciou', eps=1e-7):
+    """Returns Intersection over Union (IoU) of box1(n,4) to box2(n,4)
+    https://github.com/nirbarazida/YOLOv6/blob/main/yolov6/utils/figure_iou.py
+    """
     # Get the coordinates of bounding boxes
     if xywh:  # transform from xywh to xyxy
         (x1, y1, w1, h1), (x2, y2, w2, h2) = box1, box2
@@ -23,42 +23,59 @@ def bbox_iou(box1, box2, xywh=True, iou_type="ciou", eps=1e-7):
         w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
         w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
 
+    if not torch.is_tensor(b1_x1): b1_x1 = torch.tensor(b1_x1)
+    if not torch.is_tensor(b1_y1): b1_y1 = torch.tensor(b1_y1)
+    if not torch.is_tensor(b1_x2): b1_x2 = torch.tensor(b1_x2)
+    if not torch.is_tensor(b1_y2): b1_y2 = torch.tensor(b1_y2)
+    if not torch.is_tensor(b2_x1): b2_x1 = torch.tensor(b2_x1)
+    if not torch.is_tensor(b2_y1): b2_y1 = torch.tensor(b2_y1)
+    if not torch.is_tensor(b2_x2): b2_x2 = torch.tensor(b2_x2)
+    if not torch.is_tensor(b2_y2): b2_y2 = torch.tensor(b2_y2)
+    if not torch.is_tensor(w1): w1 = torch.tensor(w1)
+    if not torch.is_tensor(h1): h1 = torch.tensor(h1)
+    if not torch.is_tensor(w2): w2 = torch.tensor(w2)
+    if not torch.is_tensor(h2): h2 = torch.tensor(h2)
+
     # Intersection area
-    inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * (
-        torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)
-    ).clamp(0)
+    inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * \
+            (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
 
     # Union Area
     union = w1 * h1 + w2 * h2 - inter + eps
 
     # IoU
     iou = inter / union
-    if iou_type in ["ciou", "diou", "giou"]:
-        cw = torch.max(b1_x2, b2_x2) - torch.min(
-            b1_x1, b2_x1
-        )  # convex (smallest enclosing box) width
+    if iou_type in ['ciou', 'diou', 'giou']:
+        cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)  # convex (smallest enclosing box) width
         ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)  # convex height
         c_area = cw * ch + eps  # convex area
-        if iou_type in [
-            "diou",
-            "ciou",
-        ]:  # Distance or Complete IoU https://arxiv.org/abs/1911.08287v1
+        if iou_type in ['diou', 'ciou']:  # Distance or Complete IoU https://arxiv.org/abs/1911.08287v1
             c2 = cw ** 2 + ch ** 2 + eps  # convex diagonal squared
-            rho2 = (
-                (b2_x1 + b2_x2 - b1_x1 - b1_x2) ** 2
-                + (b2_y1 + b2_y2 - b1_y1 - b1_y2) ** 2
-            ) / 4  # center dist ** 2
-            if (
-                iou_type == "ciou"
-            ):  # https://github.com/Zzh-tju/DIoU-SSD-pytorch/blob/master/utils/box/box_utils.py#L47
-                v = (4 / math.pi ** 2) * torch.pow(
-                    torch.atan(w2 / (h2 + eps)) - torch.atan(w1 / (h1 + eps)), 2
-                )
+            rho2 = ((b2_x1 + b2_x2 - b1_x1 - b1_x2) ** 2 + (b2_y1 + b2_y2 - b1_y1 - b1_y2) ** 2) / 4  # center dist ** 2
+            if iou_type == 'ciou':  # https://github.com/Zzh-tju/DIoU-SSD-pytorch/blob/master/utils/box/box_utils.py#L47
+                v = (4 / math.pi ** 2) * torch.pow(torch.atan(w2 / (h2 + eps)) - torch.atan(w1 / (h1 + eps)), 2)
                 with torch.no_grad():
                     alpha = v / (v - iou + (1 + eps))
                 return iou - (rho2 / c2 + v * alpha)  # CIoU
             return iou - rho2 / c2  # DIoU
-        return (
-            iou - (c_area - union) / c_area
-        )  # GIoU https://arxiv.org/pdf/1902.09630.pdf
+        return iou - (c_area - union) / c_area  # GIoU https://arxiv.org/pdf/1902.09630.pdf
     return iou  # IoU
+
+
+def overall_iou(boxes1, boxes2):
+    """Returns IoU of all boxes of shape [n, 4 (xywh)] for one image
+    """
+    box1_objects = []
+    box2_objects = []
+    for box1 in xywh2xyxy(boxes1):
+        box1_objects.append(shapely.geometry.box(*box1))
+    for box2 in xywh2xyxy(boxes2):
+        box2_objects.append(shapely.geometry.box(*box2))
+
+    box1_union = shapely.ops.unary_union(box1_objects)
+    box2_union = shapely.ops.unary_union(box2_objects)
+
+    union = box1_union.union(box2_union).area
+    inter = box1_union.intersection(box2_union).area
+    iou = inter / union
+    return iou
