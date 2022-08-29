@@ -180,7 +180,6 @@ class AvgLossCallback(Callback):
     def plot_loss(self):
         plt.plot(self.loss_train, label="Training loss")
         plt.plot(self.loss_valid, label="Validation loss")
-        plt.axhline(0, color="red", linestyle="dashed")
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
