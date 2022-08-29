@@ -37,6 +37,7 @@ class CometCallback(Callback):
         )
         self.amp_phase = amp_phase
         self.scale = scale
+        self.uncertainty = False
 
     def after_train(self):
         self.experiment.log_metric(
@@ -58,11 +59,13 @@ class CometCallback(Callback):
         with self.experiment.test():
             with torch.no_grad():
                 pred = eval_model(img_test, model)
+        if pred.shape[1] == 4:
+            self.uncertainty = True
 
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
         lim_phase = check_vmin_vmax(img_true[0, 1])
         im1 = ax1.imshow(pred[0, 0], cmap="inferno")
-        if pred.shape[1] == 4:
+        if self.uncertainty:
             im2 = ax2.imshow(pred[0, 2], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
         else:
             im2 = ax2.imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
@@ -86,7 +89,10 @@ class CometCallback(Callback):
                 pred = eval_model(img_test, model)
 
         ifft_pred = get_ifft_torch(
-            pred, amp_phase=self.amp_phase, scale=self.scale, uncertainty=True
+            pred,
+            amp_phase=self.amp_phase,
+            scale=self.scale,
+            uncertainty=self.uncertainty,
         )
         ifft_truth = get_ifft_torch(
             img_true, amp_phase=self.amp_phase, scale=self.scale
@@ -292,12 +298,12 @@ class GradientCallback(Callback):
         #             grads.append(param.grad.view(-1))
         # print or save
 
-    # def after_epoch(self): 
+    # def after_epoch(self):
     #     img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
 
     #     # for each epoch put test image through model and save to csv
     #     fname_template = "pred_{i}.csv"
-    #     np.savetxt(fname_template.format(i=self.epoch), get_ifft(eval_model(img_test, self.model), self.amp_phase), delimiter=",") 
+    #     np.savetxt(fname_template.format(i=self.epoch), get_ifft(eval_model(img_test, self.model), self.amp_phase), delimiter=",")
 
     #     # # fourier space
     #     # amp_names = "pred_amp_{i}.csv"
