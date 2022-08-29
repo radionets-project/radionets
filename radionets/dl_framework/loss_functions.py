@@ -264,10 +264,6 @@ def beta_nll_loss(x, y, beta=0.5):
     if beta > 0:
         loss = loss * variance.detach() ** beta
 
-    # print(loss.shape)
-    # print(loss.sum(axis=-1).shape)
-    # print(loss.sum().shape)
-
     return loss.mean()
 
 
