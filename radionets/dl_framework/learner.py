@@ -9,7 +9,6 @@ from radionets.dl_framework.callbacks import (
     SwitchLoss,
     CudaCallback,
     CometCallback,
-    GradientCallback,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -62,10 +61,6 @@ def define_learner(
             DataAug,
         ]
     )
-
-    # use gradient callback 
-    if not lr_find:
-        cbfs.extend([GradientCallback(num_epochs=train_conf["num_epochs"],test_data=train_conf["data_path"], arch_name= train_conf["arch_name"],amp_phase=train_conf["amp_phase"]),])
 
     # use switch loss
     if train_conf["switch_loss"]:
