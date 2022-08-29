@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import torch
-from matplotlib import cm
+import matplotlib as mpl
 from matplotlib.colors import ListedColormap, LogNorm
 from matplotlib.lines import Line2D
 from matplotlib.patches import Arc, Rectangle
@@ -38,12 +38,23 @@ from tqdm import tqdm
 
 
 def create_OrBu():
-    top = cm.get_cmap("Blues_r", 128)
-    bottom = cm.get_cmap("Oranges", 128)
-    white = np.array([256 / 256, 256 / 256, 256 / 256, 1])
-    newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
-    newcolors[128, :] = white
-    newcmp = ListedColormap(newcolors, name="OrangeBlue")
+    def colorFader(
+        c1, c2, mix=0
+    ):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+        c1 = np.array(mpl.colors.to_rgb(c1))
+        c2 = np.array(mpl.colors.to_rgb(c2))
+        return mpl.colors.to_hex((1 - mix) * c1 + mix * c2)
+
+    c1 = "#3B0963"  # lila
+    c2 = "#F88410"  # orange
+    c3 = "#ebe6ef"
+    c4 = "#fef3e7"
+    n = 256
+
+    fader_lila = [colorFader(c1, c3, x / n) for x in range(n + 1)]
+    fader_orange = [colorFader(c4, c2, x / n) for x in range(n + 1)]
+    cmap = fader_lila + ["white"] + fader_orange
+    newcmp = ListedColormap(cmap, name="OrangeBlue")
     return newcmp
 
 
