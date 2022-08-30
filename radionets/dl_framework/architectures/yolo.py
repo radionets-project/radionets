@@ -16,7 +16,6 @@ class YOLOv6(nn.Module):
         self.channels = 8
         self.anchors = 1
         # self.num_repeats = [1, 6, 12, 18, 6, 12, 12, 12, 12]
-        # self.num_repeats = [1, 4, 8, 12, 4, 8, 8, 8, 8]
         self.num_repeats = [1, 2, 4, 6, 2, 4, 4, 4, 4]
         self.strides_head = torch.tensor([8, 16, 32])
 
@@ -137,7 +136,6 @@ class YOLOv6(nn.Module):
         x = [pan_out2, pan_out1, pan_out0]
 
         """ head """
-        z = []
         for i in range(3):  # 3 output layers
             x[i] = self.head_stems[i](x[i])
             reg_feat = self.head_reg_convs[i](x[i])

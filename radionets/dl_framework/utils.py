@@ -116,7 +116,6 @@ def _maybe_item(t):
 
 
 def decode_yolo_box(x, stride_head):
-
     d = x.device
     ny, nx = x.shape[-3:-1]
 

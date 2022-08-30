@@ -1,11 +1,44 @@
-import torch
 import math
-import shapely
 from shapely.geometry import box
 from shapely.ops import unary_union
-from radionets.evaluation.utils import (
-    xywh2xyxy
-)
+import torch
+from radionets.dl_framework.utils import decode_yolo_box
+from radionets.evaluation.utils import non_max_suppression, xywh2xyxy
+
+
+def iou_YOLOv6(pred, target):
+    """Return the overall IoU during YOLOv6 training
+    
+    Parameters
+    ----------
+    pred: list
+        The three output layers of YOLOv6
+    target: ndarray
+        Array with target boxes of shape (bs, n_components, 7)
+        7: [amplitude, x, y, sx, sy, z_rotation, beta]
+    """
+    bs = target.shape[0]
+    strides = torch.tensor([8, 16, 32])
+
+    target[..., 3:5] *= 2   # increased box sizes (same as in loss function)
+
+    preds = []
+    for i, pred_map in enumerate(pred):
+        pred_map[..., 0:4] = decode_yolo_box(pred_map[..., 0:4], strides[i])
+        pred_map[..., 4] = torch.sigmoid(pred_map[..., 4])
+        preds.append(pred_map.reshape(bs, -1, 5))
+    preds = torch.cat(preds, dim=1)
+
+    pred_nms = non_max_suppression(preds, obj_thres=0.8, iou_thres=0.25)    # thresholds are imperical
+
+    amp_threshold = 0.02    # only take components above this amplitude into account
+    ious = torch.zeros(bs)
+    for i in range(bs):
+        target_boxes = target[i, :, 1:5][target[i, :, 0] > amp_threshold]
+        ious[i] = overall_iou(pred_nms[i][:, :4], target_boxes)
+    iou = torch.mean(ious)
+    return iou
+
 
 def bbox_iou(box1, box2, xywh=True, iou_type='ciou', eps=1e-7):
     """Returns Intersection over Union (IoU) of box1(n,4) to box2(n,4)
@@ -68,12 +101,12 @@ def overall_iou(boxes1, boxes2):
     box1_objects = []
     box2_objects = []
     for box1 in xywh2xyxy(boxes1):
-        box1_objects.append(shapely.geometry.box(*box1))
+        box1_objects.append(box(*box1))
     for box2 in xywh2xyxy(boxes2):
-        box2_objects.append(shapely.geometry.box(*box2))
+        box2_objects.append(box(*box2))
 
-    box1_union = shapely.ops.unary_union(box1_objects)
-    box2_union = shapely.ops.unary_union(box2_objects)
+    box1_union = unary_union(box1_objects)
+    box2_union = unary_union(box2_objects)
 
     union = box1_union.union(box2_union).area
     inter = box1_union.intersection(box2_union).area

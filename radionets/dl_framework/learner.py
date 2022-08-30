@@ -13,10 +13,11 @@ from fastai.learner import Learner
 from fastai.data.core import DataLoaders
 from fastai.callback.schedule import ParamScheduler, combined_cos
 import radionets.dl_framework.loss_functions as loss_functions
+import radionets.dl_framework.loss_functions as metrics
 
 
 def get_learner(
-    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=Adam, **kwargs
+    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=Adam, metrics=nn.L1Loss, **kwargs
 ):
     init_cnn(arch)
     dls = DataLoaders.from_dsets(
@@ -24,7 +25,7 @@ def get_learner(
         data.valid_ds,
         bs=data.train_dl.batch_size,
     )
-    return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
+    return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func, metrics=metrics)
 
 
 def define_learner(
@@ -68,9 +69,14 @@ def define_learner(
             [
                 SaveTempCallback(model_path=model_path),
                 AvgLossCallback,
-                DataAug,
             ]
         )
+        if not train_conf["source_list"]:
+            cbfs.extend(
+                [
+                    DataAug,
+                ]
+            )
     if train_conf["telegram_logger"] and not lr_find:
         cbfs.extend(
             [
@@ -84,8 +90,13 @@ def define_learner(
     else:
         loss_func = getattr(loss_functions, train_conf["loss_func"])
 
+    if train_conf["metric"] == "none":
+        metric = None
+    else:
+        metric = getattr(metrics, train_conf["metric"])
+
     # Combine model and data in learner
     learn = get_learner(
-        data, arch, lr=lr, opt_func=opt_func, cb_funcs=cbfs, loss_func=loss_func
+        data, arch, lr=lr, opt_func=opt_func, cb_funcs=cbfs, loss_func=loss_func, metrics=metric
     )
     return learn

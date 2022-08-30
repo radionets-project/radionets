@@ -43,6 +43,7 @@ def read_config(config):
     train_conf["amp_phase"] = config["general"]["amp_phase"]
     train_conf["arch_name"] = config["general"]["arch_name"]
     train_conf["loss_func"] = config["general"]["loss_func"]
+    train_conf["metric"] = config["general"]["metric"]
     train_conf["num_epochs"] = config["general"]["num_epochs"]
     train_conf["inspection"] = config["general"]["inspection"]
     train_conf["separate"] = False

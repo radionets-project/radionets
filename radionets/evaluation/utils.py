@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.data import do_normalisation, load_data
+from radionets.dl_framework.utils import decode_yolo_box
 import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
@@ -447,6 +448,18 @@ def xywh2xyxy(x):
     y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
     y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
     return y
+
+
+def yolo_out_transform(output, strides):
+    """ Transforms output of yolo network to list of predictions
+    """
+    pred_list = []
+    for i, out in enumerate(output):
+        out[..., 0:4] = decode_yolo_box(out[..., 0:4], torch.tensor(strides[i]))
+        out[..., 4] = torch.sigmoid(out[..., 4])
+        out = out.reshape(out.shape[0], -1, 5)
+        pred_list.append(out)
+    return torch.cat(pred_list, 1)
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):

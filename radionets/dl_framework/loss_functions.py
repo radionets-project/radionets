@@ -653,8 +653,8 @@ def yolo(x, y):
             target_box_packed = [
                 target_box[:, 0],
                 target_box[:, 1],
-                target_box[:, 2],
-                target_box[:, 3],
+                target_box[:, 2] * 2,   # target width is std of gauss -> too small
+                target_box[:, 3] * 2,   # target heigth is std of gauss -> too small
             ]
 
             target_obj = target[..., 4].reshape(-1)
@@ -663,7 +663,8 @@ def yolo(x, y):
             # print(f'y_box_packed: {target_box[target_obj.bool()][0].cpu().detach().numpy()}')
 
             ciou = bbox_iou(output_box_packed, target_box_packed, iou_type="ciou")
-            ciou = ciou[target_obj.bool()]  # no loss, if no object
+            # ciou = ciou[target_obj.bool()]  # no loss, if no object
+            ciou = ciou[torch.sigmoid(output[..., 4].reshape(-1)) > 0.5]
             loss_box += (1.0 - ciou).mean() * w_box / len(x)
             # print(f'loss box: {loss_box}')
 
