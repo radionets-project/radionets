@@ -82,6 +82,7 @@ def read_config(config):
     eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
     eval_conf["point"] = config["eval"]["evaluate_point"]
+    eval_conf["gan"] = config["eval"]["evaluate_gan"]
     return eval_conf
 
 
@@ -273,6 +274,8 @@ def get_images(test_ds, num_images, norm_path="none", rand=False):
         norm = pd.read_csv(norm_path)
     img_test = do_normalisation(img_test, norm)
     img_true = test_ds[indices][1]
+    if len(img_true.shape) == 3:
+        img_true = img_true.unsqueeze(0)
     return img_test, img_true
 
 
@@ -295,10 +298,10 @@ def eval_model(img, model, test=False):
     if len(img.shape) == (3):
         img = img.unsqueeze(0)
     model.eval()
-    if not test:
+    if torch.cuda.is_available():
         model.cuda()
     with torch.no_grad():
-        if not test:
+        if torch.cuda.is_available():
             pred = model(img.float().cuda())
         else:
             pred = model(img.float())

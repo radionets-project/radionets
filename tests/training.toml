@@ -7,6 +7,12 @@ quiet = true
 telegram_logger = false
 gpu = false
 
+[logging]
+comet_ml = false
+project_name = "pytorch"
+plot_n_epochs = 50
+scale = true
+
 [paths]
 data_path = "./tests/build/data/"
 model_path = "./tests/build/test_training/test_training.model"
@@ -17,7 +23,7 @@ norm_path = "none"
 fourier = true
 amp_phase = true
 source_list = false
-arch_name = "SRResNet_bigger_no_symmetry"
+arch_name = "SRResNet"
 loss_func = "splitted_L1"
 num_epochs = 2
 inspection = false
@@ -32,6 +38,7 @@ use = true
 lr_start = 1e-4
 lr_max = 3e-5
 lr_stop = 7e-6
+lr_ratio = 0.25
 #lr_start = 1e-3
 #lr_max = 7e-4
 #lr_stop = 1e-4

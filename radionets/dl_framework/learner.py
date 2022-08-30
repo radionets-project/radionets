@@ -7,6 +7,7 @@ from radionets.dl_framework.callbacks import (
     DataAug,
     AvgLossCallback,
     CudaCallback,
+    CometCallback,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -21,20 +22,13 @@ def get_learner(
 ):
     init_cnn(arch)
     dls = DataLoaders.from_dsets(
-        data.train_ds,
-        data.valid_ds,
-        bs=data.train_dl.batch_size,
+        data.train_ds, data.valid_ds, bs=data.train_dl.batch_size,
     )
     return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func, metrics=metrics)
 
 
 def define_learner(
-    data,
-    arch,
-    train_conf,
-    cbfs=[],
-    test=False,
-    lr_find=False,
+    data, arch, train_conf, cbfs=[], lr_find=False, plot_loss=False,
 ):
     model_path = train_conf["model_path"]
     model_name = (
@@ -44,14 +38,12 @@ def define_learner(
     opt_func = Adam
     if train_conf["norm_path"] != "none":
         cbfs.extend(
-            [
-                NormCallback(train_conf["norm_path"]),
-            ]
+            [NormCallback(train_conf["norm_path"])]
         )
     if train_conf["param_scheduling"]:
         sched = {
             "lr": combined_cos(
-                0.25,
+                train_conf["lr_ratio"],
                 train_conf["lr_start"],
                 train_conf["lr_max"],
                 train_conf["lr_stop"],
@@ -60,28 +52,30 @@ def define_learner(
         cbfs.extend([ParamScheduler(sched)])
     if train_conf["gpu"]:
         cbfs.extend(
-            [
-                CudaCallback,
-            ]
+            [CudaCallback]
         )
-    if not test:
+    if train_conf["comet_ml"] and not lr_find and not plot_loss:
         cbfs.extend(
             [
-                SaveTempCallback(model_path=model_path),
-                AvgLossCallback,
+                CometCallback(
+                    name=train_conf["project_name"],
+                    test_data=train_conf["data_path"],
+                    plot_n_epochs=train_conf["plot_n_epochs"],
+                    amp_phase=train_conf["amp_phase"],
+                    scale=train_conf["scale"],
+                ),
             ]
         )
-        if not train_conf["source_list"]:
-            cbfs.extend(
-                [
-                    DataAug,
-                ]
-            )
+    cbfs.extend(
+        [SaveTempCallback(model_path=model_path), AvgLossCallback]
+    )
+    if not train_conf["source_list"]:
+        cbfs.extend(
+            [DataAug]
+        )
     if train_conf["telegram_logger"] and not lr_find:
         cbfs.extend(
-            [
-                TelegramLoggerCallback(model_name=model_name),
-            ]
+            [TelegramLoggerCallback(model_name=model_name)]
         )
 
     # get loss func

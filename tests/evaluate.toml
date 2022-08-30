@@ -16,7 +16,7 @@ norm_path = "none"
 fourier = true
 amp_phase = true
 source_list = false
-arch_name = "SRResNet_bigger_no_symmetry"
+arch_name = "SRResNet"
 arch_name_2 = "none"
 output_format = "png"
 diff = true
@@ -24,7 +24,7 @@ diff = true
 [inspection]
 visualize_prediction = true
 visualize_source_reconstruction = true
-visualize_contour = false
+visualize_contour = true
 visualize_dynamic_range = false
 visualize_blobs = false
 visualize_ms_ssim = false
@@ -32,10 +32,11 @@ random = true
 num_images = 10
 
 [eval]
-batch_size = 100
-evaluate_viewing_angle = false
-evaluate_dynamic_range = false
+batch_size = 20
+evaluate_viewing_angle = true
+evaluate_dynamic_range = true
 evaluate_ms_ssim = false
-evaluate_mean_diff = false
-evaluate_area = false
+evaluate_mean_diff = true
+evaluate_area = true
 evaluate_point = false
+evaluate_gan = true

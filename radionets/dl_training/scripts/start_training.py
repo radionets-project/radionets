@@ -27,7 +27,7 @@ import torch
 @click.argument("configuration_path", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--mode",
-    type=click.Choice(["train", "lr_find", "plot_loss",], case_sensitive=False,),
+    type=click.Choice(["train", "lr_find", "plot_loss"], case_sensitive=False,),
     default="train",
 )
 def main(configuration_path, mode):
@@ -84,8 +84,14 @@ def main(configuration_path, mode):
             load_pre_model(learn, train_conf["pre_model"])
 
         # Train the model, except interrupt
+        # train_conf["comet_ml"] = True
         try:
-            learn.fit(train_conf["num_epochs"])
+            if train_conf["comet_ml"]:
+                learn.comet.experiment.log_parameters(train_conf)
+                with learn.comet.experiment.train():
+                    learn.fit(train_conf["num_epochs"])
+            else:
+                learn.fit(train_conf["num_epochs"])
         except KeyboardInterrupt:
             pop_interrupt(learn, train_conf)
 
@@ -120,10 +126,9 @@ def main(configuration_path, mode):
         click.echo("Start plotting loss.\n")
 
         # define_learner
-        learn = define_learner(data, arch, train_conf,)
+        learn = define_learner(data, arch, train_conf, plot_loss=True,)
         # load pretrained model
         if Path(train_conf["model_path"]).exists:
-            learn.create_opt()
             load_pre_model(learn, train_conf["model_path"], plot_loss=True)
         else:
             click.echo("Selected model does not exist.")

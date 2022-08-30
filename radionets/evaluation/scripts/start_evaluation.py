@@ -12,6 +12,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_area,
     evaluate_point,
     create_predictions,
+    evaluate_gan_sources,
 )
 
 
@@ -100,3 +101,7 @@ def main(configuration_path):
     if eval_conf["point"]:
         click.echo("\nStart evaluation of point sources.\n")
         evaluate_point(eval_conf)
+
+    if eval_conf["gan"]:
+        click.echo("\nStart evaluation of GAN sources.\n")
+        evaluate_gan_sources(eval_conf)
