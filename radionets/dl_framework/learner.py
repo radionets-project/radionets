@@ -14,11 +14,11 @@ from fastai.learner import Learner
 from fastai.data.core import DataLoaders
 from fastai.callback.schedule import ParamScheduler, combined_cos
 import radionets.dl_framework.loss_functions as loss_functions
-import radionets.dl_framework.loss_functions as metrics
+import radionets.dl_framework.metrics as metrics
 
 
 def get_learner(
-    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=Adam, metrics=nn.L1Loss, **kwargs
+    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=Adam, metrics=None, **kwargs
 ):
     init_cnn(arch)
     dls = DataLoaders.from_dsets(

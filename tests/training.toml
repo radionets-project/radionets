@@ -25,6 +25,7 @@ amp_phase = true
 source_list = false
 arch_name = "SRResNet"
 loss_func = "splitted_L1"
+metric = "none"
 num_epochs = 2
 inspection = false
 output_format = "pdf"

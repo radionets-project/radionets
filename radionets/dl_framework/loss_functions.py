@@ -631,7 +631,6 @@ def yolo(x, y):
         for i in range(output.shape[0]):
             for j in range(y.shape[1]):
                 if y[i, j, 0] > 0:  # only assign when amplitude is larger 0
-                    # print(y2_idx[i, j, 0])
                     try:
                         target[i, target_idx[i, j, 1], target_idx[i, j, 0], 4] = 1
                         target[i, target_idx[i, j, 1], target_idx[i, j, 0], 0:4] = y[
@@ -642,14 +641,14 @@ def yolo(x, y):
 
         if w_box:
             output = decode_yolo_box(output, strides_head[i_layer])
-            output_box = output[..., 0:4].reshape(-1, 4)
+            output_box = output[..., :4].reshape(-1, 4)
             output_box_packed = [
                 output_box[:, 0],
                 output_box[:, 1],
                 output_box[:, 2],
                 output_box[:, 3],
             ]
-            target_box = target[..., 0:4].reshape(-1, 4)
+            target_box = target[..., :4].reshape(-1, 4)
             target_box_packed = [
                 target_box[:, 0],
                 target_box[:, 1],
@@ -657,12 +656,10 @@ def yolo(x, y):
                 target_box[:, 3] * 2,   # target heigth is std of gauss -> too small
             ]
 
-            target_obj = target[..., 4].reshape(-1)
-
-            # print(f'x_box_packed: {output_box[target_obj.bool()][0].cpu().detach().numpy()}')
-            # print(f'y_box_packed: {target_box[target_obj.bool()][0].cpu().detach().numpy()}')
 
             ciou = bbox_iou(output_box_packed, target_box_packed, iou_type="ciou")
+
+            target_obj = target[..., 4].reshape(-1)
             # ciou = ciou[target_obj.bool()]  # no loss, if no object
             ciou = ciou[torch.sigmoid(output[..., 4].reshape(-1)) > 0.5]
             loss_box += (1.0 - ciou).mean() * w_box / len(x)
