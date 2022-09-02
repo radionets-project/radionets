@@ -409,8 +409,6 @@ def even_better_symmetry(x):
     upper_half[:, :, :, 0 : upper_half.shape[3] // 2] = b
     upper_half[:, :, :, upper_half.shape[3] // 2 :] = a
 
-    # a = torch.zeros((x.shape))
-    # a[:, :, 0 : x.shape[2] // 2, :] = x[:, :, 0 : x.shape[2] // 2, :]
     x[:, 0, x.shape[2] // 2 :, :] = upper_half[:, 0]
     x[:, 1, x.shape[2] // 2 :, :] = -upper_half[:, 1]
     return x
