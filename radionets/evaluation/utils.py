@@ -419,7 +419,7 @@ def calc_velocity(pos, times, mas):
     return v
 
 
-def non_max_suppression(pred, obj_thres=0.25, max_nms=30000, iou_thres=0.45, max_det=30):
+def non_max_suppression(pred, obj_thres=0.25, max_nms=3000, iou_thres=0.45, max_det=30):
     """Non max suppression for one batch
 
     Parameters
@@ -434,6 +434,11 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=30000, iou_thres=0.45, max
         nms parameter: discards all overlapping boxes with IoU > iou_thres
     max_det: int
         number of boxes to return
+
+    Returns
+    -------
+    output: ndarray
+        same as input 'pred', but reduces number of boxes after nms
     """
     pred_candidates = pred[..., 4] > obj_thres  # candidates
     output = [torch.zeros((0, 5), device=pred.device)] * pred.shape[0]

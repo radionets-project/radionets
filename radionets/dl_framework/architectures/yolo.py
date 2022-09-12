@@ -17,24 +17,25 @@ class YOLOv6(nn.Module):
         self.anchors = 1
         # self.num_repeats = [1, 6, 12, 18, 6, 12, 12, 12, 12]
         self.num_repeats = [1, 2, 4, 6, 2, 4, 4, 4, 4]
+        # self.num_repeats = [1, 1, 1, 1, 1, 1, 1, 1, 1]
         self.strides_head = torch.tensor([8, 16, 32])
 
         """ backbone """
-        self.bb_1 = RepVGGBlock(1, self.channels, kernel_size=3, stride=2)
+        self.bb_1 = RepVGGBlock(1, self.channels, ks=3, stride=2)
         self.bb_2 = nn.Sequential(
-            RepVGGBlock(self.channels, self.channels * 2, kernel_size=3, stride=2),
+            RepVGGBlock(self.channels, self.channels * 2, ks=3, stride=2),
             RepBlock(self.channels * 2, self.channels * 2, n=self.num_repeats[1]),
         )
         self.bb_3 = nn.Sequential(
-            RepVGGBlock(self.channels * 2, self.channels * 4, kernel_size=3, stride=2),
+            RepVGGBlock(self.channels * 2, self.channels * 4, ks=3, stride=2),
             RepBlock(self.channels * 4, self.channels * 4, n=self.num_repeats[2]),
         )
         self.bb_4 = nn.Sequential(
-            RepVGGBlock(self.channels * 4, self.channels * 8, kernel_size=3, stride=2),
+            RepVGGBlock(self.channels * 4, self.channels * 8, ks=3, stride=2),
             RepBlock(self.channels * 8, self.channels * 8, n=self.num_repeats[3]),
         )
         self.bb_5 = nn.Sequential(
-            RepVGGBlock(self.channels * 8, self.channels * 16, kernel_size=3, stride=2),
+            RepVGGBlock(self.channels * 8, self.channels * 16, ks=3, stride=2),
             RepBlock(self.channels * 16, self.channels * 16, n=self.num_repeats[4]),
             SimSPPF(self.channels * 16, self.channels * 16),
         )
@@ -54,40 +55,58 @@ class YOLOv6(nn.Module):
         )
 
         self.neck_reduce_layer0 = nn.Sequential(
-            *conv(self.channels * 16, self.channels * 4, 1)
+            *conv(self.channels * 16, self.channels * 4, 1, activation=nn.ReLU())
         )
         self.neck_upsample0 = nn.Sequential(
             *deconv(self.channels * 4, self.channels * 4, 2, 2, 0, 0)
         )
         self.neck_reduce_layer1 = nn.Sequential(
-            *conv(self.channels * 4, self.channels * 2, 1)
+            *conv(self.channels * 4, self.channels * 2, 1, activation=nn.ReLU())
         )
         self.neck_upsample1 = nn.Sequential(
             *deconv(self.channels * 2, self.channels * 2, 2, 2, 0, 0)
         )
         self.neck_downsample2 = nn.Sequential(
-            *conv(self.channels * 2, self.channels * 2, 3, 2, 1)
+            *conv(self.channels * 2, self.channels * 2, 3, 2, 1, activation=nn.ReLU())
         )
         self.neck_downsample1 = nn.Sequential(
-            *conv(self.channels * 4, self.channels * 4, 3, 2, 1)
+            *conv(self.channels * 4, self.channels * 4, 3, 2, 1, activation=nn.ReLU())
         )
 
         """ head """
         self.head_stems = nn.Sequential(
             # stem0
-            nn.Sequential(*conv(self.channels * 2, self.channels * 2, 1, 1)),
+            nn.Sequential(
+                *conv(self.channels * 2, self.channels * 2, 1, 1, activation=nn.SiLU())
+            ),
             # stem1
-            nn.Sequential(*conv(self.channels * 4, self.channels * 4, 1, 1)),
+            nn.Sequential(
+                *conv(self.channels * 4, self.channels * 4, 1, 1, activation=nn.SiLU())
+            ),
             # stem2
-            nn.Sequential(*conv(self.channels * 8, self.channels * 8, 1, 1)),
+            nn.Sequential(
+                *conv(self.channels * 8, self.channels * 8, 1, 1, activation=nn.SiLU())
+            ),
         )
         self.head_reg_convs = nn.Sequential(
             # reg_conv0
-            nn.Sequential(*conv(self.channels * 2, self.channels * 2, 3, 1, 1)),
+            nn.Sequential(
+                *conv(
+                    self.channels * 2, self.channels * 2, 3, 1, 1, activation=nn.SiLU()
+                )
+            ),
             # reg_conv1
-            nn.Sequential(*conv(self.channels * 4, self.channels * 4, 3, 1, 1)),
+            nn.Sequential(
+                *conv(
+                    self.channels * 4, self.channels * 4, 3, 1, 1, activation=nn.SiLU()
+                )
+            ),
             # reg_conv2
-            nn.Sequential(*conv(self.channels * 8, self.channels * 8, 3, 1, 1)),
+            nn.Sequential(
+                *conv(
+                    self.channels * 8, self.channels * 8, 3, 1, 1, activation=nn.SiLU()
+                )
+            ),
         )
         self.head_reg_preds = nn.Sequential(
             # reg_pred0
@@ -107,7 +126,7 @@ class YOLOv6(nn.Module):
         )
 
     def forward(self, x):
-        """ backbone """
+        """backbone"""
         x = self.bb_1(x)
         x = self.bb_2(x)
         x2 = self.bb_3(x)

@@ -156,19 +156,35 @@ def conv_layer(ni, nf, ks=3, stride=2, bn=True, **kwargs):
     return nn.Sequential(*layers)
 
 
-def conv_bn(in_channels, out_channels, kernel_size, stride=1, padding=0, groups=1):
+def conv_bn(ni, nc, ks, stride=1, padding=0, groups=1):
     result = nn.Sequential()
-    result.add_module('conv', nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
-                                                  kernel_size=kernel_size, stride=stride, padding=padding, groups=groups, bias=False))
-    result.add_module('bn', nn.BatchNorm2d(num_features=out_channels))
+    result.add_module(
+        "conv",
+        nn.Conv2d(
+            ni, nc, ks, stride=stride, padding=padding, groups=groups, bias=False
+        ),
+    )
+    result.add_module("bn", nn.BatchNorm2d(nc))
     return result
 
 
-def conv(ni, nc, ks, stride=1, padding=0, dilation=1, groups=1):
-    conv = (nn.Conv2d(ni, nc, ks, stride=stride, padding=padding, dilation=dilation, groups=groups),)
+def conv(
+    ni,
+    nc,
+    ks,
+    stride=1,
+    padding=0,
+    dilation=1,
+    groups=1,
+    activation=GeneralRelu(leak=0.1, sub=0.4),
+):
+    conv = (
+        nn.Conv2d(
+            ni, nc, ks, stride=stride, padding=padding, dilation=dilation, groups=groups
+        ),
+    )
     bn = (nn.BatchNorm2d(nc),)
-    act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
-    layers = [*conv, *bn, act]
+    layers = [*conv, *bn, activation]
     return layers
 
 
@@ -322,7 +338,7 @@ class LocallyConnected2d(nn.Module):
                 in_channels,
                 output_size[0],
                 output_size[1],
-                kernel_size ** 2,
+                kernel_size**2,
             )
         )
         if bias:
@@ -416,7 +432,11 @@ class RepBlock(nn.Module):
     def __init__(self, ni, nc, n=1):
         super().__init__()
         self.conv = RepVGGBlock(ni, nc)
-        self.block = nn.Sequential(*(RepVGGBlock(nc, nc) for _ in range(n - 1))) if n > 1 else None
+        self.block = (
+            nn.Sequential(*(RepVGGBlock(nc, nc) for _ in range(n - 1)))
+            if n > 1
+            else None
+        )
 
     def forward(self, x):
         x = self.conv(x)
@@ -426,53 +446,46 @@ class RepBlock(nn.Module):
 
 
 class RepVGGBlock(nn.Module):
-    '''
+    """
     RepVGGBlock is a basic rep-style block, including training and deploy status
     This code is based on https://github.com/DingXiaoH/RepVGG/blob/main/repvgg.py
-    '''
-    def __init__(self, ni, nc, kernel_size=3, stride=1, padding=1):
+    """
+
+    def __init__(self, ni, nc, ks=3, stride=1, padding=1):
         super(RepVGGBlock, self).__init__()
         self.ni = ni
         self.nc = nc
 
-        padding_11 = padding - kernel_size // 2
+        padding_11 = padding - ks // 2
 
         self.nonlinearity = nn.ReLU()
 
         self.rbr_identity = nn.BatchNorm2d(ni) if ni == nc and stride == 1 else None
-        self.rbr_dense = conv_bn(ni, nc, kernel_size=kernel_size, stride=stride, padding=padding)
-        self.rbr_1x1 = conv_bn(ni, nc, kernel_size=1, stride=stride, padding=padding_11)
+        self.rbr_dense = conv_bn(ni, nc, ks=ks, stride=stride, padding=padding)
+        self.rbr_1x1 = conv_bn(ni, nc, ks=1, stride=stride, padding=padding_11)
 
     def forward(self, inputs):
         if self.rbr_identity is None:
             id_out = 0
         else:
             id_out = self.rbr_identity(inputs)
-        #     print(f'id_out: {id_out.shape}')
-        # print(f'rbr_dense: {self.rbr_dense(inputs).shape}')
-        # print(f'rbr_1x1: {self.rbr_1x1(inputs).shape}')
-
         return self.nonlinearity(self.rbr_dense(inputs) + self.rbr_1x1(inputs) + id_out)
 
 
 class SimSPPF(nn.Module):
-    '''Simplified SPPF with ReLU activation'''
+    """Simplified SPPF with ReLU activation"""
+
     def __init__(self, ni, nc, kernel_size=5):
         super().__init__()
         c_ = ni // 2  # hidden channels
-        self.cv1 = nn.Sequential(*conv(ni, c_, 1, 1))
-        self.cv2 = nn.Sequential(*conv(c_ * 4, nc, 1, 1))
-        self.m = nn.MaxPool2d(kernel_size=kernel_size, stride=1, padding=kernel_size // 2)
+        self.cv1 = nn.Sequential(*conv(ni, c_, 1, 1, activation=nn.ReLU()))
+        self.cv2 = nn.Sequential(*conv(c_ * 4, nc, 1, 1, activation=nn.ReLU()))
+        self.m = nn.MaxPool2d(
+            kernel_size=kernel_size, stride=1, padding=kernel_size // 2
+        )
 
     def forward(self, x):
-        # print(f'Shape in SimSPPF {x.shape}')
         x = self.cv1(x)
-        # print(f'Shape in SimSPPF {x.shape}')
-        # with warnings.catch_warnings():
-        #     warnings.simplefilter('ignore')
         y1 = self.m(x)
-        # print(f'Shape in SimSPPF {y1.shape}')
         y2 = self.m(y1)
-        # print(f'Shape in SimSPPF {y2.shape}')
-        # print(f'Shape in SimSPPF {torch.cat([x, y1, y2, self.m(y2)], 1).shape}')
         return self.cv2(torch.cat([x, y1, y2, self.m(y2)], 1))
