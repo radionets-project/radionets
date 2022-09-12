@@ -23,34 +23,36 @@ OrBu = create_OrBu()
 
 
 class CometCallback(Callback):
-    def __init__(self, name, test_data, plot_n_epochs, amp_phase, scale):
+    def __init__(self, name, test_data, source_list, plot_n_epochs, amp_phase, scale):
         from comet_ml import Experiment
 
         self.experiment = Experiment(project_name=name)
         self.data_path = test_data
-        self.plot_epoch = plot_n_epochs
         self.test_ds = load_data(
             self.data_path,
             mode="test",
             fourier=True,
-            source_list=False,
+            source_list=source_list,
         )
+        self.source_list = source_list
+        self.plot_epoch = plot_n_epochs
         self.amp_phase = amp_phase
         self.scale = scale
 
-    def after_train(self):
-        self.experiment.log_metric(
-            "Train Loss",
-            self.recorder._train_mets.map(_maybe_item),
-            epoch=self.epoch + 1,
-        )
+    def after_epoch(self):
+        # log metrics
+        for n, v in zip(self.learn.recorder.metric_names, self.learn.recorder.log):
+            if n not in ["epoch", "time"]:
+                self.experiment.log_metric(f"epoch__{n}", v, epoch=self.epoch + 1)
+            if n == "time":
+                self.experiment.log_text(f"epoch__{n}", str(v), epoch=self.epoch + 1)
 
-    def after_validate(self):
-        self.experiment.log_metric(
-            "Validation Loss",
-            self.recorder._valid_mets.map(_maybe_item),
-            epoch=self.epoch + 1,
-        )
+        if self.source_list:
+            pass  # no plots implemented yet
+        else:
+            if (self.epoch + 1) % self.plot_epoch == 0:
+                self.plot_test_pred()
+                self.plot_test_fft()
 
     def plot_test_pred(self):
         img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
@@ -107,11 +109,6 @@ class CometCallback(Callback):
             figure=fig, figure_name=f"{self.epoch + 1}_fft_epoch"
         )
         plt.close("all")
-
-    def after_epoch(self):
-        if (self.epoch + 1) % self.plot_epoch == 0:
-            self.plot_test_pred()
-            self.plot_test_fft()
 
 
 class TelegramLoggerCallback(Callback):
