@@ -473,12 +473,15 @@ def yolo_out_transform(output, strides):
     """ Transforms output of yolo network to list of predictions
     """
     pred_list = []
+    objectness = []
     for i, out in enumerate(output):
         out[..., 0:4] = decode_yolo_box(out[..., 0:4], torch.tensor(strides[i]))
         out[..., 4] = torch.sigmoid(out[..., 4])
+        objectness.append(out[..., 4])
+
         out = out.reshape(out.shape[0], -1, 5)
         pred_list.append(out)
-    return torch.cat(pred_list, 1)
+    return torch.cat(pred_list, 1), objectness
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):

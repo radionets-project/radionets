@@ -258,7 +258,7 @@ def f(x, mu):
 
 
 def g(x, mu, sig):
-    return (sig ** 2 - (x - mu) ** 2) ** 2
+    return (sig**2 - (x - mu) ** 2) ** 2
 
 
 def new_like(x, y):
@@ -556,10 +556,10 @@ def jet_list(x, y):
             break
     y_param = y_param[:, 0:i_row, 0:i_col]
 
-    assert (
-        y_param.shape[2] == 8
-    ), "Number of parameters for the components has changed. Check simulations and/or \
-        indexing in loss function!"
+    assert y_param.shape[2] == 8, (
+        "Number of parameters for the components has changed. Check simulations and/or "
+        "        indexing in loss function!"
+    )
 
     y_box_list = y_param[..., 1:5] / 256
 
@@ -615,7 +615,7 @@ def yolo(x, y):
     x list of (3) output layers of shape (bs, n_anchors, ny, nx, 5)
     """
     w_box = 1
-    w_obj = 3
+    w_obj = 5
     strides_head = torch.tensor([8, 16, 32])  # how much the image got reduced
 
     loss_box = 0
@@ -652,16 +652,15 @@ def yolo(x, y):
             target_box_packed = [
                 target_box[:, 0],
                 target_box[:, 1],
-                target_box[:, 2] * 2,   # target width is std of gauss -> too small
-                target_box[:, 3] * 2,   # target heigth is std of gauss -> too small
+                target_box[:, 2] * 2,  # target width is std of gauss -> too small
+                target_box[:, 3] * 2,  # target heigth is std of gauss -> too small
             ]
-
 
             ciou = bbox_iou(output_box_packed, target_box_packed, iou_type="ciou")
 
             target_obj = target[..., 4].reshape(-1)
-            # ciou = ciou[target_obj.bool()]  # no loss, if no object
-            ciou = ciou[torch.sigmoid(output[..., 4].reshape(-1)) > 0.5]
+            ciou = ciou[target_obj.bool()]  # no loss, if no object
+            # ciou = ciou[torch.sigmoid(output[..., 4].reshape(-1)) > 0.5]
             loss_box += (1.0 - ciou).mean() * w_box / len(x)
             # print(f'loss box: {loss_box}')
 
@@ -675,14 +674,16 @@ def yolo(x, y):
                 ~target_obj.bool()
             ] * torch.mean(target_obj)
 
-            scale_pos_weight = torch.sqrt((target_obj == 0).sum() / (target_obj == 1).sum())
-            bcewithlog_loss = nn.BCEWithLogitsLoss(pos_weight=scale_pos_weight)
+            # bcewithlog_loss = nn.BCEWithLogitsLoss(
+            #     pos_weight=torch.sqrt((target_obj == 0).sum() / (target_obj == 1).sum())
+            # )
+            bcewithlog_loss = nn.BCEWithLogitsLoss()
             loss_obj_bce = bcewithlog_loss(output_obj, target_obj) * w_obj / len(x)
             # loss_obj_l1 = torch.mean(torch.abs(x_obj - y_obj) * w_class_obj) * w_obj # weighted l1 loss
             loss_obj += loss_obj_bce  # + loss_obj_l1
             # print(f'loss obj: {loss_obj}')
 
-    # # print(f'loss box: {loss_box:.4f}, obj: {loss_obj:.4f}')
+    # print(f'loss box: {loss_box:.4f}, obj: {loss_obj:.4f}')
 
     loss = loss_box + loss_obj
     if torch.isnan(loss):
