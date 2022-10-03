@@ -474,9 +474,7 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     plt.close("all")
 
 
-def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
-    dif = (alpha_pred - alpha_truth).numpy()
-
+def histogram_jet_angles(dif, out_path, plot_format="png"):
     mean = np.mean(dif)
     std = np.std(dif, ddof=1)
 
