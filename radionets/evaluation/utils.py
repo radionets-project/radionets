@@ -81,6 +81,7 @@ def read_config(config):
     eval_conf["point"] = config["eval"]["evaluate_point"]
     eval_conf["predict_grad"] = config["eval"]["predict_grad"]
     eval_conf["gan"] = config["eval"]["evaluate_gan"]
+    eval_conf["save_vals"] = config["eval"]["save_vals"]
     return eval_conf
 
 
