@@ -109,7 +109,7 @@ class TestEvaluation:
 
         assert isinstance(val, np.float64)
         assert ~np.isnan(val).any()
-        assert val > 0
+        assert val >= 0
 
     def test_im_to_array_value(self):
         from radionets.evaluation.utils import read_pred
