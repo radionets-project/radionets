@@ -340,6 +340,7 @@ class TestEvaluation:
         runner = CliRunner()
         result = runner.invoke(main, "tests/evaluate.toml")
         print(result.exception)
+        print(result.exc_info)
         assert result.exit_code == 0
 
         if os.path.exists("tests/model/evaluation"):

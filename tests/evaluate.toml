@@ -33,7 +33,7 @@ num_images = 10
 [eval]
 batch_size = 20
 evaluate_viewing_angle = true
-evaluate_dynamic_range = false
+evaluate_dynamic_range = true
 evaluate_ms_ssim = false
 evaluate_mean_diff = true
 evaluate_area = true
