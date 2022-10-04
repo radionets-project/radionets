@@ -319,12 +319,12 @@ class TestEvaluation:
 
         below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
         above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
-        assert below_zero > 0
-        assert below_zero < 100
+        assert below_zero >= 0
+        assert below_zero <= 100
         assert ~np.isnan(below_zero)
         assert below_zero.dtype == "float64"
-        assert above_zero > 0
-        assert above_zero < 100
+        assert above_zero >= 0
+        assert above_zero <= 100
         assert ~np.isnan(above_zero)
         assert above_zero.dtype == "float64"
         assert np.isclose(below_zero + above_zero, 100)
