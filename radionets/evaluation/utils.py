@@ -137,16 +137,10 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
             orientation="vertical",
             ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
         )
-        cbar.set_label("Specific Intensity / a.u.")
+        cbar.set_label("Phase / rad")
     elif unc:
-        cbar = fig.colorbar(
-            im,
-            cax=cax,
-            label="Rel. uncertainty / a.u.",
-            ticks=[im.get_array().min() + 0.001, im.get_array().max()],
-        )
-        cbar.ax.set_yticklabels(["Low", "High"])
-        cbar.ax.tick_params(size=0)
+        cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar.set_label(r"$\sigma^2$ / a.u.")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
         cbar.set_label("Specific Intensity / a.u.")
