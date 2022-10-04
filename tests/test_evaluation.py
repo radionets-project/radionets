@@ -308,8 +308,8 @@ class TestEvaluation:
         assert zero.shape == (1, 64, 64)
 
         num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
-        assert num_zero > 0
-        assert num_zero < 100
+        assert num_zero >= 0
+        assert num_zero <= 100
         assert ~np.isnan(num_zero)
         assert num_zero.dtype == "float64"
 
@@ -339,8 +339,6 @@ class TestEvaluation:
 
         runner = CliRunner()
         result = runner.invoke(main, "tests/evaluate.toml")
-        print(result.exception)
-        print(result.exc_info)
         assert result.exit_code == 0
 
         if os.path.exists("tests/model/evaluation"):
