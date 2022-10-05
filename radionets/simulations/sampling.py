@@ -28,6 +28,7 @@ def sample_frequencies(
     lat=None,
     steps=None,
     multi_channel=False,
+    bandwidths=4,
     source_type="point_sources",
 ):
     for mode in ["train", "valid", "test"]:
@@ -64,6 +65,7 @@ def sample_frequencies(
                     plot=False,
                     test=False,
                     multi_channel=multi_channel,
+                    bandwidths=bandwiths,
                 )
             else:
                 fft_samp = sample_freqs(
@@ -73,6 +75,7 @@ def sample_frequencies(
                     size=size,
                     specific_mask=False,
                     multi_channel=multi_channel,
+                    bandwidths=bandwidths,
                 )
 
             if interpolation:

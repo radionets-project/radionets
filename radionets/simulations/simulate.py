@@ -47,7 +47,6 @@ def create_fft_images(sim_conf):
                 path=sim_conf["data_path"],
                 option=opt,
                 extended=sim_conf["add_extended"],
-                steps=sim_conf["steps"],
             )
 
 
@@ -69,6 +68,7 @@ def sample_fft_images(sim_conf):
         compressed=sim_conf["compressed"],
         interpolation=sim_conf["interpolation"],
         multi_channel=sim_conf["multi_channel"],
+        bandwidths=sim_conf["bandwiths"],
         source_type=sim_conf["type"],
     )
     if sim_conf["keep_fft_files"] is not True:
