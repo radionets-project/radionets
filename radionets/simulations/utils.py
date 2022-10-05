@@ -134,6 +134,7 @@ def read_config(config):
     sim_conf["keep_fft_files"] = config["sampling_options"]["keep_fft_files"]
     sim_conf["interpolation"] = config["sampling_options"]["interpolation"]
     sim_conf["multi_channel"] = config["sampling_options"]["multi_channel"]
+    sim_conf["bandwiths"] = config["sampling_options"]["bandwiths"]
     return sim_conf
 
 
