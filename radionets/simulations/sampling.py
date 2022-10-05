@@ -69,6 +69,7 @@ def sample_frequencies(
                 fft_samp = sample_freqs(
                     fft_scaled.copy(),
                     antenna_config,
+                    num_steps=steps,
                     size=size,
                     specific_mask=False,
                     multi_channel=multi_channel,
