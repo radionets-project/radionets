@@ -47,6 +47,7 @@ def create_fft_images(sim_conf):
                 path=sim_conf["data_path"],
                 option=opt,
                 extended=sim_conf["add_extended"],
+                steps=sim_conf["steps"],
             )
 
 
