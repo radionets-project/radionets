@@ -268,7 +268,7 @@ class Antenna:
         return u, v, steps
 
 
-def get_uv_coverage(source, antenna, multi_channel=False, bandwiths=4, iterate=False):
+def get_uv_coverage(source, antenna, multi_channel=False, bandwidths=4, iterate=False):
     """
     Converts source position and antenna positions into an (u, v)-coverage.
 
@@ -294,9 +294,9 @@ def get_uv_coverage(source, antenna, multi_channel=False, bandwiths=4, iterate=F
     u, v, steps = antenna.get_uv()
 
     if multi_channel:
-        u = np.repeat(u[None], bandwiths, axis=0)
-        v = np.repeat(v[None], bandwiths, axis=0)
-        scales = np.arange(4, dtype=float)
+        u = np.repeat(u[None], bandwidths, axis=0)
+        v = np.repeat(v[None], bandwidths, axis=0)
+        scales = np.arange(bandwidths, dtype=float)
         scales *= 0.02
         scales += 1
         u *= scales[:, None]
@@ -360,6 +360,7 @@ def sample_freqs(
     test=False,
     specific_mask=True,
     multi_channel=False,
+    bandwidths=4,
 ):
     """
     Sample specific frequencies in 2d Fourier space. Using antenna and source class to
@@ -393,7 +394,7 @@ def sample_freqs(
     def get_mask(lon, lat, num_steps, ant, size):
         s = Source(lon, lat)
         s.propagate(num_steps=num_steps, multi_pointing=False)
-        u, v, _ = get_uv_coverage(s, ant, multi_channel=multi_channel, iterate=False)
+        u, v, _ = get_uv_coverage(s, ant, multi_channel=multi_channel, iterate=False, bandwidths=bandwidths)
         single_mask = create_mask(u, v, size)
         return single_mask
 
@@ -409,7 +410,7 @@ def sample_freqs(
             s = Source(lon, lat)
             s.propagate(num_steps=num_steps, multi_pointing=False)
             u, v, _ = get_uv_coverage(
-                s, ant, multi_channel=multi_channel, iterate=False
+                s, ant, multi_channel=multi_channel, iterate=False, bandwidths=bandwidths,
             )
             single_mask = create_mask(u, v, size)
             mask = np.repeat(
