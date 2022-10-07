@@ -6,6 +6,7 @@ from radionets.dl_framework.callbacks import (
     TelegramLoggerCallback,
     DataAug,
     AvgLossCallback,
+    SwitchLoss,
     CudaCallback,
     CometCallback,
 )
@@ -27,8 +28,9 @@ def get_learner(
 
 
 def define_learner(
-    data, arch, train_conf, cbfs=[], lr_find=False, plot_loss=False,
+    data, arch, train_conf, lr_find=False, plot_loss=False,
 ):
+    cbfs = []
     model_path = train_conf["model_path"]
     model_name = (
         model_path.split("build/")[-1].split("/")[-1].split("/")[0].split(".")[0]
@@ -36,9 +38,8 @@ def define_learner(
     lr = train_conf["lr"]
     opt_func = Adam
     if train_conf["norm_path"] != "none":
-        cbfs.extend(
-            [NormCallback(train_conf["norm_path"])]
-        )
+        cbfs.extend([NormCallback(train_conf["norm_path"])])
+
     if train_conf["param_scheduling"]:
         sched = {
             "lr": combined_cos(
@@ -49,10 +50,32 @@ def define_learner(
             )
         }
         cbfs.extend([ParamScheduler(sched)])
+
     if train_conf["gpu"]:
+        cbfs.extend([CudaCallback])
+
+    cbfs.extend(
+        [
+            SaveTempCallback(model_path=model_path),
+            AvgLossCallback,
+            DataAug,
+        ]
+    )
+
+    # use switch loss
+    if train_conf["switch_loss"]:
         cbfs.extend(
-            [CudaCallback]
+            [
+                SwitchLoss(
+                    second_loss=getattr(loss_functions, "comb_likelihood"),
+                    when_switch=train_conf["when_switch"],
+                ),
+            ]
         )
+
+    if train_conf["telegram_logger"] and not lr_find:
+        cbfs.extend([TelegramLoggerCallback(model_name=model_name)])
+
     if train_conf["comet_ml"] and not lr_find and not plot_loss:
         cbfs.extend(
             [
@@ -64,13 +87,6 @@ def define_learner(
                     scale=train_conf["scale"],
                 ),
             ]
-        )
-    cbfs.extend(
-        [SaveTempCallback(model_path=model_path), AvgLossCallback, DataAug]
-    )
-    if train_conf["telegram_logger"] and not lr_find:
-        cbfs.extend(
-            [TelegramLoggerCallback(model_name=model_name)]
         )
 
     # get loss func

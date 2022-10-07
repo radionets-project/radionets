@@ -109,7 +109,7 @@ class TestEvaluation:
 
         assert isinstance(val, np.float64)
         assert ~np.isnan(val).any()
-        assert val > 0
+        assert val >= 0
 
     def test_im_to_array_value(self):
         from radionets.evaluation.utils import read_pred
@@ -308,8 +308,8 @@ class TestEvaluation:
         assert zero.shape == (1, 64, 64)
 
         num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
-        assert num_zero > 0
-        assert num_zero < 100
+        assert num_zero >= 0
+        assert num_zero <= 100
         assert ~np.isnan(num_zero)
         assert num_zero.dtype == "float64"
 
@@ -319,12 +319,12 @@ class TestEvaluation:
 
         below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
         above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
-        assert below_zero > 0
-        assert below_zero < 100
+        assert below_zero >= 0
+        assert below_zero <= 100
         assert ~np.isnan(below_zero)
         assert below_zero.dtype == "float64"
-        assert above_zero > 0
-        assert above_zero < 100
+        assert above_zero >= 0
+        assert above_zero <= 100
         assert ~np.isnan(above_zero)
         assert above_zero.dtype == "float64"
         assert np.isclose(below_zero + above_zero, 100)

@@ -166,7 +166,34 @@ def splitted_L1_unc(x, y):
     l1 = nn.L1Loss()
     loss_amp = l1(pred_amp, tar_amp)
     loss_phase = l1(pred_phase, tar_phase)
-    return loss_amp + loss_phase * 10
+    return loss_amp + loss_phase
+
+
+def L1_icecube(x, y):
+    # get components for computation
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+
+    unc_amp = x[:, 1, :]
+    unc_phase = x[:, 3, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    # compute L1 Loss on amplitude and phase
+    l1 = nn.L1Loss()
+    loss_amp = l1(pred_amp, tar_amp)
+    loss_phase = l1(pred_phase, tar_phase)
+
+    # compute additional uncertainty loss from IceCube
+    unc = (unc_amp - (tar_amp - pred_amp).detach()) ** 2 + (
+        unc_phase - (tar_phase - pred_phase).detach()
+    ) ** 2
+
+    # add up all loss parts
+    loss = loss_amp + loss_phase + unc.mean()
+
+    return loss
 
 
 def splitted_SmoothL1_unc(x, y):
@@ -180,6 +207,64 @@ def splitted_SmoothL1_unc(x, y):
     loss_amp = l1(pred_amp, tar_amp)
     loss_phase = l1(pred_phase, tar_phase)
     return loss_amp + loss_phase * 10
+
+
+def MSE_icecube(x, y):
+    # get components for computation
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+
+    unc_amp = x[:, 1, :]
+    unc_phase = x[:, 3, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    # compute MSE Loss on amplitude and phase
+    MSE = nn.MSELoss()
+    loss_amp = MSE(pred_amp, tar_amp)
+    loss_phase = MSE(pred_phase, tar_phase)
+
+    # compute additional uncertainty loss from IceCube
+    unc = (unc_amp - (tar_amp - pred_amp).detach()) ** 2 + (
+        unc_phase - (tar_phase - pred_phase).detach()
+    ) ** 2
+
+    # add up all loss parts
+    loss = loss_amp + loss_phase + unc.mean()
+
+    return loss
+
+
+def beta_nll_loss(x, y, beta=0.5):
+    """Compute beta-NLL loss
+
+    :param mean: Predicted mean of shape B x D
+    :param variance: Predicted variance of shape B x D
+    :param target: Target of shape B x D
+    :param beta: Parameter from range [0, 1] controlling relative
+    weighting between data points, where "0" corresponds to
+    high weight on low error points and "1" to an equal weighting.
+    :returns: Loss per batch element of shape B
+    """
+    pred_amp = x[:, 0, :]
+    pred_phase = x[:, 2, :]
+    mean = torch.stack([pred_amp, pred_phase], axis=1)
+
+    unc_amp = x[:, 1, :]
+    unc_phase = x[:, 3, :]
+    variance = torch.stack([unc_amp, unc_phase], axis=1)
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+    target = torch.stack([tar_amp, tar_phase], axis=1)
+
+    loss = 0.5 * ((target - mean) ** 2 / variance + variance.log())
+
+    if beta > 0:
+        loss = loss * variance.detach() ** beta
+
+    return loss.mean()
 
 
 def mse(x, y):
@@ -238,10 +323,6 @@ def comb_likelihood(x, y):
     ).mean()
 
     loss = loss_amp + loss_phase
-    # print("amp: ", loss_amp)
-    # print("phase: ", loss_phase)
-    # print(loss)
-    # assert unc.shape == y_pred.shape == y.shape
     return loss
 
 

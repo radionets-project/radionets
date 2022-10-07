@@ -333,19 +333,19 @@ def create_mask(u, v, size=63):
     return np.rot90(mask)
 
 
-def test_mask():
+def test_mask(bundle_size, num_channel, img_size):
     """
     Test mask for filter tests
     """
-    mask = np.ones((2, 63, 63))
-    mask[:, 19, 30] = 0
-    mask[:, 23, 23] = 0
-    mask[:, 30, 19] = 0
-    mask[:, 43, 32] = 0
-    mask[:, 39, 39] = 0
-    mask[:, 32, 43] = 0
-    mask[:, 33:35, 33:35] = 0
-    mask[:, 28:30, 28:30] = 0
+    mask = np.ones((bundle_size, num_channel, img_size, img_size))
+    mask[:, :, 19, 30] = 0
+    mask[:, :, 23, 23] = 0
+    mask[:, :, 30, 19] = 0
+    mask[:, :, 43, 32] = 0
+    mask[:, :, 39, 39] = 0
+    mask[:, :, 32, 43] = 0
+    mask[:, :, 33:35, 33:35] = 0
+    mask[:, :, 28:30, 28:30] = 0
     return mask
 
 
@@ -399,8 +399,9 @@ def sample_freqs(
 
     bundle_size = img.shape[0]
     num_channel = img.shape[1]
+    img_size = img.shape[2]
     if test:
-        mask = test_mask()
+        mask = test_mask(bundle_size, num_channel, img_size)
     else:
         layout = getattr(layouts, ant_config)
         ant = Antenna(*layout())

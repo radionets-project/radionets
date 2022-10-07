@@ -54,7 +54,6 @@ def read_config(config):
     eval_conf["norm_path"] = config["paths"]["norm_path"]
 
     eval_conf["quiet"] = config["mode"]["quiet"]
-    eval_conf["gpu"] = config["mode"]["gpu"]
 
     eval_conf["format"] = config["general"]["output_format"]
     eval_conf["fourier"] = config["general"]["fourier"]
@@ -80,6 +79,7 @@ def read_config(config):
     eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
     eval_conf["point"] = config["eval"]["evaluate_point"]
+    eval_conf["predict_grad"] = config["eval"]["predict_grad"]
     eval_conf["gan"] = config["eval"]["evaluate_gan"]
     return eval_conf
 
@@ -137,16 +137,10 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
             orientation="vertical",
             ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
         )
-        cbar.set_label("Specific Intensity / a.u.")
+        cbar.set_label("Phase / rad")
     elif unc:
-        cbar = fig.colorbar(
-            im,
-            cax=cax,
-            label="Rel. uncertainty / a.u.",
-            ticks=[im.get_array().min() + 0.001, im.get_array().max()],
-        )
-        cbar.ax.set_yticklabels(["Low", "High"])
-        cbar.ax.tick_params(size=0)
+        cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar.set_label(r"$\sigma^2$ / a.u.")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
         cbar.set_label("Specific Intensity / a.u.")
@@ -235,7 +229,11 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     arch: architecture object
         architecture with pretrained weigths
     """
-    if "filter_deep" in arch_name or "resnet" in arch_name:
+    if (
+        "filter_deep" in arch_name
+        or "resnet" in arch_name
+        or "Uncertainty" in arch_name
+    ):
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
@@ -277,7 +275,7 @@ def get_images(test_ds, num_images, norm_path="none", rand=False):
     return img_test, img_true
 
 
-def eval_model(img, model, test=False):
+def eval_model(img, model):
     """
     Put model into eval mode and evaluate test images.
 

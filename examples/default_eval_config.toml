@@ -4,7 +4,6 @@ title = "Evaluation configuration"
 
 [mode]
 quiet = true
-gpu = false
 
 [paths]
 data_path = "./example_data/"
@@ -39,4 +38,5 @@ evaluate_ms_ssim = true
 evaluate_mean_diff = true
 evaluate_area = true
 evaluate_point = false
+predict_grad = false
 evaluate_gan = false

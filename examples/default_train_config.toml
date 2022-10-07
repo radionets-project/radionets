@@ -28,6 +28,8 @@ loss_func = "splitted_L1"
 num_epochs = 5
 inspection = true
 output_format = "png"
+switch_loss = false
+when_switch = 25
 
 [hypers]
 batch_size = 100
