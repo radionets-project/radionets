@@ -65,7 +65,7 @@ def sample_frequencies(
                     plot=False,
                     test=False,
                     multi_channel=multi_channel,
-                    bandwidths=bandwiths,
+                    bandwidths=bandwidths,
                 )
             else:
                 fft_samp = sample_freqs(
