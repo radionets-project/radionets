@@ -340,8 +340,9 @@ def evaluate_viewing_angle(conf):
     )
     if conf["save_vals"]:
         click.echo("\nSaving jet angle offsets.\n")
-        out = out_path / "jet_angles.txt"
-        np.savetxt(out, dif)
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "jet_angles.txt", dif)
 
 
 def evaluate_dynamic_range(conf):
@@ -486,8 +487,9 @@ def evaluate_mean_diff(conf):
 
     if conf["save_vals"]:
         click.echo("\nSaving mean differences.\n")
-        out = out_path / "mean_diff.txt"
-        np.savetxt(out, vals)
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "mean_diff.txt", vals)
 
 
 def evaluate_area(conf):
@@ -531,8 +533,9 @@ def evaluate_area(conf):
 
     if conf["save_vals"]:
         click.echo("\nSaving area ratios.\n")
-        out = out_path / "area_ratios.txt"
-        np.savetxt(out, vals)
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "area_ratios.txt", vals)
 
 
 def evaluate_point(conf):
