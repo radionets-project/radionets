@@ -69,7 +69,7 @@ def sample_fft_images(sim_conf):
         compressed=sim_conf["compressed"],
         interpolation=sim_conf["interpolation"],
         multi_channel=sim_conf["multi_channel"],
-        bandwidths=sim_conf["bandwiths"],
+        bandwidths=sim_conf["bandwidths"],
         source_type=sim_conf["type"],
     )
     if sim_conf["keep_fft_files"] is not True:
