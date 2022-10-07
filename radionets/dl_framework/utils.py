@@ -126,7 +126,7 @@ def get_ifft_torch(array, amp_phase=False, scale=False, uncertainty=False):
         if uncertainty:
             a = amp * torch.cos(array[:, 2])
             b = amp * torch.sin(array[:, 2])
-        else:    
+        else:
             a = amp * torch.cos(array[:, 1])
             b = amp * torch.sin(array[:, 1])
         compl = a + b * 1j
