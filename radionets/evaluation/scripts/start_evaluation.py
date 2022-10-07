@@ -117,13 +117,13 @@ def main(configuration_path):
         np.savetxt("grads_y.csv", grads_y, delimiter=",")
 
         # # save image (no gradients)
-        # np.savetxt("test_img.csv", output, delimiter=",")
+        np.savetxt("test_img.csv", output, delimiter=",")
 
         # # save x and y grads for fourier amplitude and phase
-        # np.savetxt("grads_x_amp.csv", grads_x[0][0].cpu().numpy(), delimiter=",")
-        # np.savetxt("grads_x_phase.csv", grads_x[0][1].cpu().numpy(), delimiter=",")
-        # np.savetxt("grads_y_amp.csv", grads_y[0][0].cpu().numpy(), delimiter=",")
-        # np.savetxt("grads_y_phase.csv", grads_y[0][1].cpu().numpy(), delimiter=",")
+        np.savetxt("grads_x_amp.csv", grads_x[0][0].cpu().numpy(), delimiter=",")
+        np.savetxt("grads_x_phase.csv", grads_x[0][1].cpu().numpy(), delimiter=",")
+        np.savetxt("grads_y_amp.csv", grads_y[0][0].cpu().numpy(), delimiter=",")
+        np.savetxt("grads_y_phase.csv", grads_y[0][1].cpu().numpy(), delimiter=",")
 
     if eval_conf["gan"]:
         click.echo("\nStart evaluation of GAN sources.\n")

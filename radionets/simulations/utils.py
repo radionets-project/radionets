@@ -363,7 +363,8 @@ def interpol(img):
 
 def add_white_noise(images):
     img_size = images.shape[2]
-    noise = np.random.normal(0, 0.05, size=(images.shape[0], img_size, img_size))
-    images.real += noise
-    images.imag += noise
+    noise_real = np.random.normal(25, 1.25, size=(images.shape[0], img_size, img_size))
+    noise_imag = np.random.normal(7, 0.35, size=(images.shape[0], img_size, img_size))
+    images.real += noise_real
+    images.imag += noise_imag
     return images

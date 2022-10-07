@@ -291,26 +291,34 @@ class GradientCallback(Callback):
         self.learn.loss.backward()
 
         # access gradients of weights of layers (with specified batch and epoch)
-        # if self.epoch == self.num_epochs - 1:
-        #     if self.iter == self.n_iter - 1:
-        #         grads = []
-        #         for param in self.learn.model.parameters():
-        #             grads.append(param.grad.view(-1))
+        if self.epoch == self.num_epochs - 1:
+            if self.iter == self.n_iter - 1:
+                grads = []
+                for param in self.learn.model.parameters():
+                    grads.append(param.grad.view(-1))
         # print or save
 
-    # def after_epoch(self):
-    #     img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+    def after_epoch(self):
+        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
 
-    #     # for each epoch put test image through model and save to csv
-    #     fname_template = "pred_{i}.csv"
-    #     np.savetxt(fname_template.format(i=self.epoch), get_ifft(eval_model(img_test, self.model), self.amp_phase), delimiter=",")
+        # for each epoch put test image through model and save to csv
+        fname_template = "pred_{i}.csv"
+        np.savetxt(
+            fname_template.format(i=self.epoch),
+            get_ifft(eval_model(img_test, self.model), self.amp_phase),
+            delimiter=",",
+        )
 
-    #     # # fourier space
-    #     # amp_names = "pred_amp_{i}.csv"
-    #     # phase_names = "pred_phase_{i}.csv"
-    #     # output = eval_model(img_test, self.model)
-    #     # np.savetxt(amp_names.format(i=self.epoch), output[0][0].cpu().numpy(), delimiter=",")
-    #     # np.savetxt(phase_names.format(i=self.epoch), output[0][1].cpu().numpy(), delimiter=",")
+        # # fourier space
+        amp_names = "pred_amp_{i}.csv"
+        phase_names = "pred_phase_{i}.csv"
+        output = eval_model(img_test, self.model)
+        np.savetxt(
+            amp_names.format(i=self.epoch), output[0][0].cpu().numpy(), delimiter=","
+        )
+        np.savetxt(
+            phase_names.format(i=self.epoch), output[0][1].cpu().numpy(), delimiter=","
+        )
 
 
 class PredictionImageGradient(Callback):
