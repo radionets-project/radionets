@@ -16,6 +16,10 @@ def simulate_gaussian_sources(
     noise,
     noise_level,
     white_noise,
+    mean_real,
+    std_real,
+    mean_imag,
+    std_imag,
     source_list,
 ):
     for i in tqdm(range(num_bundles)):
@@ -31,7 +35,7 @@ def simulate_gaussian_sources(
         images = bundle.copy()
 
         if noise:
-            images = add_noise(images, noise_level)
+            images = add_noise(images, mean_real, std_real, mean_imag, std_imag)
 
         bundle_fft = np.array(
             [np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(img))) for img in images]
@@ -60,7 +64,11 @@ def create_grid(pixel, bundle_size):
     y = np.linspace(0, pixel - 1, num=pixel)
     X, Y = np.meshgrid(x, y)
     grid = np.array([np.zeros(X.shape) + 1e-10, X, Y])
-    grid = np.repeat(grid[None, :, :, :], bundle_size, axis=0,)
+    grid = np.repeat(
+        grid[None, :, :, :],
+        bundle_size,
+        axis=0,
+    )
     return grid
 
 
@@ -216,7 +224,15 @@ def add_gaussian(grid, amp, x, y, sig_x, sig_y, rot):
     X = grid[1]
     Y = grid[2]
     gaussian = grid[0]
-    gaussian += gaussian_component(X, Y, amp, sig_x, sig_y, rot, center=cent,)
+    gaussian += gaussian_component(
+        X,
+        Y,
+        amp,
+        sig_x,
+        sig_y,
+        rot,
+        center=cent,
+    )
 
     return gaussian
 
