@@ -37,6 +37,10 @@ def create_fft_images(sim_conf):
                 noise_level=sim_conf["noise_level"],
                 source_list=sim_conf["source_list"],
                 white_noise=sim_conf["white_noise"],
+                mean_real=sim_conf["mean_real"],
+                std_real=sim_conf["std_real"],
+                mean_imag=sim_conf["mean_imag"],
+                std_imag=sim_conf["std_imag"],
             )
 
     if sim_conf["type"] == "point_sources":
