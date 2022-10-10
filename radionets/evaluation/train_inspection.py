@@ -334,9 +334,15 @@ def evaluate_viewing_angle(conf):
     alpha_preds = torch.tensor(alpha_preds)
 
     click.echo("\nCreating histogram of jet angles.\n")
+    dif = (alpha_preds - alpha_truths).numpy()
     histogram_jet_angles(
-        alpha_truths, alpha_preds, out_path, plot_format=conf["format"]
+        dif, out_path, plot_format=conf["format"]
     )
+    if conf["save_vals"]:
+        click.echo("\nSaving jet angle offsets.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "jet_angles.txt", dif)
 
 
 def evaluate_dynamic_range(conf):
@@ -479,6 +485,12 @@ def evaluate_mean_diff(conf):
 
     click.echo(f"\nThe mean difference is {vals.mean()}.\n")
 
+    if conf["save_vals"]:
+        click.echo("\nSaving mean differences.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "mean_diff.txt", vals)
+
 
 def evaluate_area(conf):
     # create DataLoader
@@ -518,6 +530,12 @@ def evaluate_area(conf):
     histogram_area(vals, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean area ratio is {vals.mean()}.\n")
+
+    if conf["save_vals"]:
+        click.echo("\nSaving area ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "area_ratios.txt", vals)
 
 
 def evaluate_point(conf):

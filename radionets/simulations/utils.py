@@ -120,6 +120,11 @@ def read_config(config):
     sim_conf["img_size"] = config["image_options"]["img_size"]
     sim_conf["noise"] = config["image_options"]["noise"]
     sim_conf["noise_level"] = config["image_options"]["noise_level"]
+    sim_conf["white_noise"] = config["image_options"]["white_noise"]
+    sim_conf["mean_real"] = config["image_options"]["mean_real"]
+    sim_conf["std_real"] = config["image_options"]["std_real"]
+    sim_conf["mean_imag"] = config["image_options"]["mean_imag"]
+    sim_conf["std_imag"] = config["image_options"]["std_imag"]
 
     sim_conf["amp_phase"] = config["sampling_options"]["amp_phase"]
     sim_conf["real_imag"] = config["sampling_options"]["real_imag"]
@@ -134,6 +139,7 @@ def read_config(config):
     sim_conf["keep_fft_files"] = config["sampling_options"]["keep_fft_files"]
     sim_conf["interpolation"] = config["sampling_options"]["interpolation"]
     sim_conf["multi_channel"] = config["sampling_options"]["multi_channel"]
+    sim_conf["bandwidths"] = config["sampling_options"]["bandwidths"]
     return sim_conf
 
 
@@ -360,10 +366,14 @@ def interpol(img):
     return np.array([amp, phase])
 
 
-def add_white_noise(images):
+def add_white_noise(images, mean_real=25, std_real=1.25, mean_imag=7, std_imag=0.35):
     img_size = images.shape[2]
-    noise_real = np.random.normal(25, 1.25, size=(images.shape[0], img_size, img_size))
-    noise_imag = np.random.normal(7, 0.35, size=(images.shape[0], img_size, img_size))
+    noise_real = np.random.normal(
+        mean_real, std_real, size=(images.shape[0], img_size, img_size)
+    )
+    noise_imag = np.random.normal(
+        mean_imag, std_imag, size=(images.shape[0], img_size, img_size)
+    )
     images.real += noise_real
     images.imag += noise_imag
     return images

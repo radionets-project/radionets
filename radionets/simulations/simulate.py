@@ -36,6 +36,11 @@ def create_fft_images(sim_conf):
                 noise=sim_conf["noise"],
                 noise_level=sim_conf["noise_level"],
                 source_list=sim_conf["source_list"],
+                white_noise=sim_conf["white_noise"],
+                mean_real=sim_conf["mean_real"],
+                std_real=sim_conf["std_real"],
+                mean_imag=sim_conf["mean_imag"],
+                std_imag=sim_conf["std_imag"],
             )
 
     if sim_conf["type"] == "point_sources":
@@ -68,6 +73,7 @@ def sample_fft_images(sim_conf):
         compressed=sim_conf["compressed"],
         interpolation=sim_conf["interpolation"],
         multi_channel=sim_conf["multi_channel"],
+        bandwidths=sim_conf["bandwidths"],
         source_type=sim_conf["type"],
     )
     if sim_conf["keep_fft_files"] is not True:
