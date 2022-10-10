@@ -2,6 +2,7 @@ import torch
 from typing import Iterable
 import numpy as np
 from torch import nn
+from scipy.spatial.distance import pdist, squareform
 
 
 def listify(o):
@@ -146,3 +147,61 @@ def get_ifft_torch(array, amp_phase=False, scale=False):
     if compl.shape[0] == 1:
         compl = compl.squeeze(0)
     return torch.abs(torch.fft.ifftshift(torch.fft.ifft2(torch.fft.fftshift(compl))))
+
+
+def getAffinityMatrix(coordinates, k: int = 7):
+    """Calculate affinity matrix based on input coordinates matrix and the number
+    of nearest neighbours.
+
+    Apply local scaling based on the k nearest neighbour.
+
+    Used in spectralClustering (dl_framework/clustering.py).
+
+    Parameters
+    ----------
+    coordinates: 2d-array
+        data points of shape (n, 2)
+    k: int
+        k nearest neighbour
+
+    Returns
+    -------
+    affinity_matrix: 2d-array
+        affinity matrix of shape (n, n)
+    """
+    dists = squareform(pdist(coordinates))
+
+    knn_distances = np.sort(dists, axis=0)[k]
+    knn_distances = knn_distances[np.newaxis].T
+
+    local_scale = knn_distances.dot(knn_distances.T)
+
+    affinity_matrix = dists * dists
+    affinity_matrix = -affinity_matrix / local_scale
+
+    affinity_matrix[np.where(np.isnan(affinity_matrix))] = 0
+
+    affinity_matrix = np.exp(affinity_matrix)
+    np.fill_diagonal(affinity_matrix, 0)
+    return affinity_matrix
+
+
+def normalizeAffinityMatrix(affinity_matrix):
+    """Normalization of affinity matrix.
+
+    Used in spectralClustering (dl_framework/clustering.py).
+
+    Parameters
+    ----------
+    affinity_matrix: 2d-array
+        affinity matrix to be normalized
+
+    Returns
+    -------
+    L: 2d-array
+        normalized affinity matrix
+    """
+    D = np.diag(np.sum(affinity_matrix, axis=1))
+    D_inv = np.sqrt(np.linalg.inv(D))
+    L = np.dot(D_inv, np.dot(affinity_matrix, D_inv))
+    return L
