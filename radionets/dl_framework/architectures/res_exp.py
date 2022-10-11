@@ -123,6 +123,7 @@ class SRResNet_bigger(nn.Module):
 class SRResNet(nn.Module):
     def __init__(self):
         super().__init__()
+        torch.cuda.set_device(1)
 
         self.preBlock = nn.Sequential(
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
