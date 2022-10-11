@@ -626,7 +626,7 @@ def evaluate_gan_sources(conf):
             num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
             num_zeros += list(num_zero)
 
-        ratio = diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
+        ratio = np.abs(diff).max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
 
         below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
         above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
