@@ -374,7 +374,17 @@ def visualize_source_reconstruction(
     # create angle visualization
     theta1 = min(0, -alpha_truth.numpy()[0])
     theta2 = max(0, -alpha_truth.numpy()[0])
-    ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white",))
+    ax2.add_patch(
+        Arc(
+            [32, 32],
+            50,
+            50,
+            90,
+            theta1,
+            theta2,
+            color="white",
+        )
+    )
 
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
@@ -480,7 +490,12 @@ def histogram_jet_angles(dif, out_path, plot_format="png"):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
-        dif, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dif,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
@@ -513,14 +528,24 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
     ax1.set_title("True Images")
     ax1.hist(
-        dr_truth, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dr_truth,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Dynamic range")
     ax1.set_ylabel("Number of sources")
 
     ax2.set_title("Predictions")
     ax2.hist(
-        dr_pred, 25, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dr_pred,
+        25,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax2.set_xlabel("Dynamic range")
     ax2.set_ylabel("Number of sources")
@@ -625,7 +650,12 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        vals,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
@@ -646,7 +676,12 @@ def histogram_area(vals, out_path, plot_format="png"):
     bins = np.arange(0, vals.max() + 0.1, 0.1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        vals,
+        bins=bins,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.axvline(1, color="red", linestyle="dashed")
     ax1.set_xlabel("ratio of areas")
