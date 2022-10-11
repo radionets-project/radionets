@@ -68,11 +68,6 @@ class ListContainer:
         return res
 
 
-def children(m):
-    "returns the children of m as a list"
-    return list(m.children())
-
-
 def round_odd(x):
     """Rounds a float to the next higher, odd number and returns an int.
 
