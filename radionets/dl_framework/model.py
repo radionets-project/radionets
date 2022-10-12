@@ -15,10 +15,6 @@ class Lambda(nn.Module):
         return self.func(x)
 
 
-def reshape(x):
-    return x.reshape(-1, 2, 63, 63)
-
-
 def fft(x):
     """
     Layer that performs a fast Fourier-Transformation.
@@ -31,11 +27,6 @@ def fft(x):
     # perform fourier transformation and switch imaginary and real part
     arr_fft = torch.ifft(arr, 2).permute(0, 3, 2, 1).transpose(2, 3)
     return arr_fft
-
-
-def shape(x):
-    print(x.shape)
-    return x
 
 
 def euler(x):
@@ -56,12 +47,6 @@ def flatten(x):
 
 def flatten_with_channel(x):
     return x.reshape(x.shape[0], x.shape[1], -1)
-
-
-def cut_off(x):
-    a = x.clone()
-    a[a <= 1e-10] = 1e-10
-    return a
 
 
 def symmetry(x, mode="real"):
