@@ -3,7 +3,6 @@ from radionets.dl_framework.model import init_cnn
 from radionets.dl_framework.callbacks import (
     NormCallback,
     SaveTempCallback,
-    TelegramLoggerCallback,
     DataAug,
     AvgLossCallback,
     SwitchLoss,
@@ -32,9 +31,6 @@ def define_learner(
 ):
     cbfs = []
     model_path = train_conf["model_path"]
-    model_name = (
-        model_path.split("build/")[-1].split("/")[-1].split("/")[0].split(".")[0]
-    )
     lr = train_conf["lr"]
     opt_func = Adam
     if train_conf["norm_path"] != "none":
@@ -72,9 +68,6 @@ def define_learner(
                 ),
             ]
         )
-
-    if train_conf["telegram_logger"] and not lr_find:
-        cbfs.extend([TelegramLoggerCallback(model_name=model_name)])
 
     if train_conf["comet_ml"] and not lr_find and not plot_loss:
         cbfs.extend(

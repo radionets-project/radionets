@@ -3,12 +3,10 @@ import numpy as np
 import pandas as pd
 import kornia as K
 from radionets.dl_framework.data import do_normalisation
-from radionets.dl_framework.logger import make_notifier
 from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item
 from fastai.callback.core import Callback, CancelBackwardException
 from pathlib import Path
-from fastcore.foundation import L
 import matplotlib.pyplot as plt
 from radionets.evaluation.utils import (
     load_data,
@@ -123,37 +121,6 @@ class CometCallback(Callback):
         if (self.epoch + 1) % self.plot_epoch == 0:
             self.plot_test_pred()
             self.plot_test_fft()
-
-
-class TelegramLoggerCallback(Callback):
-    def __init__(self, model_name):
-        self.model_name = model_name
-
-    def before_fit(self):
-        tlogger = make_notifier()
-        tlogger.info(f"Start des Trainings von Modell {self.model_name}")
-
-    def after_epoch(self):
-        if (self.epoch + 1) % 10 == 0:
-            tlogger = make_notifier()
-            tlogger.info(
-                "{}: Epoche {}/{} mit Loss {}".format(
-                    self.model_name,
-                    self.epoch + 1,
-                    self.n_epoch,
-                    L(self.recorder.values[0:]).itemgot(1)[-1],
-                )
-            )
-
-    def after_fit(self):
-        tlogger = make_notifier()
-        tlogger.info(
-            "{}: Ende des Trainings nach {} Epochen mit Loss {}".format(
-                self.model_name,
-                self.epoch + 1,
-                L(self.recorder.values[0:]).itemgot(1)[-1],
-            )
-        )
 
 
 class AvgLossCallback(Callback):

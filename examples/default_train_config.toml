@@ -5,7 +5,6 @@ title = "Train configuration"
 [mode]
 quiet = true
 gpu = false
-telegram_logger = false
 
 [logging]
 comet_ml = true
