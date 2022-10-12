@@ -15,40 +15,6 @@ class Lambda(nn.Module):
         return self.func(x)
 
 
-def fft(x):
-    """
-    Layer that performs a fast Fourier-Transformation.
-    """
-    img_size = x.size(1) // 2
-    # sort the incoming tensor in real and imaginary part
-    arr_real = x[:, 0:img_size].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
-    arr_imag = x[:, img_size:].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
-    arr = torch.stack((arr_real, arr_imag), dim=-1)
-    # perform fourier transformation and switch imaginary and real part
-    arr_fft = torch.ifft(arr, 2).permute(0, 3, 2, 1).transpose(2, 3)
-    return arr_fft
-
-
-def euler(x):
-    img_size = x.size(1) // 2
-    arr_amp = x[:, 0:img_size]
-    arr_phase = x[:, img_size:]
-
-    arr_real = (10 ** (10 * (arr_amp - 1)) - 1e-10) * torch.cos(arr_phase)
-    arr_imag = (10 ** (10 * (arr_amp - 1)) - 1e-10) * torch.sin(arr_phase)
-
-    arr = torch.stack((arr_real, arr_imag), dim=-1).permute(0, 2, 1)
-    return arr
-
-
-def flatten(x):
-    return x.reshape(x.shape[0], -1)
-
-
-def flatten_with_channel(x):
-    return x.reshape(x.shape[0], x.shape[1], -1)
-
-
 def symmetry(x, mode="real"):
     center = (x.shape[1]) // 2
     u = torch.arange(center)
