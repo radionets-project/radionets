@@ -28,7 +28,6 @@ setup(
         "h5py",
         "scikit-image",
         "pandas",
-        "requests",
         "toml",
         "pytest",
         "pytest-cov",
