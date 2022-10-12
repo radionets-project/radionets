@@ -1,4 +1,3 @@
-from radionets.simulations.mnist import mnist_fft
 from radionets.simulations.gaussians import simulate_gaussian_sources
 from radionets.simulations.sampling import sample_frequencies
 from radionets.simulations.point_sources import create_point_source_img
@@ -15,15 +14,6 @@ def create_fft_images(sim_conf):
     sim_conf : dict
         dict holding simulation parameters
     """
-    if sim_conf["type"] == "mnist":
-        mnist_fft(
-            resource_path=sim_conf["resource"],
-            out_path=sim_conf["data_path"],
-            size=sim_conf["img_size"],
-            bundle_size=sim_conf["bundle_size"],
-            noise=sim_conf["noise"],
-        )
-
     if sim_conf["type"] == "gaussians":
         for opt in ["train", "valid", "test"]:
             simulate_gaussian_sources(
