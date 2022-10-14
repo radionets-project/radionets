@@ -199,7 +199,9 @@ class SRResNet_bigger_16(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
-        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),)
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
+        )
 
         self.symmetry_amp = Lambda(partial(symmetry, mode="real"))
         self.symmetry_imag = Lambda(partial(symmetry, mode="imag"))
@@ -251,7 +253,9 @@ class SRResNet_bigger_16_no_symmetry(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
-        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),)
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
+        )
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
 

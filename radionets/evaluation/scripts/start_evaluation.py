@@ -50,7 +50,7 @@ def main(configuration_path):
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(
-            eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"],
+            eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
         )
 
         click.echo(f"\nCreated {eval_conf['num_images']} test predictions.\n")

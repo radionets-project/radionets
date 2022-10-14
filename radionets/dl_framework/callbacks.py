@@ -31,7 +31,7 @@ class CometCallback(Callback):
         self.data_path = test_data
         self.plot_epoch = plot_n_epochs
         self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False
         )
         self.amp_phase = amp_phase
         self.scale = scale
@@ -246,7 +246,7 @@ class GradientCallback(Callback):
         self.num_epochs = num_epochs
         self.data_path = test_data
         self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False
         )
         self.arch_name = arch_name
         self.amp_phase = amp_phase
@@ -292,7 +292,7 @@ class PredictionImageGradient(Callback):
     def __init__(self, test_data, model, amp_phase, arch_name):
         self.data_path = test_data
         self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False
         )
         self.model = model
         self.amp_phase = amp_phase

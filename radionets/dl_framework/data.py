@@ -37,7 +37,7 @@ class h5_dataset:
         Save the bundle paths and the number of bundles in one file.
         """
         if bundle_paths == []:
-            raise ValueError('No bundles found! Please check the names of your files.')
+            raise ValueError("No bundles found! Please check the names of your files.")
         self.bundles = bundle_paths
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
         self.tar_fourier = tar_fourier
