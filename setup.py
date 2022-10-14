@@ -11,7 +11,6 @@ setup(
     packages=find_packages(),
     install_requires=[
         "fastai",
-        "fastcore",
         "kornia",
         "pytorch-msssim",
         "numpy",
