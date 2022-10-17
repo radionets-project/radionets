@@ -123,9 +123,9 @@ class TestEvaluation:
 
         x_coords, y_coords, value = im_to_array_value(image)
 
-        assert x_coords.shape == (2, 64**2)
-        assert y_coords.shape == (2, 64**2)
-        assert value.shape == (2, 64**2)
+        assert x_coords.shape == (2, 64 ** 2)
+        assert y_coords.shape == (2, 64 ** 2)
+        assert value.shape == (2, 64 ** 2)
 
     def test_bmul(self):
         import torch
@@ -181,7 +181,7 @@ class TestEvaluation:
             (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
         )
 
-        eig_vals_torch, eig_vecs_torch = torch.linalg.eigh(cov_w, UPLO='U')
+        eig_vals_torch, eig_vecs_torch = torch.linalg.eigh(cov_w, UPLO="U")
 
         assert eig_vals_torch.shape == (10, 2)
         assert eig_vecs_torch.shape == (10, 2, 2)
@@ -302,9 +302,7 @@ class TestEvaluation:
 
         diff = (ifft_pred - ifft_truth).reshape(1, img_size, img_size)
 
-        zero = np.isclose(
-            (np.zeros((1, img_size, img_size))), diff, atol=1e-3
-        )
+        zero = np.isclose((np.zeros((1, img_size, img_size))), diff, atol=1e-3)
         assert zero.shape == (1, 64, 64)
 
         num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
