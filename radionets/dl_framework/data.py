@@ -190,16 +190,6 @@ def save_fft_pair(path, x, y, z=None, name_x="x", name_y="y", name_z="z"):
         hf.close()
 
 
-def open_fft_pair(path):
-    """
-    open fft_pairs which were created in second analysis step
-    """
-    f = h5py.File(path, "r")
-    bundle_x = np.array(f["x"])
-    bundle_y = np.array(f["y"])
-    return bundle_x, bundle_y
-
-
 def open_bundle_pack(path):
     bundle_x = []
     bundle_y = []
@@ -215,10 +205,6 @@ def open_bundle_pack(path):
         bundle_z.append(bundle_z_i)
     f.close()
     return np.array(bundle_x), np.array(bundle_y), bundle_z
-
-
-def mean_and_std(array):
-    return array.mean(), array.std()
 
 
 def load_data(data_path, mode, fourier=False, source_list=False):
