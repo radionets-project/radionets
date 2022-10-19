@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 import torchvision
 import h5py
 from pathlib import Path
+import warnings
 
 
 def source_list_collate(batch):
@@ -419,8 +420,84 @@ def calc_velocity(pos, times, mas):
     return v
 
 
-def non_max_suppression(pred, obj_thres=0.25, max_nms=3000, iou_thres=0.45, max_det=30):
-    """Non max suppression for one batch
+def xywh2xyxy(x):
+    # Convert boxes with shape [n, 4] from [x, y, w, h] to [x1, y1, x2, y2] where x1y1 is top-left, x2y2=bottom-right
+    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
+    y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
+    y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
+    y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
+    y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
+    return y
+
+
+def crop_center(img, cropx: int, cropy: int, justify: bool = False, eps: float = 1e-2):
+    """Crop out the center of an image
+
+    Parameters
+    ----------
+    img: 2d-array
+        image to be cropped
+    cropx: int
+        output size of x-axis
+    cropy: int
+        output size of y-axis
+    justify: bool
+        wether to justfiy or not, used when cropping MOJAVE data
+    eps: float
+        threshold for warning
+    """
+    y, x = img.shape
+    startx = x // 2 - (cropx // 2)
+    starty = y // 2 - (cropy // 2)
+    img_cropped = img[starty:starty + cropy, startx:startx + cropx]
+
+    if justify:
+        img_outer = img.copy()
+        # set cropped area to -1, so it does not appear in top values
+        img_outer[starty:starty + cropy, startx:startx + cropx] = -1
+
+        # calculate max n values and compare
+        n = int(np.sqrt(cropx))
+        top_outer = np.partition(img_outer, -n, axis=None)[-n:]
+        top_inner = np.partition(img_cropped, -n, axis=None)[-n:]
+
+        mean_ratio = top_outer.mean() / top_inner.mean()
+        if mean_ratio > eps:
+            warnings.warn(f'Source might be cut off. Outer to Inner ratio: {mean_ratio:.2f}')
+
+    return img_cropped
+
+
+def yolo_out_transform(output, strides):
+    """Transforms output of yolo network to list of predictions
+
+    Parameters
+    ----------
+    output:
+        list of (3) output layers each of shape (bs, n_anchors, ny, nx, 5)
+    strides:
+        model dependent parameter
+
+    Returns
+    -------
+    pred_list: 
+        list of predictions with shape (bs, depends on layers, 5)
+    """
+    pred_list = []
+    objectness = []
+    for i, out in enumerate(output):
+        out[..., 0:4] = decode_yolo_box(out[..., 0:4], torch.tensor(strides[i]))
+        out[..., 4] = torch.sigmoid(out[..., 4])
+        objectness.append(out[..., 4])
+
+        out = out.reshape(out.shape[0], -1, 5)
+        pred_list.append(out)
+
+    return torch.cat(pred_list, 1), objectness
+
+
+def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_det=30):
+    """Non max suppression for one batch.
 
     Parameters
     ----------
@@ -437,11 +514,13 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=3000, iou_thres=0.45, max_
 
     Returns
     -------
-    output: ndarray
-        same as input 'pred', but reduces number of boxes after nms
+    output: list
+        reduced number of boxes; list, because each image in batch can have 
+        different number of boxes
     """
     pred_candidates = pred[..., 4] > obj_thres  # candidates
     output = [torch.zeros((0, 5), device=pred.device)] * pred.shape[0]
+
     for idx, x in enumerate(pred):
         x = x[pred_candidates[idx]] # filter candidates
 
@@ -457,31 +536,6 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=3000, iou_thres=0.45, max_
 
         output[idx] = x[keep_box_idx]
     return output
-
-
-def xywh2xyxy(x):
-    # Convert boxes with shape [n, 4] from [x, y, w, h] to [x1, y1, x2, y2] where x1y1 is top-left, x2y2=bottom-right
-    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
-    y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
-    y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
-    y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
-    y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
-    return y
-
-
-def yolo_out_transform(output, strides):
-    """ Transforms output of yolo network to list of predictions
-    """
-    pred_list = []
-    objectness = []
-    for i, out in enumerate(output):
-        out[..., 0:4] = decode_yolo_box(out[..., 0:4], torch.tensor(strides[i]))
-        out[..., 4] = torch.sigmoid(out[..., 4])
-        objectness.append(out[..., 4])
-
-        out = out.reshape(out.shape[0], -1, 5)
-        pred_list.append(out)
-    return torch.cat(pred_list, 1), objectness
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):

@@ -612,7 +612,7 @@ def jet_list(x, y):
 def yolo(x, y):
     """
     Loss for YOLO training
-    x list of (3) output layers of shape (bs, n_anchors, ny, nx, 5)
+    x list of (3) output layers each of shape (bs, n_anchors, ny, nx, 5)
     """
     w_box = 1
     w_obj = 5
