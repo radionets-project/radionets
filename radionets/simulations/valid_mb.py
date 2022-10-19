@@ -30,39 +30,3 @@ def create_grid(pixel):
     grid = torch.tensor((torch.zeros(X.shape) + 1e-10))
     grid = torch.cat((grid, mesh))
     return grid
-
-
-def gauss_valid(params):  # setzt aus den einzelen parametern (54) ein bild zusammen
-    gauss_param = torch.split(params, 9)
-    grid = create_grid(63)
-    source = torch.tensor((grid[0]))
-    for i in range(len(gauss_param)):
-        cent = torch.tensor(
-            [
-                len(grid[0]) // 2 + gauss_param[1][i],
-                len(grid[0]) // 2 + gauss_param[2][i],
-            ]
-        )
-        s = gaussian_component(
-            grid[1],
-            grid[2],
-            gauss_param[0][i],
-            gauss_param[3][i],
-            gauss_param[4][i],
-            rot=gauss_param[5][i],
-            center=cent,
-        )
-        source = torch.add(source, s)
-    return source
-
-
-def vaild_gauss_bs(in_put):
-    for i in range(in_put.shape[0]):
-        if i == 0:
-            source = gauss_valid(in_put[i])  # gauss parameter des ersten gausses
-            source.unsqueeze_(0)
-        else:
-            h = gauss_valid(in_put[i])
-            h.unsqueeze_(0)
-            source = torch.cat((source, h))
-    return source
