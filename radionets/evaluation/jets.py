@@ -1,8 +1,6 @@
 import numpy as np
 from astropy.modeling import models, fitting
 from radionets.evaluation.plotting import plot_fitgaussian
-import matplotlib.pyplot as plt
-from pathlib import Path
 
 
 def fitgaussian_crop(data, amp_scale=0.97, crop_size=0.1):
@@ -83,9 +81,9 @@ def fitgaussian_iterativ(
     result_lmf: astropy model
         Fitted astropy model object
     """
-    if visualize and path == None:
+    if visualize and path is None:
         print("Visualize is True, but no path is given.")
-    if not visualize and path != None:
+    if not visualize and path is not None:
         print("Visualize is False, but a path is given.")
 
     params_list = []
