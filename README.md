@@ -5,7 +5,7 @@
 ## Imaging Radio Interferometric Data with Neural Networks
 
 Executables to simulate and analyze radio interferometric data in python. The goal is to reconstruct calibrated observations with
-convolutional Neural Networks to create high-resolution images. 
+convolutional Neural Networks to create high-resolution images. For further information, please have a look at our [paper](https://www.aanda.org/component/article?access=doi&doi=10.1051/0004-6361/202142113).
 
 Analysis strategies leading to a reproducible processing and evaluation of data recorded by radio interferometers:
 * Simulation of datasets (will be shifted to `vipy` repository)
