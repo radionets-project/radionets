@@ -170,3 +170,164 @@ class YOLOv6(nn.Module):
                 .contiguous()
             )
         return x
+
+
+class YOLOv6_flex(nn.Module):
+    """"YOLOv6 with flexible output shape.
+    
+    pytorch behavior: initializing a layer (or Sequential) in a list, is not
+        automatically on cuda
+    fastai behavior: initializing all layers in a list leads to IndexError: list
+        index out of range -> initialize an unused dummy layer (self.dummy)
+    """
+    def __init__(self):
+        super().__init__()
+
+        self.channels = 8  # multiple of 2
+        self.anchors = 1
+        # self.num_repeats = [1, 6, 12, 18, 6, 12, 12, 12, 12]
+        # self.num_repeats = [1, 2, 4, 6, 2, 4, 4, 4, 4, 4]
+        # self.num_repeats = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        self.strides_head = torch.tensor([8, 16, 32])  # 2^n
+
+        self.bb_repeats = [1, 2, 4, 6, 2]  # repeats for RepBlock of backbone layer
+        self.neck_repeats = 4  # repeats for RepBlock of neck layers
+
+        # dummy layer for fastai, more in doc string
+        self.dummy = nn.Linear(1, 1)
+
+        """ backbone """
+        self.bb = [RepVGGBlock(1, self.channels, ks=3, stride=2).cuda()]
+        for i, rep in enumerate(self.bb_repeats):
+            channels_in = self.channels * 2 ** i
+            channels_out = self.channels * 2 ** (i + 1)
+
+            if i == len(self.bb_repeats) - 1:  # SimSPPF in last backbone Sequential
+                self.bb.append(nn.Sequential(
+                    RepVGGBlock(channels_in, channels_out, ks=3, stride=2),
+                    RepBlock(channels_out, channels_out, n=rep),
+                    SimSPPF(channels_out, channels_out),
+                ).cuda())
+            else:
+                self.bb.append(nn.Sequential(
+                    RepVGGBlock(channels_in, channels_out, ks=3, stride=2),
+                    RepBlock(channels_out, channels_out, n=rep),
+                ).cuda())
+
+        """ neck """
+        # RepBlocks of the neck. Used after concatenations
+        self.neck_Rep = []
+
+        # Reduce number of layers to create a bottle neck effect. As often as upsampling.
+        # Upsample to increase image size. As often as needed.
+        self.n_upsampling = int(len(self.bb_repeats) - torch.log2(torch.min(self.strides_head)))
+        self.neck_reduce_layer = []
+        self.neck_upsample = []
+        for i in range(self.n_upsampling):
+            channels_reduce = self.channels * 2 ** (len(self.bb_repeats) - 1 - i)
+            channels_upsampling = self.channels * 2 ** (len(self.bb_repeats) - 2 - i)
+            # print('channels reduce:', channels_reduce)
+            # print('channels upsampling:', channels_upsampling)
+
+            self.neck_reduce_layer.append(nn.Sequential(
+                *conv(channels_reduce, channels_upsampling, 1, activation=nn.ReLU())
+            ).cuda())
+            self.neck_upsample.append(nn.Sequential(
+                *deconv(channels_upsampling, channels_upsampling, 2, 2, 0, 0)
+            ).cuda())
+            self.neck_Rep.append(RepBlock(
+                channels_reduce, channels_upsampling, n=self.neck_repeats
+            ).cuda())
+
+        # Downsample to output size
+        self.n_downsampling = int(torch.log2(torch.max(self.strides_head)) - torch.log2(torch.min(self.strides_head)))
+        self.neck_downsample = []
+        for i in range(self.n_downsampling):
+            channels_downsampling = int(self.channels * 2 ** (torch.log2(torch.min(self.strides_head)) - 1 + i))
+            # print('channels downsampling:', channels_downsampling)
+
+            self.neck_downsample.append(nn.Sequential(
+                *conv(channels_downsampling, channels_downsampling, 3, 2, 1, activation=nn.ReLU())
+            ).cuda())
+            self.neck_Rep.append(RepBlock(
+                channels_downsampling * 2, channels_downsampling * 2, n=self.neck_repeats
+            ).cuda())
+
+        """ head """
+        self.n_head = len(self.strides_head)
+        self.head_stems = []
+        self.head_reg_convs = []
+        self.head_reg_preds = []
+        self.head_obj_preds = []
+        for i in range(self.n_head):
+            channels_head = int(self.channels * 2 ** (torch.log2(torch.min(self.strides_head)) - 1 + i))
+            # print('channels head:', channels_head)
+
+            self.head_stems.append(nn.Sequential(
+                *conv(channels_head, channels_head, 1, 1, activation=nn.SiLU())
+                ).cuda())
+            self.head_reg_convs.append(nn.Sequential(
+                *conv(channels_head, channels_head, 3, 1, 1, activation=nn.SiLU())
+                ).cuda())
+            self.head_reg_preds.append(nn.Sequential(
+            nn.Conv2d(channels_head, 4 * self.anchors, 1),
+                ).cuda())
+            self.head_obj_preds.append(nn.Sequential(
+            nn.Conv2d(channels_head, 1 * self.anchors, 1),
+                ).cuda())
+
+
+    def forward(self, x):
+        """backbone"""
+        x_bb = []
+        for i in range(len(self.bb_repeats)):
+            if i == 0:
+                x_bb.append(self.bb[i](x))
+            else:
+                x_bb.append(self.bb[i](x_bb[-1]))
+            # print(i, x_bb[-1].shape)
+
+        """ neck """
+        reduce_out = []
+        for i in range(self.n_upsampling):
+            if i == 0:
+                reduce_out.append(self.neck_reduce_layer[i](x_bb[-1]))
+            else:
+                reduce_out.append(self.neck_reduce_layer[i](u_out))
+            upsample_feat = self.neck_upsample[i](reduce_out[-1])
+            concat_layer = torch.cat([upsample_feat, x_bb[-i - 2]], 1)
+            u_out = self.neck_Rep[i](concat_layer)
+            # print(i, u_out.shape)
+        
+        d_out = []
+        for i in range(self.n_downsampling):
+            if i == 0:
+                down_feat = self.neck_downsample[i](u_out)
+            else:
+                down_feat = self.neck_downsample[i](d_out[-1])
+            concat_layer = torch.cat([down_feat, reduce_out[-i - 1]], 1)
+            d_out.append(self.neck_Rep[i + self.n_upsampling](concat_layer))
+            # print(i, d_out[-1].shape)
+
+        d_out.insert(0, u_out)
+
+        # for out in d_out:
+        #     print('output shape:', out.shape)
+
+        """ head """
+        x = d_out
+        for i in range(len(self.strides_head)):
+            x[i] = self.head_stems[i](x[i])
+            reg_feat = self.head_reg_convs[i](x[i])
+            reg_output = self.head_reg_preds[i](reg_feat)
+            obj_output = self.head_obj_preds[i](reg_feat)
+
+            x[i] = torch.cat([reg_output, obj_output], 1)
+            bs, _, ny, nx = x[i].shape
+            x[i] = (
+                x[i]
+                .view(bs, self.anchors, 5, ny, nx)
+                .permute(0, 1, 3, 4, 2)
+                .contiguous()
+            )
+        return x
