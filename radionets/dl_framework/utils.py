@@ -116,7 +116,22 @@ def _maybe_item(t):
     return t.item() if isinstance(t, torch.Tensor) and t.numel() == 1 else t
 
 
-def decode_yolo_box(x, stride_head):
+def decode_yolo_box(x, stride):
+    """Decode output of YOLO model to match input size
+
+    Parameters
+    ----------
+    x: nd-array
+        prediction of model (bs, (1), n, n, 5)
+    stride: int
+        stride used in model
+    
+    Returns
+    -------
+    x: nd-array
+        transformed prediction, same shape as input
+    """
+    x = torch.clone(x)  # avoid changes of inplace operation
     d = x.device
     ny, nx = x.shape[-3:-1]
 
@@ -124,8 +139,8 @@ def decode_yolo_box(x, stride_head):
         [torch.arange(ny).to(d), torch.arange(nx).to(d)], indexing="ij"
     )
     grid = torch.stack((xv, yv), 2).view(1, ny, nx, 2).float()
-    x[..., 0:2] = (x[..., 0:2] + grid) * stride_head.to(d)  # xy
-    x[..., 2:4] = torch.exp(x[..., 2:4]) * stride_head.to(d)  # wh, org. YOLOv6
+    x[..., 0:2] = (x[..., 0:2] + grid) * stride.to(d)  # xy
+    x[..., 2:4] = torch.exp(x[..., 2:4]) * stride.to(d)  # wh, org. YOLOv6
 
     return x
 

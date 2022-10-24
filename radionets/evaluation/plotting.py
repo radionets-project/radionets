@@ -10,6 +10,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Arc, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pytorch_msssim import ms_ssim
+from radionets.dl_framework.utils import decode_yolo_box
 from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_ratio
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
@@ -20,6 +21,7 @@ from radionets.evaluation.utils import (
     pad_unsqueeze,
     reshape_2d,
     round_n_digits,
+    non_max_suppression,
 )
 from radionets.simulations.utils import adjust_outpath
 from tqdm import tqdm
@@ -48,6 +50,12 @@ def create_OrBu():
 
 
 OrBu = create_OrBu()
+
+
+def legend_without_duplicate_labels(ax):
+    handles, labels = ax.get_legend_handles_labels()
+    unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+    ax.legend(*zip(*unique))
 
 
 def plot_target(h5_dataset, log=False):
@@ -576,6 +584,34 @@ def plot_box(ax, num_boxes, corners):
         )
 
 
+def plot_box2(ax, box, angle: float = 0, label: str = 'true box', c = 'g', alpha: float = 1):
+    """Plots a box
+
+    Parameters
+    ----------
+    ax: axis
+        matplotlib axis object
+    box: 1d-array
+        center x, center y, width, height
+    angle: float
+        rotation angle of the box
+    label: str
+        label of the box
+    c: color
+        color for matplotlib
+    alpha: float
+        transparency of box
+    """
+    x, y, w, h = box
+    x0 = x - w / 2
+    y0 = y - h / 2
+
+    # Create a Rectangle patch
+    rect = Rectangle((x0, y0), w, h, angle=angle, rotation_point='center', linewidth=1, edgecolor=c, facecolor='none', label=label, alpha=alpha)
+    # Add the patch to the Axes
+    ax.add_patch(rect)
+
+
 def plot_blobs(blobs_log, ax):
     """Plot the blobs created in sklearn.blob_log
     Parameters
@@ -975,6 +1011,101 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
         outpath = str(path) + f"/hist_jet_gaussian_distance.{plot_format}"
         plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.close()
+
+def plot_yolo_obj_true(ax, y, stride: int, out_size: int):
+    """Plotting true objectness on axis
+
+    Parameters
+    ----------
+    ax: matplotlib axis object
+        axis to be plotted on
+    y: 2d-array
+        true data from simulation
+    stride: int
+        stride used in model
+    out_size: int
+        output size of feature map
+    """
+    idx = (y[..., 1:3] / stride).astype(np.int64)
+    out = np.zeros((out_size, out_size))
+
+    for i in range(y.shape[0]):
+        if y[i, 0] > 0:  # only assign when amplitude exists
+            out[idx[i, 1], idx[i, 0]] = 1
+    
+    ax.imshow(out)
+
+    return ax
+
+
+def plot_yolo_box(x, y, pred: list = [], idx: int = 0, true_boxes: bool = True,  pred_boxes: bool = True, pred_label: bool = True, fig = None, ax = None):
+    """Default evaluation plot for YOLO
+
+    Parameters
+    ----------
+    x: 4d-array
+        input image (bs, 1, n, n)
+    y: 3d-array
+        true data from simulation (bs, components, paramters)
+    pred: list
+        list of feature maps, each of shape (bs, 1, m, m, 5)
+    idx: int
+        index of image to be plotted
+    true_boxes: bool
+        decide if true boxes are plotted
+    pred_boxes: bool
+        decide if predicted boxes are plotted
+    pred_label: bool
+        decide if label of predicted boxes are plotted
+    fig: matplotlib figure
+        using a predefined figure
+    ax: matplotlib axis
+        using a predefined axis
+    """
+    if not fig or not ax:
+        fig, ax = plt.subplots(1)
+
+    # Plot input image
+    img = ax.imshow(x[idx, 0], cmap='inferno')
+
+    # Plot true boxes
+    if true_boxes:
+        if torch.is_tensor(y):
+            y = y.clone()
+        else:
+            y = y.copy()
+        y[..., 3:5] *= 2
+        y[..., 5] *= 180 / np.pi
+        for i in range(y.shape[1]):
+            if y[idx, i, 0] > 0.01:
+                plot_box2(ax, y[idx, i, 1:5], angle=y[idx, i, 5])
+    
+    # Plot predicted boxes
+    if pred_boxes and pred:
+        strides = np.empty(len(pred))
+        for i, feature_map in enumerate(pred):
+            strides[i] = x.shape[-1] / feature_map.shape[-2]
+
+        all_preds = decode_yolo_box(pred[0], torch.tensor(strides[0]))[idx, 0].reshape(1, -1, 5)
+        if len(pred) > 1:
+            for i, p in enumerate(pred[1:]):
+                p_ = decode_yolo_box(p, torch.tensor(strides[i+1]))[idx, 0].reshape(1, -1, 5)
+                all_preds = torch.cat((all_preds, p_), axis=1)
+        all_preds[..., 4] = 1 / (1 + torch.exp(-all_preds[..., 4])) # sigmoid
+
+        outputs = non_max_suppression(all_preds)[0].detach().cpu().numpy()
+
+        for i in range(outputs.shape[0]):
+            plot_box2(ax, outputs[i, :4], label='pred box', c='r')
+            if pred_label:
+                text = np.round(outputs[i, 4], 3)
+                plt.text(outputs[i, 0], outputs[i, 1], text, color='w')
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbar = fig.colorbar(img, cax=cax, orientation="vertical")
+    if pred_boxes and pred_label:
+        legend_without_duplicate_labels(ax)
 
 
 def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
