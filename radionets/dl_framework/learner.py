@@ -1,7 +1,6 @@
 import torch.nn as nn
 from radionets.dl_framework.model import init_cnn
 from radionets.dl_framework.callbacks import (
-    NormCallback,
     SaveTempCallback,
     DataAug,
     AvgLossCallback,
@@ -31,8 +30,6 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
     model_path = train_conf["model_path"]
     lr = train_conf["lr"]
     opt_func = Adam
-    if train_conf["norm_path"] != "none":
-        cbfs.extend([NormCallback(train_conf["norm_path"])])
 
     if train_conf["param_scheduling"]:
         sched = {

@@ -1,8 +1,6 @@
 import torch
 import numpy as np
-import pandas as pd
 import kornia as K
-from radionets.dl_framework.data import do_normalisation
 from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item
 from fastai.callback.core import Callback, CancelBackwardException
@@ -52,7 +50,7 @@ class CometCallback(Callback):
         )
 
     def plot_test_pred(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
         model = self.model
         with self.experiment.test():
             with torch.no_grad():
@@ -80,7 +78,7 @@ class CometCallback(Callback):
         plt.close("all")
 
     def plot_test_fft(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
         model = self.model
         with self.experiment.test():
             with torch.no_grad():
@@ -172,24 +170,6 @@ class AvgLossCallback(Callback):
         plt.tight_layout()
 
 
-class NormCallback(Callback):
-    _order = 2
-
-    def __init__(self, norm_path):
-        self.path = norm_path
-
-    def before_batch(self):
-        self.learn.xb = [self.normalize_tfm()]
-
-    def normalize_tfm(self):
-        norm = pd.read_csv(self.path)
-        a = do_normalisation(self.learn.xb[0].clone(), norm)
-        assert self.learn.xb[0][:, 0].mean() != a[:, 0].mean()
-        # mean for imag and phase is approx 0
-        # assert x[:, 1].mean() != a[:, 1].mean()
-        return a
-
-
 class CudaCallback(Callback):
     _order = 3
 
@@ -266,7 +246,7 @@ class GradientCallback(Callback):
         # print or save
 
     def after_epoch(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
 
         # for each epoch put test image through model and save to csv
         fname_template = "pred_{i}.csv"
@@ -299,7 +279,7 @@ class PredictionImageGradient(Callback):
         self.arch_name = arch_name
 
     def save_output_pred(self):
-        img_test, img_true = get_images(self.test_ds, 5, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 5, rand=False)
 
         img_size = img_test[0].shape[-1]
         model_used = load_pretrained_model(self.arch_name, self.model, img_size)

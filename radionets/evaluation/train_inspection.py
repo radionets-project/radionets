@@ -69,9 +69,7 @@ def get_prediction(conf, mode="test"):
     if num_images is None:
         num_images = len(test_ds)
 
-    img_test, img_true = get_images(
-        test_ds, num_images, norm_path=conf["norm_path"], rand=rand
-    )
+    img_test, img_true = get_images(test_ds, num_images, rand=rand)
 
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
@@ -116,9 +114,7 @@ def get_separate_prediction(conf):
 
     if num_images is None:
         num_images = len(test_ds)
-    img_test, img_true = get_images(
-        test_ds, num_images, norm_path=conf["norm_path"], rand=rand
-    )
+    img_test, img_true = get_images(test_ds, num_images, rand=rand)
     img_size = img_test.shape[-1]
     model_1 = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)

@@ -6,31 +6,6 @@ import numpy as np
 from pathlib import Path
 
 
-def normalize(x, m, s):
-    return (x - m) / s
-
-
-def do_normalisation(x, norm):
-    """
-    :param x        Object to be normalized
-    :param norm     Pandas Dataframe which includes the normalisation factors
-    """
-    if len(x.shape) == 3:
-        x = x.unsqueeze(0)
-    if isinstance(norm, str):
-        return x
-    else:
-        train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
-        train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
-        train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
-        train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).double()
-        x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
-        x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
-
-    assert not torch.isinf(x).any()
-    return x
-
-
 class h5_dataset:
     def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False):
         """

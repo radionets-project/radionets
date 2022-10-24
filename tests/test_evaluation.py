@@ -5,8 +5,7 @@ import pytest
 class TestEvaluation:
     def test_get_images(self):
         import torch
-        from radionets.dl_framework.data import load_data, do_normalisation
-        import pandas as pd
+        from radionets.dl_framework.data import load_data
         from radionets.evaluation.utils import get_images
 
         test_ds = load_data(
@@ -18,7 +17,6 @@ class TestEvaluation:
 
         num_images = 10
         rand = True
-        norm_path = "none"
 
         indices = torch.arange(num_images)
         assert len(indices) == 10
@@ -28,13 +26,9 @@ class TestEvaluation:
         img_test = test_ds[indices][0]
 
         assert img_test.shape == (10, 2, 64, 64)
-        norm = "none"
-        if norm_path != "none":
-            norm = pd.read_csv(norm_path)
-        img_test = do_normalisation(img_test, norm)
         img_true = test_ds[indices][1]
 
-        img_test, img_true = get_images(test_ds, num_images, norm_path, rand)
+        img_test, img_true = get_images(test_ds, num_images, rand)
 
         assert img_true.shape == (10, 2, 64, 64)
         assert img_test.shape == (10, 2, 64, 64)

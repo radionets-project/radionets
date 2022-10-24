@@ -1,7 +1,6 @@
 import numpy as np
-import pandas as pd
 from radionets.dl_framework.model import load_pre_model
-from radionets.dl_framework.data import do_normalisation, load_data
+from radionets.dl_framework.data import load_data
 import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
@@ -51,7 +50,6 @@ def read_config(config):
     eval_conf["data_path"] = config["paths"]["data_path"]
     eval_conf["model_path"] = config["paths"]["model_path"]
     eval_conf["model_path_2"] = config["paths"]["model_path_2"]
-    eval_conf["norm_path"] = config["paths"]["norm_path"]
 
     eval_conf["quiet"] = config["mode"]["quiet"]
 
@@ -243,7 +241,7 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     return arch
 
 
-def get_images(test_ds, num_images, norm_path="none", rand=False):
+def get_images(test_ds, num_images, rand=False):
     """
     Get n random test and truth images.
 
@@ -267,10 +265,6 @@ def get_images(test_ds, num_images, norm_path="none", rand=False):
     if rand:
         indices = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[indices][0]
-    norm = "none"
-    if norm_path != "none":
-        norm = pd.read_csv(norm_path)
-    img_test = do_normalisation(img_test, norm)
     img_true = test_ds[indices][1]
     if len(img_true.shape) == 3:
         img_true = img_true.unsqueeze(0)
