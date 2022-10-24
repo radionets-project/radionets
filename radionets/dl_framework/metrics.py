@@ -12,7 +12,7 @@ def iou_YOLOv6(pred, target):
     Parameters
     ----------
     pred: list
-        The three output layers of YOLOv6
+        The output layers of YOLOv6
     target: ndarray
         Array with target boxes of shape (bs, n_components, 7)
         7: [amplitude, x, y, sx, sy, z_rotation, beta]
@@ -23,7 +23,7 @@ def iou_YOLOv6(pred, target):
         Mean Intersection over Union of all boxes after nms
     """
     bs = target.shape[0]
-    # strides_head = torch.tensor([8, 16, 32])
+    strides_head = torch.tensor([8, 16, 32])
 
     target[..., 3:5] *= 2   # increased box sizes (same as in loss function)
 
@@ -33,13 +33,13 @@ def iou_YOLOv6(pred, target):
         pred_map = pred_map.squeeze(1)
 
         # somehow the box is already decoded (maybe from an inplace operation in the loss and fast.ai uses it)
-        # pred_map = decode_yolo_box(pred_map, strides_head[i])
+        pred_map = decode_yolo_box(pred_map, strides_head[i])
         pred_map[..., 4] = torch.sigmoid(pred_map[..., 4])
 
-        preds.append(pred_map.reshape(bs, -1, 5))
+        preds.append(pred_map.reshape(bs, -1, 6))
     preds = torch.cat(preds, dim=1)
 
-    pred_nms = non_max_suppression(preds, obj_thres=0, max_nms=100, iou_thres=0.25)    # thresholds are imperical
+    pred_nms = non_max_suppression(preds)
 
     amp_threshold = 0.02    # only take components above this amplitude into account
     ious = torch.zeros(bs)

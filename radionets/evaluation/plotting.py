@@ -1048,7 +1048,7 @@ def plot_yolo_box(x, y, pred: list = [], idx: int = 0, true_boxes: bool = True, 
     y: 3d-array
         true data from simulation (bs, components, paramters)
     pred: list
-        list of feature maps, each of shape (bs, 1, m, m, 5)
+        list of feature maps, each of shape (bs, 1, m, m, 6)
     idx: int
         index of image to be plotted
     true_boxes: bool
@@ -1078,7 +1078,7 @@ def plot_yolo_box(x, y, pred: list = [], idx: int = 0, true_boxes: bool = True, 
         y[..., 5] *= 180 / np.pi
         for i in range(y.shape[1]):
             if y[idx, i, 0] > 0.01:
-                plot_box2(ax, y[idx, i, 1:5], angle=y[idx, i, 5])
+                plot_box2(ax, y[idx, i, 1:5], angle=y[idx, i, 5], alpha=0.7)
     
     # Plot predicted boxes
     if pred_boxes and pred:
@@ -1086,17 +1086,17 @@ def plot_yolo_box(x, y, pred: list = [], idx: int = 0, true_boxes: bool = True, 
         for i, feature_map in enumerate(pred):
             strides[i] = x.shape[-1] / feature_map.shape[-2]
 
-        all_preds = decode_yolo_box(pred[0], torch.tensor(strides[0]))[idx, 0].reshape(1, -1, 5)
+        all_preds = decode_yolo_box(pred[0], torch.tensor(strides[0]))[idx, 0].reshape(1, -1, 6)
         if len(pred) > 1:
             for i, p in enumerate(pred[1:]):
-                p_ = decode_yolo_box(p, torch.tensor(strides[i+1]))[idx, 0].reshape(1, -1, 5)
+                p_ = decode_yolo_box(p, torch.tensor(strides[i+1]))[idx, 0].reshape(1, -1, 6)
                 all_preds = torch.cat((all_preds, p_), axis=1)
         all_preds[..., 4] = 1 / (1 + torch.exp(-all_preds[..., 4])) # sigmoid
 
         outputs = non_max_suppression(all_preds)[0].detach().cpu().numpy()
 
         for i in range(outputs.shape[0]):
-            plot_box2(ax, outputs[i, :4], label='pred box', c='r')
+            plot_box2(ax, outputs[i, :4], angle=outputs[i, 5] * 180, label='pred box', c='r', alpha=0.7)
             if pred_label:
                 text = np.round(outputs[i, 4], 3)
                 plt.text(outputs[i, 0], outputs[i, 1], text, color='w')

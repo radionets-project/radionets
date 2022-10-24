@@ -124,6 +124,14 @@ class YOLOv6(nn.Module):
             # obj_pred2
             nn.Conv2d(self.channels * 8, 1 * self.anchors, 1),
         )
+        self.head_rot_preds = nn.Sequential(
+            # rot_pred0
+            nn.Conv2d(self.channels * 2, 1 * self.anchors, 1),
+            # rot_pred1
+            nn.Conv2d(self.channels * 4, 1 * self.anchors, 1),
+            # rot_pred2
+            nn.Conv2d(self.channels * 8, 1 * self.anchors, 1),
+        )
 
     def forward(self, x):
         """backbone"""
@@ -160,12 +168,13 @@ class YOLOv6(nn.Module):
             reg_feat = self.head_reg_convs[i](x[i])
             reg_output = self.head_reg_preds[i](reg_feat)
             obj_output = self.head_obj_preds[i](reg_feat)
+            rot_output = self.head_rot_preds[i](reg_feat)
 
-            x[i] = torch.cat([reg_output, obj_output], 1)
+            x[i] = torch.cat([reg_output, obj_output, rot_output], 1)
             bs, _, ny, nx = x[i].shape
             x[i] = (
                 x[i]
-                .view(bs, self.anchors, 5, ny, nx)
+                .view(bs, self.anchors, 6, ny, nx)
                 .permute(0, 1, 3, 4, 2)
                 .contiguous()
             )
@@ -259,6 +268,7 @@ class YOLOv6_flex(nn.Module):
         self.head_reg_convs = []
         self.head_reg_preds = []
         self.head_obj_preds = []
+        self.head_rot_preds = []
         for i in range(self.n_head):
             channels_head = int(self.channels * 2 ** (torch.log2(torch.min(self.strides_head)) - 1 + i))
             # print('channels head:', channels_head)
@@ -273,6 +283,9 @@ class YOLOv6_flex(nn.Module):
             nn.Conv2d(channels_head, 4 * self.anchors, 1),
                 ).cuda())
             self.head_obj_preds.append(nn.Sequential(
+            nn.Conv2d(channels_head, 1 * self.anchors, 1),
+                ).cuda())
+            self.head_rot_preds.append(nn.Sequential(
             nn.Conv2d(channels_head, 1 * self.anchors, 1),
                 ).cuda())
 
@@ -321,12 +334,13 @@ class YOLOv6_flex(nn.Module):
             reg_feat = self.head_reg_convs[i](x[i])
             reg_output = self.head_reg_preds[i](reg_feat)
             obj_output = self.head_obj_preds[i](reg_feat)
+            rot_output = self.head_rot_preds[i](reg_feat)
 
-            x[i] = torch.cat([reg_output, obj_output], 1)
+            x[i] = torch.cat([reg_output, obj_output, rot_output], 1)
             bs, _, ny, nx = x[i].shape
             x[i] = (
                 x[i]
-                .view(bs, self.anchors, 5, ny, nx)
+                .view(bs, self.anchors, 6, ny, nx)
                 .permute(0, 1, 3, 4, 2)
                 .contiguous()
             )

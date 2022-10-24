@@ -82,7 +82,7 @@ class CometCallback(Callback):
         make_axes_nice(fig, ax4, im4, "Org. Phase", phase=True)
         fig.tight_layout(pad=0.1)
         self.experiment.log_figure(
-            figure=fig, figure_name=f"{self.epoch + 1}_pred_epoch"
+            figure=fig, figure_name=f"{self.epoch + 1:03.0f}_pred_epoch"
         )
         plt.close("all")
 
@@ -115,7 +115,7 @@ class CometCallback(Callback):
 
         fig.tight_layout(pad=0.1)
         self.experiment.log_figure(
-            figure=fig, figure_name=f"{self.epoch + 1}_fft_epoch"
+            figure=fig, figure_name=f"{self.epoch + 1:03.0f}_fft_epoch"
         )
         plt.close("all")
 
@@ -147,7 +147,7 @@ class CometCallback(Callback):
 
         fig.tight_layout(pad=0.1)
         self.experiment.log_figure(
-            figure=fig, figure_name=f"{self.epoch + 1}_pred_epoch"
+            figure=fig, figure_name=f"{self.epoch + 1:03.0f}_pred_epoch"
         )
         plt.close("all")
 
