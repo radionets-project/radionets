@@ -342,10 +342,6 @@ def pad_unsqueeze(tensor):
     return tensor
 
 
-def round_n_digits(tensor, n_digits=3):
-    return (tensor * 10 ** n_digits).round() / (10 ** n_digits)
-
-
 def fft_pred(pred, truth, amp_phase=True):
     """
     Transform predicted image and true image to local domain.

@@ -19,7 +19,6 @@ from radionets.evaluation.utils import (
     make_axes_nice,
     pad_unsqueeze,
     reshape_2d,
-    round_n_digits,
 )
 from radionets.simulations.utils import adjust_outpath
 from tqdm import tqdm
@@ -414,7 +413,7 @@ def visualize_source_reconstruction(
         ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
         val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
 
-        ax1.plot([], [], " ", label=f"ms ssim: {round_n_digits(val)}")
+        ax1.plot([], [], " ", label=f"ms ssim: {val:.2f}")
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
