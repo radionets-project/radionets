@@ -145,20 +145,20 @@ class YOLOv6(nn.Module):
         fpn_out0 = self.neck_reduce_layer0(x0)
         upsample_feat0 = self.neck_upsample0(fpn_out0)
         f_concat_layer0 = torch.cat([upsample_feat0, x1], 1)
-        f_out0 = self.neck_Rep0(f_concat_layer0)
+        f_out0 = self.neck_Rep0(f_concat_layer0)  # 64
 
         fpn_out1 = self.neck_reduce_layer1(f_out0)
         upsample_feat1 = self.neck_upsample1(fpn_out1)
         f_concat_layer1 = torch.cat([upsample_feat1, x2], 1)
-        pan_out2 = self.neck_Rep1(f_concat_layer1)
+        pan_out2 = self.neck_Rep1(f_concat_layer1)  # 32
 
         down_feat1 = self.neck_downsample2(pan_out2)
         p_concat_layer1 = torch.cat([down_feat1, fpn_out1], 1)
-        pan_out1 = self.neck_Rep2(p_concat_layer1)
+        pan_out1 = self.neck_Rep2(p_concat_layer1)  # 64
 
         down_feat0 = self.neck_downsample1(pan_out1)
         p_concat_layer2 = torch.cat([down_feat0, fpn_out0], 1)
-        pan_out0 = self.neck_Rep3(p_concat_layer2)
+        pan_out0 = self.neck_Rep3(p_concat_layer2)  # 128
 
         x = [pan_out2, pan_out1, pan_out0]
 
@@ -181,86 +181,144 @@ class YOLOv6(nn.Module):
         return x
 
 
-class YOLOv6_flex(nn.Module):
-    """"YOLOv6 with flexible output shape.
-    
-    pytorch behavior: initializing a layer (or Sequential) in a list, is not
-        automatically on cuda
-    fastai behavior: initializing all layers in a list leads to IndexError: list
-        index out of range -> initialize an unused dummy layer (self.dummy)
+class YOLOv6flex(nn.Module):
+    """ "YOLOv6 with flexible output shape.
+
+    Parameters to be set:
+        self.channels: int
+            number of default channels for convolutions, 2*n -> 2, 4, 6, ...
+        self.anchors: int
+            number of boxes predicted per pixel
+            !!! Not implemented yet !!!
+        self.strides_head: tensor
+            reduction of input to output, 2^n -> 1, 2, 4, 8, ...
+        self.bb_repeats: list
+            number of repetitions of the RepBlock in the bacbbone. Each list
+            entry leads to a new RepBlock which halves the output size.
+        self.neck_repeats: int
+            number of repetitions of the RepBlock in the neck.
     """
+
     def __init__(self):
         super().__init__()
 
-        self.channels = 8  # multiple of 2
+        self.channels = 8
         self.anchors = 1
-        # self.num_repeats = [1, 6, 12, 18, 6, 12, 12, 12, 12]
-        # self.num_repeats = [1, 2, 4, 6, 2, 4, 4, 4, 4, 4]
-        # self.num_repeats = [1, 1, 1, 1, 1, 1, 1, 1, 1]
-        self.strides_head = torch.tensor([8, 16, 32])  # 2^n
+        self.strides_head = torch.tensor([2])
+        self.bb_repeats = [1, 2, 4, 6, 2]
+        self.neck_repeats = 4
 
-        self.bb_repeats = [1, 2, 4, 6, 2]  # repeats for RepBlock of backbone layer
-        self.neck_repeats = 4  # repeats for RepBlock of neck layers
+        if torch.log2(torch.max(self.strides_head)) > len(self.bb_repeats):
+            print("Warning. Backbone size is larger than output size")
 
-        # dummy layer for fastai, more in doc string
-        self.dummy = nn.Linear(1, 1)
+        self.strides_head_log = torch.log2(self.strides_head)
+        self.channels_list = [
+            self.channels * 2**i for i in range(len(self.bb_repeats))
+        ]
 
         """ backbone """
-        self.bb = [RepVGGBlock(1, self.channels, ks=3, stride=2).cuda()]
+        self.bb = []
+        self.bb_out_idx = []
         for i, rep in enumerate(self.bb_repeats):
-            channels_in = self.channels * 2 ** i
-            channels_out = self.channels * 2 ** (i + 1)
+            channels_in = self.channels_list[i - 1]
+            channels_out = self.channels_list[i]
 
-            if i == len(self.bb_repeats) - 1:  # SimSPPF in last backbone Sequential
-                self.bb.append(nn.Sequential(
-                    RepVGGBlock(channels_in, channels_out, ks=3, stride=2),
-                    RepBlock(channels_out, channels_out, n=rep),
-                    SimSPPF(channels_out, channels_out),
-                ).cuda())
+            if i == 0:  # first layer block
+                self.bb.extend(
+                    (
+                        RepVGGBlock(1, channels_out, ks=3, stride=2),
+                        RepBlock(
+                            channels_out, channels_out, n=rep
+                        ),  # not in original YOLOv6, but maybe useful for large feature maps
+                    )
+                )
+            elif i == len(self.bb_repeats) - 1:  # last layer block
+                self.bb.extend(
+                    (
+                        RepVGGBlock(channels_in, channels_out, ks=3, stride=2),
+                        RepBlock(channels_out, channels_out, n=rep),
+                        SimSPPF(channels_out, channels_out),
+                    )
+                )
             else:
-                self.bb.append(nn.Sequential(
-                    RepVGGBlock(channels_in, channels_out, ks=3, stride=2),
-                    RepBlock(channels_out, channels_out, n=rep),
-                ).cuda())
+                self.bb.extend(
+                    (
+                        RepVGGBlock(channels_in, channels_out, ks=3, stride=2),
+                        RepBlock(channels_out, channels_out, n=rep),
+                    )
+                )
+
+            self.bb_out_idx.append(len(self.bb) - 1)
+
+        self.bb = nn.Sequential(*self.bb)
 
         """ neck """
-        # RepBlocks of the neck. Used after concatenations
-        self.neck_Rep = []
+        # Upsample to increase image size as often as needed
+        self.n_upsampling = int(len(self.bb_repeats) - torch.min(self.strides_head_log))
+        self.n_downsampling = int(
+            torch.max(self.strides_head_log) - torch.min(self.strides_head_log)
+        )
 
-        # Reduce number of layers to create a bottle neck effect. As often as upsampling.
-        # Upsample to increase image size. As often as needed.
-        self.n_upsampling = int(len(self.bb_repeats) - torch.log2(torch.min(self.strides_head)))
-        self.neck_reduce_layer = []
+        self.neck_Rep = []  # RepBlocks of the neck. Used after concatenations
+        self.neck_reduce_layer = (
+            []
+        )  # Reduce number of layers to create a bottle neck effect
         self.neck_upsample = []
+        self.neck_downsample = []
+        self.neck_out_idx = []
+
         for i in range(self.n_upsampling):
-            channels_reduce = self.channels * 2 ** (len(self.bb_repeats) - 1 - i)
-            channels_upsampling = self.channels * 2 ** (len(self.bb_repeats) - 2 - i)
+            channels_reduce = self.channels_list[-i - 1]
+            channels_upsampling = self.channels_list[-i - 2]
             # print('channels reduce:', channels_reduce)
             # print('channels upsampling:', channels_upsampling)
 
-            self.neck_reduce_layer.append(nn.Sequential(
-                *conv(channels_reduce, channels_upsampling, 1, activation=nn.ReLU())
-            ).cuda())
-            self.neck_upsample.append(nn.Sequential(
-                *deconv(channels_upsampling, channels_upsampling, 2, 2, 0, 0)
-            ).cuda())
-            self.neck_Rep.append(RepBlock(
-                channels_reduce, channels_upsampling, n=self.neck_repeats
-            ).cuda())
+            self.neck_reduce_layer.append(
+                nn.Sequential(
+                    *conv(channels_reduce, channels_upsampling, 1, activation=nn.ReLU())
+                )
+            )
+            self.neck_upsample.append(
+                nn.Sequential(
+                    *deconv(channels_upsampling, channels_upsampling, 2, 2, 0, 0)
+                )
+            )
+            self.neck_Rep.append(
+                RepBlock(channels_reduce, channels_upsampling, n=self.neck_repeats)
+            )
 
-        # Downsample to output size
-        self.n_downsampling = int(torch.log2(torch.max(self.strides_head)) - torch.log2(torch.min(self.strides_head)))
-        self.neck_downsample = []
         for i in range(self.n_downsampling):
-            channels_downsampling = int(self.channels * 2 ** (torch.log2(torch.min(self.strides_head)) - 1 + i))
+            channels_downsampling = self.channels_list[
+                len(self.bb_repeats) - self.n_upsampling + i - 1
+            ]
             # print('channels downsampling:', channels_downsampling)
 
-            self.neck_downsample.append(nn.Sequential(
-                *conv(channels_downsampling, channels_downsampling, 3, 2, 1, activation=nn.ReLU())
-            ).cuda())
-            self.neck_Rep.append(RepBlock(
-                channels_downsampling * 2, channels_downsampling * 2, n=self.neck_repeats
-            ).cuda())
+            self.neck_downsample.append(
+                nn.Sequential(
+                    *conv(
+                        channels_downsampling,
+                        channels_downsampling,
+                        3,
+                        2,
+                        1,
+                        activation=nn.ReLU(),
+                    )
+                )
+            )
+            self.neck_Rep.append(
+                RepBlock(
+                    channels_downsampling * 2,
+                    channels_downsampling * 2,
+                    n=self.neck_repeats,
+                )
+            )
+            if torch.min(self.strides_head_log) + i + 1 in self.strides_head_log:
+                self.neck_out_idx.append(i)
+
+        self.neck_reduce_layer = nn.Sequential(*self.neck_reduce_layer)
+        self.neck_upsample = nn.Sequential(*self.neck_upsample)
+        self.neck_downsample = nn.Sequential(*self.neck_downsample)
+        self.neck_Rep = nn.Sequential(*self.neck_Rep)
 
         """ head """
         self.n_head = len(self.strides_head)
@@ -269,35 +327,50 @@ class YOLOv6_flex(nn.Module):
         self.head_reg_preds = []
         self.head_obj_preds = []
         self.head_rot_preds = []
+
         for i in range(self.n_head):
-            channels_head = int(self.channels * 2 ** (torch.log2(torch.min(self.strides_head)) - 1 + i))
+            channels_head = self.channels_list[
+                len(self.bb_repeats) - self.n_upsampling + i - 1
+            ]
             # print('channels head:', channels_head)
 
-            self.head_stems.append(nn.Sequential(
-                *conv(channels_head, channels_head, 1, 1, activation=nn.SiLU())
-                ).cuda())
-            self.head_reg_convs.append(nn.Sequential(
-                *conv(channels_head, channels_head, 3, 1, 1, activation=nn.SiLU())
-                ).cuda())
-            self.head_reg_preds.append(nn.Sequential(
-            nn.Conv2d(channels_head, 4 * self.anchors, 1),
-                ).cuda())
-            self.head_obj_preds.append(nn.Sequential(
-            nn.Conv2d(channels_head, 1 * self.anchors, 1),
-                ).cuda())
-            self.head_rot_preds.append(nn.Sequential(
-            nn.Conv2d(channels_head, 1 * self.anchors, 1),
-                ).cuda())
+            self.head_stems.append(
+                nn.Sequential(
+                    *conv(channels_head, channels_head, 1, 1, activation=nn.SiLU())
+                )
+            )
+            self.head_reg_convs.append(
+                nn.Sequential(
+                    *conv(channels_head, channels_head, 3, 1, 1, activation=nn.SiLU())
+                )
+            )
+            self.head_reg_preds.append(
+                nn.Conv2d(channels_head, 4 * self.anchors, 1),
+            )
+            self.head_obj_preds.append(
+                nn.Conv2d(channels_head, 1 * self.anchors, 1),
+            )
+            self.head_rot_preds.append(
+                nn.Conv2d(channels_head, 1 * self.anchors, 1),
+            )
 
+        self.head_stems = nn.Sequential(*self.head_stems)
+        self.head_reg_convs = nn.Sequential(*self.head_reg_convs)
+        self.head_reg_preds = nn.Sequential(*self.head_reg_preds)
+        self.head_obj_preds = nn.Sequential(*self.head_obj_preds)
+        self.head_rot_preds = nn.Sequential(*self.head_rot_preds)
 
     def forward(self, x):
         """backbone"""
         x_bb = []
-        for i in range(len(self.bb_repeats)):
+        for i in range(len(self.bb)):
             if i == 0:
-                x_bb.append(self.bb[i](x))
+                x_bb_calc = self.bb[i](x)
             else:
-                x_bb.append(self.bb[i](x_bb[-1]))
+                x_bb_calc = self.bb[i](x_bb_calc)
+
+            if i in self.bb_out_idx:
+                x_bb.append(x_bb_calc)
             # print(i, x_bb[-1].shape)
 
         """ neck """
@@ -310,16 +383,17 @@ class YOLOv6_flex(nn.Module):
             upsample_feat = self.neck_upsample[i](reduce_out[-1])
             concat_layer = torch.cat([upsample_feat, x_bb[-i - 2]], 1)
             u_out = self.neck_Rep[i](concat_layer)
-            # print(i, u_out.shape)
-        
+
         d_out = []
         for i in range(self.n_downsampling):
             if i == 0:
                 down_feat = self.neck_downsample[i](u_out)
             else:
-                down_feat = self.neck_downsample[i](d_out[-1])
+                down_feat = self.neck_downsample[i](d_out_calc)
             concat_layer = torch.cat([down_feat, reduce_out[-i - 1]], 1)
-            d_out.append(self.neck_Rep[i + self.n_upsampling](concat_layer))
+            d_out_calc = self.neck_Rep[i + self.n_upsampling](concat_layer)
+            if i in self.neck_out_idx:
+                d_out.append(d_out_calc)
             # print(i, d_out[-1].shape)
 
         d_out.insert(0, u_out)

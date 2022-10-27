@@ -620,7 +620,7 @@ def yolo(x, y):
     w_rot = 1
 
     # how much the image got reduced, must match self.strides_head of architecture
-    strides_head = torch.tensor([8, 16, 32])
+    strides_head = torch.tensor([2])
 
     loss_box = 0
     loss_obj = 0
@@ -701,7 +701,10 @@ def yolo(x, y):
 
     loss = loss_box + loss_obj + loss_rot
     if torch.isnan(loss):
-        print(f"Loss got nan. Box loss: {loss_box}, Objectness loss: {loss_obj}, Rotation loss: {loss_rot}")
+        print(
+            f"Loss got nan. Box loss: {loss_box}, Objectness loss: {loss_obj}, \
+                Rotation loss: {loss_rot}"
+        )
         quit()
 
     return loss
