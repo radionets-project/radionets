@@ -204,7 +204,7 @@ class YOLOv6flex(nn.Module):
 
         self.channels = 8
         self.anchors = 1
-        self.strides_head = torch.tensor([2])
+        self.strides_head = torch.tensor([2, 8])
         self.bb_repeats = [1, 2, 4, 6, 2]
         self.neck_repeats = 4
 
@@ -315,6 +315,9 @@ class YOLOv6flex(nn.Module):
             if torch.min(self.strides_head_log) + i + 1 in self.strides_head_log:
                 self.neck_out_idx.append(i)
 
+        # print('neck out idx:', self.neck_out_idx)
+        # print('strides head log:', self.strides_head_log)
+
         self.neck_reduce_layer = nn.Sequential(*self.neck_reduce_layer)
         self.neck_upsample = nn.Sequential(*self.neck_upsample)
         self.neck_downsample = nn.Sequential(*self.neck_downsample)
@@ -329,10 +332,7 @@ class YOLOv6flex(nn.Module):
         self.head_rot_preds = []
 
         for i in range(self.n_head):
-            channels_head = self.channels_list[
-                len(self.bb_repeats) - self.n_upsampling + i - 1
-            ]
-            # print('channels head:', channels_head)
+            channels_head = self.channels_list[int(self.strides_head_log[i]) - 1]
 
             self.head_stems.append(
                 nn.Sequential(
@@ -400,6 +400,7 @@ class YOLOv6flex(nn.Module):
 
         # for out in d_out:
         #     print('output shape:', out.shape)
+        # quit()
 
         """ head """
         x = d_out

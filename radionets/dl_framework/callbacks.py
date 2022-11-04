@@ -20,12 +20,11 @@ from radionets.evaluation.plotting import (
     create_OrBu,
     plot_yolo_box,
     plot_yolo_obj_true,
-    plot_box2,
+    plot_yolo_obj_pred,
     legend_without_duplicate_labels,
 )
 from radionets.dl_framework.utils import (
     get_ifft_torch,
-    decode_yolo_box,
 )
 
 OrBu = create_OrBu()
@@ -132,20 +131,17 @@ class CometCallback(Callback):
         for i, feature_map in enumerate(pred):
             strides[i] = x.shape[-1] / feature_map.shape[-2]
 
-        feature_map_idx = 0
-        stride = strides[feature_map_idx]
-
         fig, ((ax1, ax2, ax3)) = plt.subplots(1, 3, figsize=(14, 4))
-        im1 = plot_yolo_box(x, y[None], pred, fig=fig, ax=ax1, true_boxes=False, pred_label=False)
-        im2 = ax2.imshow(1 / (1 + np.exp(-pred[0][0, 0, ..., 4].detach().cpu().numpy())))  # sigmoid
-        im3 = plot_yolo_obj_true(ax3, y.numpy(), stride, pred[0].shape[-2])
+        im1 = plot_yolo_box(ax1, x, y[None], pred, true_boxes=False, pred_label=False)
+        im2 = plot_yolo_obj_pred(ax2, pred)
+        im3 = plot_yolo_obj_true(ax3, y.numpy(), strides[0], pred[0].shape[-2])
 
         legend_without_duplicate_labels(ax1)
         make_axes_nice(fig, ax1, im1, "Input and pred. boxes")
         make_axes_nice(fig, ax2, im2, "Predicted objectness")
-        # make_axes_nice(fig, ax3, im3, "True objectness")
+        make_axes_nice(fig, ax3, im3, "True objectness")
 
-        fig.tight_layout(pad=0.1)
+        fig.tight_layout(pad=0.05)
         self.experiment.log_figure(
             figure=fig, figure_name=f"{self.epoch + 1:03.0f}_pred_epoch"
         )

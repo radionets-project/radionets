@@ -3,6 +3,7 @@ from math import pi
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
+from PIL import Image
 import torch
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LogNorm
@@ -22,6 +23,7 @@ from radionets.evaluation.utils import (
     reshape_2d,
     round_n_digits,
     non_max_suppression,
+    objectness_mapping,
 )
 from radionets.simulations.utils import adjust_outpath
 from tqdm import tqdm
@@ -54,7 +56,9 @@ OrBu = create_OrBu()
 
 def legend_without_duplicate_labels(ax):
     handles, labels = ax.get_legend_handles_labels()
-    unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+    unique = [
+        (h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]
+    ]
     ax.legend(*zip(*unique))
 
 
@@ -371,7 +375,17 @@ def visualize_source_reconstruction(
     # create angle visualization
     theta1 = min(0, -alpha_truth.numpy()[0])
     theta2 = max(0, -alpha_truth.numpy()[0])
-    ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white",))
+    ax2.add_patch(
+        Arc(
+            [32, 32],
+            50,
+            50,
+            90,
+            theta1,
+            theta2,
+            color="white",
+        )
+    )
 
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
@@ -416,10 +430,10 @@ def visualize_source_reconstruction(
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
     line = Line2D(
-        [], [], linestyle="-", color="w", label=fr"$\alpha = {alpha_pred[0]:.2f}\,$deg"
+        [], [], linestyle="-", color="w", label=rf"$\alpha = {alpha_pred[0]:.2f}\,$deg"
     )
     line_truth = Line2D(
-        [], [], linestyle="-", color="w", label=fr"$\alpha = {alpha_truth[0]:.2f}\,$deg"
+        [], [], linestyle="-", color="w", label=rf"$\alpha = {alpha_truth[0]:.2f}\,$deg"
     )
 
     ax1.legend(loc="best", handles=[line])
@@ -479,7 +493,12 @@ def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
     ax1.hist(
-        dif, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dif,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
@@ -512,14 +531,24 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
     ax1.set_title("True Images")
     ax1.hist(
-        dr_truth, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dr_truth,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Dynamic range")
     ax1.set_ylabel("Number of sources")
 
     ax2.set_title("Predictions")
     ax2.hist(
-        dr_pred, 25, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        dr_pred,
+        25,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax2.set_xlabel("Dynamic range")
     ax2.set_ylabel("Number of sources")
@@ -584,7 +613,9 @@ def plot_box(ax, num_boxes, corners):
         )
 
 
-def plot_box2(ax, box, angle: float = 0, label: str = 'true box', c = 'g', alpha: float = 1):
+def plot_box2(
+    ax, box, angle: float = 0, label: str = "true box", c="g", alpha: float = 1
+):
     """Plots a box
 
     Parameters
@@ -607,7 +638,18 @@ def plot_box2(ax, box, angle: float = 0, label: str = 'true box', c = 'g', alpha
     y0 = y - h / 2
 
     # Create a Rectangle patch
-    rect = Rectangle((x0, y0), w, h, angle=angle, rotation_point='center', linewidth=1, edgecolor=c, facecolor='none', label=label, alpha=alpha)
+    rect = Rectangle(
+        (x0, y0),
+        w,
+        h,
+        angle=angle,
+        rotation_point="center",
+        linewidth=1,
+        edgecolor=c,
+        facecolor="none",
+        label=label,
+        alpha=alpha,
+    )
     # Add the patch to the Axes
     ax.add_patch(rect)
 
@@ -652,7 +694,12 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        vals,
+        51,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
@@ -673,7 +720,12 @@ def histogram_area(vals, out_path, plot_format="png"):
     bins = np.arange(0, vals.max() + 0.1, 0.1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75,
+        vals,
+        bins=bins,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
     )
     ax1.axvline(1, color="red", linestyle="dashed")
     ax1.set_xlabel("ratio of areas")
@@ -728,8 +780,8 @@ def hist_point(vals, mask, out_path, plot_format="png"):
     ax1.legend(
         [extra_1, extra_2],
         [
-            fr"Point: $({mean_point:.2f}\pm{std_point:.2f})\,\%$",
-            fr"Extended: $({mean_extent:.2f}\pm{std_extent:.2f})\,\%$",
+            rf"Point: $({mean_point:.2f}\pm{std_point:.2f})\,\%$",
+            rf"Extended: $({mean_extent:.2f}\pm{std_extent:.2f})\,\%$",
         ],
     )
     outpath = str(out_path) + f"/hist_point.{plot_format}"
@@ -1012,6 +1064,7 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
         plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.close()
 
+
 def plot_yolo_obj_true(ax, y, stride: int, out_size: int):
     """Plotting true objectness on axis
 
@@ -1032,17 +1085,49 @@ def plot_yolo_obj_true(ax, y, stride: int, out_size: int):
     for i in range(y.shape[0]):
         if y[i, 0] > 0:  # only assign when amplitude exists
             out[idx[i, 1], idx[i, 0]] = 1
-    
-    ax.imshow(out)
 
-    return ax
+    img = ax.imshow(out)
+
+    return img
 
 
-def plot_yolo_box(x, y, pred: list = [], idx: int = 0, true_boxes: bool = True,  pred_boxes: bool = True, pred_label: bool = True, fig = None, ax = None):
+def plot_yolo_obj_pred(ax, pred, idx: int = 0, anchor_idx: int = 0):
+    """Plotting predicted objectness on axis by taking the maximum for each pixel.
+    Feature maps with lower size are upsampled.
+
+    Parameters
+    ----------
+    ax: matplotlib axis object
+        axis to be plotted on
+    pred: list
+        list of feature maps, each of shape (bs, 1, m, m, 6)
+    idx: int
+        index of image to be plotted
+    anchor_idx: int
+        indes of the anchor
+    """
+    out = objectness_mapping(pred)
+    img = ax.imshow(out[idx, anchor_idx])
+
+    return img
+
+
+def plot_yolo_box(
+    ax,
+    x,
+    y,
+    pred: list = [],
+    idx: int = 0,
+    true_boxes: bool = True,
+    pred_boxes: bool = True,
+    pred_label: bool = True,
+):
     """Default evaluation plot for YOLO
 
     Parameters
     ----------
+    ax: matplotlib axis
+        using a predefined axis
     x: 4d-array
         input image (bs, 1, n, n)
     y: 3d-array
@@ -1057,16 +1142,9 @@ def plot_yolo_box(x, y, pred: list = [], idx: int = 0, true_boxes: bool = True, 
         decide if predicted boxes are plotted
     pred_label: bool
         decide if label of predicted boxes are plotted
-    fig: matplotlib figure
-        using a predefined figure
-    ax: matplotlib axis
-        using a predefined axis
     """
-    if not fig or not ax:
-        fig, ax = plt.subplots(1)
-
     # Plot input image
-    img = ax.imshow(x[idx, 0], cmap='inferno')
+    img = ax.imshow(x[idx, 0], cmap="inferno")
 
     # Plot true boxes
     if true_boxes:
@@ -1079,33 +1157,48 @@ def plot_yolo_box(x, y, pred: list = [], idx: int = 0, true_boxes: bool = True, 
         for i in range(y.shape[1]):
             if y[idx, i, 0] > 0.01:
                 plot_box2(ax, y[idx, i, 1:5], angle=y[idx, i, 5], alpha=0.7)
-    
+
     # Plot predicted boxes
     if pred_boxes and pred:
         strides = np.empty(len(pred))
         for i, feature_map in enumerate(pred):
             strides[i] = x.shape[-1] / feature_map.shape[-2]
 
-        all_preds = decode_yolo_box(pred[0], torch.tensor(strides[0]))[idx, 0].reshape(1, -1, 6)
+        all_preds = decode_yolo_box(pred[0], torch.tensor(strides[0]))[idx, 0].reshape(
+            1, -1, 6
+        )
         if len(pred) > 1:
             for i, p in enumerate(pred[1:]):
-                p_ = decode_yolo_box(p, torch.tensor(strides[i+1]))[idx, 0].reshape(1, -1, 6)
+                p_ = decode_yolo_box(p, torch.tensor(strides[i + 1]))[idx, 0].reshape(
+                    1, -1, 6
+                )
                 all_preds = torch.cat((all_preds, p_), axis=1)
-        all_preds[..., 4] = 1 / (1 + torch.exp(-all_preds[..., 4])) # sigmoid
+        all_preds[..., 4] = 1 / (1 + torch.exp(-all_preds[..., 4]))  # sigmoid
 
-        outputs = non_max_suppression(all_preds)[0].detach().cpu().numpy()
+        outputs = (
+            non_max_suppression(all_preds, obj_thres=all_preds[..., 4].max() / 5)[0]
+            .detach()
+            .cpu()
+            .numpy()
+        )
 
         for i in range(outputs.shape[0]):
-            plot_box2(ax, outputs[i, :4], angle=outputs[i, 5] * 180, label='pred box', c='r', alpha=0.7)
+            plot_box2(
+                ax,
+                outputs[i, :4],
+                angle=outputs[i, 5] * 180,
+                label="pred box",
+                c="r",
+                alpha=0.7,
+            )
             if pred_label:
                 text = np.round(outputs[i, 4], 3)
-                plt.text(outputs[i, 0], outputs[i, 1], text, color='w')
+                ax.text(outputs[i, 0], outputs[i, 1], text, color="w")
 
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    cbar = fig.colorbar(img, cax=cax, orientation="vertical")
     if pred_boxes and pred_label:
         legend_without_duplicate_labels(ax)
+
+    return img
 
 
 def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):

@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 import torchvision
 import h5py
 from pathlib import Path
+from PIL import Image
 import warnings
 
 
@@ -36,7 +37,10 @@ def source_list_collate(batch):
 def create_databunch(data_path, fourier, source_list, batch_size):
     # Load data sets
     test_ds = load_data(
-        data_path, mode="test", fourier=fourier, source_list=source_list,
+        data_path,
+        mode="test",
+        fourier=fourier,
+        source_list=source_list,
     )
 
     # Create databunch with defined batchsize and check for source_list
@@ -333,7 +337,7 @@ def pad_unsqueeze(tensor):
 
 
 def round_n_digits(tensor, n_digits=3):
-    return (tensor * 10 ** n_digits).round() / (10 ** n_digits)
+    return (tensor * 10**n_digits).round() / (10**n_digits)
 
 
 def fft_pred(pred, truth, amp_phase=True):
@@ -361,10 +365,10 @@ def fft_pred(pred, truth, amp_phase=True):
     b_true = truth[1, :, :]
 
     if amp_phase:
-        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
+        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10**10
         phase_pred = b
 
-        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10 ** 10
+        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10**10
         phase_true = b_true
 
         compl_pred = amp_pred_rescaled * np.exp(1j * phase_pred)
@@ -398,7 +402,6 @@ def calc_velocity(pos, times, mas):
         mean velocities of each component in mas/year
     """
     # postition from x, y coordinates to mas
-
 
     # calculate distances to main component and difference between timesteps
     p0 = pos[0]
@@ -449,12 +452,12 @@ def crop_center(img, cropx: int, cropy: int, justify: bool = False, eps: float =
     y, x = img.shape
     startx = x // 2 - (cropx // 2)
     starty = y // 2 - (cropy // 2)
-    img_cropped = img[starty:starty + cropy, startx:startx + cropx]
+    img_cropped = img[starty : starty + cropy, startx : startx + cropx]
 
     if justify:
         img_outer = img.copy()
         # set cropped area to -1, so it does not appear in top values
-        img_outer[starty:starty + cropy, startx:startx + cropx] = -1
+        img_outer[starty : starty + cropy, startx : startx + cropx] = -1
 
         # calculate max n values and compare
         n = int(np.sqrt(cropx))
@@ -463,7 +466,9 @@ def crop_center(img, cropx: int, cropy: int, justify: bool = False, eps: float =
 
         mean_ratio = top_outer.mean() / top_inner.mean()
         if mean_ratio > eps:
-            warnings.warn(f'Source might be cut off. Outer to Inner ratio: {mean_ratio:.2f}')
+            warnings.warn(
+                f"Source might be cut off. Outer to Inner ratio: {mean_ratio:.2f}"
+            )
 
     return img_cropped
 
@@ -474,14 +479,14 @@ def yolo_out_transform(output, strides):
     Parameters
     ----------
     output:
-        list of (3) output layers each of shape (bs, n_anchors, ny, nx, 5)
+        list of output layers each of shape (bs, n_anchors, ny, nx, 6)
     strides:
         model dependent parameter
 
     Returns
     -------
-    pred_list: 
-        list of predictions with shape (bs, depends on layers, 5)
+    pred_list:
+        list of predictions with shape (bs, depends on layers, 6)
     """
     pred_list = []
     objectness = []
@@ -490,7 +495,7 @@ def yolo_out_transform(output, strides):
         out[..., 4] = torch.sigmoid(out[..., 4])
         objectness.append(out[..., 4])
 
-        out = out.reshape(out.shape[0], -1, 5)
+        out = out.reshape(out.shape[0], -1, 6)
         pred_list.append(out)
 
     return torch.cat(pred_list, 1), objectness
@@ -515,14 +520,14 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_
     Returns
     -------
     output: list
-        reduced number of boxes; list, because each image in batch can have 
+        reduced number of boxes; list, because each image in batch can have
         different number of boxes
     """
     pred_candidates = pred[..., 4] > obj_thres  # candidates
     output = [torch.zeros((0, 5), device=pred.device)] * pred.shape[0]
 
     for idx, x in enumerate(pred):
-        x = x[pred_candidates[idx]] # filter candidates
+        x = x[pred_candidates[idx]]  # filter candidates
 
         if not x.shape[0]:  # if no box remains, skip the next image
             continue
@@ -536,6 +541,39 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_
 
         output[idx] = x[keep_box_idx]
     return output
+
+
+def objectness_mapping(pred, reduction: str = "mean"):
+    """Mapping objectnesses of all feature maps together
+
+    Parameters
+    ----------
+    pred: list
+        list of feature maps, each of shape (bs, 1, m, m, 6)
+    reduction: string
+        specifies the reduction to apply to the output; 'mean' or 'sum'
+
+    Returns
+    -------
+    out: ndarray
+        merge objectness predictions with size of the largest feature map
+    """
+    bs, a, nx, ny, _ = pred[0].shape
+    out = np.zeros((bs, a, nx, ny))
+
+    for feature_map in pred:
+        for i in range(bs):
+            for j in range(a):
+                image = torch.sigmoid(feature_map[i, j, :, :, 4]).detach().cpu().numpy()
+                image = Image.fromarray(np.uint8(image * 255))
+                image = image.resize([nx, ny], Image.Resampling.BOX)
+                image = np.array(image) / 255
+                out[i, j] += image
+
+    if reduction == "mean":
+        out /= len(pred)
+
+    return out
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
