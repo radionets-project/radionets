@@ -23,7 +23,7 @@ def iou_YOLOv6(pred, target):
         Mean Intersection over Union of all boxes after nms
     """
     bs = target.shape[0]
-    strides_head = torch.tensor([2, 8])
+    strides_head = torch.tensor([8, 16, 32])
 
     target[..., 3:5] *= 2  # increased box sizes (same as in loss function)
 

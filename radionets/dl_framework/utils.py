@@ -117,7 +117,7 @@ def _maybe_item(t):
 
 
 def decode_yolo_box(x, stride):
-    """Decode output of YOLO model to match input size
+    """Decode one feature map of YOLO model to match input size
 
     Parameters
     ----------
@@ -143,6 +143,48 @@ def decode_yolo_box(x, stride):
     x[..., 2:4] = torch.exp(x[..., 2:4]) * stride.to(d)  # wh, org. YOLOv6
 
     return x
+
+
+def build_target_yolo(y, shape, stride):
+    """Building the target for training
+
+    Parameters
+    ----------
+    y: ndarray
+        truth from simulation
+        (amplitude, x, y, width, height, comp-rotation, jet-rotation, velocity)
+    shape: ndarray
+        shape of one output feature map [bs, a, ny, nx, 6]
+    stride: int
+        stride for this feature map
+
+    Returns
+    -------
+    target: ndarray
+        target for training
+    """
+    # initialize target
+    target = torch.zeros(shape)
+    # get indicies for target objectness
+    target_idx = (y[..., 1:3] / stride).type(torch.LongTensor)
+
+    for i in range(shape[0]):  # for each batch
+        anchors = torch.zeros((shape[2], shape[3])).type(torch.LongTensor)
+
+        for j in range(y.shape[1]):  # for each target component
+
+            if y[i, j, 0] > 0:  # only assign when amplitude is larger 0
+                ny = target_idx[i, j, 1]
+                nx = target_idx[i, j, 0]
+                anchor = anchors[ny, nx]
+
+                if anchor < shape[1]:  # only assign available anchors
+                    target[i, anchor, ny, nx, 0:4] = y[i, j, 1:5]
+                    target[i, anchor, ny, nx, 4] = 1
+                    target[i, anchor, ny, nx, 5] = y[i, j, 5]
+                anchors[ny, nx] += 1
+
+    return target
 
 
 def get_ifft_torch(array, amp_phase=False, scale=False):

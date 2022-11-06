@@ -3,7 +3,11 @@ import numpy as np
 import torch
 from torch import nn
 from torchvision.models import vgg16_bn
-from radionets.dl_framework.utils import children, decode_yolo_box
+from radionets.dl_framework.utils import (
+    build_target_yolo,
+    children,
+    decode_yolo_box,
+)
 from radionets.dl_framework.metrics import bbox_iou
 import torch.nn.functional as F
 from pytorch_msssim import MS_SSIM
@@ -524,7 +528,7 @@ def jet_list(x, y):
         shapes: (bs, 12, 256, 256), (bs, 11, 6), (bs, 12)
     y: tuple
         Simulated values
-        (compnent images, all parameters (amplitude, x, y, width, height, comp-rotation, jet-rotation, velocity))
+        (component images, all parameters (amplitude, x, y, width, height, comp-rotation, jet-rotation, velocity))
         shapes: (bs, 13, 256, 256)
 
     Returns
@@ -611,44 +615,40 @@ def jet_list(x, y):
 
 
 def yolo(x, y):
-    """
-    Loss for YOLO training
-    x list of (3) output layers each of shape (bs, n_anchors, ny, nx, 5)
+    """Loss for YOLO training
+
+    Parameters
+    ----------
+    x: list
+        output layers, each of shape (bs, n_anchors, ny, nx, 6)
+    y: ndarray
+        truth from simulation
+        (amplitude, x, y, width, height, comp-rotation, jet-rotation, velocity)
+
+    Returns
+    -------
+    loss: float
+        loss for the batch
     """
     w_box = 1
     w_obj = 5
     w_rot = 0.5
 
     # how much the image got reduced, must match self.strides_head of architecture
-    strides_head = torch.tensor([2, 8])
+    strides_head = torch.tensor([8, 16, 32])
 
     loss_box = 0
     loss_obj = 0
     loss_rot = 0
 
     for i_layer, output in enumerate(x):
-        # squeeze, because anchors are not implemented in loss yet
-        output = output.squeeze(1)
-        # initialize target
-        target = torch.zeros_like(output)
-        # get indicies for target objectness
-        target_idx = (y[..., 1:3] / strides_head[i_layer]).type(torch.LongTensor)
-        for i in range(output.shape[0]):
-            for j in range(y.shape[1]):
-                if y[i, j, 0] > 0:  # only assign when amplitude is larger 0
-                    try:
-                        target[i, target_idx[i, j, 1], target_idx[i, j, 0], 0:4] = y[
-                            i, j, 1:5
-                        ]
-                        target[i, target_idx[i, j, 1], target_idx[i, j, 0], 4] = 1
-                        target[i, target_idx[i, j, 1], target_idx[i, j, 0], 5] = y[
-                            i, j, 5
-                        ]
-                    except IndexError:  # index error if components lies on the edge
-                        continue
+        target = build_target_yolo(y, output.shape, strides_head[i_layer]).to(
+            output.device
+        )
 
         if w_box:
             output = decode_yolo_box(output, strides_head[i_layer])
+
             output_box = output[..., :4].reshape(-1, 4)
             output_box_packed = [
                 output_box[:, 0],
@@ -656,6 +656,7 @@ def yolo(x, y):
                 output_box[:, 2],
                 output_box[:, 3],
             ]
+
             target_box = target[..., :4].reshape(-1, 4)
             target_box_packed = [
                 target_box[:, 0],
@@ -677,18 +678,12 @@ def yolo(x, y):
             if not w_box:
                 target_obj = target[..., 4].reshape(-1)
 
-            w_class_obj = torch.ones_like(target_obj)
-            w_class_obj[~target_obj.bool()] = w_class_obj[
-                ~target_obj.bool()
-            ] * torch.mean(target_obj)
-
             # bcewithlog_loss = nn.BCEWithLogitsLoss(
             #     pos_weight=torch.sqrt((target_obj == 0).sum() / (target_obj == 1).sum())
             # )
             bcewithlog_loss = nn.BCEWithLogitsLoss()
             loss_obj_bce = bcewithlog_loss(output_obj, target_obj) * w_obj / len(x)
-            # loss_obj_l1 = torch.mean(torch.abs(x_obj - y_obj) * w_class_obj) * w_obj # weighted l1 loss
-            loss_obj += loss_obj_bce  # + loss_obj_l1
+            loss_obj += loss_obj_bce
             # print(f'loss obj: {loss_obj}')
 
         if w_rot:

@@ -549,7 +549,7 @@ def objectness_mapping(pred, reduction: str = "mean"):
     Parameters
     ----------
     pred: list
-        list of feature maps, each of shape (bs, 1, m, m, 6)
+        list of feature maps, each of shape (bs, a, ny, nx, 6)
     reduction: string
         specifies the reduction to apply to the output; 'mean' or 'sum'
 
@@ -558,15 +558,15 @@ def objectness_mapping(pred, reduction: str = "mean"):
     out: ndarray
         merge objectness predictions with size of the largest feature map
     """
-    bs, a, nx, ny, _ = pred[0].shape
-    out = np.zeros((bs, a, nx, ny))
+    bs, a, ny, nx, _ = pred[0].shape
+    out = np.zeros((bs, a, ny, nx))
 
     for feature_map in pred:
         for i in range(bs):
             for j in range(a):
                 image = torch.sigmoid(feature_map[i, j, :, :, 4]).detach().cpu().numpy()
                 image = Image.fromarray(np.uint8(image * 255))
-                image = image.resize([nx, ny], Image.Resampling.BOX)
+                image = image.resize([ny, nx], Image.Resampling.BOX)
                 image = np.array(image) / 255
                 out[i, j] += image
 

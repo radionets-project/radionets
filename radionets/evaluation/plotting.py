@@ -1133,7 +1133,7 @@ def plot_yolo_box(
     y: 3d-array
         true data from simulation (bs, components, paramters)
     pred: list
-        list of feature maps, each of shape (bs, 1, m, m, 6)
+        list of feature maps, each of shape (bs, a, ny, nx, 6)
     idx: int
         index of image to be plotted
     true_boxes: bool
