@@ -4,11 +4,11 @@ import torch
 from torch import nn
 from torchvision.models import vgg16_bn
 from radionets.dl_framework.utils import (
+    bbox_iou,
     build_target_yolo,
     children,
     decode_yolo_box,
 )
-from radionets.dl_framework.metrics import bbox_iou
 import torch.nn.functional as F
 from pytorch_msssim import MS_SSIM
 from scipy.optimize import linear_sum_assignment
@@ -636,6 +636,7 @@ def yolo(x, y):
 
     # how much the image got reduced, must match self.strides_head of architecture
     strides_head = torch.tensor([8, 16, 32])
+    weighted_bce = False
 
     loss_box = 0
     loss_obj = 0
@@ -678,10 +679,13 @@ def yolo(x, y):
             if not w_box:
                 target_obj = target[..., 4].reshape(-1)
 
-            # bcewithlog_loss = nn.BCEWithLogitsLoss(
-            #     pos_weight=torch.sqrt((target_obj == 0).sum() / (target_obj == 1).sum())
-            # )
-            bcewithlog_loss = nn.BCEWithLogitsLoss()
+            if weighted_bce:
+                bcewithlog_loss = nn.BCEWithLogitsLoss(
+                    pos_weight=torch.sqrt((target_obj == 0).sum() / (target_obj == 1).sum())
+                )
+            else:
+                bcewithlog_loss = nn.BCEWithLogitsLoss()
+
             loss_obj_bce = bcewithlog_loss(output_obj, target_obj) * w_obj / len(x)
             loss_obj += loss_obj_bce
             # print(f'loss obj: {loss_obj}')

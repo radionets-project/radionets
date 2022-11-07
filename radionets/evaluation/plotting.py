@@ -1100,7 +1100,7 @@ def plot_yolo_obj_pred(ax, pred, idx: int = 0, anchor_idx: int = 0):
     ax: matplotlib axis object
         axis to be plotted on
     pred: list
-        list of feature maps, each of shape (bs, 1, m, m, 6)
+        list of feature maps, each of shape (bs, 1, my, mx, 6)
     idx: int
         index of image to be plotted
     anchor_idx: int
@@ -1129,11 +1129,11 @@ def plot_yolo_box(
     ax: matplotlib axis
         using a predefined axis
     x: 4d-array
-        input image (bs, 1, n, n)
+        input image (bs, 1, ny, nx)
     y: 3d-array
         true data from simulation (bs, components, paramters)
     pred: list
-        list of feature maps, each of shape (bs, a, ny, nx, 6)
+        list of feature maps, each of shape (bs, a, my, mx, 6)
     idx: int
         index of image to be plotted
     true_boxes: bool
@@ -1143,6 +1143,8 @@ def plot_yolo_box(
     pred_label: bool
         decide if label of predicted boxes are plotted
     """
+    bs = x.shape[0]
+
     # Plot input image
     img = ax.imshow(x[idx, 0], cmap="inferno")
 
@@ -1160,23 +1162,21 @@ def plot_yolo_box(
 
     # Plot predicted boxes
     if pred_boxes and pred:
-        strides = np.empty(len(pred))
+        strides = torch.empty(len(pred)).to(x.device)
         for i, feature_map in enumerate(pred):
             strides[i] = x.shape[-1] / feature_map.shape[-2]
 
-        all_preds = decode_yolo_box(pred[0], torch.tensor(strides[0]))[idx, 0].reshape(
-            1, -1, 6
-        )
-        if len(pred) > 1:
-            for i, p in enumerate(pred[1:]):
-                p_ = decode_yolo_box(p, torch.tensor(strides[i + 1]))[idx, 0].reshape(
-                    1, -1, 6
-                )
-                all_preds = torch.cat((all_preds, p_), axis=1)
-        all_preds[..., 4] = 1 / (1 + torch.exp(-all_preds[..., 4]))  # sigmoid
+        # use mean of all objectness map
+        obj_map = objectness_mapping(pred)
+        # use boxes from prediction of highest resolution
+        boxes = decode_yolo_box(pred[0], strides[0])
+
+        boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
 
         outputs = (
-            non_max_suppression(all_preds, obj_thres=all_preds[..., 4].max() / 5)[0]
+            non_max_suppression(
+                boxes.reshape(bs, -1, 6), obj_thres=boxes[..., 4].max() / 5
+            )[0]
             .detach()
             .cpu()
             .numpy()

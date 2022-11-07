@@ -191,7 +191,7 @@ class YOLOv6flex(nn.Module):
             number of boxes predicted per pixel
             !!! Not implemented yet !!!
         self.strides_head: tensor
-            reduction of input to output, 2^n -> 1, 2, 4, 8, ...
+            reduction of input to output, 2^n -> 2, 4, 8, ... (1 does not work)
         self.bb_repeats: list
             number of repetitions of the RepBlock in the bacbbone. Each list
             entry leads to a new RepBlock which halves the output size.

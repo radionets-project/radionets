@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.data import do_normalisation, load_data
-from radionets.dl_framework.utils import decode_yolo_box
+from radionets.dl_framework.utils import (
+    decode_yolo_box,
+    xywh2xyxy,
+)
 import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
@@ -423,16 +426,6 @@ def calc_velocity(pos, times, mas):
     return v
 
 
-def xywh2xyxy(x):
-    # Convert boxes with shape [n, 4] from [x, y, w, h] to [x1, y1, x2, y2] where x1y1 is top-left, x2y2=bottom-right
-    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
-    y[:, 0] = x[:, 0] - x[:, 2] / 2  # top left x
-    y[:, 1] = x[:, 1] - x[:, 3] / 2  # top left y
-    y[:, 2] = x[:, 0] + x[:, 2] / 2  # bottom right x
-    y[:, 3] = x[:, 1] + x[:, 3] / 2  # bottom right y
-    return y
-
-
 def crop_center(img, cropx: int, cropy: int, justify: bool = False, eps: float = 1e-2):
     """Crop out the center of an image
 
@@ -507,7 +500,7 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_
     Parameters
     ----------
     pred: ndarray
-        boxes of shape (bs, n_boxes, 5), where 5 is: x, y, width, height, objectness
+        boxes of shape (bs, n_boxes, 6), where 6 is: x, y, width, height, objectness, rotation
     obj_thres: float
         only take boxes with objectness above this value into account for nms, range: [0, 1]
     max_nms: int
@@ -524,7 +517,7 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_
         different number of boxes
     """
     pred_candidates = pred[..., 4] > obj_thres  # candidates
-    output = [torch.zeros((0, 5), device=pred.device)] * pred.shape[0]
+    output = []
 
     for idx, x in enumerate(pred):
         x = x[pred_candidates[idx]]  # filter candidates
@@ -539,7 +532,8 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_
         if keep_box_idx.shape[0] > max_det:  # limit detections
             keep_box_idx = keep_box_idx[:max_det]
 
-        output[idx] = x[keep_box_idx]
+        output.append(x[keep_box_idx])
+
     return output
 
 
