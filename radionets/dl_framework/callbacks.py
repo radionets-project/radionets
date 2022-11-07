@@ -119,7 +119,13 @@ class CometCallback(Callback):
         plt.close("all")
 
     def plot_test_pred_yolo(self):
-        x, y = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        n = 4
+        x, y = get_images(self.test_ds, n, norm_path="none", rand=False)
+
+        # squeeze, because list of len==3 is being unsqeezed in get_images
+        y = y.squeeze(0)
+        if len(y.shape) == 2:
+            y[None]
 
         model = self.model
         model.eval()
@@ -131,20 +137,23 @@ class CometCallback(Callback):
         for i, feature_map in enumerate(pred):
             strides[i] = x.shape[-1] / feature_map.shape[-2]
 
-        fig, ((ax1, ax2, ax3)) = plt.subplots(1, 3, figsize=(14, 4))
-        im1 = plot_yolo_box(ax1, x, y[None], pred, true_boxes=False, pred_label=False)
-        im2 = plot_yolo_obj_pred(ax2, pred)
-        im3 = plot_yolo_obj_true(ax3, y.numpy(), strides[0], pred[0].shape[-2])
+        for i in range(n):
+            fig, ((ax1, ax2, ax3)) = plt.subplots(1, 3, figsize=(14, 4))
+            im1 = plot_yolo_box(
+                ax1, x, y, pred, idx=i, true_boxes=False, pred_label=False
+            )
+            im2 = plot_yolo_obj_pred(ax2, pred, idx=i)
+            im3 = plot_yolo_obj_true(ax3, y, pred, strides, idx=i)
 
-        legend_without_duplicate_labels(ax1)
-        make_axes_nice(fig, ax1, im1, "Input and pred. boxes")
-        make_axes_nice(fig, ax2, im2, "Predicted objectness")
-        make_axes_nice(fig, ax3, im3, "True objectness")
+            legend_without_duplicate_labels(ax1)
+            make_axes_nice(fig, ax1, im1, "Input and pred. boxes")
+            make_axes_nice(fig, ax2, im2, "Predicted objectness")
+            make_axes_nice(fig, ax3, im3, "True objectness")
 
-        fig.tight_layout(pad=0.05)
-        self.experiment.log_figure(
-            figure=fig, figure_name=f"{self.epoch + 1:03.0f}_pred_epoch"
-        )
+            fig.tight_layout(pad=0.05)
+            self.experiment.log_figure(
+                figure=fig, figure_name=f"{self.epoch + 1:03.0f}_pred_epoch", step=i + 1
+            )
         plt.close("all")
 
 

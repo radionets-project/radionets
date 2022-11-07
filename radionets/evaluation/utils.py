@@ -537,7 +537,7 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_
     return output
 
 
-def objectness_mapping(pred, reduction: str = "mean"):
+def objectness_mapping(pred, reduction: str = "mean", scaling: str = "sigmoid"):
     """Mapping objectnesses of all feature maps together
 
     Parameters
@@ -545,7 +545,9 @@ def objectness_mapping(pred, reduction: str = "mean"):
     pred: list
         list of feature maps, each of shape (bs, a, ny, nx, 6)
     reduction: string
-        specifies the reduction to apply to the output; 'mean' or 'sum'
+        specifies the reduction to apply to the output; "mean", else will be sum
+    scaling: string
+        apply a scaling to objectness (sigmoid during training)
 
     Returns
     -------
@@ -558,7 +560,12 @@ def objectness_mapping(pred, reduction: str = "mean"):
     for feature_map in pred:
         for i in range(bs):
             for j in range(a):
-                image = torch.sigmoid(feature_map[i, j, :, :, 4]).detach().cpu().numpy()
+                if scaling == "sigmoid":
+                    image = (
+                        torch.sigmoid(feature_map[i, j, :, :, 4]).detach().cpu().numpy()
+                    )
+                else:
+                    image = feature_map[i, j, :, :, 4]
                 image = Image.fromarray(np.uint8(image * 255))
                 image = image.resize([ny, nx], Image.Resampling.BOX)
                 image = np.array(image) / 255

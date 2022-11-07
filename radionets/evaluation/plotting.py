@@ -3,7 +3,6 @@ from math import pi
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
-from PIL import Image
 import torch
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LogNorm
@@ -11,7 +10,10 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Arc, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pytorch_msssim import ms_ssim
-from radionets.dl_framework.utils import decode_yolo_box
+from radionets.dl_framework.utils import (
+    decode_yolo_box,
+    build_target_yolo,
+)
 from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_ratio
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
@@ -1065,28 +1067,28 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
     plt.close()
 
 
-def plot_yolo_obj_true(ax, y, stride: int, out_size: int):
+def plot_yolo_obj_true(ax, y, pred, strides, idx: int = 0, anchor_idx: int = 0):
     """Plotting true objectness on axis
 
     Parameters
     ----------
     ax: matplotlib axis object
         axis to be plotted on
-    y: 2d-array
-        true data from simulation
-    stride: int
-        stride used in model
-    out_size: int
-        output size of feature map
+    y: 3d-array
+        true data from simulation [bs, comp, attr]
+    pred: list
+        list of feature maps, each of shape (bs, 1, my, mx, 6)
+    stride
+        strides used in model
+    idx: int
+        index of image to be plotted
     """
-    idx = (y[..., 1:3] / stride).astype(np.int64)
-    out = np.zeros((out_size, out_size))
+    obj_true = []
+    for i in range(len(pred)):
+        obj_true.append(build_target_yolo(y, shape=pred[i].shape, stride=strides[i]))
 
-    for i in range(y.shape[0]):
-        if y[i, 0] > 0:  # only assign when amplitude exists
-            out[idx[i, 1], idx[i, 0]] = 1
-
-    img = ax.imshow(out)
+    out = objectness_mapping(obj_true, scaling=None)
+    img = ax.imshow(out[idx, anchor_idx])
 
     return img
 
@@ -1175,7 +1177,7 @@ def plot_yolo_box(
 
         outputs = (
             non_max_suppression(
-                boxes.reshape(bs, -1, 6), obj_thres=boxes[..., 4].max() / 5
+                boxes[idx].reshape(bs, -1, 6), obj_thres=boxes[idx, ..., 4].max() / 5
             )[0]
             .detach()
             .cpu()
