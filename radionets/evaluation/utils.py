@@ -257,8 +257,6 @@ def get_images(test_ds, num_images, rand=False):
         indices = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[indices][0]
     img_true = test_ds[indices][1]
-    if len(img_true.shape) == 3:
-        img_true = img_true.unsqueeze(0)
     return img_test, img_true
 
 
