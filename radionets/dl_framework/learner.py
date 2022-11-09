@@ -1,9 +1,7 @@
 import torch.nn as nn
 from radionets.dl_framework.model import init_cnn
 from radionets.dl_framework.callbacks import (
-    NormCallback,
     SaveTempCallback,
-    TelegramLoggerCallback,
     DataAug,
     AvgLossCallback,
     SwitchLoss,
@@ -22,23 +20,16 @@ def get_learner(
 ):
     init_cnn(arch)
     dls = DataLoaders.from_dsets(
-        data.train_ds, data.valid_ds, bs=data.train_dl.batch_size,
+        data.train_ds, data.valid_ds, bs=data.train_dl.batch_size
     )
     return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
 
 
-def define_learner(
-    data, arch, train_conf, lr_find=False, plot_loss=False,
-):
+def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
     cbfs = []
     model_path = train_conf["model_path"]
-    model_name = (
-        model_path.split("build/")[-1].split("/")[-1].split("/")[0].split(".")[0]
-    )
     lr = train_conf["lr"]
     opt_func = Adam
-    if train_conf["norm_path"] != "none":
-        cbfs.extend([NormCallback(train_conf["norm_path"])])
 
     if train_conf["param_scheduling"]:
         sched = {
@@ -72,9 +63,6 @@ def define_learner(
                 ),
             ]
         )
-
-    if train_conf["telegram_logger"] and not lr_find:
-        cbfs.extend([TelegramLoggerCallback(model_name=model_name)])
 
     if train_conf["comet_ml"] and not lr_find and not plot_loss:
         cbfs.extend(

@@ -1,7 +1,6 @@
 import numpy as np
-import pandas as pd
 from radionets.dl_framework.model import load_pre_model
-from radionets.dl_framework.data import do_normalisation, load_data
+from radionets.dl_framework.data import load_data
 import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
@@ -31,9 +30,27 @@ def source_list_collate(batch):
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):
+    """Create a dataloader object, which feeds the data batch-wise
+
+    Parameters
+    ----------
+    data_path : str
+        path to the data
+    fourier : bool
+        true, if data in Fourier space is used
+    source_list : bool
+        true, if source_list data is used
+    batch_size : int
+        number of images for one batch
+
+    Returns
+    -------
+    DataLoader
+        dataloader object
+    """
     # Load data sets
     test_ds = load_data(
-        data_path, mode="test", fourier=fourier, source_list=source_list,
+        data_path, mode="test", fourier=fourier, source_list=source_list
     )
 
     # Create databunch with defined batchsize and check for source_list
@@ -47,11 +64,22 @@ def create_databunch(data_path, fourier, source_list, batch_size):
 
 
 def read_config(config):
+    """Parse the toml config file
+
+    Parameters
+    ----------
+    config : dict
+        dict which contains the configurations loaded with toml.load
+
+    Returns
+    -------
+    dict
+        dict containing all configurations with unique keywords
+    """
     eval_conf = {}
     eval_conf["data_path"] = config["paths"]["data_path"]
     eval_conf["model_path"] = config["paths"]["model_path"]
     eval_conf["model_path_2"] = config["paths"]["model_path_2"]
-    eval_conf["norm_path"] = config["paths"]["norm_path"]
 
     eval_conf["quiet"] = config["mode"]["quiet"]
 
@@ -146,52 +174,13 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
         cbar.set_label("Specific Intensity / a.u.")
-        # tick_locator = ticker.MaxNLocator(nbins=5)
-        # cbar.locator = tick_locator
 
-    # cbar.ax.tick_params(labelsize=16)
-    # cbar.ax.yaxis.get_offset_text().set_fontsize(16)
-    # cbar.formatter.set_powerlimits((0, 0))
-    # cbar.update_ticks()
     if phase:
         # set ticks for colorbar
         cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
     elif phase_diff:
         # set ticks for colorbar
         cbar.ax.set_yticklabels([r"$-2\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$2\pi$"])
-
-
-def reshape_split(img):
-    """
-    reshapes and splits the the given image based on the image shape.
-    If the image is based on two channels, it reshapes with shape
-    (1, 2, img_size, img_size), otherwise with shape (img_size, img_size).
-    Afterwards, the array is splitted in real and imaginary part if given.
-    Parameters
-    ----------
-    img : ndarray
-        image
-    Returns
-    ----------
-    img_reshaped : ndarry
-        contains the reshaped image in a numpy array
-    img_real, img_imag: ndarrays
-        contain the real and the imaginary part
-    -------
-    """
-    if img.shape[0] == 1:
-        img_size = int(np.sqrt(img.shape[0]))
-        img_reshaped = img.reshape(img_size, img_size)
-
-        return img_reshaped
-
-    else:
-        img_size = int(np.sqrt(img.shape[0] / 2))
-        img_reshaped = img.reshape(1, 2, img_size, img_size)
-        img_real = img_reshaped[0, 0, :]
-        img_imag = img_reshaped[0, 1, :]
-
-        return img_real, img_imag
 
 
 def check_vmin_vmax(inp):
@@ -243,7 +232,7 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     return arch
 
 
-def get_images(test_ds, num_images, norm_path="none", rand=False):
+def get_images(test_ds, num_images, rand=False):
     """
     Get n random test and truth images.
 
@@ -267,13 +256,7 @@ def get_images(test_ds, num_images, norm_path="none", rand=False):
     if rand:
         indices = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[indices][0]
-    norm = "none"
-    if norm_path != "none":
-        norm = pd.read_csv(norm_path)
-    img_test = do_normalisation(img_test, norm)
     img_true = test_ds[indices][1]
-    if len(img_true.shape) == 3:
-        img_true = img_true.unsqueeze(0)
     return img_test, img_true
 
 
@@ -306,7 +289,21 @@ def eval_model(img, model):
     return pred.cpu()
 
 
-def get_ifft(array, amp_phase=False):
+def get_ifft(array, amp_phase=True):
+    """Compute the inverse Fourier transformation
+
+    Parameters
+    ----------
+    array : ndarray
+        array with shape (2, img_size, img_size) with optional batch size
+    amp_phase : bool, optional
+        true, if splitting in amplitude and phase was used, by default True
+
+    Returns
+    -------
+    ndarray
+        image(s) in image space
+    """
     if len(array.shape) == 3:
         array = array.unsqueeze(0)
     if amp_phase:
@@ -323,14 +320,24 @@ def get_ifft(array, amp_phase=False):
 
 
 def pad_unsqueeze(tensor):
+    """Unsqueeze with zeros until the image has a length of 160 pixels.
+    Needed as a helper function for the ms_ssim, as is only operates on
+    images which are at least 160x160 pixels.
+
+    Parameters
+    ----------
+    tensor : torch.tensor
+        image to pad
+
+    Returns
+    -------
+    torch.tensor
+        padded tensor
+    """
     while tensor.shape[-1] < 160:
         tensor = F.pad(input=tensor, pad=(1, 1, 1, 1), mode="constant", value=0)
     tensor = tensor.unsqueeze(1)
     return tensor
-
-
-def round_n_digits(tensor, n_digits=3):
-    return (tensor * 10 ** n_digits).round() / (10 ** n_digits)
 
 
 def fft_pred(pred, truth, amp_phase=True):
@@ -406,6 +413,18 @@ def read_pred(path):
 
 
 def check_outpath(model_path):
+    """Checks if there is already a predictions file in the evaluation folder
+
+    Parameters
+    ----------
+    model_path : str
+        path to the model
+
+    Returns
+    -------
+    bool
+        true, if the file exists
+    """
     model_path = Path(model_path).parent / "evaluation" / "predictions.h5"
     path = Path(model_path)
     exists = path.exists()

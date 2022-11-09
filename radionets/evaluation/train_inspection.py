@@ -69,9 +69,7 @@ def get_prediction(conf, mode="test"):
     if num_images is None:
         num_images = len(test_ds)
 
-    img_test, img_true = get_images(
-        test_ds, num_images, norm_path=conf["norm_path"], rand=rand
-    )
+    img_test, img_true = get_images(test_ds, num_images, rand=rand)
 
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
@@ -116,9 +114,7 @@ def get_separate_prediction(conf):
 
     if num_images is None:
         num_images = len(test_ds)
-    img_test, img_true = get_images(
-        test_ds, num_images, norm_path=conf["norm_path"], rand=rand
-    )
+    img_test, img_true = get_images(test_ds, num_images, rand=rand)
     img_size = img_test.shape[-1]
     model_1 = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)
@@ -335,9 +331,7 @@ def evaluate_viewing_angle(conf):
 
     click.echo("\nCreating histogram of jet angles.\n")
     dif = (alpha_preds - alpha_truths).numpy()
-    histogram_jet_angles(
-        dif, out_path, plot_format=conf["format"]
-    )
+    histogram_jet_angles(dif, out_path, plot_format=conf["format"])
     if conf["save_vals"]:
         click.echo("\nSaving jet angle offsets.\n")
         out = Path(conf["save_path"])
@@ -626,7 +620,9 @@ def evaluate_gan_sources(conf):
             num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
             num_zeros += list(num_zero)
 
-        ratio = np.abs(diff).max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
+        ratio = np.abs(diff).max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(
+            axis=-1
+        )
 
         below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
         above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100

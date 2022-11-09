@@ -1,22 +1,14 @@
 from pathlib import Path
 import click
-import gzip
-import pickle
 import os
 import sys
 import re
 import numpy as np
-import pandas as pd
-from tqdm import tqdm
 from scipy import interpolate
-from skimage.transform import resize
 from radionets.dl_framework.data import (
-    save_fft_pair,
-    open_fft_pair,
     get_bundles,
     split_amp_phase,
     split_real_imag,
-    mean_and_std,
 )
 
 
@@ -94,11 +86,6 @@ def read_config(config):
     sim_conf = {}
     sim_conf["data_path"] = config["paths"]["data_path"]
     sim_conf["data_format"] = config["paths"]["data_format"]
-    if config["mnist"]["simulate"]:
-        click.echo("Create fft_images from mnist data set!")
-
-        sim_conf["type"] = "mnist"
-        sim_conf["resource"] = config["mnist"]["resource"]
     if config["gaussians"]["simulate"]:
         click.echo("Create fft_images from gaussian data set! \n")
 
@@ -143,27 +130,6 @@ def read_config(config):
     return sim_conf
 
 
-def open_mnist(path):
-    """
-    Open MNIST data set pickle file.
-
-    Parameters
-    ----------
-    path: str
-        path to MNIST pickle file
-
-    Returns
-    -------
-    train_x: 2d array
-        50000 x 784 images
-    valid_x: 2d array
-        10000 x 784 images
-    """
-    with gzip.open(path, "rb") as f:
-        ((train_x, _), (valid_x, _), _) = pickle.load(f, encoding="latin-1")
-    return train_x, valid_x
-
-
 def adjust_outpath(path, option, form="h5"):
     """
     Add number to out path when filename already exists.
@@ -186,38 +152,6 @@ def adjust_outpath(path, option, form="h5"):
         counter += 1
     out = filename.format(counter)
     return out
-
-
-def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
-    """
-    Resize images to specific squared pixel size and calculate fft
-
-    Parameters
-    ----------
-    image: 2d array
-        input image
-    pixel: int
-        number of pixel in x and y
-
-    Returns
-    -------
-    x: 2d array
-        fft of rescaled input image
-    y: 2d array
-        rescaled input image
-    """
-    y = resize(
-        bundle.swapaxes(0, 2),
-        (pixel, pixel),
-        anti_aliasing=True,
-        mode="constant",
-    ).swapaxes(2, 0)
-    y_prep = y.copy()
-    if noise:
-        y_prep = add_noise(y_prep)
-    x = np.fft.fftshift(np.fft.fft2(y_prep))
-    path = adjust_outpath(path, "/fft_" + option)
-    save_fft_pair(path, x, y)
 
 
 def get_fft_bundle_paths(data_path, ftype, mode):
@@ -288,41 +222,6 @@ def add_noise(bundle, noise_level):
         [img + get_noise(img, (img.max() * noise_level / 100)) for img in bundle]
     )
     return bundle_noised
-
-
-def calc_norm(sim_conf):
-    bundle_paths = get_fft_bundle_paths(sim_conf["data_path"], "samp", "train")
-
-    # create empty arrays
-    means_amp = np.array([])
-    stds_amp = np.array([])
-    means_imag = np.array([])
-    stds_imag = np.array([])
-
-    for path in tqdm(bundle_paths):
-        x, _ = open_fft_pair(path)
-        x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
-        mean_amp, std_amp = mean_and_std(x_amp)
-        mean_imag, std_imag = mean_and_std(x_imag)
-        means_amp = np.append(mean_amp, means_amp)
-        means_imag = np.append(mean_imag, means_imag)
-        stds_amp = np.append(std_amp, stds_amp)
-        stds_imag = np.append(std_imag, stds_imag)
-
-    mean_amp = means_amp.mean()
-    std_amp = stds_amp.mean()
-    mean_imag = means_imag.mean()
-    std_imag = stds_imag.mean()
-
-    d = {
-        "train_mean_c0": [mean_amp],
-        "train_std_c0": [std_amp],
-        "train_mean_c1": [mean_imag],
-        "train_std_c1": [std_imag],
-    }
-
-    df = pd.DataFrame(data=d)
-    df.to_csv(sim_conf["data_path"] + "/norm_factors.csv", index=False)
 
 
 def interpol(img):

@@ -391,10 +391,20 @@ def sample_freqs(
         sampled Fourier Spectrum
     """
 
-    def get_mask(lon, lat, num_steps, ant, size, multi_channel=multi_channel, bandwidths=bandwidths):
+    def get_mask(
+        lon,
+        lat,
+        num_steps,
+        ant,
+        size,
+        multi_channel=multi_channel,
+        bandwidths=bandwidths,
+    ):
         s = Source(lon, lat)
         s.propagate(num_steps=num_steps, multi_pointing=False)
-        u, v, _ = get_uv_coverage(s, ant, multi_channel=multi_channel, iterate=False, bandwidths=bandwidths)
+        u, v, _ = get_uv_coverage(
+            s, ant, multi_channel=multi_channel, iterate=False, bandwidths=bandwidths
+        )
         single_mask = create_mask(u, v, size)
         return single_mask
 
@@ -410,7 +420,11 @@ def sample_freqs(
             s = Source(lon, lat)
             s.propagate(num_steps=num_steps, multi_pointing=False)
             u, v, _ = get_uv_coverage(
-                s, ant, multi_channel=multi_channel, iterate=False, bandwidths=bandwidths,
+                s,
+                ant,
+                multi_channel=multi_channel,
+                iterate=False,
+                bandwidths=bandwidths,
             )
             single_mask = create_mask(u, v, size)
             mask = np.repeat(

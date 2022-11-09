@@ -15,55 +15,6 @@ class Lambda(nn.Module):
         return self.func(x)
 
 
-def reshape(x):
-    return x.reshape(-1, 2, 63, 63)
-
-
-def fft(x):
-    """
-    Layer that performs a fast Fourier-Transformation.
-    """
-    img_size = x.size(1) // 2
-    # sort the incoming tensor in real and imaginary part
-    arr_real = x[:, 0:img_size].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
-    arr_imag = x[:, img_size:].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
-    arr = torch.stack((arr_real, arr_imag), dim=-1)
-    # perform fourier transformation and switch imaginary and real part
-    arr_fft = torch.ifft(arr, 2).permute(0, 3, 2, 1).transpose(2, 3)
-    return arr_fft
-
-
-def shape(x):
-    print(x.shape)
-    return x
-
-
-def euler(x):
-    img_size = x.size(1) // 2
-    arr_amp = x[:, 0:img_size]
-    arr_phase = x[:, img_size:]
-
-    arr_real = (10 ** (10 * (arr_amp - 1)) - 1e-10) * torch.cos(arr_phase)
-    arr_imag = (10 ** (10 * (arr_amp - 1)) - 1e-10) * torch.sin(arr_phase)
-
-    arr = torch.stack((arr_real, arr_imag), dim=-1).permute(0, 2, 1)
-    return arr
-
-
-def flatten(x):
-    return x.reshape(x.shape[0], -1)
-
-
-def flatten_with_channel(x):
-    return x.reshape(x.shape[0], x.shape[1], -1)
-
-
-def cut_off(x):
-    a = x.clone()
-    a[a <= 1e-10] = 1e-10
-    return a
-
-
 def symmetry(x, mode="real"):
     center = (x.shape[1]) // 2
     u = torch.arange(center)
@@ -74,8 +25,8 @@ def symmetry(x, mode="real"):
     diag_indices = torch.stack((diag1, diag2))
     grid = torch.tril_indices(x.shape[1], x.shape[1], -1)
 
-    x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),)
-    y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),)
+    x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)))
+    y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)))
     x = torch.rot90(x, 1, dims=(1, 2))
     i = center + (center - x_sym)
     j = center + (center - y_sym)
@@ -131,16 +82,6 @@ def init_cnn_(m, f):
 def init_cnn(m, uniform=False):
     f = nn.init.kaiming_uniform_ if uniform else nn.init.kaiming_normal_
     init_cnn_(m, f)
-
-
-def conv_layer(ni, nf, ks=3, stride=2, bn=True, **kwargs):
-    layers = [
-        nn.Conv2d(ni, nf, ks, padding=ks // 2, stride=stride, bias=not bn),
-        GeneralRelu(**kwargs),
-    ]
-    if bn:
-        layers.append(nn.BatchNorm2d(nf, eps=1e-5, momentum=0.1))
-    return nn.Sequential(*layers)
 
 
 def conv(ni, nc, ks, stride, padding):
@@ -219,33 +160,6 @@ def conv_phase(ni, nc, ks, stride, padding, dilation, add):
     )
     bn = (nn.BatchNorm2d(nc),)
     act = GeneralELU(add)
-    layers = [*conv, *bn, act]
-    return layers
-
-
-def depth_conv(ni, nc, ks, stride, padding, dilation):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding, dilation=dilation, groups=ni),)
-    bn = (nn.BatchNorm2d(nc),)
-    act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
-    layers = [*conv, *bn, act]
-    return layers
-
-
-def double_conv(ni, nc, ks=3, stride=1, padding=1):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding),)
-    bn = (nn.BatchNorm2d(nc),)
-    act = (nn.ReLU(inplace=True),)
-    conv2 = (nn.Conv2d(nc, nc, ks, stride, padding),)
-    bn2 = (nn.BatchNorm2d(nc),)
-    act2 = nn.ReLU(inplace=True)
-    layers = [*conv, *bn, *act, *conv2, *bn2, act2]
-    return layers
-
-
-def deconv(ni, nc, ks, stride, padding, out_padding):
-    conv = (nn.ConvTranspose2d(ni, nc, ks, stride, padding, out_padding),)
-    bn = (nn.BatchNorm2d(nc),)
-    act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
     layers = [*conv, *bn, act]
     return layers
 

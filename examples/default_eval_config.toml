@@ -9,7 +9,6 @@ quiet = true
 data_path = "./example_data/"
 model_path = "./build/example_model/example.model"
 model_path_2 = "none"
-norm_path = "none"
 
 [general]
 fourier = true

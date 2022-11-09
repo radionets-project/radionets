@@ -1,14 +1,10 @@
 import torch
 import numpy as np
-import pandas as pd
 import kornia as K
-from radionets.dl_framework.data import do_normalisation
-from radionets.dl_framework.logger import make_notifier
 from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item
 from fastai.callback.core import Callback, CancelBackwardException
 from pathlib import Path
-from fastcore.foundation import L
 import matplotlib.pyplot as plt
 from radionets.evaluation.utils import (
     load_data,
@@ -33,7 +29,7 @@ class CometCallback(Callback):
         self.data_path = test_data
         self.plot_epoch = plot_n_epochs
         self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False
         )
         self.amp_phase = amp_phase
         self.scale = scale
@@ -54,7 +50,7 @@ class CometCallback(Callback):
         )
 
     def plot_test_pred(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
         model = self.model
         with self.experiment.test():
             with torch.no_grad():
@@ -82,7 +78,7 @@ class CometCallback(Callback):
         plt.close("all")
 
     def plot_test_fft(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
         model = self.model
         with self.experiment.test():
             with torch.no_grad():
@@ -123,37 +119,6 @@ class CometCallback(Callback):
         if (self.epoch + 1) % self.plot_epoch == 0:
             self.plot_test_pred()
             self.plot_test_fft()
-
-
-class TelegramLoggerCallback(Callback):
-    def __init__(self, model_name):
-        self.model_name = model_name
-
-    def before_fit(self):
-        tlogger = make_notifier()
-        tlogger.info(f"Start des Trainings von Modell {self.model_name}")
-
-    def after_epoch(self):
-        if (self.epoch + 1) % 10 == 0:
-            tlogger = make_notifier()
-            tlogger.info(
-                "{}: Epoche {}/{} mit Loss {}".format(
-                    self.model_name,
-                    self.epoch + 1,
-                    self.n_epoch,
-                    L(self.recorder.values[0:]).itemgot(1)[-1],
-                )
-            )
-
-    def after_fit(self):
-        tlogger = make_notifier()
-        tlogger.info(
-            "{}: Ende des Trainings nach {} Epochen mit Loss {}".format(
-                self.model_name,
-                self.epoch + 1,
-                L(self.recorder.values[0:]).itemgot(1)[-1],
-            )
-        )
 
 
 class AvgLossCallback(Callback):
@@ -203,24 +168,6 @@ class AvgLossCallback(Callback):
         plt.xlabel(r"Number of Batches")
         plt.ylabel(r"Learning rate")
         plt.tight_layout()
-
-
-class NormCallback(Callback):
-    _order = 2
-
-    def __init__(self, norm_path):
-        self.path = norm_path
-
-    def before_batch(self):
-        self.learn.xb = [self.normalize_tfm()]
-
-    def normalize_tfm(self):
-        norm = pd.read_csv(self.path)
-        a = do_normalisation(self.learn.xb[0].clone(), norm)
-        assert self.learn.xb[0][:, 0].mean() != a[:, 0].mean()
-        # mean for imag and phase is approx 0
-        # assert x[:, 1].mean() != a[:, 1].mean()
-        return a
 
 
 class CudaCallback(Callback):
@@ -279,7 +226,7 @@ class GradientCallback(Callback):
         self.num_epochs = num_epochs
         self.data_path = test_data
         self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False
         )
         self.arch_name = arch_name
         self.amp_phase = amp_phase
@@ -299,7 +246,7 @@ class GradientCallback(Callback):
         # print or save
 
     def after_epoch(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
 
         # for each epoch put test image through model and save to csv
         fname_template = "pred_{i}.csv"
@@ -325,14 +272,14 @@ class PredictionImageGradient(Callback):
     def __init__(self, test_data, model, amp_phase, arch_name):
         self.data_path = test_data
         self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False,
+            self.data_path, mode="test", fourier=True, source_list=False
         )
         self.model = model
         self.amp_phase = amp_phase
         self.arch_name = arch_name
 
     def save_output_pred(self):
-        img_test, img_true = get_images(self.test_ds, 5, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 5, rand=False)
 
         img_size = img_test[0].shape[-1]
         model_used = load_pretrained_model(self.arch_name, self.model, img_size)

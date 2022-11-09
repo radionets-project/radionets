@@ -9,7 +9,6 @@ quiet = false
 data_path = "./tests/model/"
 model_path = "./tests/model/paper_fixed_64_even.model"
 model_path_2 = "none"
-norm_path = "none"
 
 [general]
 fourier = true
