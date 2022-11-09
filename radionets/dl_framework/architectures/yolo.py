@@ -204,7 +204,7 @@ class YOLOv6flex(nn.Module):
 
         self.channels = 8
         self.anchors = 3
-        self.strides_head = torch.tensor([8, 16, 32])
+        self.strides_head = torch.tensor([4, 8, 16])
         self.bb_repeats = [1, 2, 4, 6, 2]
         self.neck_repeats = 4
 

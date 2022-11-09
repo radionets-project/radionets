@@ -1087,7 +1087,7 @@ def plot_yolo_obj_true(ax, y, pred, strides, idx: int = 0, anchor_idx: int = 0):
     for i in range(len(pred)):
         obj_true.append(build_target_yolo(y, shape=pred[i].shape, stride=strides[i]))
 
-    out = objectness_mapping(obj_true, scaling=None)
+    out = objectness_mapping(obj_true, calc="sum", scaling=None)
     img = ax.imshow(out[idx, anchor_idx])
 
     return img
@@ -1177,7 +1177,7 @@ def plot_yolo_box(
 
         outputs = (
             non_max_suppression(
-                boxes[idx].reshape(bs, -1, 6), obj_thres=boxes[idx, ..., 4].max() / 5
+                boxes[idx].reshape(1, -1, 6), obj_thres=boxes[idx, ..., 4].max() / 3
             )[0]
             .detach()
             .cpu()
@@ -1194,7 +1194,7 @@ def plot_yolo_box(
                 alpha=0.7,
             )
             if pred_label:
-                text = np.round(outputs[i, 4], 3)
+                text = np.round(outputs[i, 4], 2)
                 ax.text(outputs[i, 0], outputs[i, 1], text, color="w")
 
     if pred_boxes and pred_label:

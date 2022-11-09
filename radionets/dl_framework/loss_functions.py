@@ -635,8 +635,8 @@ def yolo(x, y):
     w_rot = 0.5
 
     # how much the image got reduced, must match self.strides_head of architecture
-    strides_head = torch.tensor([8, 16, 32])
-    weighted_bce = False
+    strides_head = torch.tensor([4, 8, 16])
+    weighted_bce = True
 
     loss_box = 0
     loss_obj = 0
@@ -681,7 +681,9 @@ def yolo(x, y):
 
             if weighted_bce:
                 bcewithlog_loss = nn.BCEWithLogitsLoss(
-                    pos_weight=torch.sqrt((target_obj == 0).sum() / (target_obj == 1).sum())
+                    pos_weight=torch.sqrt(
+                        (target_obj == 0).sum() / (target_obj == 1).sum()
+                    )
                 )
             else:
                 bcewithlog_loss = nn.BCEWithLogitsLoss()

@@ -27,7 +27,7 @@ def iou_YOLOv6(pred, target):
         Mean Intersection over Union of all boxes after nms
     """
     bs = target.shape[0]
-    strides_head = torch.tensor([8, 16, 32])
+    strides_head = torch.tensor([4, 8, 16])
 
     target[..., 3:5] *= 2  # increased box sizes (same as in loss function)
 
@@ -39,7 +39,7 @@ def iou_YOLOv6(pred, target):
     boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
 
     pred_nms = non_max_suppression(
-        boxes.reshape(bs, -1, 6), obj_thres=boxes[..., 4].max() / 5
+        boxes.reshape(bs, -1, 6), obj_thres=boxes[..., 4].max() / 3
     )
 
     amp_threshold = 0.02  # only take components above this amplitude into account

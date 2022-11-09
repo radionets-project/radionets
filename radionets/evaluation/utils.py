@@ -494,12 +494,18 @@ def yolo_out_transform(output, strides):
     return torch.cat(pred_list, 1), objectness
 
 
-def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_det=30):
+def non_max_suppression(
+    boxes,
+    obj_thres: float = 0.25,
+    max_nms: int = 1000,
+    iou_thres: float = 0.3,
+    max_det: int = 30,
+):
     """Non max suppression for one batch.
 
     Parameters
     ----------
-    pred: ndarray
+    boxes: ndarray
         boxes of shape (bs, n_boxes, 6), where 6 is: x, y, width, height, objectness, rotation
     obj_thres: float
         only take boxes with objectness above this value into account for nms, range: [0, 1]
@@ -516,38 +522,43 @@ def non_max_suppression(pred, obj_thres=0.25, max_nms=1000, iou_thres=0.45, max_
         reduced number of boxes; list, because each image in batch can have
         different number of boxes
     """
-    pred_candidates = pred[..., 4] > obj_thres  # candidates
+    boxes_candidates = boxes[..., 4] > obj_thres  # candidates
     output = []
 
-    for idx, x in enumerate(pred):
-        x = x[pred_candidates[idx]]  # filter candidates
+    for idx, box in enumerate(boxes):
+        box = box[boxes_candidates[idx]]  # filter candidates
 
-        if not x.shape[0]:  # if no box remains, skip the next image
+        if not box.shape[0]:  # if no box remains, skip the next image
             continue
-        elif x.shape[0] > max_nms:  # if boxes exceeds maximum for nms
-            x = x[x[:, 4].argsort(descending=True)[:max_nms]]
+        elif box.shape[0] > max_nms:  # if boxes exceeds maximum for nms
+            box = box[box[:, 4].argsort(descending=True)[:max_nms]]
 
-        boxes, scores = xywh2xyxy(x[:, :4]), x[:, 4]
-        keep_box_idx = torchvision.ops.nms(boxes, scores, iou_thres)  # NMS
+        keep_box_idx = torchvision.ops.nms(xywh2xyxy(box[:, :4]), box[:, 4], iou_thres)
         if keep_box_idx.shape[0] > max_det:  # limit detections
             keep_box_idx = keep_box_idx[:max_det]
 
-        output.append(x[keep_box_idx])
+        output.append(box[keep_box_idx])
 
     return output
 
 
-def objectness_mapping(pred, reduction: str = "mean", scaling: str = "sigmoid"):
+def objectness_mapping(
+    pred, calc: str = "mul", reduction: str = "mean", scaling: str = "sigmoid"
+):
     """Mapping objectnesses of all feature maps together
 
     Parameters
     ----------
     pred: list
         list of feature maps, each of shape (bs, a, ny, nx, 6)
+    calc: string
+        operator between feature maps;
+        "mul" for multiplication, "sum" for summation
     reduction: string
-        specifies the reduction to apply to the output; "mean", else will be sum
+        specifies the reduction to apply to the output when calc is "sum";
+        "mean" for average
     scaling: string
-        apply a scaling to objectness (sigmoid during training)
+        apply a scaling to objectness; "sigmoid"
 
     Returns
     -------
@@ -555,7 +566,14 @@ def objectness_mapping(pred, reduction: str = "mean", scaling: str = "sigmoid"):
         merge objectness predictions with size of the largest feature map
     """
     bs, a, ny, nx, _ = pred[0].shape
-    out = np.zeros((bs, a, ny, nx))
+
+    if calc == "mul":
+        out = np.ones((bs, a, ny, nx))
+    elif calc == "sum":
+        out = np.zeros((bs, a, ny, nx))
+    else:
+        print("Invalid value for argument 'calc'. Use 'mul' or 'sum'.")
+        quit()
 
     for feature_map in pred:
         for i in range(bs):
@@ -566,12 +584,17 @@ def objectness_mapping(pred, reduction: str = "mean", scaling: str = "sigmoid"):
                     )
                 else:
                     image = feature_map[i, j, :, :, 4]
+
                 image = Image.fromarray(np.uint8(image * 255))
                 image = image.resize([ny, nx], Image.Resampling.BOX)
                 image = np.array(image) / 255
-                out[i, j] += image
 
-    if reduction == "mean":
+                if calc == "mul":
+                    out[i, j] *= image
+                elif calc == "sum":
+                    out[i, j] += image
+
+    if calc == "sum" and reduction == "mean":
         out /= len(pred)
 
     return out
