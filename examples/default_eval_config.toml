@@ -4,13 +4,11 @@ title = "Evaluation configuration"
 
 [mode]
 quiet = true
-gpu = false
 
 [paths]
 data_path = "./example_data/"
 model_path = "./build/example_model/example.model"
 model_path_2 = "none"
-norm_path = "none"
 
 [general]
 fourier = true
@@ -33,10 +31,13 @@ num_images = 5
 
 [eval]
 batch_size = 100
+save_vals = false
+save_path = "./build/"
 evaluate_viewing_angle = true
 evaluate_dynamic_range = true
 evaluate_ms_ssim = true
 evaluate_mean_diff = true
 evaluate_area = true
 evaluate_point = false
+predict_grad = false
 evaluate_gan = false

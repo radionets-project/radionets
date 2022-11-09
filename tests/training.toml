@@ -4,7 +4,6 @@ title = "Train configuration"
 
 [mode]
 quiet = true
-telegram_logger = false
 gpu = false
 
 [logging]
@@ -29,6 +28,8 @@ metric = "none"
 num_epochs = 2
 inspection = false
 output_format = "pdf"
+switch_loss = false
+when_switch = 25
 
 [hypers]
 batch_size = 64

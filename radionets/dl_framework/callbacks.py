@@ -1,13 +1,10 @@
 import torch
 import numpy as np
-import pandas as pd
-from radionets.dl_framework.data import do_normalisation
-from radionets.dl_framework.logger import make_notifier
+import kornia as K
 from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item
-from fastai.callback.core import Callback
+from fastai.callback.core import Callback, CancelBackwardException
 from pathlib import Path
-from fastcore.foundation import L
 import matplotlib.pyplot as plt
 from radionets.evaluation.utils import (
     load_data,
@@ -15,6 +12,8 @@ from radionets.evaluation.utils import (
     eval_model,
     make_axes_nice,
     check_vmin_vmax,
+    get_ifft,
+    load_pretrained_model,
 )
 from radionets.evaluation.plotting import (
     create_OrBu,
@@ -37,15 +36,13 @@ class CometCallback(Callback):
         self.experiment = Experiment(project_name=name)
         self.data_path = test_data
         self.test_ds = load_data(
-            self.data_path,
-            mode="test",
-            fourier=True,
-            source_list=source_list,
+            self.data_path, mode="test", fourier=True, source_list=False
         )
         self.source_list = source_list
         self.plot_epoch = plot_n_epochs
         self.amp_phase = amp_phase
         self.scale = scale
+        self.uncertainty = False
 
     def after_epoch(self):
         # log metrics
@@ -63,16 +60,21 @@ class CometCallback(Callback):
                 self.plot_test_fft()
 
     def plot_test_pred(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
         model = self.model
         with self.experiment.test():
             with torch.no_grad():
                 pred = eval_model(img_test, model)
+        if pred.shape[1] == 4:
+            self.uncertainty = True
 
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
         lim_phase = check_vmin_vmax(img_true[0, 1])
         im1 = ax1.imshow(pred[0, 0], cmap="inferno")
-        im2 = ax2.imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        if self.uncertainty:
+            im2 = ax2.imshow(pred[0, 2], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        else:
+            im2 = ax2.imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
         im3 = ax3.imshow(img_true[0, 0], cmap="inferno")
         im4 = ax4.imshow(img_true[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
         make_axes_nice(fig, ax1, im1, "Amplitude")
@@ -86,13 +88,18 @@ class CometCallback(Callback):
         plt.close("all")
 
     def plot_test_fft(self):
-        img_test, img_true = get_images(self.test_ds, 1, norm_path="none", rand=False)
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
         model = self.model
         with self.experiment.test():
             with torch.no_grad():
                 pred = eval_model(img_test, model)
 
-        ifft_pred = get_ifft_torch(pred, amp_phase=self.amp_phase, scale=self.scale)
+        ifft_pred = get_ifft_torch(
+            pred,
+            amp_phase=self.amp_phase,
+            scale=self.scale,
+            uncertainty=self.uncertainty,
+        )
         ifft_truth = get_ifft_torch(
             img_true, amp_phase=self.amp_phase, scale=self.scale
         )
@@ -157,37 +164,6 @@ class CometCallback(Callback):
         plt.close("all")
 
 
-class TelegramLoggerCallback(Callback):
-    def __init__(self, model_name):
-        self.model_name = model_name
-
-    def before_fit(self):
-        tlogger = make_notifier()
-        tlogger.info(f"Start des Trainings von Modell {self.model_name}")
-
-    def after_epoch(self):
-        if (self.epoch + 1) % 10 == 0:
-            tlogger = make_notifier()
-            tlogger.info(
-                "{}: Epoche {}/{} mit Loss {}".format(
-                    self.model_name,
-                    self.epoch + 1,
-                    self.n_epoch,
-                    L(self.recorder.values[0:]).itemgot(1)[-1],
-                )
-            )
-
-    def after_fit(self):
-        tlogger = make_notifier()
-        tlogger.info(
-            "{}: Ende des Trainings nach {} Epochen mit Loss {}".format(
-                self.model_name,
-                self.epoch + 1,
-                L(self.recorder.values[0:]).itemgot(1)[-1],
-            )
-        )
-
-
 class AvgLossCallback(Callback):
     """Save the same average Loss for training and validation as printed to
     the terminal.
@@ -237,24 +213,6 @@ class AvgLossCallback(Callback):
         plt.tight_layout()
 
 
-class NormCallback(Callback):
-    _order = 2
-
-    def __init__(self, norm_path):
-        self.path = norm_path
-
-    def before_batch(self):
-        self.learn.xb = [self.normalize_tfm()]
-
-    def normalize_tfm(self):
-        norm = pd.read_csv(self.path)
-        a = do_normalisation(self.learn.xb[0].clone(), norm)
-        assert self.learn.xb[0][:, 0].mean() != a[:, 0].mean()
-        # mean for imag and phase is approx 0
-        # assert x[:, 1].mean() != a[:, 1].mean()
-        return a
-
-
 class CudaCallback(Callback):
     _order = 3
 
@@ -292,3 +250,94 @@ class SaveTempCallback(Callback):
             out = p / f"temp_{self.epoch + 1}.model"
             save_model(self, out)
             print(f"\nFinished Epoch {self.epoch + 1}, model saved.\n")
+
+
+class SwitchLoss(Callback):
+    _order = 5
+
+    def __init__(self, second_loss, when_switch):
+        self.second_loss = second_loss
+        self.when_switch = when_switch
+
+    def before_epoch(self):
+        if (self.epoch + 1) > self.when_switch:
+            self.learn.loss_func = self.second_loss
+
+
+class GradientCallback(Callback):
+    def __init__(self, num_epochs, test_data, arch_name, amp_phase):
+        self.num_epochs = num_epochs
+        self.data_path = test_data
+        self.test_ds = load_data(
+            self.data_path, mode="test", fourier=True, source_list=False
+        )
+        self.arch_name = arch_name
+        self.amp_phase = amp_phase
+
+    def before_backward(self):
+        raise CancelBackwardException
+
+    def after_cancel_backward(self):
+        self.learn.loss.backward()
+
+        # access gradients of weights of layers (with specified batch and epoch)
+        if self.epoch == self.num_epochs - 1:
+            if self.iter == self.n_iter - 1:
+                grads = []
+                for param in self.learn.model.parameters():
+                    grads.append(param.grad.view(-1))
+        # print or save
+
+    def after_epoch(self):
+        img_test, img_true = get_images(self.test_ds, 1, rand=False)
+
+        # for each epoch put test image through model and save to csv
+        fname_template = "pred_{i}.csv"
+        np.savetxt(
+            fname_template.format(i=self.epoch),
+            get_ifft(eval_model(img_test, self.model), self.amp_phase),
+            delimiter=",",
+        )
+
+        # # fourier space
+        amp_names = "pred_amp_{i}.csv"
+        phase_names = "pred_phase_{i}.csv"
+        output = eval_model(img_test, self.model)
+        np.savetxt(
+            amp_names.format(i=self.epoch), output[0][0].cpu().numpy(), delimiter=","
+        )
+        np.savetxt(
+            phase_names.format(i=self.epoch), output[0][1].cpu().numpy(), delimiter=","
+        )
+
+
+class PredictionImageGradient(Callback):
+    def __init__(self, test_data, model, amp_phase, arch_name):
+        self.data_path = test_data
+        self.test_ds = load_data(
+            self.data_path, mode="test", fourier=True, source_list=False
+        )
+        self.model = model
+        self.amp_phase = amp_phase
+        self.arch_name = arch_name
+
+    def save_output_pred(self):
+        img_test, img_true = get_images(self.test_ds, 5, rand=False)
+
+        img_size = img_test[0].shape[-1]
+        model_used = load_pretrained_model(self.arch_name, self.model, img_size)
+
+        # # get image but not gradients
+        # output = get_ifft(eval_model(img_test[0], model_used), self.amp_phase)
+
+        output = eval_model(img_test[0], model_used)
+        gradient = K.filters.spatial_gradient(output)
+
+        grads_x = get_ifft(gradient[:, :, 0], self.amp_phase)
+        grads_y = get_ifft(gradient[:, :, 1], self.amp_phase)
+
+        # # fourier space
+        # grads_x = gradient[:, :, 0]
+        # grads_y = gradient[:, :, 1]
+
+        return grads_x, grads_y

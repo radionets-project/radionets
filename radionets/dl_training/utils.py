@@ -34,7 +34,6 @@ def read_config(config):
 
     train_conf["quiet"] = config["mode"]["quiet"]
     train_conf["gpu"] = config["mode"]["gpu"]
-    train_conf["telegram_logger"] = config["mode"]["telegram_logger"]
 
     train_conf["comet_ml"] = config["logging"]["comet_ml"]
     train_conf["plot_n_epochs"] = config["logging"]["plot_n_epochs"]
@@ -53,6 +52,8 @@ def read_config(config):
     train_conf["inspection"] = config["general"]["inspection"]
     train_conf["separate"] = False
     train_conf["format"] = config["general"]["output_format"]
+    train_conf["switch_loss"] = config["general"]["switch_loss"]
+    train_conf["when_switch"] = config["general"]["when_switch"]
 
     train_conf["param_scheduling"] = config["param_scheduling"]["use"]
     train_conf["lr_start"] = config["param_scheduling"]["lr_start"]
@@ -80,7 +81,11 @@ def check_outpath(model_path, train_conf):
 
 
 def define_arch(arch_name, img_size):
-    if "filter_deep" in arch_name or "resnet" in arch_name:
+    if (
+        "filter_deep" in arch_name
+        or "resnet" in arch_name
+        or "Uncertainty" in arch_name
+    ):
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()

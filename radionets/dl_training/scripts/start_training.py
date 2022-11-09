@@ -27,7 +27,9 @@ import torch
 @click.argument("configuration_path", type=click.Path(exists=True, dir_okay=False))
 @click.option(
     "--mode",
-    type=click.Choice(["train", "lr_find", "plot_loss"], case_sensitive=False,),
+    type=click.Choice(
+        ["train", "lr_find", "plot_loss", "fine_tune"], case_sensitive=False
+    ),
     default="train",
 )
 def main(configuration_path, mode):
@@ -76,7 +78,7 @@ def main(configuration_path, mode):
         click.echo("Start training of the model.\n")
 
         # define_learner
-        learn = define_learner(data, arch, train_conf,)
+        learn = define_learner(data, arch, train_conf)
 
         # load pretrained model
         if train_conf["pre_model"] != "none":
@@ -100,11 +102,39 @@ def main(configuration_path, mode):
         if train_conf["inspection"]:
             after_training_plots(train_conf, rand=True)
 
+    if mode == "fine_tune":
+        click.echo("Start fine tuning of the model.\n")
+
+        # define_learner
+        learn = define_learner(
+            data,
+            arch,
+            train_conf,
+        )
+
+        # load pretrained model
+        if train_conf["pre_model"] == "none":
+            click.echo("Need a pre-trained modle for fine tuning!")
+            return
+
+        learn.create_opt()
+        load_pre_model(learn, train_conf["pre_model"])
+
+        # Train the model, except interrupt
+        try:
+            learn.fine_tune(train_conf["num_epochs"])
+        except KeyboardInterrupt:
+            pop_interrupt(learn, train_conf)
+
+        end_training(learn, train_conf)
+        if train_conf["inspection"]:
+            after_training_plots(train_conf, rand=True)
+
     if mode == "lr_find":
         click.echo("Start lr_find.\n")
 
         # define_learner
-        learn = define_learner(data, arch, train_conf, lr_find=True,)
+        learn = define_learner(data, arch, train_conf, lr_find=True)
 
         # load pretrained model
         if train_conf["pre_model"] != "none":
@@ -126,7 +156,7 @@ def main(configuration_path, mode):
         click.echo("Start plotting loss.\n")
 
         # define_learner
-        learn = define_learner(data, arch, train_conf, plot_loss=True,)
+        learn = define_learner(data, arch, train_conf, plot_loss=True)
         # load pretrained model
         if Path(train_conf["model_path"]).exists:
             load_pre_model(learn, train_conf["model_path"], plot_loss=True)
@@ -136,10 +166,10 @@ def main(configuration_path, mode):
             sys.exit()
 
         plot_lr(
-            learn, Path(train_conf["model_path"]), output_format=train_conf["format"],
+            learn, Path(train_conf["model_path"]), output_format=train_conf["format"]
         )
         plot_loss(
-            learn, Path(train_conf["model_path"]), output_format=train_conf["format"],
+            learn, Path(train_conf["model_path"]), output_format=train_conf["format"]
         )
 
 

@@ -15,55 +15,6 @@ class Lambda(nn.Module):
         return self.func(x)
 
 
-def reshape(x):
-    return x.reshape(-1, 2, 63, 63)
-
-
-def fft(x):
-    """
-    Layer that performs a fast Fourier-Transformation.
-    """
-    img_size = x.size(1) // 2
-    # sort the incoming tensor in real and imaginary part
-    arr_real = x[:, 0:img_size].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
-    arr_imag = x[:, img_size:].reshape(-1, int(sqrt(img_size)), int(sqrt(img_size)))
-    arr = torch.stack((arr_real, arr_imag), dim=-1)
-    # perform fourier transformation and switch imaginary and real part
-    arr_fft = torch.ifft(arr, 2).permute(0, 3, 2, 1).transpose(2, 3)
-    return arr_fft
-
-
-def shape(x):
-    print(x.shape)
-    return x
-
-
-def euler(x):
-    img_size = x.size(1) // 2
-    arr_amp = x[:, 0:img_size]
-    arr_phase = x[:, img_size:]
-
-    arr_real = (10 ** (10 * (arr_amp - 1)) - 1e-10) * torch.cos(arr_phase)
-    arr_imag = (10 ** (10 * (arr_amp - 1)) - 1e-10) * torch.sin(arr_phase)
-
-    arr = torch.stack((arr_real, arr_imag), dim=-1).permute(0, 2, 1)
-    return arr
-
-
-def flatten(x):
-    return x.reshape(x.shape[0], -1)
-
-
-def flatten_with_channel(x):
-    return x.reshape(x.shape[0], x.shape[1], -1)
-
-
-def cut_off(x):
-    a = x.clone()
-    a[a <= 1e-10] = 1e-10
-    return a
-
-
 def symmetry(x, mode="real"):
     center = (x.shape[1]) // 2
     u = torch.arange(center)
@@ -74,12 +25,8 @@ def symmetry(x, mode="real"):
     diag_indices = torch.stack((diag1, diag2))
     grid = torch.tril_indices(x.shape[1], x.shape[1], -1)
 
-    x_sym = torch.cat(
-        (grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),
-    )
-    y_sym = torch.cat(
-        (grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),
-    )
+    x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)))
+    y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)))
     x = torch.rot90(x, 1, dims=(1, 2))
     i = center + (center - x_sym)
     j = center + (center - y_sym)
@@ -489,3 +436,18 @@ class SimSPPF(nn.Module):
         y1 = self.m(x)
         y2 = self.m(y1)
         return self.cv2(torch.cat([x, y1, y2, self.m(y2)], 1))
+
+
+def even_better_symmetry(x):
+    upper_half = x[:, :, 0 : x.shape[2] // 2, :].clone()
+    upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].clone()
+    upper_right = upper_half[:, :, :, upper_half.shape[3] // 2 :].clone()
+    a = torch.flip(upper_left, dims=[-2, -1])
+    b = torch.flip(upper_right, dims=[-2, -1])
+
+    upper_half[:, :, :, 0 : upper_half.shape[3] // 2] = b
+    upper_half[:, :, :, upper_half.shape[3] // 2 :] = a
+
+    x[:, 0, x.shape[2] // 2 :, :] = upper_half[:, 0]
+    x[:, 1, x.shape[2] // 2 :, :] = -upper_half[:, 1]
+    return x

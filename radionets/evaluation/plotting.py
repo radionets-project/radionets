@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import torch
-from matplotlib import cm
+import matplotlib as mpl
 from matplotlib.colors import ListedColormap, LogNorm
 from matplotlib.lines import Line2D
 from matplotlib.patches import Arc, Rectangle
@@ -23,7 +23,6 @@ from radionets.evaluation.utils import (
     make_axes_nice,
     pad_unsqueeze,
     reshape_2d,
-    round_n_digits,
     non_max_suppression,
     objectness_mapping,
 )
@@ -44,12 +43,23 @@ from tqdm import tqdm
 
 
 def create_OrBu():
-    top = cm.get_cmap("Blues_r", 128)
-    bottom = cm.get_cmap("Oranges", 128)
-    white = np.array([256 / 256, 256 / 256, 256 / 256, 1])
-    newcolors = np.vstack((top(np.linspace(0, 1, 128)), bottom(np.linspace(0, 1, 128))))
-    newcolors[128, :] = white
-    newcmp = ListedColormap(newcolors, name="OrangeBlue")
+    def colorFader(
+        c1, c2, mix=0
+    ):  # fade (linear interpolate) from color c1 (at mix=0) to c2 (mix=1)
+        c1 = np.array(mpl.colors.to_rgb(c1))
+        c2 = np.array(mpl.colors.to_rgb(c2))
+        return mpl.colors.to_hex((1 - mix) * c1 + mix * c2)
+
+    c1 = "#3B0963"  # lila
+    c2 = "#F88410"  # orange
+    c3 = "#ebe6ef"
+    c4 = "#fef3e7"
+    n = 256
+
+    fader_lila = [colorFader(c1, c3, x / n) for x in range(n + 1)]
+    fader_orange = [colorFader(c4, c2, x / n) for x in range(n + 1)]
+    cmap = fader_lila + ["white"] + fader_orange
+    newcmp = ListedColormap(cmap, name="OrangeBlue")
     return newcmp
 
 
@@ -377,17 +387,7 @@ def visualize_source_reconstruction(
     # create angle visualization
     theta1 = min(0, -alpha_truth.numpy()[0])
     theta2 = max(0, -alpha_truth.numpy()[0])
-    ax2.add_patch(
-        Arc(
-            [32, 32],
-            50,
-            50,
-            90,
-            theta1,
-            theta2,
-            color="white",
-        )
-    )
+    ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white"))
 
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
@@ -427,7 +427,7 @@ def visualize_source_reconstruction(
         ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
         val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
 
-        ax1.plot([], [], " ", label=f"ms ssim: {round_n_digits(val)}")
+        ax1.plot([], [], " ", label=f"ms ssim: {val:.2f}")
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
@@ -487,21 +487,12 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     plt.close("all")
 
 
-def histogram_jet_angles(alpha_truth, alpha_pred, out_path, plot_format="png"):
-    dif = (alpha_pred - alpha_truth).numpy()
-
+def histogram_jet_angles(dif, out_path, plot_format="png"):
     mean = np.mean(dif)
     std = np.std(dif, ddof=1)
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 8))
-    ax1.hist(
-        dif,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
-    )
+    ax1.hist(dif, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75)
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
 
@@ -532,26 +523,12 @@ def histogram_dynamic_ranges(dr_truth, dr_pred, out_path, plot_format="png"):
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(6, 12))
     ax1.set_title("True Images")
-    ax1.hist(
-        dr_truth,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
-    )
+    ax1.hist(dr_truth, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75)
     ax1.set_xlabel("Dynamic range")
     ax1.set_ylabel("Number of sources")
 
     ax2.set_title("Predictions")
-    ax2.hist(
-        dr_pred,
-        25,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
-    )
+    ax2.hist(dr_pred, 25, color="darkorange", linewidth=3, histtype="step", alpha=0.75)
     ax2.set_xlabel("Dynamic range")
     ax2.set_ylabel("Number of sources")
 
@@ -695,14 +672,7 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     mean = np.mean(vals)
     std = np.std(vals, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
-    ax1.hist(
-        vals,
-        51,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
-    )
+    ax1.hist(vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75)
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
     extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
@@ -722,12 +692,7 @@ def histogram_area(vals, out_path, plot_format="png"):
     bins = np.arange(0, vals.max() + 0.1, 0.1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals,
-        bins=bins,
-        color="darkorange",
-        linewidth=3,
-        histtype="step",
-        alpha=0.75,
+        vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75
     )
     ax1.axvline(1, color="red", linestyle="dashed")
     ax1.set_xlabel("ratio of areas")

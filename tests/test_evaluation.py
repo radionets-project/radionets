@@ -5,8 +5,7 @@ import pytest
 class TestEvaluation:
     def test_get_images(self):
         import torch
-        from radionets.dl_framework.data import load_data, do_normalisation
-        import pandas as pd
+        from radionets.dl_framework.data import load_data
         from radionets.evaluation.utils import get_images
 
         test_ds = load_data(
@@ -18,7 +17,6 @@ class TestEvaluation:
 
         num_images = 10
         rand = True
-        norm_path = "none"
 
         indices = torch.arange(num_images)
         assert len(indices) == 10
@@ -28,13 +26,9 @@ class TestEvaluation:
         img_test = test_ds[indices][0]
 
         assert img_test.shape == (10, 2, 64, 64)
-        norm = "none"
-        if norm_path != "none":
-            norm = pd.read_csv(norm_path)
-        img_test = do_normalisation(img_test, norm)
         img_true = test_ds[indices][1]
 
-        img_test, img_true = get_images(test_ds, num_images, norm_path, rand)
+        img_test, img_true = get_images(test_ds, num_images, rand)
 
         assert img_true.shape == (10, 2, 64, 64)
         assert img_test.shape == (10, 2, 64, 64)
@@ -109,7 +103,7 @@ class TestEvaluation:
 
         assert isinstance(val, np.float64)
         assert ~np.isnan(val).any()
-        assert val > 0
+        assert val >= 0
 
     def test_im_to_array_value(self):
         from radionets.evaluation.utils import read_pred
@@ -123,9 +117,9 @@ class TestEvaluation:
 
         x_coords, y_coords, value = im_to_array_value(image)
 
-        assert x_coords.shape == (2, 64**2)
-        assert y_coords.shape == (2, 64**2)
-        assert value.shape == (2, 64**2)
+        assert x_coords.shape == (2, 64 ** 2)
+        assert y_coords.shape == (2, 64 ** 2)
+        assert value.shape == (2, 64 ** 2)
 
     def test_bmul(self):
         import torch
@@ -181,7 +175,7 @@ class TestEvaluation:
             (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
         )
 
-        eig_vals_torch, eig_vecs_torch = torch.linalg.eigh(cov_w, UPLO='U')
+        eig_vals_torch, eig_vecs_torch = torch.linalg.eigh(cov_w, UPLO="U")
 
         assert eig_vals_torch.shape == (10, 2)
         assert eig_vecs_torch.shape == (10, 2, 2)
@@ -302,14 +296,12 @@ class TestEvaluation:
 
         diff = (ifft_pred - ifft_truth).reshape(1, img_size, img_size)
 
-        zero = np.isclose(
-            (np.zeros((1, img_size, img_size))), diff, atol=1e-3
-        )
+        zero = np.isclose((np.zeros((1, img_size, img_size))), diff, atol=1e-3)
         assert zero.shape == (1, 64, 64)
 
         num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
-        assert num_zero > 0
-        assert num_zero < 100
+        assert num_zero >= 0
+        assert num_zero <= 100
         assert ~np.isnan(num_zero)
         assert num_zero.dtype == "float64"
 
@@ -319,12 +311,12 @@ class TestEvaluation:
 
         below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
         above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
-        assert below_zero > 0
-        assert below_zero < 100
+        assert below_zero >= 0
+        assert below_zero <= 100
         assert ~np.isnan(below_zero)
         assert below_zero.dtype == "float64"
-        assert above_zero > 0
-        assert above_zero < 100
+        assert above_zero >= 0
+        assert above_zero <= 100
         assert ~np.isnan(above_zero)
         assert above_zero.dtype == "float64"
         assert np.isclose(below_zero + above_zero, 100)

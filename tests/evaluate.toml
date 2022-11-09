@@ -4,13 +4,11 @@ title = "Evaluation configuration"
 
 [mode]
 quiet = false
-gpu = false
 
 [paths]
-data_path = "./tests/build/data/"
+data_path = "./tests/model/"
 model_path = "./tests/model/paper_fixed_64_even.model"
 model_path_2 = "none"
-norm_path = "none"
 
 [general]
 fourier = true
@@ -33,10 +31,13 @@ num_images = 10
 
 [eval]
 batch_size = 20
+save_vals = false
+save_path = "./build/"
 evaluate_viewing_angle = true
 evaluate_dynamic_range = true
 evaluate_ms_ssim = false
 evaluate_mean_diff = true
 evaluate_area = true
 evaluate_point = false
+predict_grad = false 
 evaluate_gan = true

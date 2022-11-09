@@ -4,77 +4,6 @@ from scipy.spatial.distance import pdist, squareform
 from shapely.geometry import box
 from shapely.ops import unary_union
 import torch
-from torch import nn
-from typing import Iterable
-
-
-def listify(o):
-    if o is None:
-        return []
-    if isinstance(o, list):
-        return o
-    if isinstance(o, str):
-        return [o]
-    if isinstance(o, Iterable):
-        return list(o)
-    return [o]
-
-
-def get_batch(dl, learn):
-    learn.xb, learn.yb = next(iter(dl))
-    for cb in learn.cbs:
-        cb.set_runner(learn)
-    learn("begin_batch")
-    return learn.xb, learn.yb
-
-
-def find_modules(m, cond):
-    if cond(m):
-        return [m]
-    return sum([find_modules(o, cond) for o in m.children()], [])
-
-
-def is_lin_layer(l):
-    lin_layers = (nn.Conv1d, nn.Conv2d, nn.Conv3d, nn.Linear)
-    return isinstance(l, lin_layers)
-
-
-class ListContainer:
-    def __init__(self, items):
-        self.items = listify(items)
-
-    def __getitem__(self, idx):
-        try:
-            return self.items[idx]
-        except TypeError:
-            if isinstance(idx[0], bool):
-                assert len(idx) == len(self)  # bool mask
-                return [o for m, o in zip(idx, self.items) if m]
-            return [self.items[i] for i in idx]
-
-    def __len__(self):
-        return len(self.items)
-
-    def __iter__(self):
-        return iter(self.items)
-
-    def __setitem__(self, i, o):
-        self.items[i] = o
-
-    def __delitem__(self, i):
-        del self.items[i]
-
-    def __repr__(self):
-        res = f"{self.__class__.__name__} \
-                ({len(self)} items)\n{self.items[:10]}"
-        if len(self) > 10:
-            res = res[:-1] + "...]"
-        return res
-
-
-def children(m):
-    "returns the children of m as a list"
-    return list(m.children())
 
 
 def round_odd(x):
@@ -190,7 +119,7 @@ def build_target_yolo(y, shape, stride):
     return target
 
 
-def get_ifft_torch(array, amp_phase=False, scale=False):
+def get_ifft_torch(array, amp_phase=False, scale=False, uncertainty=False):
     if len(array.shape) == 3:
         array = array.unsqueeze(0)
     if amp_phase:
@@ -198,9 +127,12 @@ def get_ifft_torch(array, amp_phase=False, scale=False):
             amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
         else:
             amp = array[:, 0]
-
-        a = amp * torch.cos(array[:, 1])
-        b = amp * torch.sin(array[:, 1])
+        if uncertainty:
+            a = amp * torch.cos(array[:, 2])
+            b = amp * torch.sin(array[:, 2])
+        else:
+            a = amp * torch.cos(array[:, 1])
+            b = amp * torch.sin(array[:, 1])
         compl = a + b * 1j
     else:
         compl = array[:, 0] + array[:, 1] * 1j

@@ -69,17 +69,12 @@ def get_prediction(conf, mode="test"):
     if num_images is None:
         num_images = len(test_ds)
 
-    img_test, img_true = get_images(
-        test_ds, num_images, norm_path=conf["norm_path"], rand=rand
-    )
+    img_test, img_true = get_images(test_ds, num_images, rand=rand)
 
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
 
-    if conf["gpu"]:
-        pred = eval_model(img_test, model)
-    else:
-        pred = eval_model(img_test, model, test=True)
+    pred = eval_model(img_test, model)
 
     # test for uncertainty
     if pred.shape[1] == 4:
@@ -119,18 +114,13 @@ def get_separate_prediction(conf):
 
     if num_images is None:
         num_images = len(test_ds)
-    img_test, img_true = get_images(
-        test_ds, num_images, norm_path=conf["norm_path"], rand=rand
-    )
+    img_test, img_true = get_images(test_ds, num_images, rand=rand)
     img_size = img_test.shape[-1]
     model_1 = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)
-    if conf["gpu"]:
-        pred_1 = eval_model(img_test, model_1)
-        pred_2 = eval_model(img_test, model_2)
-    else:
-        pred_1 = eval_model(img_test, model_1, test=True)
-        pred_2 = eval_model(img_test, model_2, test=True)
+
+    pred_1 = eval_model(img_test, model_1)
+    pred_2 = eval_model(img_test, model_2)
 
     # test for uncertainty
     if pred_1.shape[1] == 2:
@@ -340,9 +330,13 @@ def evaluate_viewing_angle(conf):
     alpha_preds = torch.tensor(alpha_preds)
 
     click.echo("\nCreating histogram of jet angles.\n")
-    histogram_jet_angles(
-        alpha_truths, alpha_preds, out_path, plot_format=conf["format"]
-    )
+    dif = (alpha_preds - alpha_truths).numpy()
+    histogram_jet_angles(dif, out_path, plot_format=conf["format"])
+    if conf["save_vals"]:
+        click.echo("\nSaving jet angle offsets.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "jet_angles.txt", dif)
 
 
 def evaluate_dynamic_range(conf):
@@ -485,6 +479,12 @@ def evaluate_mean_diff(conf):
 
     click.echo(f"\nThe mean difference is {vals.mean()}.\n")
 
+    if conf["save_vals"]:
+        click.echo("\nSaving mean differences.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "mean_diff.txt", vals)
+
 
 def evaluate_area(conf):
     # create DataLoader
@@ -524,6 +524,12 @@ def evaluate_area(conf):
     histogram_area(vals, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean area ratio is {vals.mean()}.\n")
+
+    if conf["save_vals"]:
+        click.echo("\nSaving area ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "area_ratios.txt", vals)
 
 
 def evaluate_point(conf):
@@ -614,7 +620,9 @@ def evaluate_gan_sources(conf):
             num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
             num_zeros += list(num_zero)
 
-        ratio = diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
+        ratio = np.abs(diff).max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(
+            axis=-1
+        )
 
         below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
         above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
