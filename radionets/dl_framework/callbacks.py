@@ -14,6 +14,7 @@ from radionets.evaluation.utils import (
     check_vmin_vmax,
     get_ifft,
     load_pretrained_model,
+    get_strides,
 )
 from radionets.evaluation.plotting import (
     create_OrBu,
@@ -140,9 +141,7 @@ class CometCallback(Callback):
             with torch.no_grad():
                 pred = model(x.cuda())
 
-        strides = np.empty(len(pred))
-        for i, feature_map in enumerate(pred):
-            strides[i] = x.shape[-1] / feature_map.shape[-2]
+        strides = get_strides(x, pred)
 
         for i in range(n):
             fig, ((ax1, ax2, ax3)) = plt.subplots(1, 3, figsize=(14, 4))

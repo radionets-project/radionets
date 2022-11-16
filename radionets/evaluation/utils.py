@@ -498,6 +498,34 @@ def yolo_out_transform(output, strides):
     return torch.cat(pred_list, 1), objectness
 
 
+def get_pred_boxes(x, pred, **kwargs):
+    """Get predicted boxes by concatenating objectness from all feature maps.
+
+    Parameters
+    ----------
+    x: 4d-array
+        input image (bs, 1, ny, nx)
+    pred: list
+        list of feature maps, each of shape (bs, a, my, mx, 6)
+    **kwargs
+        objectness_mapping properties
+    
+    Returns
+    -------
+    boxes: ndarray
+        predictions (bs, my, mx, 6)
+    """
+    strides = get_strides(x, pred)
+
+    # concatenate all objectness maps
+    obj_map = objectness_mapping(pred, **kwargs)
+    # use boxes from prediction of highest resolution
+    boxes = decode_yolo_box(pred[0], strides[0])
+    boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
+
+    return boxes
+
+
 def non_max_suppression(
     boxes,
     obj_thres: float = 0.25,
@@ -602,6 +630,28 @@ def objectness_mapping(
         out /= len(pred)
 
     return out
+
+
+def get_strides(x, pred):
+    """Calculate strides of YOLO model from input x and prediction pred.
+
+    Parameters
+    ----------
+    x: 4d-array
+        input image (bs, 1, ny, nx)
+    pred: list
+        list of feature maps, each of shape (bs, a, my, mx, 6)
+    
+    Returns
+    -------
+    strides: ndarray
+        array with strides of shape (n feature maps,)
+    """
+    strides = np.empty(len(pred))
+    for i, feature_map in enumerate(pred):
+        strides[i] = x.shape[-1] / feature_map.shape[-2]
+    
+    return strides
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):

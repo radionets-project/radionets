@@ -1110,8 +1110,6 @@ def plot_yolo_box(
     pred_label: bool
         decide if label of predicted boxes are plotted
     """
-    bs = x.shape[0]
-
     # Plot input image
     img = ax.imshow(x[idx, 0], cmap="inferno")
 
@@ -1142,7 +1140,7 @@ def plot_yolo_box(
 
         outputs = (
             non_max_suppression(
-                boxes[idx].reshape(1, -1, 6), obj_thres=boxes[idx, ..., 4].max() / 3
+                boxes[idx].reshape(1, -1, 6), obj_thres=boxes[idx, ..., 4].max() * 0.8
             )[0]
             .detach()
             .cpu()
