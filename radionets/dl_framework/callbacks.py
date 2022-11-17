@@ -59,14 +59,14 @@ class CometCallback(Callback):
             self.uncertainty = True
 
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
-        lim_phase = check_vmin_vmax(img_true[0, 1])
+        lim_phase = check_vmin_vmax(img_true[1])
         im1 = ax1.imshow(pred[0, 0], cmap="inferno")
         if self.uncertainty:
             im2 = ax2.imshow(pred[0, 2], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
         else:
             im2 = ax2.imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
-        im3 = ax3.imshow(img_true[0, 0], cmap="inferno")
-        im4 = ax4.imshow(img_true[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        im3 = ax3.imshow(img_true[0], cmap="inferno")
+        im4 = ax4.imshow(img_true[1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
         make_axes_nice(fig, ax1, im1, "Amplitude")
         make_axes_nice(fig, ax2, im2, "Phase", phase=True)
         make_axes_nice(fig, ax3, im3, "Org. Amplitude")
