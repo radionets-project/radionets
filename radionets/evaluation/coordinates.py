@@ -1,7 +1,7 @@
 import astropy.units as u
 
 
-def pixel2coordinate(header, x_pixel, y_pixel, relative=True):
+def pixel2coordinate(header, x_pixel: float, y_pixel: float, img_size: int, relative: bool = True):
     """Transform pixel values of one image to astronomical units
 
     Parameters
@@ -12,12 +12,18 @@ def pixel2coordinate(header, x_pixel, y_pixel, relative=True):
         x positions
     y_pixel: floats
         y positions
+    img_size: int
+        size of the input image of x_pixel and y_pixel
+    relative: bool
+        calculate relative or absolute position
 
     Returns
     -------
     x, y: tuple of floats
         coordinates in mas (milli arc second)
     """
+    size_proportion = header["NAXIS1"] / 2 -  img_size / 2
+
     x_ref_pixel = header["CRPIX1"]  # center in pixel
     x_ref_value = (header["CRVAL1"] * u.degree).to(u.mas)  # center in mas
     x_inc = (header["CDELT1"] * u.degree).to(u.mas)  # increament in mas per pixel
@@ -26,8 +32,8 @@ def pixel2coordinate(header, x_pixel, y_pixel, relative=True):
     y_ref_value = (header["CRVAL2"] * u.degree).to(u.mas)  # center in mas
     y_inc = (header["CDELT2"] * u.degree).to(u.mas)  # increament in mas per pixel
 
-    x = ((x_pixel - x_ref_pixel) * x_inc).astype(float)
-    y = ((y_pixel - y_ref_pixel) * y_inc).astype(float)
+    x = ((x_pixel + size_proportion - x_ref_pixel) * x_inc).astype(float)
+    y = ((y_pixel + size_proportion - y_ref_pixel) * y_inc).astype(float)
 
     if not relative:
         x += x_ref_value
