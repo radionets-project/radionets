@@ -3,7 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 from pathlib import Path
-from math import sqrt, pi
+from math import pi
 
 
 class Lambda(nn.Module):
@@ -75,8 +75,8 @@ def init_cnn_(m, f):
         f(m.weight, a=0.1)
         if getattr(m, "bias", None) is not None:
             m.bias.data.zero_()
-    for l in m.children():
-        init_cnn_(l, f)
+    for c in m.children():
+        init_cnn_(c, f)
 
 
 def init_cnn(m, uniform=False):
