@@ -223,7 +223,7 @@ class LocallyConnected2d(nn.Module):
                 in_channels,
                 output_size[0],
                 output_size[1],
-                kernel_size ** 2,
+                kernel_size**2,
             )
         )
         if bias:
@@ -314,6 +314,8 @@ class SRBlock(nn.Module):
 
 
 def even_better_symmetry(x):
+    if x.shape[-1] % 2 != 0:
+        raise ValueError("The symmetry function only works for even image sizes.")
     upper_half = x[:, :, 0 : x.shape[2] // 2, :].clone()
     upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].clone()
     upper_right = upper_half[:, :, :, upper_half.shape[3] // 2 :].clone()
