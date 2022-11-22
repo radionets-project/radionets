@@ -25,7 +25,8 @@ setup(
         "pytest",
         "pytest-cov",
         "pytest-order",
-        "comet_ml"
+        "comet_ml",
+        "pre-commit"
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
