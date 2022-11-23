@@ -340,6 +340,12 @@ class TestEvaluation:
                     == -x_symm[0, 1, x.shape[-1] - 1 - i, x.shape[-1] - 1 - j]
                 )
 
+        rot_amp = torch.rot90(x_symm[0, 0], 2)
+        rot_phase = torch.rot90(x_symm[0, 1], 2)
+
+        assert torch.isclose(rot_amp - x_symm[0, 0], torch.tensor(0)).all()
+        assert torch.isclose(rot_phase + x_symm[0, 1], torch.tensor(0)).all()
+
     def test_evaluation(self):
         import shutil
         import os
