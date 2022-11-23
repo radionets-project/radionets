@@ -325,10 +325,10 @@ class TestEvaluation:
 
     def test_symmetry(self):
         import torch
-        from radionets.dl_framework.model import even_better_symmetry
+        from radionets.dl_framework.model import symmetry
 
         x = torch.randint(0, 9, size=(1, 2, 4, 4))
-        x_symm = even_better_symmetry(x.clone())
+        x_symm = symmetry(x.clone())
         for i in range(x.shape[-1]):
             for j in range(x.shape[-1]):
                 assert (

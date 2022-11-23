@@ -15,30 +15,6 @@ class Lambda(nn.Module):
         return self.func(x)
 
 
-def symmetry(x, mode="real"):
-    center = (x.shape[1]) // 2
-    u = torch.arange(center)
-    v = torch.arange(center)
-
-    diag1 = torch.arange(center, x.shape[1])
-    diag2 = torch.arange(center, x.shape[1])
-    diag_indices = torch.stack((diag1, diag2))
-    grid = torch.tril_indices(x.shape[1], x.shape[1], -1)
-
-    x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)))
-    y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)))
-    x = torch.rot90(x, 1, dims=(1, 2))
-    i = center + (center - x_sym)
-    j = center + (center - y_sym)
-    u = center - (center - x_sym)
-    v = center - (center - y_sym)
-    if mode == "real":
-        x[:, i, j] = x[:, u, v]
-    if mode == "imag":
-        x[:, i, j] = -x[:, u, v]
-    return torch.rot90(x, 3, dims=(1, 2))
-
-
 class GeneralRelu(nn.Module):
     def __init__(self, leak=None, sub=None, maxv=None):
         super().__init__()
@@ -313,7 +289,7 @@ class SRBlock(nn.Module):
         )
 
 
-def even_better_symmetry(x):
+def symmetry(x):
     if x.shape[-1] % 2 != 0:
         raise ValueError("The symmetry function only works for even image sizes.")
     upper_half = x[:, :, 0 : x.shape[2] // 2, :].clone()
