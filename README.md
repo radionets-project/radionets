@@ -20,7 +20,11 @@ You can create one by running the following command in this repository:
 $ conda env create -f environment.yml
 ```
 Depending on your `cuda` version you have to specify the `cudatoolkit` version used by `pytorch`. If you are working on machines
-with `cuda` versions < 10.2, please change the version number in the environment.yml file.
+with `cuda` versions < 10.2, please change the version number in the environment.yml file. Since the package `pre-commit` is used, you need to execute 
+```
+$ pre-commit install
+```
+after the installation.
 
 ## Usage
 
