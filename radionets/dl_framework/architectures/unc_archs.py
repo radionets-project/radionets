@@ -1,13 +1,10 @@
 import torch
 from torch import nn
 from radionets.dl_framework.model import (
-    Lambda,
-    symmetry,
     GeneralELU,
     LocallyConnected2d,
 )
 from radionets.dl_framework.architectures.res_exp import SRResNet
-from functools import partial
 
 
 class Uncertainty(nn.Module):
@@ -42,8 +39,6 @@ class Uncertainty(nn.Module):
                 bias=False,
             )
         )
-
-        self.symmetry = Lambda(partial(symmetry, mode="real"))
 
         self.elu = GeneralELU(add=+(1 + 1e-7))
 

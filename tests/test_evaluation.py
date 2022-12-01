@@ -117,9 +117,9 @@ class TestEvaluation:
 
         x_coords, y_coords, value = im_to_array_value(image)
 
-        assert x_coords.shape == (2, 64 ** 2)
-        assert y_coords.shape == (2, 64 ** 2)
-        assert value.shape == (2, 64 ** 2)
+        assert x_coords.shape == (2, 64**2)
+        assert y_coords.shape == (2, 64**2)
+        assert value.shape == (2, 64**2)
 
     def test_bmul(self):
         import torch
@@ -322,6 +322,29 @@ class TestEvaluation:
         assert np.isclose(below_zero + above_zero, 100)
 
         assert evaluate_gan_sources(conf) is None
+
+    def test_symmetry(self):
+        import torch
+        from radionets.dl_framework.model import symmetry
+
+        x = torch.randint(0, 9, size=(1, 2, 4, 4))
+        x_symm = symmetry(x.clone())
+        for i in range(x.shape[-1]):
+            for j in range(x.shape[-1]):
+                assert (
+                    x_symm[0, 0, i, j]
+                    == x_symm[0, 0, x.shape[-1] - 1 - i, x.shape[-1] - 1 - j]
+                )
+                assert (
+                    x_symm[0, 1, i, j]
+                    == -x_symm[0, 1, x.shape[-1] - 1 - i, x.shape[-1] - 1 - j]
+                )
+
+        rot_amp = torch.rot90(x_symm[0, 0], 2)
+        rot_phase = torch.rot90(x_symm[0, 1], 2)
+
+        assert torch.isclose(rot_amp - x_symm[0, 0], torch.tensor(0)).all()
+        assert torch.isclose(rot_phase + x_symm[0, 1], torch.tensor(0)).all()
 
     def test_evaluation(self):
         import shutil

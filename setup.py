@@ -4,7 +4,7 @@ setup(
     name="radionets",
     version="0.1.14",
     description="Imaging radio interferometric data with neural networks",
-    url="https://github.com/Kevin2/radionets",
+    url="https://github.com/radionets-project/radionets",
     author="Kevin Schmidt, Felix Geyer",
     author_email="kevin3.schmidt@tu-dortmund.de, felix.geyer@tu-dortmund.de",
     license="MIT",
@@ -25,14 +25,16 @@ setup(
         "pytest",
         "pytest-cov",
         "pytest-order",
-        "comet_ml"
+        "comet_ml",
+        "pre-commit",
     ],
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
     zip_safe=False,
     entry_points={
         "console_scripts": [
-            "radionets_simulations = radionets.simulations.scripts.simulate_images:main",
+            "radionets_simulations = radionets.simulations.scripts.simulate_images\
+            :main",
             "radionets_training = radionets.dl_training.scripts.start_training:main",
             "radionets_evaluation = radionets.evaluation.scripts.start_evaluation:main",
         ],
