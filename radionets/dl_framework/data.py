@@ -4,6 +4,11 @@ import h5py
 import re
 import numpy as np
 from pathlib import Path
+from typing import Callable
+import glob
+from astropy.io import fits
+import os
+import warnings
 
 
 class h5_dataset:
@@ -207,3 +212,175 @@ def load_data(data_path, mode, fourier=False, source_list=False):
     data = sorted(data, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
     ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)
     return ds
+
+
+class MojaveDataset:
+    def __init__(
+        self,
+        data_path: str,
+        source: str = None,
+        crop_size: int = None,
+        scaling: Callable = None,
+    ):
+        """Dataset class for MOJAVE data.
+
+        Parameters
+        ----------
+        data_path: str
+            path to folder containing the files
+        source: str
+            select images of certain source
+        crop_size: int
+            crop image around center to this size
+        scaling: function
+            function to be applied for scaling
+        model:
+            used for evaluation
+        """
+        self.source = source
+        self.paths = self.get_path(data_path)  # uses data_path and source
+        self.crop_size = crop_size
+        self.scaling = scaling
+
+    def __call__(self):
+        return print("This is the MojaveDataset class.")
+
+    def __len__(self):
+        return len(self.paths)
+
+    def __getitem__(self, i):
+        return self.open_image(i)
+
+    def get_path(self, data_path: str):
+        """Get all paths of files in folder. Filtered by source, if provided.
+
+        Parameters
+        ----------
+        data_path: str
+            path to folder containing the files
+
+        Returns
+        -------
+        paths: list
+            folder and filename of each file
+        """
+        all_paths = sorted(glob.glob(str(data_path) + "/*"))
+
+        if self.source:
+            len_source_name = len(self.source)
+            paths = []
+            for p in all_paths:
+                if self.source == os.path.basename(p)[:len_source_name]:
+                    paths.append(p)
+            assert (
+                paths
+            ), f"path variable is empty, no source with name {self.source} found"
+
+        else:
+            paths = all_paths
+
+        return paths
+
+    def get_header(self, i: int = 0):
+        """Opening i-th header of fits files.
+
+        Parameters
+        ----------
+        i: int
+            index of image
+
+        Returns
+        -------
+        header:
+            opened header
+        """
+        f = fits.open(self.paths[i])
+        header = f[0].header
+
+        return header
+
+    def open_image(self, i: int = 0):
+        """Opening i-th image of fits files.
+
+        Parameters
+        ----------
+        i: int
+            index of image
+
+        Returns
+        -------
+        img: 2d-array
+            opened image
+        """
+        f = fits.open(self.paths[i])
+        img = f[0].data.astype(np.float32).squeeze()
+
+        if self.crop_size:
+            assert (
+                img.shape[0] > self.crop_size
+            ), "Image is smaller than the crop_size. Reduce crop_size."
+            img = crop_center(
+                img, cropx=self.crop_size, cropy=self.crop_size, justify=True
+            )
+
+        if self.scaling:
+            img = self.scaling(img)
+
+        return img
+
+    def open_source(self):
+        """Opening all images of one source.
+
+        Returns
+        -------
+        images: 3d-array
+            all images of one source
+        """
+        if not self.source:
+            warnings.warn("No source specified. Opening all data.")
+
+        images = []
+        for i in range(len(self.paths)):
+            images.append(self.open_image(i))
+
+        return np.array(images)
+
+
+def crop_center(img, cropx: int, cropy: int, justify: bool = False, eps: float = 1e-2):
+    """Crop out the center of an image
+
+    Parameters
+    ----------
+    img: 2d-array
+        image to be cropped
+    cropx: int
+        output size of x-axis
+    cropy: int
+        output size of y-axis
+    justify: bool
+        wether to justfiy or not, used when cropping MOJAVE data
+    eps: float
+        threshold for warning
+    """
+    y, x = img.shape
+    startx = x // 2 - (cropx // 2)
+    starty = y // 2 - (cropy // 2)
+    img_cropped = img[starty : starty + cropy, startx : startx + cropx]
+
+    if justify:
+        img_outer = img.copy()
+        # set cropped area to -1, so it does not appear in top values
+        img_outer[starty : starty + cropy, startx : startx + cropx] = -1
+
+        # calculate max n values and compare
+        n = int(np.sqrt(cropx))
+        top_outer = np.partition(img_outer, -n, axis=None)[-n:]
+        top_inner = np.partition(img_cropped, -n, axis=None)[-n:]
+
+        mean_ratio = top_outer.mean() / top_inner.mean()
+        if mean_ratio > eps:
+            warnings.warn(
+                f"Source might be cut off. Outer to Inner ratio: {mean_ratio:.2f}"
+            )
+
+    return img_cropped

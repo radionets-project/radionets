@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 import numpy as np
 from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.data import load_data
@@ -14,6 +15,7 @@ import h5py
 from pathlib import Path
 from PIL import Image
 import warnings
+from urllib.request import urlopen
 
 
 def source_list_collate(batch):
@@ -116,6 +118,7 @@ def read_config(config):
     eval_conf["point"] = config["eval"]["evaluate_point"]
     eval_conf["predict_grad"] = config["eval"]["predict_grad"]
     eval_conf["gan"] = config["eval"]["evaluate_gan"]
+    eval_conf["mojave"] = config["eval"]["mojave"]
     eval_conf["save_vals"] = config["eval"]["save_vals"]
     eval_conf["save_path"] = config["eval"]["save_path"]
     return eval_conf
@@ -139,7 +142,9 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False, objectness=False):
+def make_axes_nice(
+    fig, ax, im, title, phase=False, phase_diff=False, unc=False, objectness=False
+):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
     Parameters
@@ -433,46 +438,6 @@ def calc_velocity(pos, times, mas):
     return v
 
 
-def crop_center(img, cropx: int, cropy: int, justify: bool = False, eps: float = 1e-2):
-    """Crop out the center of an image
-
-    Parameters
-    ----------
-    img: 2d-array
-        image to be cropped
-    cropx: int
-        output size of x-axis
-    cropy: int
-        output size of y-axis
-    justify: bool
-        wether to justfiy or not, used when cropping MOJAVE data
-    eps: float
-        threshold for warning
-    """
-    y, x = img.shape
-    startx = x // 2 - (cropx // 2)
-    starty = y // 2 - (cropy // 2)
-    img_cropped = img[starty : starty + cropy, startx : startx + cropx]
-
-    if justify:
-        img_outer = img.copy()
-        # set cropped area to -1, so it does not appear in top values
-        img_outer[starty : starty + cropy, startx : startx + cropx] = -1
-
-        # calculate max n values and compare
-        n = int(np.sqrt(cropx))
-        top_outer = np.partition(img_outer, -n, axis=None)[-n:]
-        top_inner = np.partition(img_cropped, -n, axis=None)[-n:]
-
-        mean_ratio = top_outer.mean() / top_inner.mean()
-        if mean_ratio > eps:
-            warnings.warn(
-                f"Source might be cut off. Outer to Inner ratio: {mean_ratio:.2f}"
-            )
-
-    return img_cropped
-
-
 def yolo_out_transform(output, strides):
     """Transforms output of yolo network to list of predictions
 
@@ -512,7 +477,7 @@ def get_pred_boxes(x, pred, **kwargs):
         list of feature maps, each of shape (bs, a, my, mx, 6)
     **kwargs
         objectness_mapping properties
-    
+
     Returns
     -------
     boxes: ndarray
@@ -644,7 +609,7 @@ def get_strides(x, pred):
         input image (bs, 1, ny, nx)
     pred: list
         list of feature maps, each of shape (bs, a, my, mx, 6)
-    
+
     Returns
     -------
     strides: ndarray
@@ -653,8 +618,63 @@ def get_strides(x, pred):
     strides = np.empty(len(pred))
     for i, feature_map in enumerate(pred):
         strides[i] = x.shape[-1] / feature_map.shape[-2]
-    
+
     return strides
+
+
+def scaling_log10_noisecut(img):
+    """Perfome log10 scaling with a noise cut.
+
+    Parameters
+    ----------
+    img: ndarray
+        input image
+
+    Returns
+    -------
+    img: ndarray
+        manipulated input image
+    """
+    # noise is fluctuation around zero: take max negative value as threshold for noise removing
+    img[img < np.abs(img.min())] = -1  # -1 so value gets NaN in log
+
+    # make jet more visible
+    with warnings.catch_warnings():  # on purpose: -1 will lead to invalid values
+        warnings.filterwarnings("ignore", message="invalid value encountered in log10")
+        img = np.log10(img)
+
+    # rescale between 0 and 1
+    img -= np.nanmin(img)  # pytorch has no nanmin or similar
+    img /= np.nanmax(img)  # pytorch has no nanmax or similar
+
+    img[np.isnan(img)] = 0
+    return img
+
+
+def get_redshift(source: str):
+    """Get redshift information of source from MOJAVE webpage.
+
+    Parameters
+    ----------
+    source: str
+        B1950 name of source
+
+    Returns
+    -------
+    redshift: float
+        Redshift of the object
+    """
+    url = "https://www.cv.nrao.edu/MOJAVE/sourcepages/" + source + ".shtml"
+    page = urlopen(url)
+    html_bytes = page.read()
+    soup = BeautifulSoup(html_bytes, features="lxml")
+    redshift = soup.find("td", text="Redshift:").find_next_sibling("td").text
+    try:
+        redshift = float(redshift.split()[0])
+    except ValueError:
+        redshift = np.nan
+
+    return redshift
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
