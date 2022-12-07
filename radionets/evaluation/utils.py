@@ -143,7 +143,7 @@ def reshape_2d(array):
 
 
 def make_axes_nice(
-    fig, ax, im, title, phase=False, phase_diff=False, unc=False, objectness=False
+    fig, ax, im, title=False, phase=False, phase_diff=False, unc=False, objectness=False
 ):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
@@ -162,8 +162,9 @@ def make_axes_nice(
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
-    ax.set_title(title)
 
+    if title:
+        ax.set_title(title)
     if phase:
         cbar = fig.colorbar(
             im,

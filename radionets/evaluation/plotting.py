@@ -1160,8 +1160,11 @@ def plot_yolo_box(
                 text = np.round(outputs[i, 4], 2)
                 ax.text(outputs[i, 0], outputs[i, 1], text, color="w")
 
-    if pred_boxes and pred_label:
+    if true_boxes or (pred_boxes and pred_label and pred):
         legend_without_duplicate_labels(ax)
+
+    ax.set_xlabel("Pixel")
+    ax.set_ylabel("Pixel")
 
     return img
 
