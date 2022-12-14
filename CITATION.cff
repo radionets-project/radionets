@@ -5,7 +5,7 @@ title: "radionets: Imaging Radio Interferometric Data with Neural Networks."
 type: software
 message: "If you use this software, please cite it as below."
 # url: 
-# doi: 
+doi: 10.1051/0004-6361/202142113
 keywords:
 - Astronomy
 - "Data analysis"
