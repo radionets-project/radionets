@@ -14,8 +14,12 @@ date-released: 2020-11-11
 repository-code: "https://github.com/radionets-project/radionets"
 license: "MIT License"
 authors:
+- family-names: Schmidt
+  given-names: Kevin
+  affiliation: "TU Dortmund University, Germany"
+  # orcid: "https://orcid.org/0000-0000-0000-0000"
 - family-names: Fröse
-  given-names: Stefan
+  given-names: Stefan 
   affiliation: "TU Dortmund University, Germany"
   # orcid: "https://orcid.org/0000-0000-0000-0000"
 - family-names: Geyer
@@ -28,10 +32,6 @@ authors:
   # orcid: "https://orcid.org/0000-0000-0000-0000"
 - family-names: Poggenpohl
   given-names: Arne
-  affiliation: "TU Dortmund University, Germany"
-  # orcid: "https://orcid.org/0000-0000-0000-0000"
-- family-names: Schmidt
-  given-names: Kevin
   affiliation: "TU Dortmund University, Germany"
   # orcid: "https://orcid.org/0000-0000-0000-0000"
 - family-names: Zaldivar
