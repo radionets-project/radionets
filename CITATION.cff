@@ -1,0 +1,40 @@
+# Metadata for citation of this software according to the CFF format (https://citation-file-format.github.io/)
+cff-version: 1.2.0
+title: "radionets: Imaging Radio Interferometric Data with Neural Networks."
+# abstract: 
+type: software
+message: "If you use this software, please cite it as below."
+# url: 
+# doi: 
+keywords:
+- Astronomy
+- "Data analysis"
+# version: 
+# date-released: 
+repository-code: "https://github.com/radionets-project/radiosim"
+license: "MIT License"
+authors:
+- family-names: Fröse
+  given-names: Stefan
+  affiliation: "TU Dortmund University, Germany"
+  # orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: Geyer
+  given-names: Felix
+  affiliation: "TU Dortmund University, Germany"
+  # orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: Locke
+  given-names: Olivia
+  affiliation: "McGill University, Canada"
+  # orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: Poggenpohl
+  given-names: Arne
+  affiliation: "TU Dortmund University, Germany"
+  # orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: Schmidt
+  given-names: Kevin
+  affiliation: "TU Dortmund University, Germany"
+  # orcid: "https://orcid.org/0000-0000-0000-0000"
+- family-names: Zaldivar
+  given-names: Emiliano
+  affiliation: "Universität Hamburg, Germany"
+  # orcid: "https://orcid.org/0000-0000-0000-0000"
