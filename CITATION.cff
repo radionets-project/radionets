@@ -9,9 +9,9 @@ message: "If you use this software, please cite it as below."
 keywords:
 - Astronomy
 - "Data analysis"
-# version: 
-# date-released: 
-repository-code: "https://github.com/radionets-project/radiosim"
+version: "v1.0.0"
+date-released: 2020-11-11
+repository-code: "https://github.com/radionets-project/radionets"
 license: "MIT License"
 authors:
 - family-names: Fröse
