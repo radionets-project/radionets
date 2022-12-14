@@ -79,7 +79,7 @@ def gmmClustering(
     return best_gmm
 
 
-def spectralClustering(data, n_components: int = None):
+def spectralClustering(data, n_components: int = None, eig_thres: float = 0.99):
     """Use Spectral Clustering for clustering data.
 
     References:
@@ -93,6 +93,8 @@ def spectralClustering(data, n_components: int = None):
         data points
     n_components: int
         number of components for the model
+    eig_thres: float
+        threshold for eigenvalues, important eigenvalues are equaling 1
 
     Returns
     -------
@@ -104,7 +106,7 @@ def spectralClustering(data, n_components: int = None):
     w, _ = np.linalg.eigh(normalized_affinity_matrix)
     if n_components is None:
         # Important eigenvalues are equaling 1
-        n_components = np.sum(w > 0.95)
+        n_components = np.sum(w > eig_thres)
         # print(f'Eigenvalues : {np.round(w, 3)}')
 
     model = SpectralClustering(n_clusters=n_components, affinity="precomputed").fit(

@@ -593,7 +593,7 @@ def plot_box(ax, num_boxes, corners):
 
 
 def plot_box2(
-    ax, box, angle: float = 0, label: str = "true box", c="g", alpha: float = 1
+    ax, box, angle: float = 0, label: str = "True box", c="g", alpha: float = 1
 ):
     """Plots a box
 
@@ -1055,6 +1055,9 @@ def plot_yolo_obj_true(ax, y, pred, strides, idx: int = 0, anchor_idx: int = 0):
     out = objectness_mapping(obj_true, calc="sum", scaling=None)
     img = ax.imshow(out[idx, anchor_idx])
 
+    ax.set_xlabel("Pixel")
+    ax.set_ylabel("Pixel")
+
     return img
 
 
@@ -1075,6 +1078,9 @@ def plot_yolo_obj_pred(ax, pred, idx: int = 0, anchor_idx: int = 0):
     """
     out = objectness_mapping(pred)
     img = ax.imshow(out[idx, anchor_idx])
+
+    ax.set_xlabel("Pixel")
+    ax.set_ylabel("Pixel")
 
     return img
 
@@ -1152,7 +1158,7 @@ def plot_yolo_box(
                 ax,
                 outputs[i, :4],
                 angle=outputs[i, 5] * 180,
-                label="pred box",
+                label="Pred box",
                 c="r",
                 alpha=0.7,
             )

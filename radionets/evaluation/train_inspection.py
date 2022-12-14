@@ -648,3 +648,44 @@ def evaluate_gan_sources(conf):
     )
     click.echo(f"\nThe mean difference from maximum flux is {diff.mean()}.\n")
     click.echo(f"\nThe mean proportion of pixels close to 0 is {num_zeros.mean()}.\n")
+
+
+# from radionets.dl_framework.data import MojaveDataset
+# from radionets.evaluation.utils import (
+#     scaling_log10_noisecut,
+# )
+
+
+# def evaluate_mojave_sources(conf):
+#     img_size = 128
+#     ds = MojaveDataset(
+#         data_path="/net/big-tank/POOL/users/apoggenpohl/radionets/data/real_data/",
+#         source="0149+710",  # 1142+198, 0149+710
+#         crop_size=img_size,
+#         scaling=scaling_log10_noisecut,  # np.log
+#     )
+
+#     out_path = Path(conf["model_path"]).parent / "evaluation"
+#     out_path.mkdir(parents=True, exist_ok=True)
+
+#     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+
+#     pred = eval_model(ds.open_source()[:, None], model)
+
+#     num_images = (i + 1) * conf["batch_size"]
+#     ratios = np.array([ratios]).reshape(-1)
+#     num_zeros = np.array([num_zeros]).reshape(-1)
+#     above_zeros = np.array([above_zeros]).reshape(-1)
+#     below_zeros = np.array([below_zeros]).reshape(-1)
+#     click.echo("\nCreating GAN histograms.\n")
+#     histogram_gan_sources(
+#         ratios,
+#         num_zeros,
+#         above_zeros,
+#         below_zeros,
+#         num_images,
+#         out_path,
+#         plot_format=conf["format"],
+#     )
+#     click.echo(f"\nThe mean difference from maximum flux is {diff.mean()}.\n")
+#     click.echo(f"\nThe mean proportion of pixels close to 0 is {num_zeros.mean()}.\n")

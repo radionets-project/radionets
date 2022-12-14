@@ -317,7 +317,7 @@ class MojaveDataset:
 
         if self.crop_size:
             assert (
-                img.shape[0] > self.crop_size
+                img.shape[0] >= self.crop_size
             ), "Image is smaller than the crop_size. Reduce crop_size."
             img = crop_center(
                 img, cropx=self.crop_size, cropy=self.crop_size, justify=True
