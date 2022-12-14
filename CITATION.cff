@@ -17,15 +17,19 @@ authors:
 - family-names: Schmidt
   given-names: Kevin
   affiliation: "TU Dortmund University, Germany"
-  # orcid: "https://orcid.org/0000-0000-0000-0000"
+  orcid: "https://orcid.org/0000-0002-9883-4454"
+- family-names: Blomenkamp
+  given-names: Paul-Simon Wilhelm
+  affiliation: "TU Dortmund University, Germany"
+  orcid: "https://orcid.org/0000-0002-5032-5896"
 - family-names: Fröse
   given-names: Stefan 
   affiliation: "TU Dortmund University, Germany"
-  # orcid: "https://orcid.org/0000-0000-0000-0000"
+  orcid: "https://orcid.org/0000-0003-1832-4129"
 - family-names: Geyer
   given-names: Felix
   affiliation: "TU Dortmund University, Germany"
-  # orcid: "https://orcid.org/0000-0000-0000-0000"
+  orcid: "https://orcid.org/0000-0002-5615-2498"
 - family-names: Locke
   given-names: Olivia
   affiliation: "McGill University, Canada"
@@ -33,8 +37,8 @@ authors:
 - family-names: Poggenpohl
   given-names: Arne
   affiliation: "TU Dortmund University, Germany"
-  # orcid: "https://orcid.org/0000-0000-0000-0000"
+  orcid: "https://orcid.org/0000-0002-0746-4735"
 - family-names: Zaldivar
   given-names: Emiliano
-  affiliation: "Universität Hamburg, Germany"
+  affiliation: "University of Hamburg,, Germany"
   # orcid: "https://orcid.org/0000-0000-0000-0000"
