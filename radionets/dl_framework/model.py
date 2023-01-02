@@ -3,7 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 from torch.nn.modules.utils import _pair
 from pathlib import Path
-from math import sqrt, pi
+from math import pi
 
 
 class Lambda(nn.Module):
@@ -13,30 +13,6 @@ class Lambda(nn.Module):
 
     def forward(self, x):
         return self.func(x)
-
-
-def symmetry(x, mode="real"):
-    center = (x.shape[1]) // 2
-    u = torch.arange(center)
-    v = torch.arange(center)
-
-    diag1 = torch.arange(center, x.shape[1])
-    diag2 = torch.arange(center, x.shape[1])
-    diag_indices = torch.stack((diag1, diag2))
-    grid = torch.tril_indices(x.shape[1], x.shape[1], -1)
-
-    x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)))
-    y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)))
-    x = torch.rot90(x, 1, dims=(1, 2))
-    i = center + (center - x_sym)
-    j = center + (center - y_sym)
-    u = center - (center - x_sym)
-    v = center - (center - y_sym)
-    if mode == "real":
-        x[:, i, j] = x[:, u, v]
-    if mode == "imag":
-        x[:, i, j] = -x[:, u, v]
-    return torch.rot90(x, 3, dims=(1, 2))
 
 
 class GeneralRelu(nn.Module):
@@ -75,8 +51,8 @@ def init_cnn_(m, f):
         f(m.weight, a=0.1)
         if getattr(m, "bias", None) is not None:
             m.bias.data.zero_()
-    for l in m.children():
-        init_cnn_(l, f)
+    for c in m.children():
+        init_cnn_(c, f)
 
 
 def init_cnn(m, uniform=False):
@@ -438,7 +414,9 @@ class SimSPPF(nn.Module):
         return self.cv2(torch.cat([x, y1, y2, self.m(y2)], 1))
 
 
-def even_better_symmetry(x):
+def symmetry(x):
+    if x.shape[-1] % 2 != 0:
+        raise ValueError("The symmetry function only works for even image sizes.")
     upper_half = x[:, :, 0 : x.shape[2] // 2, :].clone()
     upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].clone()
     upper_right = upper_half[:, :, :, upper_half.shape[3] // 2 :].clone()

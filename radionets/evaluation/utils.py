@@ -623,21 +623,25 @@ def get_strides(x, pred):
     return strides
 
 
-def scaling_log10_noisecut(img):
-    """Perfome log10 scaling with a noise cut.
+def scaling_log10_noisecut(img, thres_adj: float = 1):
+    """Perform log10 scaling with a noise cut.
 
     Parameters
     ----------
     img: ndarray
         input image
+    thres_adj: float
+        threshold adjustment for mask
 
     Returns
     -------
     img: ndarray
         manipulated input image
     """
+    img = img.copy()
+
     # noise is fluctuation around zero: take max negative value as threshold for noise removing
-    img[img < np.abs(img.min())] = -1  # -1 so value gets NaN in log
+    img[img < np.abs(img.min()) * thres_adj] = -1  # -1 so value gets NaN in log
 
     # make jet more visible
     with warnings.catch_warnings():  # on purpose: -1 will lead to invalid values

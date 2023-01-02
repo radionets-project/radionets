@@ -1159,12 +1159,12 @@ def plot_yolo_box(
                 outputs[i, :4],
                 angle=outputs[i, 5] * 180,
                 label="Pred box",
-                c="r",
+                c="w",
                 alpha=0.7,
             )
             if pred_label:
                 text = np.round(outputs[i, 4], 2)
-                ax.text(outputs[i, 0], outputs[i, 1], text, color="w")
+                ax.text(outputs[i, 0], outputs[i, 1], text, color="lightblue")
 
     if true_boxes or (pred_boxes and pred_label and pred):
         legend_without_duplicate_labels(ax)
