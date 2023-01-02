@@ -15,6 +15,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_point,
     create_predictions,
     evaluate_gan_sources,
+    evaluate_yolo,
 )
 
 
@@ -128,3 +129,7 @@ def main(configuration_path):
     if eval_conf["gan"]:
         click.echo("\nStart evaluation of GAN sources.\n")
         evaluate_gan_sources(eval_conf)
+
+    if eval_conf["yolo"]:
+        click.echo("\nStart evaluation of YOLO model.\n")
+        evaluate_yolo(eval_conf)

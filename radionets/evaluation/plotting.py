@@ -25,6 +25,7 @@ from radionets.evaluation.utils import (
     reshape_2d,
     non_max_suppression,
     objectness_mapping,
+    get_strides,
 )
 from radionets.simulations.utils import adjust_outpath
 from tqdm import tqdm
@@ -1032,7 +1033,7 @@ def hist_jet_gaussian_distance(dist, path, save=False, plot_format="pdf"):
     plt.close()
 
 
-def plot_yolo_obj_true(ax, y, pred, strides, idx: int = 0, anchor_idx: int = 0):
+def plot_yolo_obj_true(ax, y, pred: list, strides, idx: int = 0, anchor_idx: int = 0):
     """Plotting true objectness on axis
 
     Parameters
@@ -1043,7 +1044,7 @@ def plot_yolo_obj_true(ax, y, pred, strides, idx: int = 0, anchor_idx: int = 0):
         true data from simulation [bs, comp, attr]
     pred: list
         list of feature maps, each of shape (bs, 1, my, mx, 6)
-    stride
+    strides
         strides used in model
     idx: int
         index of image to be plotted
@@ -1061,7 +1062,7 @@ def plot_yolo_obj_true(ax, y, pred, strides, idx: int = 0, anchor_idx: int = 0):
     return img
 
 
-def plot_yolo_obj_pred(ax, pred, idx: int = 0, anchor_idx: int = 0):
+def plot_yolo_obj_pred(ax, pred: list, idx: int = 0, anchor_idx: int = 0):
     """Plotting predicted objectness on axis by taking the maximum for each pixel.
     Feature maps with lower size are upsampled.
 
@@ -1095,7 +1096,7 @@ def plot_yolo_box(
     pred_boxes: bool = True,
     pred_label: bool = True,
 ):
-    """Default evaluation plot for YOLO
+    """Evaluation plot for YOLO boxes
 
     Parameters
     ----------
@@ -1133,10 +1134,7 @@ def plot_yolo_box(
 
     # Plot predicted boxes
     if pred_boxes and pred:
-        strides = torch.empty(len(pred)).to(x.device)
-        for i, feature_map in enumerate(pred):
-            strides[i] = x.shape[-1] / feature_map.shape[-2]
-
+        strides = torch.tensor(get_strides(x, pred))
         # use mean of all objectness map
         obj_map = objectness_mapping(pred)
         # use boxes from prediction of highest resolution
@@ -1146,7 +1144,7 @@ def plot_yolo_box(
 
         outputs = (
             non_max_suppression(
-                boxes[idx].reshape(1, -1, 6), obj_thres=boxes[idx, ..., 4].max() * 0.8
+                boxes[idx].reshape(1, -1, 6), obj_thres=boxes[idx, ..., 4].max() * 0.666
             )[0]
             .detach()
             .cpu()
@@ -1175,9 +1173,77 @@ def plot_yolo_box(
     return img
 
 
+def plot_yolo_eval(
+    x,
+    y,
+    pred: list,
+    out_path: str,
+    idx: int = 0,
+    anchor_idx: int = 0,
+    plot_format: str = "pdf",
+):
+    """Default evaluation plot for YOLO
+
+    Parameters
+    ----------
+    x: 4d-array
+        input image (bs, 1, ny, nx)
+    y: 3d-array
+        true data from simulation (bs, components, paramters)
+    pred: list
+        list of feature maps, each of shape (bs, a, my, mx, 6)
+    out_path: str
+        path in file directory to save output
+    idx: int
+        index of image to be plotted
+    anchor_idx: int
+        indes of the anchor
+    plot_format: str
+        format of the plot
+    """
+    strides = get_strides(x, pred)
+
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(9, 7))
+
+    img = ax1.imshow(x[idx, 0], cmap="inferno")
+    ax1.set_xlabel("Pixel")
+    ax1.set_ylabel("Pixel")
+    divider = make_axes_locatable(ax1)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(img, cax=cax, orientation="vertical")
+    make_axes_nice(fig, ax1, img)
+
+    img = plot_yolo_box(
+        ax2, x, y, pred, idx=idx, true_boxes=1, pred_boxes=1, pred_label=0
+    )
+    divider = make_axes_locatable(ax2)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(img, cax=cax, orientation="vertical")
+    make_axes_nice(fig, ax2, img)
+
+    img = plot_yolo_obj_true(ax3, y, pred, strides, idx=idx, anchor_idx=anchor_idx)
+    divider = make_axes_locatable(ax3)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(img, cax=cax, orientation="vertical")
+    make_axes_nice(fig, ax3, img, objectness=True)
+
+    img = plot_yolo_obj_pred(ax4, pred, idx=idx, anchor_idx=anchor_idx)
+    divider = make_axes_locatable(ax4)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(img, cax=cax, orientation="vertical")
+    make_axes_nice(fig, ax4, img, objectness=True)
+
+    plt.tight_layout()
+
+    out_path = str(out_path) + f"/yolo_eval_{idx}.{plot_format}"
+    plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
 def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
     """
     Plotting image of the dataset
+
+    Parameters
     ----------
     x: array
         array of shape (n, 1, size, size), n must be at least rows * cols
@@ -1206,6 +1272,63 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
         outpath = str(path) + f"/simulation_examples.{plot_format}"
         fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
     plt.close()
+
+
+def plot_loss(
+    model_path: str,
+    out_path: str,
+    metric_name: str = "",
+    save: bool = False,
+    plot_format: str = "pdf",
+):
+    """Plotting loss curve of trained model and metric, if available
+
+    Parameters
+    ----------
+    model_path: str
+        path in file directory to model
+    out_path: str
+        path in file directory to save output
+    metric_name: str
+        name of used metric
+    save: bool
+        image is saved if set to true
+    plot_format: str
+        format of the plot
+    """
+    checkpoint = torch.load(model_path)
+
+    fig, ax1 = plt.subplots(figsize=(6.4 * 0.8, 4.8 * 0.8))
+    ax2 = ax1.twinx()
+    lns1 = ax1.plot(checkpoint["train_loss"], label="Training loss")
+
+    valid_loss = np.array(checkpoint["valid_loss"])
+    if valid_loss.shape[1] == 2:
+        lns2 = ax1.plot(
+            np.array(checkpoint["valid_loss"])[:, 0], label="Validation loss"
+        )
+        lns3 = ax2.plot(
+            np.array(checkpoint["valid_loss"])[:, 1], "g", label=metric_name
+        )
+        lns = lns1 + lns2 + lns3
+        ax1.legend(handles=lns, loc="center right")
+        out_path = str(out_path) + f"/loss_metric.{plot_format}"
+    else:
+        lns2 = ax1.plot(
+            np.array(checkpoint["valid_loss"])[:, 0], label="Validation loss"
+        )
+        lns = lns1 + lns2
+        ax1.legend(handles=lns, loc="upper right")
+        out_path = str(out_path) + f"/loss.{plot_format}"
+
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Loss")
+    # ax1.set_yscale('log')
+    ax2.set_ylabel(metric_name)
+
+    plt.tight_layout()
+    if save:
+        fig.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
 def histogram_gan_sources(

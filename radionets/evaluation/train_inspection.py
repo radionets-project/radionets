@@ -17,6 +17,8 @@ from radionets.evaluation.plotting import (
     plot_contour,
     hist_point,
     plot_length_point,
+    plot_yolo_eval,
+    plot_loss,
 )
 from radionets.evaluation.utils import (
     create_databunch,
@@ -648,6 +650,44 @@ def evaluate_gan_sources(conf):
     )
     click.echo(f"\nThe mean difference from maximum flux is {diff.mean()}.\n")
     click.echo(f"\nThe mean proportion of pixels close to 0 is {num_zeros.mean()}.\n")
+
+
+def evaluate_yolo(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = Path(conf["model_path"])
+    out_path = model_path.parent / "evaluation" / model_path.stem
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    plot_loss(
+        model_path=model_path,
+        out_path=out_path,
+        metric_name="Overall IoU",
+        save=True,
+        plot_format="pdf",
+    )
+
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"])
+
+    plotted_images = 0
+    for img_test, img_true in tqdm(loader):
+        # img_true is soure list, not an image. Name is kept for consistency.
+        pred = eval_model(img_test, model)
+        if plotted_images < conf["num_images"]:
+            for _ in range(len(img_test)):
+                if plotted_images < conf["num_images"]:
+                    plot_yolo_eval(
+                        x=img_test,
+                        y=img_true,
+                        pred=pred,
+                        out_path=out_path,
+                        idx=plotted_images,
+                        anchor_idx=0,
+                        plot_format="pdf",
+                    )
+                    plotted_images += 1
 
 
 # from radionets.dl_framework.data import MojaveDataset

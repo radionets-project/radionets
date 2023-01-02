@@ -31,11 +31,25 @@ def source_list_collate(batch):
     tuple
         stacked images and list for source_list values
     """
+    length = len(batch[0])
 
-    x = [item[0] for item in batch]
-    y = [item[1] for item in batch]
-    z = [item[2][0] for item in batch]
-    return torch.stack(x), torch.stack(y), z
+    if length == 1:
+        x = [item[0] for item in batch]
+        return torch.stack(x)
+
+    elif length == 2:
+        x = [item[0] for item in batch]
+        y = [item[1] for item in batch]
+        return torch.stack(x), torch.stack(y)
+
+    elif length == 3:
+        x = [item[0] for item in batch]
+        y = [item[1] for item in batch]
+        z = [item[2][0] for item in batch]
+        return torch.stack(x), torch.stack(y), z
+
+    else:
+        print("\nData shape not implemented\n")
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):
@@ -118,7 +132,8 @@ def read_config(config):
     eval_conf["point"] = config["eval"]["evaluate_point"]
     eval_conf["predict_grad"] = config["eval"]["predict_grad"]
     eval_conf["gan"] = config["eval"]["evaluate_gan"]
-    eval_conf["mojave"] = config["eval"]["mojave"]
+    eval_conf["yolo"] = config["eval"]["evaluate_yolo"]
+    eval_conf["mojave"] = config["eval"]["evaluate_mojave"]
     eval_conf["save_vals"] = config["eval"]["save_vals"]
     eval_conf["save_path"] = config["eval"]["save_path"]
     return eval_conf
@@ -294,15 +309,20 @@ def eval_model(img, model):
     """
     if len(img.shape) == (3):
         img = img.unsqueeze(0)
+
     model.eval()
-    if torch.cuda.is_available():
-        model.cuda()
     with torch.no_grad():
         if torch.cuda.is_available():
-            pred = model(img.float().cuda())
+            pred = model.cuda()(img.float().cuda())
         else:
             pred = model(img.float())
-    return pred.cpu()
+
+    if isinstance(pred, list):
+        for p in pred:
+            p.cpu()
+        return pred
+    else:
+        return pred.cpu()
 
 
 def get_ifft(array, amp_phase=True):
