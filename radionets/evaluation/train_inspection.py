@@ -1,43 +1,49 @@
 import click
-import torch
+from functools import partial
 import numpy as np
 from pathlib import Path
-from radionets.dl_framework.data import load_data
-from radionets.evaluation.plotting import (
-    visualize_with_fourier_diff,
-    visualize_with_fourier,
-    plot_results,
-    visualize_source_reconstruction,
-    histogram_jet_angles,
-    histogram_dynamic_ranges,
-    histogram_ms_ssim,
-    histogram_mean_diff,
-    histogram_area,
-    histogram_gan_sources,
-    plot_contour,
-    hist_point,
-    plot_length_point,
-    plot_yolo_eval,
-    plot_loss,
-)
-from radionets.evaluation.utils import (
-    create_databunch,
-    reshape_2d,
-    load_pretrained_model,
-    get_images,
-    eval_model,
-    get_ifft,
-    pad_unsqueeze,
-    save_pred,
-    read_pred,
-)
-from radionets.evaluation.jet_angle import calc_jet_angle
-from radionets.evaluation.dynamic_range import calc_dr
-from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
-from radionets.evaluation.contour import area_of_contour
-from radionets.evaluation.pointsources import flux_comparison
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
+import torch
+
+from radionets.dl_framework.data import (
+    load_data,
+    MojaveDataset,
+)
+from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
+from radionets.evaluation.contour import area_of_contour
+from radionets.evaluation.dynamic_range import calc_dr
+from radionets.evaluation.jet_angle import calc_jet_angle
+from radionets.evaluation.plotting import (
+    histogram_area,
+    histogram_dynamic_ranges,
+    histogram_gan_sources,
+    histogram_jet_angles,
+    histogram_mean_diff,
+    histogram_ms_ssim,
+    hist_point,
+    plot_contour,
+    plot_length_point,
+    plot_loss,
+    plot_results,
+    plot_yolo_eval,
+    visualize_source_reconstruction,
+    visualize_with_fourier_diff,
+    visualize_with_fourier,
+)
+from radionets.evaluation.pointsources import flux_comparison
+from radionets.evaluation.utils import (
+    create_databunch,
+    eval_model,
+    get_ifft,
+    get_images,
+    load_pretrained_model,
+    pad_unsqueeze,
+    reshape_2d,
+    read_pred,
+    save_pred,
+    scaling_log10_noisecut,
+)
 
 
 def create_predictions(conf):
@@ -669,7 +675,7 @@ def evaluate_yolo(conf):
         plot_format="pdf",
     )
 
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"])
+    model = load_pretrained_model(conf["arch_name"], model_path)
 
     plotted_images = 0
     for img_test, img_true in tqdm(loader):
@@ -690,42 +696,30 @@ def evaluate_yolo(conf):
                     plotted_images += 1
 
 
-# from radionets.dl_framework.data import MojaveDataset
-# from radionets.evaluation.utils import (
-#     scaling_log10_noisecut,
-# )
+def evaluate_mojave(conf):
+    loader = MojaveDataset(
+        data_path=conf["data_path"],
+        crop_size=128,
+        scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
+        # scaling = partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
+    )
 
+    model_path = Path(conf["model_path"])
+    out_path = model_path.parent / "evaluation" / model_path.stem
+    out_path.mkdir(parents=True, exist_ok=True)
 
-# def evaluate_mojave_sources(conf):
-#     img_size = 128
-#     ds = MojaveDataset(
-#         data_path="/net/big-tank/POOL/users/apoggenpohl/radionets/data/real_data/",
-#         source="0149+710",  # 1142+198, 0149+710
-#         crop_size=img_size,
-#         scaling=scaling_log10_noisecut,  # np.log
-#     )
+    model = load_pretrained_model(conf["arch_name"], model_path)
 
-#     out_path = Path(conf["model_path"]).parent / "evaluation"
-#     out_path.mkdir(parents=True, exist_ok=True)
+    if conf["random"]:
+        selected_sources = np.random.choice(
+            loader.source_list, conf["num_images"], replace=False
+        )
+    else:
+        selected_sources = loader.source_list[0 : conf["num_images"]]
+    print(selected_sources)
 
-#     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-
-#     pred = eval_model(ds.open_source()[:, None], model)
-
-#     num_images = (i + 1) * conf["batch_size"]
-#     ratios = np.array([ratios]).reshape(-1)
-#     num_zeros = np.array([num_zeros]).reshape(-1)
-#     above_zeros = np.array([above_zeros]).reshape(-1)
-#     below_zeros = np.array([below_zeros]).reshape(-1)
-#     click.echo("\nCreating GAN histograms.\n")
-#     histogram_gan_sources(
-#         ratios,
-#         num_zeros,
-#         above_zeros,
-#         below_zeros,
-#         num_images,
-#         out_path,
-#         plot_format=conf["format"],
-#     )
-#     click.echo(f"\nThe mean difference from maximum flux is {diff.mean()}.\n")
-#     click.echo(f"\nThe mean proportion of pixels close to 0 is {num_zeros.mean()}.\n")
+    for source in tqdm(selected_sources):
+        img = loader.open_source(source)
+        pred = eval_model(img, model)
+        print(pred)
+        continue

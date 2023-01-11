@@ -676,6 +676,59 @@ def scaling_log10_noisecut(img, thres_adj: float = 1):
     return img
 
 
+def SymLogNorm(
+    x,
+    linthresh: float = 2,
+    linthresh_rel: bool = False,
+    linscale: float = 1,
+    base: float = 10,
+    minmax: bool = True,
+):
+    """Symmetric logarithmic normalisation based on matplotlib.colors.SymLogNorm
+    Additionaly with the option to use a MinMaxScaler.
+
+    Parameters
+    ----------
+    x: ndarray
+        input data
+    linthresh: float
+        threshold at which a linear scale is used, >0
+    linthresh_rel: bool
+        set linthresh as absolute value or relative to input image
+    linscale: float
+        factor for linear scale, >0
+    base: float
+        base for logarithm
+    minmax: bool
+        if true, MinMax-Scaling is applied to output
+    """
+    if linthresh <= 0.0:
+        raise ValueError("'linthresh' must be positive")
+    if linscale <= 0.0:
+        raise ValueError("'linscale' must be positive")
+    if base <= 1.0:
+        raise ValueError("'base' must be larger than 1")
+
+    if linthresh_rel:
+        linthresh *= np.max(x)
+
+    linscale_adj = linscale / (1.0 - base**-1)
+    abs_x = np.abs(x)
+    out = (
+        np.sign(x)
+        * linthresh
+        * (linscale_adj + np.log(abs_x / linthresh) / np.log(base))
+    )
+    inside = abs_x <= linthresh
+    out[inside] = x[inside] * linscale_adj
+
+    if minmax:
+        out -= out.min()
+        out /= out.max()
+
+    return out
+
+
 def get_redshift(source: str):
     """Get redshift information of source from MOJAVE webpage.
 

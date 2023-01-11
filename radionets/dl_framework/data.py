@@ -5,10 +5,8 @@ import re
 import numpy as np
 from pathlib import Path
 from typing import Callable
-import glob
 from astropy.io import fits
 import os
-import warnings
 
 
 class h5_dataset:
@@ -229,16 +227,16 @@ class MojaveDataset:
         data_path: str
             path to folder containing the files
         source: str
-            select images of certain source
+            select images of one certain source
         crop_size: int
             crop image around center to this size
         scaling: function
             function to be applied for scaling
-        model:
-            used for evaluation
         """
+        self.data_path = data_path
         self.source = source
-        self.paths = self.get_path(data_path)  # uses data_path and source
+        self.paths = self._get_path()
+        self.source_list = self._get_source_list()
         self.crop_size = crop_size
         self.scaling = scaling
 
@@ -251,35 +249,49 @@ class MojaveDataset:
     def __getitem__(self, i):
         return self.open_image(i)
 
-    def get_path(self, data_path: str):
+    def _get_path(self):
         """Get all paths of files in folder. Filtered by source, if provided.
-
-        Parameters
-        ----------
-        data_path: str
-            path to folder containing the files
 
         Returns
         -------
         paths: list
             folder and filename of each file
         """
-        all_paths = sorted(glob.glob(str(data_path) + "/*"))
-
         if self.source:
-            len_source_name = len(self.source)
-            paths = []
-            for p in all_paths:
-                if self.source == os.path.basename(p)[:len_source_name]:
-                    paths.append(p)
-            assert (
-                paths
-            ), f"path variable is empty, no source with name {self.source} found"
-
+            data_path = self.data_path + self.source
         else:
-            paths = all_paths
+            data_path = self.data_path
 
-        return paths
+        paths = []
+        for path, subdirs, files in os.walk(data_path):
+            for name in files:
+                if name[-12:] == ".icn.fits.gz":
+                    paths.append(Path(path, name))
+                    # paths.append(path + name)
+
+        print("Number of images:", len(paths))
+        # print(sorted(paths)[:20])
+
+        assert paths, f"No source found in {data_path}"
+
+        return sorted(paths)
+
+    def _get_source_list(self):
+        """Create list of all available source names.
+
+        Returns
+        -------
+        source_list: list
+            list with all source names
+        """
+        if self.source:
+            source_list = [self.source]
+        else:
+            source_list = sorted(next(os.walk(self.data_path))[1])
+            source_list = [elem for elem in source_list if elem[:4].isnumeric()]
+
+        print("Number of sources:", len(source_list))
+        return source_list
 
     def get_header(self, i: int = 0):
         """Opening i-th header of fits files.
@@ -328,20 +340,27 @@ class MojaveDataset:
 
         return img
 
-    def open_source(self):
+    def open_source(self, source_name: str):
         """Opening all images of one source.
+
+        Parameters
+        ----------
+        source_name: str
+            name of the source
 
         Returns
         -------
         images: 3d-array
             all images of one source
         """
-        if not self.source:
-            warnings.warn("No source specified. Opening all data.")
+        assert (
+            source_name in self.source_list
+        ), f"Source name {source_name} not in source_list."
 
         images = []
-        for i in range(len(self.paths)):
-            images.append(self.open_image(i))
+        for i, path in enumerate(self.paths):
+            if source_name in str(path):
+                images.append(self.open_image(i))
 
         return np.array(images)
 
@@ -379,8 +398,6 @@ def crop_center(img, cropx: int, cropy: int, justify: bool = False, eps: float =
 
         mean_ratio = top_outer.mean() / top_inner.mean()
         if mean_ratio > eps:
-            warnings.warn(
-                f"Source might be cut off. Outer to Inner ratio: {mean_ratio:.2f}"
-            )
+            print(f"Source might be cut off. Outer to Inner ratio: {mean_ratio:.2f}")
 
     return img_cropped
