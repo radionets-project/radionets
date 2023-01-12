@@ -289,7 +289,7 @@ def eval_model(img, model):
     return pred.cpu()
 
 
-def get_ifft(array, amp_phase=True):
+def get_ifft(array, amp_phase=False, scale=False):
     """Compute the inverse Fourier transformation
 
     Parameters
@@ -307,7 +307,10 @@ def get_ifft(array, amp_phase=True):
     if len(array.shape) == 3:
         array = array.unsqueeze(0)
     if amp_phase:
-        amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        if scale:
+            amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        else:
+            amp = array[:, 0]
 
         a = amp * np.cos(array[:, 1])
         b = amp * np.sin(array[:, 1])
@@ -365,10 +368,10 @@ def fft_pred(pred, truth, amp_phase=True):
     b_true = truth[1, :, :]
 
     if amp_phase:
-        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
+        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10**10
         phase_pred = b
 
-        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10 ** 10
+        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10**10
         phase_true = b_true
 
         compl_pred = amp_pred_rescaled * np.exp(1j * phase_pred)
@@ -383,7 +386,7 @@ def fft_pred(pred, truth, amp_phase=True):
     return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
 
 
-def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
+def save_pred(path, img):
     """
     write test data and predictions to h5 file
     x: predictions of truth of test data
@@ -391,9 +394,8 @@ def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
     z: truth of the test data
     """
     with h5py.File(path, "w") as hf:
-        hf.create_dataset(name_x, data=x)
-        hf.create_dataset(name_y, data=y)
-        hf.create_dataset(name_z, data=z)
+        for key, value in img.items():
+            hf.create_dataset(key, data=value)
         hf.close()
 
 
@@ -404,12 +406,12 @@ def read_pred(path):
     y: input image of the test data
     z: truth of the test data
     """
+    images = {}
     with h5py.File(path, "r") as hf:
-        x = np.array(hf["pred"])
-        y = np.array(hf["img_test"])
-        z = np.array(hf["img_true"])
+        for key in hf.keys():
+            images[key] = np.array(hf[key])
         hf.close()
-    return x, y, z
+    return images
 
 
 def check_outpath(model_path):
@@ -429,3 +431,68 @@ def check_outpath(model_path):
     path = Path(model_path)
     exists = path.exists()
     return exists
+
+
+def even_better_symmetry(x):
+    upper_half = x[:, :, 0 : x.shape[2] // 2, :].copy()
+    upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].copy()
+    upper_right = upper_half[:, :, :, upper_half.shape[3] // 2 :].copy()
+    a = np.flip(upper_left, axis=2)
+    b = np.flip(upper_right, axis=2)
+    a = np.flip(a, axis=3)
+    b = np.flip(b, axis=3)
+
+    upper_half[:, :, :, 0 : upper_half.shape[3] // 2] = b
+    upper_half[:, :, :, upper_half.shape[3] // 2 :] = a
+
+    x[:, 0, x.shape[2] // 2 :, :] = upper_half[:, 0]
+    x[:, 1, x.shape[2] // 2 :, :] = -upper_half[:, 1]
+    return x
+
+
+def trunc_rvs(loc, scale, mode, num_samples):
+    from scipy.stats import truncnorm
+
+    if mode == "amp":
+        myclip_a = 0
+        myclip_b = np.inf
+    elif mode == "phase":
+        myclip_a = -np.pi
+        myclip_b = np.pi
+    else:
+        raise ValueError("Wrong mode!")
+    a, b = (myclip_a - loc) / scale, (myclip_b - loc) / scale
+    sampled_gauss = truncnorm.rvs(
+        a, b, loc=loc, scale=scale, size=(num_samples, 128, 128)
+    )
+
+    return sampled_gauss
+
+
+def sample_images(mean, std, num_samples):
+    mean_amp, mean_phase = mean[0], mean[1]
+    std_amp, std_phase = std[0], std[1]
+    # amplitude
+    sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples)
+
+    # phase
+    sampled_gauss_phase = trunc_rvs(mean_phase, std_phase, "phase", num_samples)
+
+    # masks
+    mask_invalid_amp = sampled_gauss_amp < 0
+    mask_invalid_phase = (sampled_gauss_phase <= -np.pi) | (
+        sampled_gauss_phase >= np.pi
+    )
+    print(mask_invalid_amp.sum(), mask_invalid_phase.sum())
+    assert mask_invalid_amp.sum() == 0
+    assert mask_invalid_phase.sum() == 0
+
+    sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
+    sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
+
+    fft_sampled_symmetry = get_ifft(sampled_gauss_symmetry, amp_phase=True, scale=False)
+    results = {
+        "mean": fft_sampled_symmetry.mean(axis=0),
+        "std": fft_sampled_symmetry.std(axis=0),
+    }
+    return results

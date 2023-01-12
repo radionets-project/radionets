@@ -17,6 +17,8 @@ from radionets.evaluation.plotting import (
     plot_contour,
     hist_point,
     plot_length_point,
+    visualize_uncertainty,
+    visualize_sampled_unc,
 )
 from radionets.evaluation.utils import (
     create_databunch,
@@ -28,6 +30,7 @@ from radionets.evaluation.utils import (
     pad_unsqueeze,
     save_pred,
     read_pred,
+    sample_images,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
@@ -40,9 +43,9 @@ from tqdm import tqdm
 
 def create_predictions(conf):
     if conf["model_path_2"] != "none":
-        pred, img_test, img_true = get_separate_prediction(conf)
+        img = get_separate_prediction(conf)
     else:
-        pred, img_test, img_true = get_prediction(conf)
+        img = get_prediction(conf)
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
@@ -51,8 +54,7 @@ def create_predictions(conf):
     if not conf["fourier"]:
         click.echo("\n This is not a fourier dataset.\n")
 
-    pred = pred.numpy()
-    save_pred(out_path, pred, img_test, img_true, "pred", "img_test", "img_true")
+    save_pred(out_path, img)
 
 
 def get_prediction(conf, mode="test"):
@@ -75,14 +77,18 @@ def get_prediction(conf, mode="test"):
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
 
     pred = eval_model(img_test, model)
+    images = {"pred": pred, "inp": img_test, "true": img_true}
 
-    # test for uncertainty
     if pred.shape[1] == 4:
-        pred_1 = pred[:, 0, :].unsqueeze(1)
-        pred_2 = pred[:, 2, :].unsqueeze(1)
-        pred = torch.cat((pred_1, pred_2), dim=1)
-
-    return pred, img_test, img_true
+        unc_amp = pred[:, 1, :]
+        unc_phase = pred[:, 3, :]
+        unc = torch.stack([unc_amp, unc_phase], dim=1)
+        pred_1 = pred[:, 0, :]
+        pred_2 = pred[:, 2, :]
+        pred = torch.stack((pred_1, pred_2), dim=1)
+        images["unc"] = unc
+        images["pred"] = pred
+    return images
 
 
 def get_separate_prediction(conf):
@@ -137,34 +143,38 @@ def create_inspection_plots(conf, num_images=3, rand=False):
     path += "/predictions.h5"
     out_path = Path(model_path).parent / "evaluation/"
 
-    pred, img_test, img_true = read_pred(path)
+    img = read_pred(path)
+    if img["pred"].shape[1] == 4:
+        pred_1 = np.expand_dims(img["pred"][:, 0, :], axis=1)
+        pred_2 = np.expand_dims(img["pred"][:, 2, :], axis=1)
+        img["pred"] = np.concatenate([pred_1, pred_2], axis=1)
     if conf["fourier"]:
         if conf["diff"]:
-            for i in range(len(img_test)):
+            for i in range(len(img["inp"])):
                 visualize_with_fourier_diff(
                     i,
-                    pred[i],
-                    img_true[i],
+                    img["pred"][i],
+                    img["true"][i],
                     amp_phase=conf["amp_phase"],
                     out_path=out_path,
                     plot_format=conf["format"],
                 )
         else:
-            for i in range(len(img_test)):
+            for i in range(len(img["inp"])):
                 visualize_with_fourier(
                     i,
-                    img_test[i],
-                    pred[i],
-                    img_true[i],
+                    img["inp"][i],
+                    img["pred"][i],
+                    img["true"][i],
                     amp_phase=conf["amp_phase"],
                     out_path=out_path,
                     plot_format=conf["format"],
                 )
     else:
         plot_results(
-            img_test.cpu(),
-            reshape_2d(pred.cpu()),
-            reshape_2d(img_true),
+            # img_test.cpu(),
+            # reshape_2d(pred.cpu()),
+            # reshape_2d(img_true),
             out_path,
             save=True,
             plot_format=conf["format"],
@@ -289,6 +299,41 @@ def create_contour_plots(conf, num_images=3, rand=False):
 
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
         plot_contour(pred, truth, out_path, i, plot_format=conf["format"])
+
+
+def create_uncertainty_plots(conf, num_images=3, rand=False):
+    model_path = conf["model_path"]
+    path = str(Path(model_path).parent / "evaluation")
+    path += "/predictions.h5"
+    out_path = Path(model_path).parent / "evaluation/"
+
+    img = read_pred(path)
+    for i in range(len(img["pred"])):
+        visualize_uncertainty(
+            i,
+            img["pred"][i],
+            img["true"][i],
+            img["unc"][i],
+            amp_phase=conf["amp_phase"],
+            out_path=out_path,
+            plot_format=conf["format"],
+        )
+    # inverse fourier transformation for prediction
+    # ifft_pred = get_ifft(img["pred"], amp_phase=conf["amp_phase"])
+
+    # inverse fourier transform for truth
+    ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
+
+    # loop
+    for i in range(len(img["pred"])):
+        results = sample_images(img["pred"][i], img["unc"][i], 1000)
+        visualize_sampled_unc(
+            i,
+            results,
+            ifft_truth[i],
+            out_path=out_path,
+            plot_format=conf["format"],
+        )
 
 
 def evaluate_viewing_angle(conf):

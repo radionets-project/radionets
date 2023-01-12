@@ -291,9 +291,9 @@ def visualize_with_fourier_diff(
     real_pred, imag_pred = img_pred[0], img_pred[1]
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
-    if amp_phase:
-        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
-        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
+    # if amp_phase:
+    #     real_pred = 10 ** (10 * real_pred - 10) - 1e-10
+    #     real_truth = 10 ** (10 * real_truth - 10) - 1e-10
 
     # plotting
     # plt.style.use('./paper_large_3_2.rc')
@@ -430,6 +430,99 @@ def visualize_source_reconstruction(
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     plt.close("all")
     return np.abs(ifft_pred), np.abs(ifft_truth)
+
+
+def visualize_uncertainty(
+    i, img_pred, img_truth, img_unc, amp_phase, out_path, plot_format="png"
+):
+    pred_amp, pred_phase = img_pred[0], img_pred[1]
+    true_amp, true_phase = img_truth[0], img_truth[1]
+    unc_amp, unc_phase = img_unc[0], img_unc[1]
+
+    # amplitude
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+        2, 2, sharey=True, sharex=True, figsize=(12, 10)
+    )
+
+    im1 = ax1.imshow(true_amp)
+
+    im2 = ax2.imshow(pred_amp)
+
+    im3 = ax3.imshow(unc_amp)
+
+    a = check_vmin_vmax(true_amp - pred_amp)
+    im4 = ax4.imshow(true_amp - pred_amp, cmap=OrBu, vmin=-a, vmax=a)
+
+    make_axes_nice(fig, ax1, im1, r"Simulation")
+    make_axes_nice(fig, ax2, im2, r"Predicted $\mu$")
+    make_axes_nice(fig, ax3, im3, r"Predicted $\sigma^2$", unc=True)
+    make_axes_nice(fig, ax4, im4, r"Difference")
+
+    ax1.set_ylabel(r"pixels")
+    ax3.set_ylabel(r"pixels")
+    ax3.set_xlabel(r"pixels")
+    ax4.set_xlabel(r"pixels")
+
+    fig.tight_layout(pad=1)
+    outpath = str(out_path) + f"/unc_amp{i}.{plot_format}"
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+
+    # phase
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+        2, 2, sharey=True, sharex=True, figsize=(12, 10)
+    )
+
+    im1 = ax1.imshow(true_phase)
+
+    im2 = ax2.imshow(pred_phase)
+
+    im3 = ax3.imshow(unc_phase)
+
+    a = check_vmin_vmax(true_phase - pred_phase)
+    im4 = ax4.imshow(true_phase - pred_phase, cmap=OrBu, vmin=-a, vmax=a)
+
+    make_axes_nice(fig, ax1, im1, r"Simulation")
+    make_axes_nice(fig, ax2, im2, r"Predicted $\mu$")
+    make_axes_nice(fig, ax3, im3, r"Predicted $\sigma^2$", unc=True)
+    make_axes_nice(fig, ax4, im4, r"Difference")
+
+    ax1.set_ylabel(r"pixels")
+    ax3.set_ylabel(r"pixels")
+    ax3.set_xlabel(r"pixels")
+    ax4.set_xlabel(r"pixels")
+
+    fig.tight_layout(pad=1)
+    outpath = str(out_path) + f"/unc_phase{i}.{plot_format}"
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close("all")
+
+
+def visualize_sampled_unc(i, results, ifft_truth, out_path, plot_format):
+    # plt.style.use('../paper_large_3.rc')
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(14, 10), sharey=True)
+    # print(ifft_truth.shape)
+
+    im1 = ax1.imshow(results["mean"])
+    im2 = ax2.imshow(results["std"])
+    a = check_vmin_vmax(results["mean"] - ifft_truth)
+    im3 = ax3.imshow(results["mean"] - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
+
+    make_axes_nice(fig, ax1, im1, r"Prediction")
+    make_axes_nice(fig, ax2, im2, r"Uncertainty")
+    make_axes_nice(fig, ax3, im3, r"Difference")
+
+    # ax1.text(35, 15, "Prediction", ha=ha, size=size, bbox=bbox,)
+    # ax2.text(35, 15, "Uncertainty", ha=ha, size=size, bbox=bbox,)
+    # ax3.text(35, 15, "Difference", ha=ha, size=size, bbox=bbox,)
+
+    ax1.set_ylabel(r"pixels")
+    ax1.set_xlabel(r"pixels")
+    ax2.set_xlabel(r"pixels")
+    ax3.set_xlabel(r"pixels")
+    fig.tight_layout(pad=1.5)
+    outpath = str(out_path) + f"/unc_samp{i}.{plot_format}"
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close("all")
 
 
 def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
