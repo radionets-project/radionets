@@ -93,6 +93,7 @@ def read_config(config):
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
+    eval_conf["unc"] = config["inspection"]["visualize_uncertainty"]
     eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
     eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
@@ -480,10 +481,12 @@ def sample_images(mean, std, num_samples):
 
     # masks
     mask_invalid_amp = sampled_gauss_amp < 0
-    mask_invalid_phase = (sampled_gauss_phase <= -np.pi) | (
-        sampled_gauss_phase >= np.pi
+    mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+        sampled_gauss_phase >= (np.pi + 1e-4)
     )
-    print(mask_invalid_amp.sum(), mask_invalid_phase.sum())
+    print(sampled_gauss_phase[mask_invalid_phase])
+    print(np.isclose(sampled_gauss_phase, np.pi, atol=1e-4).sum())
+    print(np.isclose(sampled_gauss_phase, -np.pi, atol=1e-4).sum())
     assert mask_invalid_amp.sum() == 0
     assert mask_invalid_phase.sum() == 0
 
