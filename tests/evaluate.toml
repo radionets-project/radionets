@@ -41,3 +41,5 @@ evaluate_area = true
 evaluate_point = false
 predict_grad = false 
 evaluate_gan = true
+evaluate_yolo = false
+evaluate_mojave = false

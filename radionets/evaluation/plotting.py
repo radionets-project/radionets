@@ -377,7 +377,9 @@ def visualize_source_reconstruction(
     # create angle visualization
     theta1 = min(0, -alpha_pred.numpy()[0])
     theta2 = max(0, -alpha_pred.numpy()[0])
-    ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white"))
+    ax1.add_patch(
+        Arc([32, 32], 50, 50, angle=90, theta1=theta1, theta2=theta2, color="white")
+    )
 
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
 
@@ -388,7 +390,9 @@ def visualize_source_reconstruction(
     # create angle visualization
     theta1 = min(0, -alpha_truth.numpy()[0])
     theta2 = max(0, -alpha_truth.numpy()[0])
-    ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white"))
+    ax2.add_patch(
+        Arc([32, 32], 50, 50, angle=90, theta1=theta1, theta2=theta2, color="white")
+    )
 
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
