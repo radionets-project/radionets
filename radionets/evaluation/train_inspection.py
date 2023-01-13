@@ -253,13 +253,13 @@ def create_source_plots(conf, num_images=3, rand=False):
     path += "/predictions.h5"
     out_path = Path(model_path).parent / "evaluation"
 
-    pred, img_test, img_true = read_pred(path)
+    img = read_pred(path)
 
     # inverse fourier transformation for prediction
-    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+    ifft_pred = get_ifft(img["pred"], amp_phase=conf["amp_phase"])
 
     # inverse fourier transform for truth
-    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+    ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
     if len(ifft_pred.shape) == 2:
         ifft_pred = np.expand_dims(ifft_pred, axis=0)
@@ -289,13 +289,13 @@ def create_contour_plots(conf, num_images=3, rand=False):
     if not conf["fourier"]:
         click.echo("\n This is not a fourier dataset.\n")
 
-    pred, img_test, img_true = read_pred(path)
+    img = read_pred(path)
 
     # inverse fourier transformation for prediction
-    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+    ifft_pred = get_ifft(img["pred"], amp_phase=conf["amp_phase"])
 
     # inverse fourier transform for truth
-    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+    ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
     for i, (pred, truth) in enumerate(zip(ifft_pred, ifft_truth)):
         plot_contour(pred, truth, out_path, i, plot_format=conf["format"])

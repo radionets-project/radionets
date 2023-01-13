@@ -49,10 +49,11 @@ def main(configuration_path):
                 create_predictions(eval_conf)
                 break
 
-    click.echo(f"\nCreated {eval_conf['num_images']} uncertainty images.\n")
-    create_uncertainty_plots(
-        eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
-    )
+    if eval_conf["unc"]:
+        create_uncertainty_plots(
+            eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
+        )
+        click.echo(f"\nCreated {eval_conf['num_images']} uncertainty images.\n")
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(
