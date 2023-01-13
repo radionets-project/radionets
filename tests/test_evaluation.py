@@ -40,37 +40,21 @@ class TestEvaluation:
             save_pred,
         )
         import toml
-        import torch
         from radionets.evaluation.train_inspection import get_prediction
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = get_prediction(conf)
-        assert str(pred.device) == "cpu"
+        img = get_prediction(conf)
+        assert str(img["pred"].device) == "cpu"
 
-        # test for uncertainty
-        if pred.shape[1] == 4:
-            pred_1 = pred[:, 0, :].unsqueeze(1)
-            pred_2 = pred[:, 2, :].unsqueeze(1)
-            pred = torch.cat((pred_1, pred_2), dim=1)
+        assert img["pred"].shape == (10, 2, 64, 64)
+        assert img["inp"].shape == (10, 2, 64, 64)
+        assert img["true"].shape == (10, 2, 64, 64)
 
-        assert pred.shape == (10, 2, 64, 64)
-        assert img_test.shape == (10, 2, 64, 64)
-        assert img_true.shape == (10, 2, 64, 64)
-
-        pred = pred.numpy()
         out_path = Path("./tests/build/test_training/evaluation/")
         out_path.mkdir(parents=True, exist_ok=True)
-        save_pred(
-            str(out_path) + "/predictions_model_eval.h5",
-            pred,
-            img_test,
-            img_true,
-            "pred",
-            "img_test",
-            "img_true",
-        )
+        save_pred(str(out_path) + "/predictions_model_eval.h5", img)
 
     def test_contour(self):
         from radionets.evaluation.utils import (
@@ -87,12 +71,12 @@ class TestEvaluation:
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
-        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(img["pred"], amp_phase=conf["amp_phase"])
+        ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
         assert ~np.isnan([ifft_pred, ifft_truth]).any()
 
@@ -109,11 +93,11 @@ class TestEvaluation:
         from radionets.evaluation.utils import read_pred
         from radionets.evaluation.jet_angle import im_to_array_value
 
-        pred, img_test, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        image = pred[0]
+        image = img["pred"][0]
 
         x_coords, y_coords, value = im_to_array_value(image)
 
@@ -144,11 +128,11 @@ class TestEvaluation:
 
         torch.set_printoptions(precision=16)
 
-        pred, img_test, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        ifft_pred = get_ifft(pred, conf["amp_phase"])
+        ifft_pred = get_ifft(img["pred"], conf["amp_phase"])
         assert ifft_pred.shape == (10, 64, 64)
 
         pix_x, pix_y, image = im_to_array_value(torch.tensor(ifft_pred))
@@ -194,11 +178,11 @@ class TestEvaluation:
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, _, _ = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        image = get_ifft(pred, conf["amp_phase"])
+        image = get_ifft(img["pred"], conf["amp_phase"])
         assert image.shape == (10, 64, 64)
 
         if not isinstance(image, torch.Tensor):
@@ -249,12 +233,14 @@ class TestEvaluation:
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, _, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        ifft_pred = get_ifft(torch.tensor(pred[0]), conf["amp_phase"]).reshape(64, 64)
-        ifft_truth = get_ifft(torch.tensor(img_true[0]), conf["amp_phase"]).reshape(
+        ifft_pred = get_ifft(torch.tensor(img["pred"][0]), conf["amp_phase"]).reshape(
+            64, 64
+        )
+        ifft_truth = get_ifft(torch.tensor(img["true"][0]), conf["amp_phase"]).reshape(
             64, 64
         )
 
@@ -285,12 +271,12 @@ class TestEvaluation:
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, _, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        ifft_pred = get_ifft(torch.tensor(pred[0]), conf["amp_phase"])
-        ifft_truth = get_ifft(torch.tensor(img_true[0]), conf["amp_phase"])
+        ifft_pred = get_ifft(torch.tensor(img["pred"][0]), conf["amp_phase"])
+        ifft_truth = get_ifft(torch.tensor(img["true"][0]), conf["amp_phase"])
 
         img_size = ifft_pred.shape[-1]
 
@@ -354,6 +340,7 @@ class TestEvaluation:
 
         runner = CliRunner()
         result = runner.invoke(main, "tests/evaluate.toml")
+        print(result.exc_info)
         assert result.exit_code == 0
 
         if os.path.exists("tests/model/evaluation"):
