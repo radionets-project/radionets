@@ -499,22 +499,25 @@ def visualize_uncertainty(
 
 def visualize_sampled_unc(i, results, ifft_truth, out_path, plot_format):
     # plt.style.use('../paper_large_3.rc')
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(14, 10), sharey=True)
-    # print(ifft_truth.shape)
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+        2, 2, figsize=(12, 10), sharey=True, sharex=True
+    )
 
-    im1 = ax1.imshow(results["mean"])
-    im2 = ax2.imshow(results["std"])
+    im1 = ax1.imshow(ifft_truth)
+    im2 = ax2.imshow(results["mean"])
+    im3 = ax3.imshow(results["std"])
     a = check_vmin_vmax(results["mean"] - ifft_truth)
-    im3 = ax3.imshow(results["mean"] - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
+    im4 = ax4.imshow(results["mean"] - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
 
-    make_axes_nice(fig, ax1, im1, r"Prediction")
-    make_axes_nice(fig, ax2, im2, r"Uncertainty")
-    make_axes_nice(fig, ax3, im3, r"Difference")
+    make_axes_nice(fig, ax1, im1, r"Simulation")
+    make_axes_nice(fig, ax2, im2, r"Prediction")
+    make_axes_nice(fig, ax3, im3, r"Uncertainty")
+    make_axes_nice(fig, ax4, im4, r"Difference")
 
     ax1.set_ylabel(r"pixels")
-    ax1.set_xlabel(r"pixels")
-    ax2.set_xlabel(r"pixels")
     ax3.set_xlabel(r"pixels")
+    ax3.set_ylabel(r"pixels")
+    ax4.set_xlabel(r"pixels")
     fig.tight_layout(pad=1.5)
     outpath = str(out_path) + f"/unc_samp{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
