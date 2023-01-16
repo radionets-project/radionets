@@ -318,8 +318,6 @@ def create_uncertainty_plots(conf, num_images=3, rand=False):
             out_path=out_path,
             plot_format=conf["format"],
         )
-    # inverse fourier transformation for prediction
-    # ifft_pred = get_ifft(img["pred"], amp_phase=conf["amp_phase"])
 
     # inverse fourier transform for truth
     ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])

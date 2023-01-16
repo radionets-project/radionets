@@ -291,9 +291,9 @@ def visualize_with_fourier_diff(
     real_pred, imag_pred = img_pred[0], img_pred[1]
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
-    # if amp_phase:
-    #     real_pred = 10 ** (10 * real_pred - 10) - 1e-10
-    #     real_truth = 10 ** (10 * real_truth - 10) - 1e-10
+    if amp_phase:
+        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
+        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
 
     # plotting
     # plt.style.use('./paper_large_3_2.rc')
@@ -510,10 +510,6 @@ def visualize_sampled_unc(i, results, ifft_truth, out_path, plot_format):
     make_axes_nice(fig, ax1, im1, r"Prediction")
     make_axes_nice(fig, ax2, im2, r"Uncertainty")
     make_axes_nice(fig, ax3, im3, r"Difference")
-
-    # ax1.text(35, 15, "Prediction", ha=ha, size=size, bbox=bbox,)
-    # ax2.text(35, 15, "Uncertainty", ha=ha, size=size, bbox=bbox,)
-    # ax3.text(35, 15, "Difference", ha=ha, size=size, bbox=bbox,)
 
     ax1.set_ylabel(r"pixels")
     ax1.set_xlabel(r"pixels")

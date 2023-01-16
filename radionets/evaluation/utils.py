@@ -484,9 +484,6 @@ def sample_images(mean, std, num_samples):
     mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
         sampled_gauss_phase >= (np.pi + 1e-4)
     )
-    print(sampled_gauss_phase[mask_invalid_phase])
-    print(np.isclose(sampled_gauss_phase, np.pi, atol=1e-4).sum())
-    print(np.isclose(sampled_gauss_phase, -np.pi, atol=1e-4).sum())
     assert mask_invalid_amp.sum() == 0
     assert mask_invalid_phase.sum() == 0
 
