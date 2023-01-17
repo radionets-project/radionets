@@ -307,10 +307,10 @@ def get_ifft(array, amp_phase=True):
     if len(array.shape) == 3:
         array = array.unsqueeze(0)
     if amp_phase:
-        amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        # amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
 
-        a = amp * np.cos(array[:, 1])
-        b = amp * np.sin(array[:, 1])
+        a = array[:, 0] * np.cos(array[:, 1])
+        b = array[:, 0] * np.sin(array[:, 1])
         compl = a + b * 1j
     else:
         compl = array[:, 0] + array[:, 1] * 1j
@@ -365,10 +365,10 @@ def fft_pred(pred, truth, amp_phase=True):
     b_true = truth[1, :, :]
 
     if amp_phase:
-        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10 ** 10
+        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10**10
         phase_pred = b
 
-        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10 ** 10
+        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10**10
         phase_true = b_true
 
         compl_pred = amp_pred_rescaled * np.exp(1j * phase_pred)
