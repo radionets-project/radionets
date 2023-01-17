@@ -44,3 +44,4 @@ __pycache__/
 dist/
 radionets/dl_framework/values.yaml
 *.csv
+*.swp
