@@ -4,7 +4,7 @@ from radionets.dl_framework.model import (
     GeneralELU,
     LocallyConnected2d,
 )
-from radionets.dl_framework.architectures.res_exp import SRResNet
+from radionets.dl_framework.architectures.res_exp import SRResNet_16
 
 
 class Uncertainty(nn.Module):
@@ -12,28 +12,28 @@ class Uncertainty(nn.Module):
         super().__init__()
 
         self.conv1 = nn.Sequential(
-            nn.Conv2d(4, 8, 9, stride=1, padding=4, groups=2),
-            nn.BatchNorm2d(8),
-            nn.PReLU(),
-        )
-
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(8, 16, 3, stride=1, padding=1),
+            nn.Conv2d(4, 16, 9, stride=1, padding=4, groups=2),
             nn.BatchNorm2d(16),
             nn.PReLU(),
         )
 
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(16, 32, 9, stride=1, padding=4, groups=2),
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(16, 32, 3, stride=1, padding=1),
             nn.BatchNorm2d(32),
+            nn.PReLU(),
+        )
+
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(32, 64, 9, stride=1, padding=4, groups=2),
+            nn.BatchNorm2d(64),
             nn.PReLU(),
         )
 
         self.final = nn.Sequential(
             LocallyConnected2d(
-                32,
+                64,
                 2,
-                img_size,
+                [img_size // 2 + 1, img_size],
                 1,
                 stride=1,
                 bias=False,
@@ -55,7 +55,7 @@ class Uncertainty(nn.Module):
 class UncertaintyWrapper(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        self.pred = SRResNet()
+        self.pred = SRResNet_16()
 
         self.uncertainty = Uncertainty(img_size)
 

@@ -167,9 +167,9 @@ class SRResNet_16(nn.Module):
 
         x = self.final(x)
 
-        x0 = x[:, 0].reshape(-1, 1, s, s)
+        x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
         x0 = self.relu(x0)
-        x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s, s)
+        x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s // 2 + 1, s)
 
         return torch.cat([x0, x1], dim=1)
 
