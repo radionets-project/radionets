@@ -13,7 +13,8 @@ from pytorch_msssim import ms_ssim
 from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_ratio
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
-from radionets.evaluation.jet_angle import calc_jet_angle
+
+# from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.utils import (
     check_vmin_vmax,
     make_axes_nice,
@@ -348,8 +349,8 @@ def visualize_source_reconstruction(
     msssim=False,
     plot_format="png",
 ):
-    m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
-    m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
+    # m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
+    # m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
     # x_space = torch.arange(0, 63, 1)
 
     # plt.style.use("./paper_large_3.rc")
