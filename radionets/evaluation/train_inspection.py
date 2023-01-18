@@ -28,6 +28,7 @@ from radionets.evaluation.utils import (
     pad_unsqueeze,
     save_pred,
     read_pred,
+    sym_new,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
@@ -36,6 +37,7 @@ from radionets.evaluation.contour import area_of_contour
 from radionets.evaluation.pointsources import flux_comparison
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
+import torch.nn.functional as F
 
 
 def create_predictions(conf):
@@ -81,6 +83,14 @@ def get_prediction(conf, mode="test"):
         pred_1 = pred[:, 0, :].unsqueeze(1)
         pred_2 = pred[:, 2, :].unsqueeze(1)
         pred = torch.cat((pred_1, pred_2), dim=1)
+
+    pred = F.pad(input=pred, pad=(0, 0, 0, 63), mode="constant", value=0)
+    img_test = F.pad(input=img_test, pad=(0, 0, 0, 63), mode="constant", value=0)
+    img_true = F.pad(input=img_true, pad=(0, 0, 0, 63), mode="constant", value=0)
+
+    pred = sym_new(pred)
+    img_test = sym_new(img_test)
+    img_true = sym_new(img_true)
 
     return pred, img_test, img_true
 

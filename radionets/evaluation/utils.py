@@ -257,6 +257,8 @@ def get_images(test_ds, num_images, rand=False):
         indices = torch.randint(0, len(test_ds), size=(num_images,))
     img_test = test_ds[indices][0]
     img_true = test_ds[indices][1]
+    img_test = img_test[:, :, :65, :]
+    img_true = img_true[:, :, :65, :]
     return img_test, img_true
 
 
@@ -429,3 +431,19 @@ def check_outpath(model_path):
     path = Path(model_path)
     exists = path.exists()
     return exists
+
+
+def sym_new(x):
+    if x.shape[1] == 4:
+        channel = 2
+    else:
+        channel = 1
+    upper_half = x[:, :, :64, :].clone()
+    a = torch.rot90(upper_half, 2, dims=[-2, -1])
+    # amp
+    x[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
+    x[:, 0, 65:, 0] = a[:, 0, :-1, -1]
+    # phase
+    x[:, channel, 65:, 1:] = -a[:, channel, :-1, :-1]
+    x[:, channel, 65:, 0] = -a[:, channel, :-1, -1]
+    return x
