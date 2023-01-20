@@ -281,10 +281,14 @@ class SRBlock(nn.Module):
 
     def _conv_block(self, ni, nf, stride):
         return nn.Sequential(
-            nn.Conv2d(ni, nf, 3, stride=stride, padding=1, bias=False),
+            nn.Conv2d(
+                ni, nf, 3, stride=stride, padding=1, bias=False, padding_mode="reflect"
+            ),
             nn.BatchNorm2d(nf),
             nn.PReLU(),
-            nn.Conv2d(nf, nf, 3, stride=1, padding=1, bias=False),
+            nn.Conv2d(
+                nf, nf, 3, stride=1, padding=1, bias=False, padding_mode="reflect"
+            ),
             nn.BatchNorm2d(nf),
         )
 
