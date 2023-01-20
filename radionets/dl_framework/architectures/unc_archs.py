@@ -55,7 +55,7 @@ class Uncertainty(nn.Module):
 class UncertaintyWrapper(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        self.pred = SRResNet_16()
+        self.pred = SRResNet_16(img_size)
 
         self.uncertainty = Uncertainty(img_size)
 
