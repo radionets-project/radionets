@@ -332,6 +332,64 @@ class TestEvaluation:
         assert torch.isclose(rot_amp - x_symm[0, 0], torch.tensor(0)).all()
         assert torch.isclose(rot_phase + x_symm[0, 1], torch.tensor(0)).all()
 
+    def test_sample_images(self):
+        import numpy as np
+        from radionets.evaluation.utils import (
+            read_pred,
+            trunc_rvs,
+            even_better_symmetry,
+            get_ifft,
+        )
+
+        num_samples = 100
+        img = read_pred("./tests/model/predictions_unc.h5")
+        mean = img["pred"][0]
+        std = img["unc"][0]
+
+        mean_amp, mean_phase = mean[0], mean[1]
+        std_amp, std_phase = std[0], std[1]
+        img_size = mean_amp.shape[-1]
+
+        # amplitude
+        sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples)
+
+        # phase
+        sampled_gauss_phase = trunc_rvs(mean_phase, std_phase, "phase", num_samples)
+
+        assert sampled_gauss_amp.shape == (num_samples, img_size, img_size)
+        assert sampled_gauss_phase.shape == (num_samples, img_size, img_size)
+
+        with pytest.raises(ValueError):
+            trunc_rvs(mean_phase, std_phase, "pase", num_samples)
+
+        # masks
+        mask_invalid_amp = sampled_gauss_amp < 0
+        mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+            sampled_gauss_phase >= (np.pi + 1e-4)
+        )
+        assert mask_invalid_amp.sum() == 0
+        assert mask_invalid_phase.sum() == 0
+
+        sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
+        sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
+
+        fft_sampled_symmetry = get_ifft(
+            sampled_gauss_symmetry, amp_phase=True, scale=False
+        )
+        results = {
+            "mean": fft_sampled_symmetry.mean(axis=0),
+            "std": fft_sampled_symmetry.std(axis=0),
+        }
+        assert results["mean"].shape == (img_size, img_size)
+        assert results["std"].shape == (img_size, img_size)
+
+    def test_uncertainty_plots(self):
+        from radionets.evaluation.utils import read_pred, sample_images
+
+        img = read_pred("./tests/model/predictions_unc.h5")
+        results = sample_images(img["pred"][0], img["unc"][0], 100)
+        assert results is not None
+
     def test_evaluation(self):
         import shutil
         import os
