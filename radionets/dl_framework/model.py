@@ -308,15 +308,3 @@ def symmetry(x):
     x[:, 0, x.shape[2] // 2 :, :] = upper_half[:, 0]
     x[:, 1, x.shape[2] // 2 :, :] = -upper_half[:, 1]
     return x
-
-
-def sym_new(x):
-    upper_half = x[:, :, :64, :].clone()
-    a = torch.rot90(upper_half, 2, dims=[-2, -1])
-    # amp
-    x[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
-    x[:, 0, 65:, 0] = a[:, 0, :-1, -1]
-    # phase
-    x[:, 1, 65:, 1:] = -a[:, 1, :-1, :-1]
-    x[:, 1, 65:, 0] = -a[:, 1, :-1, -1]
-    return x
