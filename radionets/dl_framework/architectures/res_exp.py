@@ -4,7 +4,6 @@ from radionets.dl_framework.model import (
     SRBlock,
     Lambda,
     symmetry,
-    LocallyConnected2d,
 )
 from functools import partial
 from math import pi
@@ -121,7 +120,7 @@ class SRResNet(nn.Module):
 
 
 class SRResNet_16(nn.Module):
-    def __init__(self, img_size):
+    def __init__(self):
         super().__init__()
 
         self.preBlock = nn.Sequential(
@@ -152,16 +151,7 @@ class SRResNet_16(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
-        self.final = nn.Sequential(
-            LocallyConnected2d(
-                64,
-                2,
-                [img_size // 2 + 1, img_size],
-                1,
-                stride=1,
-                bias=False,
-            )
-        )
+        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2))
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
