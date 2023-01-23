@@ -433,17 +433,35 @@ def check_outpath(model_path):
     return exists
 
 
-def sym_new(x):
-    if x.shape[1] == 4:
+def sym_new(image):
+    """
+    Symmetry function to complete the images
+
+    Parameters
+    ----------
+    image : torch.Tensor
+        (stack of) half images
+
+    Returns
+    -------
+    torch.Tensor
+        quadratic images after utilizing symmetry
+    """
+    # set channel for phase dependent of uncertainty training
+    if image.shape[1] == 4:
         channel = 2
     else:
         channel = 1
-    upper_half = x[:, :, :64, :].clone()
+
+    upper_half = image[:, :, :64, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
+
     # amp
-    x[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
-    x[:, 0, 65:, 0] = a[:, 0, :-1, -1]
+    image[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
+    image[:, 0, 65:, 0] = a[:, 0, :-1, -1]
+
     # phase
-    x[:, channel, 65:, 1:] = -a[:, channel, :-1, :-1]
-    x[:, channel, 65:, 0] = -a[:, channel, :-1, -1]
-    return x
+    image[:, channel, 65:, 1:] = -a[:, channel, :-1, :-1]
+    image[:, channel, 65:, 0] = -a[:, channel, :-1, -1]
+
+    return image
