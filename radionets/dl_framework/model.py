@@ -74,12 +74,8 @@ def symmetry(x, mode="real"):
     diag_indices = torch.stack((diag1, diag2))
     grid = torch.tril_indices(x.shape[1], x.shape[1], -1)
 
-    x_sym = torch.cat(
-        (grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),
-    )
-    y_sym = torch.cat(
-        (grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),
-    )
+    x_sym = torch.cat((grid[0].reshape(-1, 1), diag_indices[0].reshape(-1, 1)),)
+    y_sym = torch.cat((grid[1].reshape(-1, 1), diag_indices[1].reshape(-1, 1)),)
     x = torch.rot90(x, 1, dims=(1, 2))
     i = center + (center - x_sym)
     j = center + (center - y_sym)
@@ -263,7 +259,7 @@ def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
     name_pretrained = Path(pre_path).stem
     print(f"\nLoad pretrained model: {name_pretrained}\n")
     if torch.cuda.is_available() and not plot_loss:
-        checkpoint = torch.load(pre_path, map_location=torch.device("cuda:0"))
+        checkpoint = torch.load(pre_path)
     else:
         checkpoint = torch.load(pre_path, map_location=torch.device("cpu"))
 
