@@ -335,7 +335,9 @@ def evaluate_viewing_angle(conf):
 
     click.echo("\nCreating histogram of jet angles.\n")
     dif = (alpha_preds - alpha_truths).numpy()
-    histogram_jet_angles(dif, out_path, plot_format=conf["format"])
+    histogram_jet_angles(
+        dif, out_path, plot_format=conf["format"]
+    )
     if conf["save_vals"]:
         click.echo("\nSaving jet angle offsets.\n")
         out = Path(conf["save_path"])
