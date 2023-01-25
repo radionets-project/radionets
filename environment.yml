@@ -9,6 +9,8 @@ dependencies:
   - pytorch>=1.6
   - cudatoolkit
   - cartopy
+  # docs
+  - towncrier
   - pip
   - pip:
     - -e .
