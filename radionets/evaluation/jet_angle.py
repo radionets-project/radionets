@@ -110,14 +110,9 @@ def calc_jet_angle(image):
         else:
             maxima.extend([a])
 
-    # this seems to make problems when
-    # (tensor([], dtype=torch.int64), tensor([], dtype=torch.int64)) occurs in maxima
-    # print([type(m) for m in maxima])
-    # print(maxima[maxima == torch.tensor([])])
-    # vals = torch.tensor(maxima)
-    # dirty fix at the moment
-    x_mid = image.shape[-1] // 2  # vals[:, 0]
-    y_mid = image.shape[-1] // 2  # vals[:, 1]
+    vals = torch.tensor(maxima)
+    x_mid = vals[:, 0]
+    y_mid = vals[:, 1]
 
     m = torch.tan(pi / 2 - alpha_pca)
     n = y_mid - m * x_mid
@@ -149,7 +144,7 @@ def im_to_array_value(image):
     pix = image.shape[-1]
 
     a = torch.arange(0, pix, 1)
-    grid_x, grid_y = torch.meshgrid(a, a, indexing="xy")
+    grid_x, grid_y = torch.meshgrid(a, a, indexing='xy')
     x_coords = torch.cat(num * [grid_x.flatten().unsqueeze(0)])
     y_coords = torch.cat(num * [grid_y.flatten().unsqueeze(0)])
     value = image.reshape(-1, pix ** 2)
