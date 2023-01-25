@@ -32,13 +32,13 @@ jobs:
         run: |
           $CONDA/bin/conda env update --file environment.yml --name base
       
-      - name: Produce Changelog
-        run: |
-          towncrier build --yes
-      
       - name: tests
         run: |
           $CONDA/bin/pytest --cov radionets --cov-report=xml
 
+      - name: Produce Changelog
+        run: |
+          towncrier build --yes
+      
       - uses: codecov/codecov-action@v3
 
