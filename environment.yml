@@ -4,14 +4,12 @@ channels:
     - fastai
     - pytorch
     - defaults
-    - conda-forge
 dependencies:
   - python>=3.6
   - pytorch>=1.6
   - cudatoolkit
   - cartopy
-  # docs
-  - towncrier
   - pip
   - pip:
+    - towncrier
     - -e .
