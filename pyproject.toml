@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radionets"
-version = "0.1.15"
+version = "0.1.16"
 authors = [
   { name="Kevin Schmidt", email="kevin3.schmidt@tu-dortmund.de" },
 ]
