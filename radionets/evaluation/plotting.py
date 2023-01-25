@@ -1139,22 +1139,6 @@ def plot_yolo_box(
         outputs = yolo_apply_nms(pred, x, rel_obj_thres=2 / 3)
         outputs = outputs[idx].detach().cpu().numpy()
 
-        # # use mean of all objectness map
-        # obj_map = objectness_mapping(pred)
-        # # use boxes from prediction of highest resolution
-        # boxes = decode_yolo_box(pred[0], strides[0])
-
-        # boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
-
-        # outputs = (
-        #     non_max_suppression(
-        #         boxes[idx].reshape(1, -1, 6), obj_thres=boxes[idx, ..., 4].max() * 0.666
-        #     )[0]
-        #     .detach()
-        #     .cpu()
-        #     .numpy()
-        # )
-
         for i in range(outputs.shape[0]):
             plot_box2(
                 ax,
@@ -1181,9 +1165,9 @@ def plot_yolo_eval(
     x,
     y,
     pred: list,
-    out_path: str,
     idx: int = 0,
     anchor_idx: int = 0,
+    out_path: str = "",
     plot_format: str = "pdf",
 ):
     """Default evaluation plot for YOLO
@@ -1196,12 +1180,12 @@ def plot_yolo_eval(
         true data from simulation (bs, components, paramters)
     pred: list
         list of feature maps, each of shape (bs, a, my, mx, 6)
-    out_path: str
-        path in file directory to save output
     idx: int
         index of image to be plotted
     anchor_idx: int
         indes of the anchor
+    out_path: str
+        path in file directory to save output
     plot_format: str
         format of the plot
     """
@@ -1225,17 +1209,19 @@ def plot_yolo_eval(
     ax1.set_ylabel("Pixel")
 
     plt.tight_layout()
-    out_path = str(out_path) + f"/yolo_eval_{idx}.{plot_format}"
-    plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+    if out_path:
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/yolo_eval_{idx}.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
 def plot_yolo_mojave(
     x,
     pred: list,
-    out_path: str,
-    name: str,
-    date: str,
     idx: int = 0,
+    out_path: str = "",
+    name: str = "",
+    date: str = "",
     plot_format: str = "pdf",
 ):
     """Default evaluation plot for MOJAVE data in YOLO
@@ -1246,14 +1232,14 @@ def plot_yolo_mojave(
         input image (bs, 1, ny, nx)
     pred: list
         list of feature maps, each of shape (bs, a, my, mx, 6)
+    idx: int
+        index of image to be plotted
+    out_path: str
+        path in file directory to save output
     name: str
         name of source
     date: str
         date of measurement
-    out_path: str
-        path in file directory to save output
-    idx: int
-        index of image to be plotted
     plot_format: str
         format of the plot
     """
@@ -1268,8 +1254,99 @@ def plot_yolo_mojave(
     legend_without_duplicate_labels(ax1)
 
     fig.tight_layout(pad=0.05)
-    out_path = str(out_path) + f"/yolo_eval_{name}_{date}.{plot_format}"
-    plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+    if out_path and name and date:
+        out_path = str(out_path) + f"/{name}"
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/yolo_eval_{date}.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_yolo_post_clustering(
+    x,
+    df,
+    idx: int = 0,
+    out_path: str = "",
+    name: str = "",
+    date: str = "",
+    plot_format: str = "pdf",
+):
+    """Default evaluation plot for MOJAVE data in YOLO
+
+    Parameters
+    ----------
+    x: 3d-array
+        input image (bs, ny, nx)
+    df: pandas.DataFrame
+        dataframe with reconstructed properties
+    idx: int
+        index of image to be plotted
+    out_path: str
+        path in file directory to save output
+    name: str
+        name of source
+    date: str
+        date of measurement
+    plot_format: str
+        format of the plot
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(4.5, 4))
+    im = ax.imshow(x[idx], cmap="inferno")
+
+    boxes = df[df["idx_img"] == idx][["x", "y", "sx", "sy"]].to_numpy()
+    rot = df[df["idx_img"] == idx]["rotation"].to_numpy()
+    for i in range(boxes.shape[0]):
+        plot_box2(ax, boxes[i], angle=rot[i], label="Pred box", c="w", alpha=0.7)
+
+    legend_without_duplicate_labels(ax)
+    make_axes_nice(fig, ax, im)
+    ax.set_xlabel("Pixel")
+    ax.set_ylabel("Pixel")
+
+    fig.tight_layout(pad=0.05)
+    if out_path and name and date:
+        out_path = str(out_path) + f"/{name}"
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/yolo_eval_{date}.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_yolo_clustering(
+    df, out_path: str = "", name: str = "", plot_format: str = "pdf"
+):
+    """Plot all predicted positions used for clustering.
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        dataframe with reconstructed properties
+    out_path: str
+        path in file directory to save output
+    name: str
+        name of source
+    plot_format: str
+        format of the plot
+    """
+    fig, ax = plt.subplots(1, 1, figsize=((4.5, 4)))
+    for i in range(df["idx_comp"].max() + 1):
+        if not np.any(df["idx_comp"] == i):
+            continue
+        ax.scatter(
+            df[df["idx_comp"] == i]["x_mas"],
+            df[df["idx_comp"] == i]["y_mas"],
+            10,
+            label=f"{i}",
+        )
+    legend_without_duplicate_labels(ax)
+    plt.gca().invert_xaxis()
+    plt.gca().invert_yaxis()
+    plt.xlabel("Relative RA / mas")
+    plt.ylabel("Relative DEC / mas")
+    plt.grid()
+
+    fig.tight_layout(pad=0.05)
+    if out_path and name:
+        out_path = str(out_path) + f"/{name}/cluster_positions.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
 def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):

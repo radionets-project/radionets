@@ -6,6 +6,9 @@ from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 import torch
 
+from radionets.dl_framework.clustering import (
+    spectralClustering,
+)
 from radionets.dl_framework.data import (
     load_data,
     MojaveDataset,
@@ -26,6 +29,8 @@ from radionets.evaluation.plotting import (
     plot_length_point,
     plot_loss,
     plot_results,
+    plot_yolo_clustering,
+    plot_yolo_post_clustering,
     plot_yolo_eval,
     plot_yolo_mojave,
     visualize_source_reconstruction,
@@ -44,7 +49,8 @@ from radionets.evaluation.utils import (
     read_pred,
     save_pred,
     scaling_log10_noisecut,
-    # yolo_apply_nms,
+    yolo_apply_nms,
+    yolo_df,
 )
 
 
@@ -728,18 +734,49 @@ def evaluate_mojave(conf):
         print("Source:", source, type(img), img.shape)
         pred = eval_model(img, model, amp_phase=conf["amp_phase"])
 
-        # outputs = yolo_apply_nms(pred, x=img, rel_obj_thres=2 / 3)
+        if conf["vis_pred"]:
+            for i in range(len(img)):
+                date = loader.get_header(i, source)["DATE-OBS"]
+                if i < 3:
+                    plot_yolo_mojave(
+                        x=img[:, None],
+                        pred=pred,
+                        idx=i,
+                        out_path=out_path,
+                        name=source,
+                        date=date,
+                    )
 
-        for i in range(len(img)):
+        outputs = yolo_apply_nms(pred, x=img, rel_obj_thres=2 / 3)
 
-            date = loader.get_header(i, source)["DATE-OBS"]
-            if conf["vis_pred"] and i < 5:
-                plot_yolo_mojave(
-                    x=img[:, None],
-                    pred=pred,
-                    name=source,
-                    date=date,
-                    out_path=out_path,
-                    idx=i,
-                    plot_format="pdf",
-                )
+        df = yolo_df(outputs=outputs, ds=loader)
+
+        # Apply the cluster algorythm
+        xy_mas = np.array([df["x_mas"], df["y_mas"]]).T
+        cluster_model = spectralClustering(xy_mas)
+        df["idx_comp"] = cluster_model.labels_
+
+        # Change colums (just for the look)
+        cols = df.columns.tolist()
+        cols.insert(2, cols.pop(-1))
+        df = df[cols]
+
+        if conf["vis_pred"]:
+            plot_yolo_clustering(df=df, out_path=out_path, name=source)
+
+        # Build mean of components, which are from the same image and the same cluster
+        df = (
+            df.groupby(["date", "idx_img", "idx_comp"], sort=False).mean().reset_index()
+        )
+        df["intensity"] = img[i, df["y"].astype(int), df["x"].astype(int)].numpy()
+
+        if conf["vis_pred"]:
+            for i in range(len(img)):
+                date = loader.get_header(i, source)["DATE-OBS"]
+                if i < 3:
+                    plot_yolo_post_clustering(
+                        x=img, df=df, idx=i, out_path=out_path, name=source, date=date
+                    )
+
+        # Find components with the maximum intensity -> main component
+        # idx_main = df.groupby("idx_comp")["intensity"].mean().argmax()

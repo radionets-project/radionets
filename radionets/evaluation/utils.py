@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 import numpy as np
+import pandas as pd
+from radionets.evaluation.coordinates import pixel2coordinate
 from radionets.dl_framework.model import load_pre_model
 from radionets.dl_framework.data import load_data
 from radionets.dl_framework.utils import (
@@ -819,6 +821,46 @@ def get_redshift(source: str):
         redshift = np.nan
 
     return redshift
+
+
+def yolo_df(outputs: list, ds):
+    """Creates a pandas dataframe to sort outputs for further calculations.
+
+    Parameters
+    ----------
+    outputs: list
+        list of outputs from nms
+    ds:
+        MojaveDataset class
+
+    Returns
+    -------
+    df: pandas.DataFrame
+        dataframe with reconstructed properties
+    """
+    pred_list = []
+    for i, output in enumerate(outputs):
+        output = output.cpu().detach().numpy()
+        header = ds.get_header(i)
+        for out in output:
+            pred_dict = {}
+            pred_dict["date"] = pd.Timestamp(header["DATE-OBS"])
+            pred_dict["idx_img"] = i
+            pred_dict["x"] = out[0]
+            pred_dict["y"] = out[1]
+            pred_dict["sx"] = out[2]
+            pred_dict["sy"] = out[3]
+            pred_dict["objectness"] = out[4]
+            pred_dict["rotation"] = out[5] * 180
+            pred_dict["x_mas"], pred_dict["y_mas"] = pixel2coordinate(
+                header, pred_dict["x"], pred_dict["y"], ds.crop_size, units=False
+            )
+
+            pred_list.append(pred_dict)
+
+    df = pd.DataFrame(pred_list)
+
+    return df
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
