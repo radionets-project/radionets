@@ -36,9 +36,26 @@ jobs:
         run: |
           $CONDA/bin/pytest --cov radionets --cov-report=xml
 
+      - uses: codecov/codecov-action@v3
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      
+      - name: Install doc dependencies
+        run: |
+          sudo apt update --yes && sudo apt install --yes git 
+          pip install -U pip towncrier
+
       - name: Produce Changelog
         run: |
           towncrier build --yes
       
-      - uses: codecov/codecov-action@v3
-
