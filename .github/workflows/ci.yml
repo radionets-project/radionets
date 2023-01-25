@@ -57,5 +57,5 @@ jobs:
 
       - name: Produce Changelog
         run: |
-          towncrier build --yes
-      
+          towncrier build --yes --version==0.0.0
+
