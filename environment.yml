@@ -11,4 +11,5 @@ dependencies:
   - cartopy
   - pip
   - pip:
+    - towncrier
     - -e .
