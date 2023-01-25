@@ -1,0 +1,1 @@
+Add and enable ``towncrier`` in CI.
