@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import h5py
 from pathlib import Path
+from tqdm import tqdm
 
 
 def source_list_collate(batch):
@@ -471,28 +472,51 @@ def trunc_rvs(loc, scale, mode, num_samples):
 
 
 def sample_images(mean, std, num_samples):
-    mean_amp, mean_phase = mean[0], mean[1]
-    std_amp, std_phase = std[0], std[1]
-    # amplitude
-    sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples)
+    results = {}
+    for (m, s) in tqdm(zip(mean, std), total=len(mean)):
+        mean_amp, mean_phase = m[0], m[1]
+        std_amp, std_phase = s[0], s[1]
+        # amplitude
+        sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples)
 
-    # phase
-    sampled_gauss_phase = trunc_rvs(mean_phase, std_phase, "phase", num_samples)
+        # phase
+        sampled_gauss_phase = trunc_rvs(mean_phase, std_phase, "phase", num_samples)
 
-    # masks
-    mask_invalid_amp = sampled_gauss_amp < 0
-    mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
-        sampled_gauss_phase >= (np.pi + 1e-4)
+        # masks
+        mask_invalid_amp = sampled_gauss_amp < 0
+        mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+            sampled_gauss_phase >= (np.pi + 1e-4)
+        )
+        assert mask_invalid_amp.sum() == 0
+        assert mask_invalid_phase.sum() == 0
+
+        sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
+        sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
+
+        fft_sampled_symmetry = get_ifft(
+            sampled_gauss_symmetry, amp_phase=True, scale=False
+        )
+        result = {
+            "mean": fft_sampled_symmetry.mean(axis=0),
+            "std": fft_sampled_symmetry.std(axis=0),
+        }
+        results = mergeDictionary(results, result)
+    print(results["mean"].reshape(mean.shape[0], mean.shape[2], mean.shape[3]).shape)
+    results["mean"] = results["mean"].reshape(
+        mean.shape[0], mean.shape[2], mean.shape[3]
     )
-    assert mask_invalid_amp.sum() == 0
-    assert mask_invalid_phase.sum() == 0
-
-    sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
-    sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
-
-    fft_sampled_symmetry = get_ifft(sampled_gauss_symmetry, amp_phase=True, scale=False)
-    results = {
-        "mean": fft_sampled_symmetry.mean(axis=0),
-        "std": fft_sampled_symmetry.std(axis=0),
-    }
+    results["std"] = results["std"].reshape(mean.shape[0], mean.shape[2], mean.shape[3])
     return results
+
+
+def mergeDictionary(dict_1, dict_2):
+    dict_3 = {**dict_1, **dict_2}
+    for key, value in dict_3.items():
+        if key in dict_1 and key in dict_2:
+            dict_3[key] = np.append(dict_1[key], value)
+            # try:
+            #     dict_3[key] = np.stack((dict_1[key], value))
+            # except ValueError:
+            #     value = value.reshape(1, *value.shape)
+            #     dict_3[key] = np.concatenate((dict_1[key], value))
+    return dict_3

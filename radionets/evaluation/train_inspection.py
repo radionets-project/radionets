@@ -323,11 +323,12 @@ def create_uncertainty_plots(conf, num_images=3, rand=False):
     ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
     # loop
+    results = sample_images(img["pred"], img["unc"], 1000)
     for i in range(len(img["pred"])):
-        results = sample_images(img["pred"][i], img["unc"][i], 1000)
         visualize_sampled_unc(
             i,
-            results,
+            results["mean"][i],
+            results["std"][i],
             ifft_truth[i],
             out_path=out_path,
             plot_format=conf["format"],
@@ -555,10 +556,22 @@ def evaluate_area(conf):
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
 
-        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+        img = {"pred": pred, "inp": img_test, "true": img_true}
+        if pred.shape[1] == 4:
+            unc_amp = pred[:, 1, :]
+            unc_phase = pred[:, 3, :]
+            unc = torch.stack([unc_amp, unc_phase], dim=1)
+            pred_1 = pred[:, 0, :]
+            pred_2 = pred[:, 2, :]
+            pred = torch.stack((pred_1, pred_2), dim=1)
+            img["unc"] = unc
+            img["pred"] = pred
 
-        for pred, truth in zip(ifft_pred, ifft_truth):
+        results = sample_images(img["pred"], img["unc"], 100)
+
+        ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
+
+        for pred, truth in zip(results["mean"], ifft_truth):
             val = area_of_contour(pred, truth)
             vals.extend([val])
 

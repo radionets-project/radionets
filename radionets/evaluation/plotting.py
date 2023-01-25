@@ -497,17 +497,17 @@ def visualize_uncertainty(
     plt.close("all")
 
 
-def visualize_sampled_unc(i, results, ifft_truth, out_path, plot_format):
+def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
     # plt.style.use('../paper_large_3.rc')
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
         2, 2, figsize=(12, 10), sharey=True, sharex=True
     )
 
     im1 = ax1.imshow(ifft_truth)
-    im2 = ax2.imshow(results["mean"])
-    im3 = ax3.imshow(results["std"])
-    a = check_vmin_vmax(results["mean"] - ifft_truth)
-    im4 = ax4.imshow(results["mean"] - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
+    im2 = ax2.imshow(mean)
+    im3 = ax3.imshow(std)
+    a = check_vmin_vmax(mean - ifft_truth)
+    im4 = ax4.imshow(mean - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
 
     make_axes_nice(fig, ax1, im1, r"Simulation")
     make_axes_nice(fig, ax2, im2, r"Prediction")
