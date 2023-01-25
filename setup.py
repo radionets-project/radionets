@@ -10,7 +10,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     install_requires=[
-        "fastai==2.7.10,
+        "fastai==2.7.10",
         "kornia==0.6.9",
         "pytorch-msssim==0.2.1",
         "numpy==1.22.3",
