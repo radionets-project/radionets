@@ -5,6 +5,7 @@ on: [push, pull_request]
 env:
   MPLBACKEND: Agg
   PYTEST_ADDOPTS: --color=yes
+  GITHUB_PR_NUMBER: ${{ github.event.number }}
 
 jobs:
   tests:
@@ -25,8 +26,13 @@ jobs:
         run: |
           $CONDA/bin/conda env update --file environment.yml --name base
       
+      - name: Produce Changelog
+        run: |
+          towncrier build --yes
+      
       - name: tests
         run: |
           $CONDA/bin/pytest --cov radionets --cov-report=xml
 
       - uses: codecov/codecov-action@v3
+
