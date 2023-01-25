@@ -128,7 +128,7 @@ class CometCallback(Callback):
 
     def plot_test_pred_yolo(self):
         n = 4
-        x, y = get_images(self.test_ds, n, norm_path="none", rand=False)
+        x, y = get_images(self.test_ds, n, rand=False)
 
         # squeeze, because list of len==3 is being unsqeezed in get_images
         y = y.squeeze(0)

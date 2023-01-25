@@ -1,12 +1,10 @@
 import torch
 
 from radionets.dl_framework.utils import (
-    decode_yolo_box,
     overall_iou,
 )
 from radionets.evaluation.utils import (
-    non_max_suppression,
-    objectness_mapping,
+    yolo_apply_nms,
 )
 
 
@@ -31,16 +29,7 @@ def iou_YOLOv6(pred, target):
 
     target[..., 3:5] *= 2  # increased box sizes (same as in loss function)
 
-    # use mean of all objectness map
-    obj_map = objectness_mapping(pred)
-    # use boxes from prediction of highest resolution
-    boxes = decode_yolo_box(pred[0], strides_head[0])
-
-    boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
-
-    pred_nms = non_max_suppression(
-        boxes.reshape(bs, -1, 6), obj_thres=boxes[..., 4].max() / 3
-    )
+    pred_nms = yolo_apply_nms(pred, strides=strides_head, rel_obj_thres=2 / 3)
 
     amp_threshold = 0.02  # only take components above this amplitude into account
     ious = torch.zeros(bs)

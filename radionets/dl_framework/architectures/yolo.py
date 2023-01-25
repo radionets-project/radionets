@@ -202,11 +202,11 @@ class YOLOv6flex(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.channels = 4
+        self.channels = 16
         self.anchors = 1
         self.strides_head = torch.tensor([4, 8, 16])
-        self.bb_repeats = [1, 2, 4, 6, 2]
-        self.neck_repeats = 4
+        self.bb_repeats = [1, 6, 12, 18, 6]
+        self.neck_repeats = 12
 
         if torch.log2(torch.max(self.strides_head)) > len(self.bb_repeats):
             print("Warning. Backbone size is larger than output size")
@@ -378,20 +378,26 @@ class YOLOv6flex(nn.Module):
         for i in range(self.n_upsampling):
             if i == 0:
                 reduce_out.append(self.neck_reduce_layer[i](x_bb[-1]))
+                upsample_feat = self.neck_upsample[i](reduce_out[-1])
+                concat_layer = torch.cat([upsample_feat, x_bb[-i - 2]], 1)
+                u_out = self.neck_Rep[i](concat_layer)
             else:
                 reduce_out.append(self.neck_reduce_layer[i](u_out))
-            upsample_feat = self.neck_upsample[i](reduce_out[-1])
-            concat_layer = torch.cat([upsample_feat, x_bb[-i - 2]], 1)
-            u_out = self.neck_Rep[i](concat_layer)
+                upsample_feat = self.neck_upsample[i](reduce_out[-1])
+                concat_layer = torch.cat([upsample_feat, x_bb[-i - 2]], 1)
+                u_out = self.neck_Rep[i](concat_layer)
 
         d_out = []
         for i in range(self.n_downsampling):
             if i == 0:
                 down_feat = self.neck_downsample[i](u_out)
+                concat_layer = torch.cat([down_feat, reduce_out[-i - 1]], 1)
+                d_out_calc = self.neck_Rep[i + self.n_upsampling](concat_layer)
             else:
                 down_feat = self.neck_downsample[i](d_out_calc)
-            concat_layer = torch.cat([down_feat, reduce_out[-i - 1]], 1)
-            d_out_calc = self.neck_Rep[i + self.n_upsampling](concat_layer)
+                concat_layer = torch.cat([down_feat, reduce_out[-i - 1]], 1)
+                d_out_calc = self.neck_Rep[i + self.n_upsampling](concat_layer)
+
             if i in self.neck_out_idx:
                 d_out.append(d_out_calc)
             # print(i, d_out[-1].shape)

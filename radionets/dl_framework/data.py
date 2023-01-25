@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Callable
 from astropy.io import fits
 import os
+from datetime import datetime
 
 
 class h5_dataset:
@@ -254,27 +255,26 @@ class MojaveDataset:
 
         Returns
         -------
-        paths: list
+        data_files: list
             folder and filename of each file
         """
         if self.source:
             data_path = self.data_path + self.source
+            file_paths = [x for x in Path(data_path).glob("*/*")]
         else:
             data_path = self.data_path
+            file_paths = [x for x in Path(data_path).glob("*/*/*")]
 
-        paths = []
-        for path, subdirs, files in os.walk(data_path):
-            for name in files:
-                if name[-12:] == ".icn.fits.gz":
-                    paths.append(Path(path, name))
-                    # paths.append(path + name)
+        data_files = [
+            path for path in file_paths if re.findall(".icn.fits.gz", path.name)
+        ]
 
-        print("Number of images:", len(paths))
-        # print(sorted(paths)[:20])
+        print("Number of data files:", len(data_files))
+        # print(sorted(data_files)[:5])
 
-        assert paths, f"No source found in {data_path}"
+        assert data_files, f"No source found in {data_path}"
 
-        return sorted(paths)
+        return sorted(data_files)
 
     def _get_source_list(self):
         """Create list of all available source names.
@@ -290,34 +290,62 @@ class MojaveDataset:
             source_list = sorted(next(os.walk(self.data_path))[1])
             source_list = [elem for elem in source_list if elem[:4].isnumeric()]
 
+        for source in reversed(source_list):
+            data_path = self.data_path + source
+            file_paths = [x for x in Path(data_path).glob("*/*")]
+            data_files = [
+                path for path in file_paths if re.findall(".icn.fits.gz", path.name)
+            ]
+            if not data_files:
+                # print("No images for source:", source)
+                source_list.remove(source)
+
         print("Number of sources:", len(source_list))
         return source_list
 
-    def get_header(self, i: int = 0):
+    def get_header(self, i: int = 0, source_name: str = None):
         """Opening i-th header of fits files.
 
         Parameters
         ----------
         i: int
             index of image
+        source_name: str
+            name of the source
 
         Returns
         -------
         header:
             opened header
         """
-        f = fits.open(self.paths[i])
+        if source_name:
+            paths = []
+            for path in self.paths:
+                if source_name in str(path):
+                    paths.append(path)
+        else:
+            paths = self.paths
+
+        f = fits.open(paths[i])
         header = f[0].header
+
+        try:
+            date = datetime.strptime(header["DATE-OBS"], "%d/%m/%y")
+            header["DATE-OBS"] = date.isoformat()[:10]
+        except ValueError:
+            pass
 
         return header
 
-    def open_image(self, i: int = 0):
+    def open_image(self, i: int = 0, justify: bool = False):
         """Opening i-th image of fits files.
 
         Parameters
         ----------
         i: int
             index of image
+        justify: bool
+            justify the cropping
 
         Returns
         -------
@@ -332,7 +360,7 @@ class MojaveDataset:
                 img.shape[0] >= self.crop_size
             ), "Image is smaller than the crop_size. Reduce crop_size."
             img = crop_center(
-                img, cropx=self.crop_size, cropy=self.crop_size, justify=True
+                img, cropx=self.crop_size, cropy=self.crop_size, justify=justify
             )
 
         if self.scaling:

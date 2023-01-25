@@ -27,6 +27,7 @@ from radionets.evaluation.plotting import (
     plot_loss,
     plot_results,
     plot_yolo_eval,
+    plot_yolo_mojave,
     visualize_source_reconstruction,
     visualize_with_fourier_diff,
     visualize_with_fourier,
@@ -43,6 +44,7 @@ from radionets.evaluation.utils import (
     read_pred,
     save_pred,
     scaling_log10_noisecut,
+    # yolo_apply_nms,
 )
 
 
@@ -699,10 +701,11 @@ def evaluate_yolo(conf):
 def evaluate_mojave(conf):
     loader = MojaveDataset(
         data_path=conf["data_path"],
-        crop_size=128,
+        crop_size=192,
         scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
         # scaling = partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
     )
+    print("Finished loading MOJAVE data")
 
     model_path = Path(conf["model_path"])
     out_path = model_path.parent / "evaluation" / model_path.stem
@@ -711,15 +714,32 @@ def evaluate_mojave(conf):
     model = load_pretrained_model(conf["arch_name"], model_path)
 
     if conf["random"]:
+        if conf["num_images"] > len(loader.source_list):
+            conf["num_images"] = len(loader.source_list)
         selected_sources = np.random.choice(
             loader.source_list, conf["num_images"], replace=False
         )
     else:
-        selected_sources = loader.source_list[0 : conf["num_images"]]
-    print(selected_sources)
+        selected_sources = loader.source_list[2 : conf["num_images"] + 2]
+    print("Evaluated sources:", selected_sources)
 
     for source in tqdm(selected_sources):
-        img = loader.open_source(source)
-        pred = eval_model(img, model)
-        print(pred)
-        continue
+        img = torch.from_numpy(loader.open_source(source))
+        print("Source:", source, type(img), img.shape)
+        pred = eval_model(img, model, amp_phase=conf["amp_phase"])
+
+        # outputs = yolo_apply_nms(pred, x=img, rel_obj_thres=2 / 3)
+
+        for i in range(len(img)):
+
+            date = loader.get_header(i, source)["DATE-OBS"]
+            if conf["vis_pred"] and i < 5:
+                plot_yolo_mojave(
+                    x=img[:, None],
+                    pred=pred,
+                    name=source,
+                    date=date,
+                    out_path=out_path,
+                    idx=i,
+                    plot_format="pdf",
+                )

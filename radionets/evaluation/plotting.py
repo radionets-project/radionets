@@ -1,5 +1,4 @@
 from math import pi
-
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -11,7 +10,6 @@ from matplotlib.patches import Arc, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pytorch_msssim import ms_ssim
 from radionets.dl_framework.utils import (
-    decode_yolo_box,
     build_target_yolo,
 )
 from radionets.evaluation.blob_detection import calc_blobs
@@ -23,9 +21,9 @@ from radionets.evaluation.utils import (
     make_axes_nice,
     pad_unsqueeze,
     reshape_2d,
-    non_max_suppression,
     objectness_mapping,
     get_strides,
+    yolo_apply_nms,
 )
 from radionets.simulations.utils import adjust_outpath
 from tqdm import tqdm
@@ -1138,22 +1136,24 @@ def plot_yolo_box(
 
     # Plot predicted boxes
     if pred_boxes and pred:
-        strides = torch.tensor(get_strides(x, pred))
-        # use mean of all objectness map
-        obj_map = objectness_mapping(pred)
-        # use boxes from prediction of highest resolution
-        boxes = decode_yolo_box(pred[0], strides[0])
+        outputs = yolo_apply_nms(pred, x, rel_obj_thres=2 / 3)
+        outputs = outputs[idx].detach().cpu().numpy()
 
-        boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
+        # # use mean of all objectness map
+        # obj_map = objectness_mapping(pred)
+        # # use boxes from prediction of highest resolution
+        # boxes = decode_yolo_box(pred[0], strides[0])
 
-        outputs = (
-            non_max_suppression(
-                boxes[idx].reshape(1, -1, 6), obj_thres=boxes[idx, ..., 4].max() * 0.666
-            )[0]
-            .detach()
-            .cpu()
-            .numpy()
-        )
+        # boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
+
+        # outputs = (
+        #     non_max_suppression(
+        #         boxes[idx].reshape(1, -1, 6), obj_thres=boxes[idx, ..., 4].max() * 0.666
+        #     )[0]
+        #     .detach()
+        #     .cpu()
+        #     .numpy()
+        # )
 
         for i in range(outputs.shape[0]):
             plot_box2(
@@ -1209,37 +1209,66 @@ def plot_yolo_eval(
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(9, 7))
 
-    img = ax1.imshow(x[idx, 0], cmap="inferno")
-    ax1.set_xlabel("Pixel")
-    ax1.set_ylabel("Pixel")
-    divider = make_axes_locatable(ax1)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    fig.colorbar(img, cax=cax, orientation="vertical")
-    make_axes_nice(fig, ax1, img)
-
-    img = plot_yolo_box(
+    im1 = ax1.imshow(x[idx, 0], cmap="inferno")
+    im2 = plot_yolo_box(
         ax2, x, y, pred, idx=idx, true_boxes=1, pred_boxes=1, pred_label=0
     )
-    divider = make_axes_locatable(ax2)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    fig.colorbar(img, cax=cax, orientation="vertical")
-    make_axes_nice(fig, ax2, img)
+    im3 = plot_yolo_obj_true(ax3, y, pred, strides, idx=idx, anchor_idx=anchor_idx)
+    im4 = plot_yolo_obj_pred(ax4, pred, idx=idx, anchor_idx=anchor_idx)
 
-    img = plot_yolo_obj_true(ax3, y, pred, strides, idx=idx, anchor_idx=anchor_idx)
-    divider = make_axes_locatable(ax3)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    fig.colorbar(img, cax=cax, orientation="vertical")
-    make_axes_nice(fig, ax3, img, objectness=True)
+    make_axes_nice(fig, ax1, im1)
+    make_axes_nice(fig, ax2, im2)
+    make_axes_nice(fig, ax3, im3, objectness=True)
+    make_axes_nice(fig, ax4, im4, objectness=True)
 
-    img = plot_yolo_obj_pred(ax4, pred, idx=idx, anchor_idx=anchor_idx)
-    divider = make_axes_locatable(ax4)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    fig.colorbar(img, cax=cax, orientation="vertical")
-    make_axes_nice(fig, ax4, img, objectness=True)
+    ax1.set_xlabel("Pixel")
+    ax1.set_ylabel("Pixel")
 
     plt.tight_layout()
-
     out_path = str(out_path) + f"/yolo_eval_{idx}.{plot_format}"
+    plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_yolo_mojave(
+    x,
+    pred: list,
+    out_path: str,
+    name: str,
+    date: str,
+    idx: int = 0,
+    plot_format: str = "pdf",
+):
+    """Default evaluation plot for MOJAVE data in YOLO
+
+    Parameters
+    ----------
+    x: 4d-array
+        input image (bs, 1, ny, nx)
+    pred: list
+        list of feature maps, each of shape (bs, a, my, mx, 6)
+    name: str
+        name of source
+    date: str
+        date of measurement
+    out_path: str
+        path in file directory to save output
+    idx: int
+        index of image to be plotted
+    plot_format: str
+        format of the plot
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4))
+
+    im1 = plot_yolo_box(ax1, x, None, pred, idx=idx, true_boxes=False, pred_label=False)
+    im2 = plot_yolo_obj_pred(ax2, pred, idx=idx)
+
+    make_axes_nice(fig, ax1, im1)
+    make_axes_nice(fig, ax2, im2, objectness=True)
+
+    legend_without_duplicate_labels(ax1)
+
+    fig.tight_layout(pad=0.05)
+    out_path = str(out_path) + f"/yolo_eval_{name}_{date}.{plot_format}"
     plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 

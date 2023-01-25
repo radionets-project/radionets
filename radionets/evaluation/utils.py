@@ -291,7 +291,7 @@ def get_images(test_ds, num_images, rand=False):
     return img_test, img_true
 
 
-def eval_model(img, model):
+def eval_model(img, model, amp_phase: bool = True):
     """
     Put model into eval mode and evaluate test images.
 
@@ -301,6 +301,8 @@ def eval_model(img, model):
         test image
     model: architecture object
         architecture with pretrained weigths
+    amp_phase: bool
+        amp_phase keyword in config
 
     Returns
     -------
@@ -308,7 +310,10 @@ def eval_model(img, model):
         predicted images
     """
     if len(img.shape) == (3):
-        img = img.unsqueeze(0)
+        if amp_phase:
+            img = img.unsqueeze(0)
+        else:
+            img = img.unsqueeze(1)
 
     model.eval()
     with torch.no_grad():
@@ -518,11 +523,12 @@ def get_pred_boxes(x, pred, **kwargs):
 def non_max_suppression(
     boxes,
     obj_thres: float = 0.25,
+    rel_obj_tresh: bool = False,
     max_nms: int = 1000,
     iou_thres: float = 0.3,
     max_det: int = 30,
 ):
-    """Non max suppression for one batch.
+    """Non-maximum suppression (nms) for one batch.
 
     Parameters
     ----------
@@ -530,6 +536,8 @@ def non_max_suppression(
         boxes of shape (bs, n_boxes, 6), where 6 is: x, y, width, height, objectness, rotation
     obj_thres: float
         only take boxes with objectness above this value into account for nms, range: [0, 1]
+    rel_obj_thresh: bool
+        use objectness threshold relative to maximum threshold of image
     max_nms: int
         maximum number of boxes put into torchvision.ops.nms()
     iou_thres: float
@@ -543,11 +551,16 @@ def non_max_suppression(
         reduced number of boxes; list, because each image in batch can have
         different number of boxes
     """
-    boxes_candidates = boxes[..., 4] > obj_thres  # candidates
     output = []
 
-    for idx, box in enumerate(boxes):
-        box = box[boxes_candidates[idx]]  # filter candidates
+    for box in boxes:
+        if rel_obj_tresh:
+            obj_threshold = obj_thres * box[:, 4].max()
+        else:
+            obj_threshold = obj_thres
+
+        boxes_candidates = box[..., 4] > obj_threshold  # candidates
+        box = box[boxes_candidates]  # filter candidates
 
         if not box.shape[0]:  # if no box remains, skip the next image
             continue
@@ -561,6 +574,59 @@ def non_max_suppression(
         output.append(box[keep_box_idx])
 
     return output
+
+
+def yolo_apply_nms(
+    pred, x=None, strides=None, rel_obj_thres: float = 0.5, iou_thres: float = 0.3
+):
+    """Perform basic evaluation steps after YOLO model.
+    From YOLO output (pred) to list of boxes after nms.
+    x or strides have to be provided.
+
+    Parameters
+    ----------
+    pred: list
+        list of feature maps, each of shape (bs, 1, my, mx, 6)
+    x: 4d-array
+        input image (bs, 1, ny, nx)
+    strides: 1d-array or list
+        strides used during training
+    rel_obj_thres: float
+        relative objectness threshold for nms.
+    iou_thres: float
+        nms parameter: discards all overlapping boxes with IoU > iou_thres
+
+    Returns
+    -------
+    outputs: list
+        boxes after nms
+    """
+    assert not (x is None and strides is None), 'Provide "x" or "strides"'
+
+    if x is not None and strides is not None:
+        strides_calc = get_strides(x, pred)
+        assert (
+            strides == strides_calc
+        ), f"Provides strides {strides} not equal calculated strides {strides_calc}."
+    elif x is not None:
+        strides = get_strides(x, pred)
+
+    # use boxes from prediction of highest resolution
+    if not torch.is_tensor(strides):
+        strides = torch.tensor(strides)
+
+    boxes = decode_yolo_box(pred[0], strides[0])
+    # use mean of all objectness map
+    obj_map = objectness_mapping(pred)
+    boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
+    outputs = non_max_suppression(
+        boxes.reshape(boxes.shape[0], -1, 6),
+        obj_thres=rel_obj_thres,
+        rel_obj_tresh=True,
+        iou_thres=iou_thres,
+    )
+
+    return outputs
 
 
 def objectness_mapping(

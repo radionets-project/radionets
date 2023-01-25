@@ -1,7 +1,15 @@
 import astropy.units as u
+import torch
 
 
-def pixel2coordinate(header, x_pixel: float, y_pixel: float, img_size: int, relative: bool = True, units: bool = True):
+def pixel2coordinate(
+    header,
+    x_pixel: float,
+    y_pixel: float,
+    img_size: int,
+    relative: bool = True,
+    units: bool = True,
+):
     """Transform pixel values of one image to astronomical units
 
     Parameters
@@ -24,7 +32,12 @@ def pixel2coordinate(header, x_pixel: float, y_pixel: float, img_size: int, rela
     x, y: tuple of floats
         coordinates, in mas (milliarcsecond) if units is set True
     """
-    size_proportion = header["NAXIS1"] / 2 -  img_size / 2
+    if torch.is_tensor(x_pixel):
+        x_pixel = x_pixel.detach().numpy()
+    if torch.is_tensor(y_pixel):
+        y_pixel = y_pixel.detach().numpy()
+
+    size_proportion = header["NAXIS1"] / 2 - img_size / 2
 
     x_ref_pixel = header["CRPIX1"]  # center in pixel
     x_ref_value = (header["CRVAL1"] * u.degree).to(u.mas)  # center in mas
