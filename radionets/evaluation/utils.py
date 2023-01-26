@@ -7,7 +7,6 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import h5py
 from pathlib import Path
-from tqdm import tqdm
 
 
 def source_list_collate(batch):
@@ -61,6 +60,32 @@ def create_databunch(data_path, fourier, source_list, batch_size):
         )
     else:
         data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+    return data
+
+
+def create_sampled_databunch(data_path, batch_size):
+    """Create a dataloader object, which feeds the data batch-wise
+
+    Parameters
+    ----------
+    data_path : str
+        path to the data
+    fourier : bool
+        true, if data in Fourier space is used
+    source_list : bool
+        true, if source_list data is used
+    batch_size : int
+        number of images for one batch
+
+    Returns
+    -------
+    DataLoader
+        dataloader object
+    """
+    # Load data sets
+    test_ds = samp_dataset(data_path)
+
+    data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
     return data
 
 
@@ -452,7 +477,7 @@ def even_better_symmetry(x):
     return x
 
 
-def trunc_rvs(loc, scale, mode, num_samples):
+def trunc_rvs(loc, scale, mode, num_samples, num_img):
     from scipy.stats import truncnorm
 
     if mode == "amp":
@@ -465,47 +490,43 @@ def trunc_rvs(loc, scale, mode, num_samples):
         raise ValueError("Wrong mode!")
     a, b = (myclip_a - loc) / scale, (myclip_b - loc) / scale
     sampled_gauss = truncnorm.rvs(
-        a, b, loc=loc, scale=scale, size=(num_samples, 128, 128)
+        a, b, loc=loc, scale=scale, size=(num_samples, num_img, 128, 128)
     )
 
-    return sampled_gauss
+    return sampled_gauss.swapaxes(0, 1)
 
 
 def sample_images(mean, std, num_samples):
-    results = {}
-    for (m, s) in tqdm(zip(mean, std), total=len(mean)):
-        mean_amp, mean_phase = m[0], m[1]
-        std_amp, std_phase = s[0], s[1]
-        # amplitude
-        sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples)
+    mean_amp, mean_phase = mean[:, 0], mean[:, 1]
+    std_amp, std_phase = std[:, 0], std[:, 1]
+    num_img = mean_amp.shape[0]
+    # amplitude
+    sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples, num_img)
 
-        # phase
-        sampled_gauss_phase = trunc_rvs(mean_phase, std_phase, "phase", num_samples)
-
-        # masks
-        mask_invalid_amp = sampled_gauss_amp < 0
-        mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
-            sampled_gauss_phase >= (np.pi + 1e-4)
-        )
-        assert mask_invalid_amp.sum() == 0
-        assert mask_invalid_phase.sum() == 0
-
-        sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
-        sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
-
-        fft_sampled_symmetry = get_ifft(
-            sampled_gauss_symmetry, amp_phase=True, scale=False
-        )
-        result = {
-            "mean": fft_sampled_symmetry.mean(axis=0),
-            "std": fft_sampled_symmetry.std(axis=0),
-        }
-        results = mergeDictionary(results, result)
-    print(results["mean"].reshape(mean.shape[0], mean.shape[2], mean.shape[3]).shape)
-    results["mean"] = results["mean"].reshape(
-        mean.shape[0], mean.shape[2], mean.shape[3]
+    # phase
+    sampled_gauss_phase = trunc_rvs(
+        mean_phase, std_phase, "phase", num_samples, num_img
     )
-    results["std"] = results["std"].reshape(mean.shape[0], mean.shape[2], mean.shape[3])
+
+    # masks
+    mask_invalid_amp = sampled_gauss_amp <= 0
+    mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+        sampled_gauss_phase >= (np.pi + 1e-4)
+    )
+    if mask_invalid_amp.sum() > 0:
+        print(sampled_gauss_amp[mask_invalid_amp])
+    assert mask_invalid_amp.sum() == 0
+    assert mask_invalid_phase.sum() == 0
+
+    sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
+    sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
+
+    fft_sampled_symmetry = get_ifft(sampled_gauss_symmetry, amp_phase=True, scale=False)
+    # print(fft_sampled_symmetry.shape)
+    results = {
+        "mean": fft_sampled_symmetry.mean(axis=1),
+        "std": fft_sampled_symmetry.std(axis=1),
+    }
     return results
 
 
@@ -520,3 +541,33 @@ def mergeDictionary(dict_1, dict_2):
             #     value = value.reshape(1, *value.shape)
             #     dict_3[key] = np.concatenate((dict_1[key], value))
     return dict_3
+
+
+class samp_dataset:
+    def __init__(self, bundle_path):
+        """
+        Save the bundle paths and the number of bundles in one file.
+        """
+        if bundle_path == []:
+            raise ValueError("No bundles found! Please check the names of your files.")
+        self.bundle_path = bundle_path
+
+    def __len__(self):
+        """
+        Returns the total number of pictures in this dataset
+        """
+        bundle = h5py.File(self.bundle_path, "r")
+        data = bundle["mean"]
+        return data.shape[0]
+
+    def __getitem__(self, i):
+        mean = self.open_image("mean", i)
+        std = self.open_image("std", i)
+        true = self.open_image("true", i)
+        return mean, std, true
+
+    def open_image(self, var, i):
+        bundle = h5py.File(self.bundle_path, "r")
+        data = bundle[var]
+        data = data[i]
+        return data

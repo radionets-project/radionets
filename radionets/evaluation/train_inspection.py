@@ -22,6 +22,7 @@ from radionets.evaluation.plotting import (
 )
 from radionets.evaluation.utils import (
     create_databunch,
+    create_sampled_databunch,
     reshape_2d,
     load_pretrained_model,
     get_images,
@@ -31,6 +32,7 @@ from radionets.evaluation.utils import (
     save_pred,
     read_pred,
     sample_images,
+    mergeDictionary,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
@@ -530,7 +532,82 @@ def evaluate_mean_diff(conf):
         np.savetxt(out / "mean_diff.txt", vals)
 
 
+def save_sampled(conf):
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], 20
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    num_img = len(loader) * 20
+    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    if conf["model_path_2"] != "none":
+        model_2 = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    results = {}
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+
+        pred = eval_model(img_test, model)
+        if conf["model_path_2"] != "none":
+            pred_2 = eval_model(img_test, model_2)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        img = {"pred": pred, "inp": img_test, "true": img_true}
+        if pred.shape[1] == 4:
+            unc_amp = pred[:, 1, :]
+            unc_phase = pred[:, 3, :]
+            unc = torch.stack([unc_amp, unc_phase], dim=1)
+            pred_1 = pred[:, 0, :]
+            pred_2 = pred[:, 2, :]
+            pred = torch.stack((pred_1, pred_2), dim=1)
+            img["unc"] = unc
+            img["pred"] = pred
+
+        result = sample_images(img["pred"], img["unc"], 100)
+        ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
+        dict_img_true = {"true": ifft_truth}
+        # print(dict_img_true["true"].shape)
+        results = mergeDictionary(results, result)
+        results = mergeDictionary(results, dict_img_true)
+    for key in results.keys():
+        results[key] = results[key].reshape(num_img, img_size, img_size)
+    save_pred(str(out_path) + "/sampled_imgs.h5", results)
+
+
 def evaluate_area(conf):
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    data_path = str(out_path) + "/sampled_imgs.h5"
+    loader = create_sampled_databunch(data_path, conf["batch_size"])
+    vals = []
+
+    # iterate trough DataLoader
+    for i, (samp, std, img_true) in enumerate(tqdm(loader)):
+        for pred, truth in zip(samp, img_true):
+            val = area_of_contour(pred, truth)
+            vals.extend([val])
+
+    click.echo("\nCreating eval_area histogram.\n")
+    vals = torch.tensor(vals)
+    histogram_area(vals, out_path, plot_format=conf["format"])
+
+    click.echo(f"\nThe mean area ratio is {vals.mean()}.\n")
+
+    if conf["save_vals"]:
+        click.echo("\nSaving area ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "area_ratios.txt", vals)
+
+
+def evaluate_area_old(conf):
     # create DataLoader
     loader = create_databunch(
         conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
