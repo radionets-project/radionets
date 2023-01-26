@@ -509,7 +509,7 @@ def sample_images(mean, std, num_samples):
     )
 
     # masks
-    mask_invalid_amp = sampled_gauss_amp <= 0
+    mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
     mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
         sampled_gauss_phase >= (np.pi + 1e-4)
     )
