@@ -74,7 +74,7 @@ def get_prediction(conf, mode="test"):
     if num_images is None:
         num_images = len(test_ds)
 
-    img_test, img_true = get_images(test_ds, num_images, rand=rand)
+    img_test, img_true, indices = get_images(test_ds, num_images, rand=rand)
 
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
@@ -91,6 +91,7 @@ def get_prediction(conf, mode="test"):
         pred = torch.stack((pred_1, pred_2), dim=1)
         images["unc"] = unc
         images["pred"] = pred
+        images["indices"] = indices
     return images
 
 
@@ -305,6 +306,17 @@ def create_contour_plots(conf, num_images=3, rand=False):
 
 
 def create_uncertainty_plots(conf, num_images=3, rand=False):
+    """Create uncertainty plots in Fourier and image space.
+
+    Parameters
+    ----------
+    conf : dict
+        config information
+    num_images : int, optional
+        number of images to be plotted, by default 3
+    rand : bool, optional
+        True, if images should be taken randomly, by default False
+    """
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
     predictions_path = path + "/predictions.h5"
@@ -324,7 +336,9 @@ def create_uncertainty_plots(conf, num_images=3, rand=False):
 
     sampling_path = path + "/sampled_imgs.h5"
     test_ds = sampled_dataset(sampling_path)
-    mean_imgs, std_imgs, true_imgs = get_images(test_ds, num_images, rand=rand)
+    mean_imgs, std_imgs, true_imgs = get_images(
+        test_ds, num_images, rand=rand, indices=img["indices"]
+    )
 
     # loop
     for i, (mean, std, true) in enumerate(zip(mean_imgs, std_imgs, true_imgs)):

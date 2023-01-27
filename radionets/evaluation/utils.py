@@ -260,9 +260,10 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     return arch
 
 
-def get_images(test_ds, num_images, rand=False):
+def get_images(test_ds, num_images, rand=False, indices=None):
     """
-    Get n random test and truth images.
+    Get n random test and truth images or mean, standard deviation and
+    true images from an already sampled dataset.
 
     Parameters
     ----------
@@ -284,14 +285,11 @@ def get_images(test_ds, num_images, rand=False):
         indices = torch.arange(num_images)
         if rand:
             indices = torch.randint(0, len(test_ds), size=(num_images,))
+            indices, _ = torch.sort(indices)
         img_test = test_ds[indices][0]
         img_true = test_ds[indices][1]
-        return img_test, img_true
+        return img_test, img_true, indices
     else:
-        indices = np.arange(num_images)
-        if rand:
-            indices = np.random.randint(0, len(test_ds), size=(num_images,))
-        indices.sort()
         mean = test_ds[indices][0]
         std = test_ds[indices][1]
         img_true = test_ds[indices][2]
@@ -533,7 +531,6 @@ def sample_images(mean, std, num_samples):
     sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
 
     fft_sampled_symmetry = get_ifft(sampled_gauss_symmetry, amp_phase=True, scale=False)
-    # print(fft_sampled_symmetry.shape)
     results = {
         "mean": fft_sampled_symmetry.mean(axis=1),
         "std": fft_sampled_symmetry.std(axis=1),
