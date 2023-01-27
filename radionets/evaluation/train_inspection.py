@@ -594,7 +594,7 @@ def save_sampled(conf):
     save_pred(str(out_path) + "/sampled_imgs.h5", results)
 
 
-def evaluate_area(conf):
+def evaluate_area_sampled(conf):
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
@@ -622,7 +622,7 @@ def evaluate_area(conf):
         np.savetxt(out / "area_ratios.txt", vals)
 
 
-def evaluate_area_old(conf):
+def evaluate_area(conf):
     # create DataLoader
     loader = create_databunch(
         conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
@@ -648,22 +648,10 @@ def evaluate_area_old(conf):
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
 
-        img = {"pred": pred, "inp": img_test, "true": img_true}
-        if pred.shape[1] == 4:
-            unc_amp = pred[:, 1, :]
-            unc_phase = pred[:, 3, :]
-            unc = torch.stack([unc_amp, unc_phase], dim=1)
-            pred_1 = pred[:, 0, :]
-            pred_2 = pred[:, 2, :]
-            pred = torch.stack((pred_1, pred_2), dim=1)
-            img["unc"] = unc
-            img["pred"] = pred
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
-        results = sample_images(img["pred"], img["unc"], 100)
-
-        ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
-
-        for pred, truth in zip(results["mean"], ifft_truth):
+        for pred, truth in zip(ifft_pred, ifft_truth):
             val = area_of_contour(pred, truth)
             vals.extend([val])
 
