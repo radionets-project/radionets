@@ -28,10 +28,11 @@ class TestEvaluation:
         assert img_test.shape == (10, 2, 64, 64)
         img_true = test_ds[indices][1]
 
-        img_test, img_true = get_images(test_ds, num_images, rand)
+        img_test, img_true, indices = get_images(test_ds, num_images, rand)
 
         assert img_true.shape == (10, 2, 64, 64)
         assert img_test.shape == (10, 2, 64, 64)
+        assert len(indices) == 10
 
     def test_get_prediction(self):
         from pathlib import Path
@@ -345,22 +346,23 @@ class TestEvaluation:
         img = read_pred("./tests/model/predictions_unc.h5")
         mean = img["pred"][0]
         std = img["unc"][0]
-
         mean_amp, mean_phase = mean[0], mean[1]
         std_amp, std_phase = std[0], std[1]
         img_size = mean_amp.shape[-1]
 
         # amplitude
-        sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples)
+        sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples, num_img=1)
 
         # phase
-        sampled_gauss_phase = trunc_rvs(mean_phase, std_phase, "phase", num_samples)
+        sampled_gauss_phase = trunc_rvs(
+            mean_phase, std_phase, "phase", num_samples, num_img=1
+        )
 
-        assert sampled_gauss_amp.shape == (num_samples, img_size, img_size)
-        assert sampled_gauss_phase.shape == (num_samples, img_size, img_size)
+        assert sampled_gauss_amp.shape == (1, num_samples, img_size, img_size)
+        assert sampled_gauss_phase.shape == (1, num_samples, img_size, img_size)
 
         with pytest.raises(ValueError):
-            trunc_rvs(mean_phase, std_phase, "pase", num_samples)
+            trunc_rvs(mean_phase, std_phase, "pase", num_samples, num_img=1)
 
         # masks
         mask_invalid_amp = sampled_gauss_amp < 0
@@ -387,7 +389,7 @@ class TestEvaluation:
         from radionets.evaluation.utils import read_pred, sample_images
 
         img = read_pred("./tests/model/predictions_unc.h5")
-        results = sample_images(img["pred"][0], img["unc"][0], 100)
+        results = sample_images(img["pred"][0:2], img["unc"][0:2], 100)
         assert results is not None
 
     def test_evaluation(self):
