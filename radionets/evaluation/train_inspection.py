@@ -33,6 +33,7 @@ from radionets.evaluation.utils import (
     read_pred,
     sample_images,
     mergeDictionary,
+    sampled_dataset,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
@@ -306,10 +307,10 @@ def create_contour_plots(conf, num_images=3, rand=False):
 def create_uncertainty_plots(conf, num_images=3, rand=False):
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    path += "/predictions.h5"
+    predictions_path = path + "/predictions.h5"
     out_path = Path(model_path).parent / "evaluation/"
 
-    img = read_pred(path)
+    img = read_pred(predictions_path)
     for i in range(len(img["pred"])):
         visualize_uncertainty(
             i,
@@ -321,17 +322,17 @@ def create_uncertainty_plots(conf, num_images=3, rand=False):
             plot_format=conf["format"],
         )
 
-    # inverse fourier transform for truth
-    ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
+    sampling_path = path + "/sampled_imgs.h5"
+    test_ds = sampled_dataset(sampling_path)
+    mean_imgs, std_imgs, true_imgs = get_images(test_ds, num_images, rand=rand)
 
     # loop
-    results = sample_images(img["pred"], img["unc"], 1000)
-    for i in range(len(img["pred"])):
+    for i, (mean, std, true) in enumerate(zip(mean_imgs, std_imgs, true_imgs)):
         visualize_sampled_unc(
             i,
-            results["mean"][i],
-            results["std"][i],
-            ifft_truth[i],
+            mean,
+            std,
+            true,
             out_path=out_path,
             plot_format=conf["format"],
         )

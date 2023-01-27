@@ -36,7 +36,9 @@ def main(configuration_path):
 
     click.echo("\nEvaluation config:")
     print(eval_conf, "\n")
-    save_sampled(eval_conf)
+
+    if eval_conf["sample_unc"]:
+        save_sampled(eval_conf)
 
     for entry in conf["inspection"]:
         if (

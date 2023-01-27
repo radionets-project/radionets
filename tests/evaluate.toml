@@ -22,6 +22,7 @@ diff = true
 [inspection]
 visualize_prediction = true
 visualize_source_reconstruction = true
+sample_uncertainty = false
 visualize_uncertainty = false
 visualize_contour = true
 visualize_dynamic_range = false

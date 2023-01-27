@@ -83,7 +83,7 @@ def create_sampled_databunch(data_path, batch_size):
         dataloader object
     """
     # Load data sets
-    test_ds = samp_dataset(data_path)
+    test_ds = sampled_dataset(data_path)
 
     data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
     return data
@@ -119,6 +119,7 @@ def read_config(config):
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
+    eval_conf["sample_unc"] = config["inspection"]["sample_uncertainty"]
     eval_conf["unc"] = config["inspection"]["visualize_uncertainty"]
     eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
@@ -279,12 +280,22 @@ def get_images(test_ds, num_images, rand=False):
     img_true: n 2d arrays
         truth images
     """
-    indices = torch.arange(num_images)
-    if rand:
-        indices = torch.randint(0, len(test_ds), size=(num_images,))
-    img_test = test_ds[indices][0]
-    img_true = test_ds[indices][1]
-    return img_test, img_true
+    if hasattr(test_ds, "amp_phase"):
+        indices = torch.arange(num_images)
+        if rand:
+            indices = torch.randint(0, len(test_ds), size=(num_images,))
+        img_test = test_ds[indices][0]
+        img_true = test_ds[indices][1]
+        return img_test, img_true
+    else:
+        indices = np.arange(num_images)
+        if rand:
+            indices = np.random.randint(0, len(test_ds), size=(num_images,))
+        indices.sort()
+        mean = test_ds[indices][0]
+        std = test_ds[indices][1]
+        img_true = test_ds[indices][2]
+        return mean, std, img_true
 
 
 def eval_model(img, model):
@@ -543,7 +554,7 @@ def mergeDictionary(dict_1, dict_2):
     return dict_3
 
 
-class samp_dataset:
+class sampled_dataset:
     def __init__(self, bundle_path):
         """
         Save the bundle paths and the number of bundles in one file.
