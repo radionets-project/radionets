@@ -59,7 +59,7 @@ def create_databunch(data_path, fourier, source_list, batch_size):
             test_ds, batch_size=batch_size, shuffle=True, collate_fn=source_list_collate
         )
     else:
-        data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+        data = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
     return data
 
 
@@ -491,6 +491,8 @@ def sym_new(image, key):
         quadratic images after utilizing symmetry
     """
     # set channel for phase dependent of uncertainty training
+    if isinstance(image, np.ndarray):
+        image = torch.tensor(image)
     upper_half = image[:, :, :64, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
 
@@ -549,7 +551,7 @@ def trunc_rvs(loc, scale, mode, num_samples, num_img):
         raise ValueError("Wrong mode!")
     a, b = (myclip_a - loc) / scale, (myclip_b - loc) / scale
     sampled_gauss = truncnorm.rvs(
-        a, b, loc=loc, scale=scale, size=(num_samples, num_img, 128, 128)
+        a, b, loc=loc, scale=scale, size=(num_samples, num_img, 65, 128)
     )
 
     return sampled_gauss.swapaxes(0, 1)
@@ -578,7 +580,8 @@ def sample_images(mean, std, num_samples):
     assert mask_invalid_phase.sum() == 0
 
     sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
-    sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
+    # sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
+    sampled_gauss_symmetry = sym_new(sampled_gauss, None)
 
     fft_sampled_symmetry = get_ifft(sampled_gauss_symmetry, amp_phase=True, scale=False)
     results = {

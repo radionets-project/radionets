@@ -588,8 +588,8 @@ def save_sampled(conf):
             img["unc"] = unc
             img["pred"] = pred
 
-        if img["pred"].shape[-1] == 128:
-            img = apply_symmetry(img)
+        # if img["pred"].shape[-1] == 128:
+        #     img = apply_symmetry(img)
 
         result = sample_images(img["pred"], img["unc"], 100)
         ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
