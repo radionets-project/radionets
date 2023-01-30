@@ -285,6 +285,11 @@ def get_images(test_ds, num_images, rand=False, indices=None):
         indices = torch.arange(num_images)
         if rand:
             indices = torch.randint(0, len(test_ds), size=(num_images,))
+            while len(torch.unique(indices)) < len(indices):
+                new_indices = torch.randint(
+                    0, len(test_ds), size=(num_images - len(torch.unique(indices)),)
+                )
+                indices = torch.cat((torch.unique(indices), new_indices))
             indices, _ = torch.sort(indices)
         img_test = test_ds[indices][0]
         img_true = test_ds[indices][1]
@@ -504,9 +509,12 @@ def sym_new(image, key):
 
 def apply_symmetry(img_dict):
     for key in img_dict:
-        output = F.pad(input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0)
-        output = sym_new(output, key)
-        img_dict[key] = output
+        if key != "indices":
+            output = F.pad(
+                input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
+            )
+            output = sym_new(output, key)
+            img_dict[key] = output
 
     return img_dict
 
