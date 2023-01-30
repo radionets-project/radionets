@@ -15,6 +15,8 @@ from radionets.evaluation.train_inspection import (
     evaluate_point,
     create_predictions,
     evaluate_gan_sources,
+    create_uncertainty_plots,
+    save_sampled,
 )
 
 
@@ -35,6 +37,9 @@ def main(configuration_path):
     click.echo("\nEvaluation config:")
     print(eval_conf, "\n")
 
+    if eval_conf["sample_unc"]:
+        save_sampled(eval_conf)
+
     for entry in conf["inspection"]:
         if (
             conf["inspection"][entry] is not False
@@ -47,6 +52,12 @@ def main(configuration_path):
             ):
                 create_predictions(eval_conf)
                 break
+
+    if eval_conf["unc"]:
+        create_uncertainty_plots(
+            eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
+        )
+        click.echo(f"\nCreated {eval_conf['num_images']} uncertainty images.\n")
 
     if eval_conf["vis_pred"]:
         create_inspection_plots(

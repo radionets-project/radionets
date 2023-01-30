@@ -58,7 +58,7 @@ def area_of_contour(ifft_pred, ifft_truth):
     Returns
     -------
     float
-        area differencw
+        area difference
     """
     mpl.use("Agg")
 

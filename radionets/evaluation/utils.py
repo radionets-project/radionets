@@ -63,6 +63,32 @@ def create_databunch(data_path, fourier, source_list, batch_size):
     return data
 
 
+def create_sampled_databunch(data_path, batch_size):
+    """Create a dataloader object, which feeds the data batch-wise
+
+    Parameters
+    ----------
+    data_path : str
+        path to the data
+    fourier : bool
+        true, if data in Fourier space is used
+    source_list : bool
+        true, if source_list data is used
+    batch_size : int
+        number of images for one batch
+
+    Returns
+    -------
+    DataLoader
+        dataloader object
+    """
+    # Load data sets
+    test_ds = sampled_dataset(data_path)
+
+    data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+    return data
+
+
 def read_config(config):
     """Parse the toml config file
 
@@ -93,6 +119,8 @@ def read_config(config):
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
+    eval_conf["sample_unc"] = config["inspection"]["sample_uncertainty"]
+    eval_conf["unc"] = config["inspection"]["visualize_uncertainty"]
     eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
     eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
@@ -232,9 +260,10 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     return arch
 
 
-def get_images(test_ds, num_images, rand=False):
+def get_images(test_ds, num_images, rand=False, indices=None):
     """
-    Get n random test and truth images.
+    Get n random test and truth images or mean, standard deviation and
+    true images from an already sampled dataset.
 
     Parameters
     ----------
@@ -252,14 +281,21 @@ def get_images(test_ds, num_images, rand=False):
     img_true: n 2d arrays
         truth images
     """
-    indices = torch.arange(num_images)
-    if rand:
-        indices = torch.randint(0, len(test_ds), size=(num_images,))
-    img_test = test_ds[indices][0]
-    img_true = test_ds[indices][1]
-    img_test = img_test[:, :, :65, :]
-    img_true = img_true[:, :, :65, :]
-    return img_test, img_true
+    if hasattr(test_ds, "amp_phase"):
+        indices = torch.arange(num_images)
+        if rand:
+            indices = torch.randint(0, len(test_ds), size=(num_images,))
+            indices, _ = torch.sort(indices)
+        img_test = test_ds[indices][0]
+        img_true = test_ds[indices][1]
+        img_test = img_test[:, :, :65, :]
+        img_true = img_true[:, :, :65, :]
+        return img_test, img_true, indices
+    else:
+        mean = test_ds[indices][0]
+        std = test_ds[indices][1]
+        img_true = test_ds[indices][2]
+        return mean, std, img_true
 
 
 def eval_model(img, model):
@@ -291,7 +327,7 @@ def eval_model(img, model):
     return pred.cpu()
 
 
-def get_ifft(array, amp_phase=True):
+def get_ifft(array, amp_phase=False, scale=False):
     """Compute the inverse Fourier transformation
 
     Parameters
@@ -309,10 +345,13 @@ def get_ifft(array, amp_phase=True):
     if len(array.shape) == 3:
         array = array.unsqueeze(0)
     if amp_phase:
-        # amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        if scale:
+            amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        else:
+            amp = array[:, 0]
 
-        a = array[:, 0] * np.cos(array[:, 1])
-        b = array[:, 0] * np.sin(array[:, 1])
+        a = amp * np.cos(array[:, 1])
+        b = amp * np.sin(array[:, 1])
         compl = a + b * 1j
     else:
         compl = array[:, 0] + array[:, 1] * 1j
@@ -385,7 +424,7 @@ def fft_pred(pred, truth, amp_phase=True):
     return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
 
 
-def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
+def save_pred(path, img):
     """
     write test data and predictions to h5 file
     x: predictions of truth of test data
@@ -393,9 +432,8 @@ def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
     z: truth of the test data
     """
     with h5py.File(path, "w") as hf:
-        hf.create_dataset(name_x, data=x)
-        hf.create_dataset(name_y, data=y)
-        hf.create_dataset(name_z, data=z)
+        for key, value in img.items():
+            hf.create_dataset(key, data=value)
         hf.close()
 
 
@@ -406,12 +444,12 @@ def read_pred(path):
     y: input image of the test data
     z: truth of the test data
     """
+    images = {}
     with h5py.File(path, "r") as hf:
-        x = np.array(hf["pred"])
-        y = np.array(hf["img_test"])
-        z = np.array(hf["img_true"])
+        for key in hf.keys():
+            images[key] = np.array(hf[key])
         hf.close()
-    return x, y, z
+    return images
 
 
 def check_outpath(model_path):
@@ -465,3 +503,115 @@ def sym_new(image):
     image[:, channel, 65:, 0] = -a[:, channel, :-1, -1]
 
     return image
+
+
+def even_better_symmetry(x):
+    upper_half = x[:, :, 0 : x.shape[2] // 2, :].copy()
+    upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].copy()
+    upper_right = upper_half[:, :, :, upper_half.shape[3] // 2 :].copy()
+    a = np.flip(upper_left, axis=2)
+    b = np.flip(upper_right, axis=2)
+    a = np.flip(a, axis=3)
+    b = np.flip(b, axis=3)
+
+    upper_half[:, :, :, 0 : upper_half.shape[3] // 2] = b
+    upper_half[:, :, :, upper_half.shape[3] // 2 :] = a
+
+    x[:, 0, x.shape[2] // 2 :, :] = upper_half[:, 0]
+    x[:, 1, x.shape[2] // 2 :, :] = -upper_half[:, 1]
+    return x
+
+
+def trunc_rvs(loc, scale, mode, num_samples, num_img):
+    from scipy.stats import truncnorm
+
+    if mode == "amp":
+        myclip_a = 0
+        myclip_b = np.inf
+    elif mode == "phase":
+        myclip_a = -np.pi
+        myclip_b = np.pi
+    else:
+        raise ValueError("Wrong mode!")
+    a, b = (myclip_a - loc) / scale, (myclip_b - loc) / scale
+    sampled_gauss = truncnorm.rvs(
+        a, b, loc=loc, scale=scale, size=(num_samples, num_img, 128, 128)
+    )
+
+    return sampled_gauss.swapaxes(0, 1)
+
+
+def sample_images(mean, std, num_samples):
+    mean_amp, mean_phase = mean[:, 0], mean[:, 1]
+    std_amp, std_phase = std[:, 0], std[:, 1]
+    num_img = mean_amp.shape[0]
+    # amplitude
+    sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples, num_img)
+
+    # phase
+    sampled_gauss_phase = trunc_rvs(
+        mean_phase, std_phase, "phase", num_samples, num_img
+    )
+
+    # masks
+    mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
+    mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+        sampled_gauss_phase >= (np.pi + 1e-4)
+    )
+    if mask_invalid_amp.sum() > 0:
+        print(sampled_gauss_amp[mask_invalid_amp])
+    assert mask_invalid_amp.sum() == 0
+    assert mask_invalid_phase.sum() == 0
+
+    sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
+    sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
+
+    fft_sampled_symmetry = get_ifft(sampled_gauss_symmetry, amp_phase=True, scale=False)
+    results = {
+        "mean": fft_sampled_symmetry.mean(axis=1),
+        "std": fft_sampled_symmetry.std(axis=1),
+    }
+    return results
+
+
+def mergeDictionary(dict_1, dict_2):
+    dict_3 = {**dict_1, **dict_2}
+    for key, value in dict_3.items():
+        if key in dict_1 and key in dict_2:
+            dict_3[key] = np.append(dict_1[key], value)
+            # try:
+            #     dict_3[key] = np.stack((dict_1[key], value))
+            # except ValueError:
+            #     value = value.reshape(1, *value.shape)
+            #     dict_3[key] = np.concatenate((dict_1[key], value))
+    return dict_3
+
+
+class sampled_dataset:
+    def __init__(self, bundle_path):
+        """
+        Save the bundle paths and the number of bundles in one file.
+        """
+        if bundle_path == []:
+            raise ValueError("No bundles found! Please check the names of your files.")
+        self.bundle_path = bundle_path
+
+    def __len__(self):
+        """
+        Returns the total number of pictures in this dataset
+        """
+        bundle = h5py.File(self.bundle_path, "r")
+        data = bundle["mean"]
+        return data.shape[0]
+
+    def __getitem__(self, i):
+        mean = self.open_image("mean", i)
+        std = self.open_image("std", i)
+        true = self.open_image("true", i)
+        return mean, std, true
+
+    def open_image(self, var, i):
+        bundle = h5py.File(self.bundle_path, "r")
+        data = bundle[var]
+        data = data[i]
+        return data
