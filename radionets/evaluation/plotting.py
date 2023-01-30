@@ -1136,7 +1136,7 @@ def plot_yolo_box(
 
     # Plot predicted boxes
     if pred_boxes and pred:
-        outputs = yolo_apply_nms(pred, x, rel_obj_thres=2 / 3)
+        outputs = yolo_apply_nms(pred, x)
         outputs = outputs[idx].detach().cpu().numpy()
 
         for i in range(outputs.shape[0]):

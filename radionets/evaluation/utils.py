@@ -1,3 +1,8 @@
+from astropy import constants as const
+from astropy import units as u
+from astropy.coordinates import Distance
+
+# from astropy.modeling import models, fitting
 from bs4 import BeautifulSoup
 import numpy as np
 import pandas as pd
@@ -426,46 +431,6 @@ def fft_pred(pred, truth, amp_phase=True):
     return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
 
 
-def calc_velocity(pos, times, mas):
-    """
-    Calculation of velocities from jet components
-
-    Parameters
-    ----------
-    pos: 3d-array
-        x and y positions of one component; (n, c, 2), with n timesteps and c components
-    times: 1d-array
-        timesteps (date) of the images; (n,)
-    mas: 1d-array
-        milliarcseconds in x and y; (2,)
-
-    Returns
-    -------
-    v: 1d-array
-        mean velocities of each component in mas/year
-    """
-    # postition from x, y coordinates to mas
-
-    # calculate distances to main component and difference between timesteps
-    p0 = pos[0]
-    t0 = times[0]
-    print(pos.shape)
-    print(p0.shape)
-    print(pos[1:].shape)
-    dist_p = np.array([])
-    diff_t = np.array([])
-    for p, t in zip(pos[1:], times[1:]):
-        print(p.shape)
-        print(t.shape)
-        # Referenzpunkt für Geschwindigkeitsberechnung?
-        dist_p.append(np.linalg.norm(p0 - p))
-        diff_t.append(t0 - t)
-
-    # calculate the mean velocity of each component
-    v = np.mean((dist_p.T / diff_t).T, axis=0)
-    return v
-
-
 def yolo_out_transform(output, strides):
     """Transforms output of yolo network to list of predictions
 
@@ -579,7 +544,7 @@ def non_max_suppression(
 
 
 def yolo_apply_nms(
-    pred, x=None, strides=None, rel_obj_thres: float = 0.5, iou_thres: float = 0.3
+    pred, x=None, strides=None, rel_obj_thres: float = 0.5, iou_thres: float = 0.1
 ):
     """Perform basic evaluation steps after YOLO model.
     From YOLO output (pred) to list of boxes after nms.
@@ -823,6 +788,33 @@ def get_redshift(source: str):
     return redshift
 
 
+def calculate_velocity(theta: float, z: float):
+    """Calculate velocity of jet components.
+    Parallax: l = d * tan(theta)
+        Using small angle approximation: l = d * theta
+
+    Parameters
+    ----------
+    theta: float
+        angle in mas
+    z: float
+        redshift of source
+
+    Returns
+    -------
+    vc: float
+        velocity in c (speed of light)
+    """
+    d = Distance(z=z)
+    theta = (theta * u.mas).to(u.rad).value
+    length = d * theta
+
+    v = length / u.s
+    vc = v.to(u.km / u.s) / const.c.to("km/s")
+
+    return vc
+
+
 def yolo_df(outputs: list, ds):
     """Creates a pandas dataframe to sort outputs for further calculations.
 
@@ -861,6 +853,20 @@ def yolo_df(outputs: list, ds):
     df = pd.DataFrame(pred_list)
 
     return df
+
+
+# def yolo_linear_fit(df):
+#     """Linear fit with astropy in MOJAVE evaluation.
+
+#     Parameters
+#     ----------
+#     df: pandas.DataFrame
+#         dataframe with reconstructed properties
+
+#     Returns
+#     -------
+
+#     """
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):

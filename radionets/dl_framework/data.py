@@ -8,6 +8,7 @@ from typing import Callable
 from astropy.io import fits
 import os
 from datetime import datetime
+import warnings
 
 
 class h5_dataset:
@@ -352,6 +353,7 @@ class MojaveDataset:
         img: 2d-array
             opened image
         """
+        warnings.filterwarnings("ignore", module="astropy.io.fits")
         f = fits.open(self.paths[i])
         img = f[0].data.astype(np.float32).squeeze()
 

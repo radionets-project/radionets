@@ -39,6 +39,7 @@ from radionets.evaluation.plotting import (
 )
 from radionets.evaluation.pointsources import flux_comparison
 from radionets.evaluation.utils import (
+    # calculate_velocity,
     create_databunch,
     eval_model,
     get_ifft,
@@ -687,9 +688,9 @@ def evaluate_yolo(conf):
 
     plotted_images = 0
     for img_test, img_true in tqdm(loader):
-        # img_true is soure list, not an image. Name is kept for consistency.
-        pred = eval_model(img_test, model)
         if plotted_images < conf["num_images"]:
+            # img_true is soure list, not an image. Name is kept for consistency.
+            pred = eval_model(img_test, model)
             for _ in range(len(img_test)):
                 if plotted_images < conf["num_images"]:
                     plot_yolo_eval(
@@ -731,7 +732,7 @@ def evaluate_mojave(conf):
 
     for source in tqdm(selected_sources):
         img = torch.from_numpy(loader.open_source(source))
-        print("Source:", source, type(img), img.shape)
+        # print("Source:", source, type(img), img.shape)
         pred = eval_model(img, model, amp_phase=conf["amp_phase"])
 
         if conf["vis_pred"]:
@@ -747,12 +748,13 @@ def evaluate_mojave(conf):
                         date=date,
                     )
 
-        outputs = yolo_apply_nms(pred, x=img, rel_obj_thres=2 / 3)
+        outputs = yolo_apply_nms(pred, x=img)
 
         df = yolo_df(outputs=outputs, ds=loader)
 
         # Apply the cluster algorythm
         xy_mas = np.array([df["x_mas"], df["y_mas"]]).T
+        print("xy_max shape:", xy_mas.shape)
         cluster_model = spectralClustering(xy_mas)
         df["idx_comp"] = cluster_model.labels_
 
@@ -779,4 +781,23 @@ def evaluate_mojave(conf):
                     )
 
         # Find components with the maximum intensity -> main component
-        # idx_main = df.groupby("idx_comp")["intensity"].mean().argmax()
+        idx_main = df.groupby("idx_comp")["intensity"].mean().argmax()
+
+        # Calculate distance to main component
+        df["distance"] = np.nan
+        for i in range(len(source)):
+            main_component = df[(df["idx_img"] == i) & (df["idx_comp"] == idx_main)]
+            x1 = main_component["x_mas"].to_numpy()
+            y1 = main_component["y_mas"].to_numpy()
+
+            # main component not detected in image, distance is not calculated
+            if not x1 or not y1:
+                continue
+
+            for index, row in df[df["idx_img"] == i].iterrows():
+                x2 = row["x_mas"]
+                y2 = row["y_mas"]
+                dist = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+                df.loc[index, "distance"] = dist
+
+        df = df.dropna()

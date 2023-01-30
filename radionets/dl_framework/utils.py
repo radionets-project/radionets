@@ -141,7 +141,7 @@ def get_ifft_torch(array, amp_phase=False, scale=False, uncertainty=False):
     return torch.abs(torch.fft.ifftshift(torch.fft.ifft2(torch.fft.fftshift(compl))))
 
 
-def getAffinityMatrix(coordinates, k: int = 7):
+def getAffinityMatrix(coordinates, k: int = None):
     """Calculate affinity matrix based on input coordinates matrix and the number
     of nearest neighbours.
 
@@ -154,7 +154,7 @@ def getAffinityMatrix(coordinates, k: int = 7):
     coordinates: 2d-array
         data points of shape (n, 2)
     k: int
-        k nearest neighbour
+        k nearest neighbour, square root - 1 of number of coordinates it not provided
 
     Returns
     -------
@@ -162,6 +162,9 @@ def getAffinityMatrix(coordinates, k: int = 7):
         affinity matrix of shape (n, n)
     """
     dists = squareform(pdist(coordinates))
+
+    if not k:
+        k = int(np.rint(np.sqrt(len(coordinates))))
 
     knn_distances = np.sort(dists, axis=0)[k]
     knn_distances = knn_distances[np.newaxis].T

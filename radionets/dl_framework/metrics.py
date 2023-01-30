@@ -29,9 +29,9 @@ def iou_YOLOv6(pred, target):
 
     target[..., 3:5] *= 2  # increased box sizes (same as in loss function)
 
-    pred_nms = yolo_apply_nms(pred, strides=strides_head, rel_obj_thres=2 / 3)
+    pred_nms = yolo_apply_nms(pred=pred, strides=strides_head)
 
-    amp_threshold = 0.02  # only take components above this amplitude into account
+    amp_threshold = 0.01  # only take components above this amplitude into account
     ious = torch.zeros(bs)
     for i in range(bs):
         target_boxes = target[i, :, 1:5][target[i, :, 0] > amp_threshold]
