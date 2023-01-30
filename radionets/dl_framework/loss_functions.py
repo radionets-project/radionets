@@ -100,3 +100,15 @@ def jet_seg(x, y):
         loss_l1_weighted += l1(x[:, i], y[:, i]) * (i + 1)
 
     return loss_l1_weighted
+
+
+def one_or_two_sided(x, y):
+    n_components = y.shape[1]
+    amps = y[:, -int((n_components - 1) / 2) :, 0]
+    amps_summed = torch.sum(amps, axis=1)
+    target = amps_summed > 0
+
+    bce = nn.BCEWithLogitsLoss()
+    loss = bce(x, target)
+
+    return loss
