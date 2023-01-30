@@ -31,7 +31,7 @@ from radionets.evaluation.utils import (
     pad_unsqueeze,
     save_pred,
     read_pred,
-    sym_new,
+    apply_symmetry,
     sample_images,
     mergeDictionary,
     sampled_dataset,
@@ -43,7 +43,6 @@ from radionets.evaluation.contour import area_of_contour
 from radionets.evaluation.pointsources import flux_comparison
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
-import torch.nn.functional as F
 
 
 def create_predictions(conf):
@@ -96,20 +95,8 @@ def get_prediction(conf, mode="test"):
         images["indices"] = indices
 
     if images["pred"].shape[-1] == 128:
-        pred = F.pad(input=images["pred"], pad=(0, 0, 0, 63), mode="constant", value=0)
-        img_test = F.pad(
-            input=images["test"], pad=(0, 0, 0, 63), mode="constant", value=0
-        )
-        img_true = F.pad(
-            input=images["true"], pad=(0, 0, 0, 63), mode="constant", value=0
-        )
-
-        pred = sym_new(pred)
-        img_test = sym_new(img_test)
-        img_true = sym_new(img_true)
-        images["pred"] = pred
-        images["test"] = img_test
-        images["true"] = img_true
+        images = apply_symmetry(images)
+    print(images["unc"].shape)
 
     return images
 
@@ -601,6 +588,9 @@ def save_sampled(conf):
             pred = torch.stack((pred_1, pred_2), dim=1)
             img["unc"] = unc
             img["pred"] = pred
+
+        if img["pred"].shape[-1] == 128:
+            img = apply_symmetry(img)
 
         result = sample_images(img["pred"], img["unc"], 100)
         ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])

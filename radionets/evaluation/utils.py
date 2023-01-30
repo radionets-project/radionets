@@ -471,7 +471,7 @@ def check_outpath(model_path):
     return exists
 
 
-def sym_new(image):
+def sym_new(image, key):
     """
     Symmetry function to complete the images
 
@@ -486,23 +486,29 @@ def sym_new(image):
         quadratic images after utilizing symmetry
     """
     # set channel for phase dependent of uncertainty training
-    if image.shape[1] == 4:
-        channel = 2
-    else:
-        channel = 1
-
     upper_half = image[:, :, :64, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
 
-    # amp
     image[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
     image[:, 0, 65:, 0] = a[:, 0, :-1, -1]
 
-    # phase
-    image[:, channel, 65:, 1:] = -a[:, channel, :-1, :-1]
-    image[:, channel, 65:, 0] = -a[:, channel, :-1, -1]
+    if key == "unc":
+        image[:, 1, 65:, 1:] = a[:, 1, :-1, :-1]
+        image[:, 1, 65:, 0] = a[:, 1, :-1, -1]
+    else:
+        image[:, 1, 65:, 1:] = -a[:, 1, :-1, :-1]
+        image[:, 1, 65:, 0] = -a[:, 1, :-1, -1]
 
     return image
+
+
+def apply_symmetry(img_dict):
+    for key in img_dict:
+        output = F.pad(input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0)
+        output = sym_new(output, key)
+        img_dict[key] = output
+
+    return img_dict
 
 
 def even_better_symmetry(x):
