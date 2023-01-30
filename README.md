@@ -89,9 +89,11 @@ All histograms are created on a dedicated test dataset.
 * Arne Poggenpohl [@ArnePoggenpohl](https://github.com/ArnePoggenpohl)
 * Stefan Fröse [@StFroese](https://github.com/StFroese)
 * Paul-Simon Blomenkamp [@PBlomenkamp](https://github.com/PBlomenkamp)
+* Olivia Locke [@olivialocke](https://github.com/olivialocke)
 * Kevin Laudamus [@K-Lauda](https://github.com/K-Lauda)
 * Emiliano Miranda [@emilianozm24](https://github.com/emilianozm24)
 * Maximilian Büchel [@MaxBue](https://github.com/MaxBue)
+* Rune Dominik [@RuneDominik](https://github.com/RuneDominik)
 
 ## Versions used and tested
 
