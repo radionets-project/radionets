@@ -1,6 +1,6 @@
 added creation of uncertainty plots
 changed creation and saving/reading of predictions to ``dicts``
-prediction dicts have 3 or 4 entries depending on uncertainty
+prediction ``dicts`` have 3 or 4 entries depending on uncertainty
 added scaled option to ``get_ifft``
 created new dataset class for sampled images
 created option for sampling and saving the whole test dataset
