@@ -29,7 +29,7 @@ after the installation.
 
 ## Usage
 
-For each task, executables are installed to your `PATH`. Each takes `toml`` configuration files as input to manage data paths and options.
+For each task, executables are installed to your `PATH`. Each takes `toml` configuration files as input to manage data paths and options.
 Simulated data is saved in `hdf5`; trained models are saved as `pickle` files.
 
 * `radionets_simulations <...>`
