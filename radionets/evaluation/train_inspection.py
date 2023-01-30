@@ -96,7 +96,6 @@ def get_prediction(conf, mode="test"):
 
     if images["pred"].shape[-1] == 128:
         images = apply_symmetry(images)
-    print(images["unc"].shape)
 
     return images
 
