@@ -71,7 +71,8 @@ methods computing characteristic values on large test datasets. In detail:
 * Reconstructed source images with additional features, such as MS-SSIM values or the viewing angle. Example image below.
 ![](resources/source_plot.png)
 * Histogram of differences between predicted and true viewing angles. The image includes a comparison with [wsclean](https://gitlab.com/aroffringa/wsclean).
-!Histogram of the ratio between predicted and true source areas. The image includes a comparison with [wsclean](https://gitlab.com/aroffringa/wsclean).
+![](resources/hist_jet_offsets.png)
+* Histogram of the ratio between predicted and true source areas. The image includes a comparison with [wsclean](https://gitlab.com/aroffringa/wsclean).
 ![](resources/hist_area_ratios.png)
 * Histogram of flux difference in the core component. The image includes a comparison with [wsclean](https://gitlab.com/aroffringa/wsclean).
 ![](resources/hist_mean_diffs.png)
