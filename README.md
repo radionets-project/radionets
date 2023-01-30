@@ -18,7 +18,7 @@ Analysis strategies leading to reproducible processing and evaluation of data re
 This repository is built as a python package. We recommend creating a mamba environment to handle the dependencies of all packages.
 You can create one by running the following command in this repository:
 ```
-$ conda env create -f environment.yml
+$ mamba env create -f environment.yml
 ```
 Depending on your `cuda` version you have to specify the `cudatoolkit` version used by `pytorch`. If you are working on machines
 with `cuda` versions < 10.2, please change the version number in the environment.yml file. Since the package `pre-commit` is used, you need to execute 
