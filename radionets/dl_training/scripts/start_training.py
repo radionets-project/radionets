@@ -20,8 +20,6 @@ from radionets.dl_framework.inspection import (
 from radionets.evaluation.train_inspection import after_training_plots
 from pathlib import Path
 
-import torch
-#torch.cuda.set_device(1)
 
 @click.command()
 @click.argument("configuration_path", type=click.Path(exists=True, dir_okay=False))

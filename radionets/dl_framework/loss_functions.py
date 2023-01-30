@@ -311,5 +311,19 @@ def yolo(x, y):
                 Rotation loss: {loss_rot}"
         )
         quit()
+    return loss
+
+
+def one_or_two_sided(x, y):
+    n_components = y.shape[1]
+    amps = y[:, -int((n_components - 1) / 2) :, 0]
+    amps_summed = torch.sum(amps, axis=1)
+    target = (amps_summed > 0).float()
+
+    # print(type(x.squeeze()))
+    # print(type(target.shape))
+
+    bce = nn.BCEWithLogitsLoss()
+    loss = bce(x, target)
 
     return loss

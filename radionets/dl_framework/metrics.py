@@ -38,3 +38,31 @@ def iou_YOLOv6(pred, target):
         ious[i] = overall_iou(pred_nms[i][:, :4], target_boxes)
     iou = torch.mean(ious)
     return iou
+
+
+def binary_accuracy(x, y):
+    """Return the accuracy of binary data (classes are 0 or 1).
+
+    Parameters
+    ----------
+    x: tensor
+        tensor of shape (bs, 1)
+    y: ndarray
+        Array with target boxes of shape (bs, n_components, 8)
+        8: [amplitude, x, y, sx, sy, y_rotation, z_rotation, beta]
+
+    Returns
+    -------
+    accuracy: float
+        accuracy of the classes
+    """
+    threshold = 0.5
+    pred = x > threshold
+
+    n_components = y.shape[1]
+    amps = y[:, -int((n_components - 1) / 2) :, 0]
+    amps_summed = torch.sum(amps, axis=1)
+    target = amps_summed > 0
+
+    accuracy = torch.mean((pred == target).float())
+    return accuracy
