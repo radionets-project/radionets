@@ -549,14 +549,14 @@ def evaluate_mean_diff(conf):
 
 def save_sampled(conf):
     loader = create_databunch(
-        conf["data_path"], conf["fourier"], conf["source_list"], 20
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
     )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    num_img = len(loader) * 20
+    num_img = len(loader) * conf["batch_size"]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
     if conf["model_path_2"] != "none":
         model_2 = load_pretrained_model(
