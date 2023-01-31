@@ -10,7 +10,6 @@ from matplotlib.patches import Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pytorch_msssim import ms_ssim
 
-from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_ratio
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 
@@ -345,37 +344,16 @@ def visualize_source_reconstruction(
     out_path,
     i,
     dr=False,
-    blobs=False,
     msssim=False,
     plot_format="png",
 ):
-    # m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
-    # m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
-    # x_space = torch.arange(0, 63, 1)
-
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
 
     # Plot prediction
-    # ax1.plot(x_space, m_pred * x_space + n_pred, "w--", alpha=0.5)
-    # ax1.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5)
-
-    # create angle visualization
-    # theta1 = min(0, -alpha_pred.numpy()[0])
-    # theta2 = max(0, -alpha_pred.numpy()[0])
-    # ax1.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white"))
-
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
 
     # Plot truth
-    # ax2.plot(x_space, m_truth * x_space + n_truth, "w--", alpha=0.5)
-    # ax2.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5)
-
-    # create angle visualization
-    # theta1 = min(0, -alpha_truth.numpy()[0])
-    # theta2 = max(0, -alpha_truth.numpy()[0])
-    # ax2.add_patch(Arc([32, 32], 50, 50, 90, theta1, theta2, color="white"))
-
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
@@ -389,15 +367,6 @@ def visualize_source_reconstruction(
     ax1.set_xlabel(r"Pixels")
     ax2.set_xlabel(r"Pixels")
     ax3.set_xlabel(r"Pixels")
-
-    # ax1.tick_params(axis="both", labelsize=20)
-    # ax2.tick_params(axis="both", labelsize=20)
-    # ax3.tick_params(axis="both", labelsize=20)
-
-    if blobs:
-        blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
-        plot_blobs(blobs_pred, ax1)
-        plot_blobs(blobs_truth, ax2)
 
     if dr:
         dr_truth, dr_pred, num_boxes, corners = calc_dr(
@@ -418,8 +387,6 @@ def visualize_source_reconstruction(
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
-    # ax1.legend(loc="best", handles=[line])
-    # ax2.legend(loc="best", handles=[line_truth])
     fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     plt.close("all")

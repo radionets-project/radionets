@@ -191,7 +191,6 @@ class LocallyConnected2d(nn.Module):
         self, in_channels, out_channels, output_size, kernel_size, stride, bias=False
     ):
         super(LocallyConnected2d, self).__init__()
-        # output_size = _pair(output_size)
         self.weight = nn.Parameter(
             torch.randn(
                 1,

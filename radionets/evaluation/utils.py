@@ -123,7 +123,6 @@ def read_config(config):
     eval_conf["unc"] = config["inspection"]["visualize_uncertainty"]
     eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
-    eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
     eval_conf["vis_ms_ssim"] = config["inspection"]["visualize_ms_ssim"]
     eval_conf["num_images"] = config["inspection"]["num_images"]
     eval_conf["random"] = config["inspection"]["random"]

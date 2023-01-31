@@ -283,7 +283,6 @@ def create_source_plots(conf, num_images=3, rand=False):
             out_path,
             i,
             dr=conf["vis_dr"],
-            blobs=conf["vis_blobs"],
             msssim=conf["vis_ms_ssim"],
             plot_format=conf["format"],
         )
