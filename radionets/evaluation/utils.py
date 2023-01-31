@@ -512,6 +512,8 @@ def sym_new(image, key):
 def apply_symmetry(img_dict):
     for key in img_dict:
         if key != "indices":
+            if isinstance(img_dict[key], np.ndarray):
+                img_dict[key] = torch.tensor(img_dict[key])
             output = F.pad(
                 input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
             )
@@ -562,12 +564,14 @@ def sample_images(mean, std, num_samples):
     std_amp, std_phase = std[:, 0], std[:, 1]
     num_img = mean_amp.shape[0]
     # amplitude
-    sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples, num_img)
+    sampled_gauss_amp = trunc_rvs(
+        mean_amp, std_amp, "amp", num_samples, num_img
+    ).reshape(num_img * num_samples, 65, 128)
 
     # phase
     sampled_gauss_phase = trunc_rvs(
         mean_phase, std_phase, "phase", num_samples, num_img
-    )
+    ).reshape(num_img * num_samples, 65, 128)
 
     # masks
     mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
@@ -580,10 +584,17 @@ def sample_images(mean, std, num_samples):
     assert mask_invalid_phase.sum() == 0
 
     sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
-    # sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
+
+    # pad resulting images and utilize symmetry
+    sampled_gauss = F.pad(
+        input=torch.tensor(sampled_gauss), pad=(0, 0, 0, 63), mode="constant", value=0
+    )
     sampled_gauss_symmetry = sym_new(sampled_gauss, None)
 
-    fft_sampled_symmetry = get_ifft(sampled_gauss_symmetry, amp_phase=True, scale=False)
+    fft_sampled_symmetry = get_ifft(
+        sampled_gauss_symmetry, amp_phase=True, scale=False
+    ).reshape(num_img, num_samples, 128, 128)
+
     results = {
         "mean": fft_sampled_symmetry.mean(axis=1),
         "std": fft_sampled_symmetry.std(axis=1),

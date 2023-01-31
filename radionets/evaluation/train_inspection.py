@@ -43,6 +43,8 @@ from radionets.evaluation.contour import area_of_contour
 from radionets.evaluation.pointsources import flux_comparison
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
+import torch.nn.functional as F
+from radionets.evaluation.utils import sym_new
 
 
 def create_predictions(conf):
@@ -578,27 +580,32 @@ def save_sampled(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         img = {"pred": pred, "inp": img_test, "true": img_true}
-        if pred.shape[1] == 4:
-            unc_amp = pred[:, 1, :]
-            unc_phase = pred[:, 3, :]
-            unc = torch.stack([unc_amp, unc_phase], dim=1)
-            pred_1 = pred[:, 0, :]
-            pred_2 = pred[:, 2, :]
-            pred = torch.stack((pred_1, pred_2), dim=1)
-            img["unc"] = unc
-            img["pred"] = pred
+        # separate prediction and uncertainty
+        unc_amp = pred[:, 1, :]
+        unc_phase = pred[:, 3, :]
+        unc = torch.stack([unc_amp, unc_phase], dim=1)
+        pred_1 = pred[:, 0, :]
+        pred_2 = pred[:, 2, :]
+        pred = torch.stack((pred_1, pred_2), dim=1)
+        img["unc"] = unc
+        img["pred"] = pred
 
-        # if img["pred"].shape[-1] == 128:
-        #     img = apply_symmetry(img)
+        result = sample_images(img["pred"], img["unc"], 10)
 
-        result = sample_images(img["pred"], img["unc"], 100)
+        # pad true image
+        output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
+        img["true"] = sym_new(output, None)
         ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
+
+        # add images to dict
         dict_img_true = {"true": ifft_truth}
-        # print(dict_img_true["true"].shape)
         results = mergeDictionary(results, result)
         results = mergeDictionary(results, dict_img_true)
+
+    # reshaping
     for key in results.keys():
         results[key] = results[key].reshape(num_img, img_size, img_size)
+
     save_pred(str(out_path) + "/sampled_imgs.h5", results)
 
 
