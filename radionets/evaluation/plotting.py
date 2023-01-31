@@ -208,11 +208,6 @@ def visualize_with_fourier(
     real_pred, imag_pred = img_pred[0], img_pred[1]
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
-    if amp_phase:
-        inp_real = 10 ** (10 * inp_real - 10) - 1e-10
-        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
-        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
-
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
         2, 3, figsize=(16, 10), sharex=True, sharey=True
