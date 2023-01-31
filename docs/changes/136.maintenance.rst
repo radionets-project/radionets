@@ -1,0 +1,1 @@
+Update README, use figures from the paper, minor text adjustments
