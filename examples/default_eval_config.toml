@@ -24,7 +24,6 @@ visualize_prediction = true
 visualize_source_reconstruction = true
 visualize_contour = true
 visualize_dynamic_range = false
-visualize_blobs = true
 visualize_ms_ssim = false
 random = false
 num_images = 5
