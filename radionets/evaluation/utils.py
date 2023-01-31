@@ -284,12 +284,17 @@ def get_images(test_ds, num_images, rand=False, indices=None):
         indices = torch.arange(num_images)
         if rand:
             indices = torch.randint(0, len(test_ds), size=(num_images,))
+
+            # remove dublicate indices
             while len(torch.unique(indices)) < len(indices):
                 new_indices = torch.randint(
                     0, len(test_ds), size=(num_images - len(torch.unique(indices)),)
                 )
                 indices = torch.cat((torch.unique(indices), new_indices))
+
+            # sort after getting indices
             indices, _ = torch.sort(indices)
+
         img_test = test_ds[indices][0]
         img_true = test_ds[indices][1]
         img_test = img_test[:, :, :65, :]
