@@ -1,3 +1,38 @@
+Radionets 0.2.0 (2023-01-31)
+============================
+
+
+API Changes
+-----------
+
+- train on half-sized iamges and applying symmetry afterward is a backward incompatible change
+  models trained with early versions of `radionets` are not supported anymore [`#140 <https://github.com/radionets-project/radionets/pull/140>`__]
+
+
+Bug Fixes
+---------
+
+- fixed sampling of test data set
+  fixed same indices for plots [`#140 <https://github.com/radionets-project/radionets/pull/140>`__]
+
+
+New Features
+------------
+
+- enabled training and evaluation of half sized images (for 128 pixel images) [`#140 <https://github.com/radionets-project/radionets/pull/140>`__]
+
+
+Maintenance
+-----------
+
+- Deleted unusable functions for new source types
+  Deleted unused hardcoded scaling [`#140 <https://github.com/radionets-project/radionets/pull/140>`__]
+
+
+Refactoring and Optimization
+----------------------------
+
+
 Radionets 0.1.18 (2023-01-30)
 =============================
 

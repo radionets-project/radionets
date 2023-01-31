@@ -1,2 +1,0 @@
-train on half-sized iamges and applying symmetry afterward is a backward incompatible change
-models trained with early versions of `radionets` are not supported anymore

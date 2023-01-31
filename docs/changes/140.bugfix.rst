@@ -1,2 +1,0 @@
-fixed sampling of test data set
-fixed same indices for plots
