@@ -372,7 +372,7 @@ class TestEvaluation:
             mean_phase,
             std_phase,
             mode="phase",
-            num_sampels=num_samples,
+            num_samples=num_samples,
             target="cpu",
             nthreads=1,
         )
