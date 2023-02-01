@@ -159,9 +159,6 @@ def get_fft_bundle_paths(data_path, ftype, mode):
     bundle_paths = np.sort(
         [path for path in bundles if re.findall(f"{ftype}_{mode}", path.name)]
     )
-    bundle_paths = sorted(
-        bundle_paths, key=lambda f: int("".join(filter(str.isdigit, str(f))))
-    )
     return bundle_paths
 
 
