@@ -26,7 +26,6 @@ sample_uncertainty = false
 visualize_uncertainty = false
 visualize_contour = true
 visualize_dynamic_range = false
-visualize_blobs = false
 visualize_ms_ssim = false
 random = true
 num_images = 10

@@ -71,6 +71,8 @@ class h5_dataset:
         if data.shape[0] == 1:
             data = data.squeeze(0)
 
+        data = data[:, :65, :]
+
         return data.float()
 
 

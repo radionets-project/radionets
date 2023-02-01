@@ -38,6 +38,7 @@ def main(configuration_path):
     print(eval_conf, "\n")
 
     if eval_conf["sample_unc"]:
+        click.echo("Sampling test data set.\n")
         save_sampled(eval_conf)
 
     for entry in conf["inspection"]:
@@ -65,9 +66,6 @@ def main(configuration_path):
         )
 
         click.echo(f"\nCreated {eval_conf['num_images']} test predictions.\n")
-
-    if eval_conf["vis_blobs"]:
-        click.echo("\nBlob visualization is enabled for source plots.\n")
 
     if eval_conf["vis_ms_ssim"]:
         click.echo("\nVisualization of ms ssim is enabled for source plots.\n")

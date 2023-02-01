@@ -191,7 +191,6 @@ class LocallyConnected2d(nn.Module):
         self, in_channels, out_channels, output_size, kernel_size, stride, bias=False
     ):
         super(LocallyConnected2d, self).__init__()
-        output_size = _pair(output_size)
         self.weight = nn.Parameter(
             torch.randn(
                 1,
@@ -281,10 +280,14 @@ class SRBlock(nn.Module):
 
     def _conv_block(self, ni, nf, stride):
         return nn.Sequential(
-            nn.Conv2d(ni, nf, 3, stride=stride, padding=1, bias=False),
+            nn.Conv2d(
+                ni, nf, 3, stride=stride, padding=1, bias=False, padding_mode="reflect"
+            ),
             nn.BatchNorm2d(nf),
             nn.PReLU(),
-            nn.Conv2d(nf, nf, 3, stride=1, padding=1, bias=False),
+            nn.Conv2d(
+                nf, nf, 3, stride=1, padding=1, bias=False, padding_mode="reflect"
+            ),
             nn.BatchNorm2d(nf),
         )
 

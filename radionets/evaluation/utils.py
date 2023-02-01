@@ -59,7 +59,7 @@ def create_databunch(data_path, fourier, source_list, batch_size):
             test_ds, batch_size=batch_size, shuffle=True, collate_fn=source_list_collate
         )
     else:
-        data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+        data = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
     return data
 
 
@@ -123,7 +123,6 @@ def read_config(config):
     eval_conf["unc"] = config["inspection"]["visualize_uncertainty"]
     eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
-    eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
     eval_conf["vis_ms_ssim"] = config["inspection"]["visualize_ms_ssim"]
     eval_conf["num_images"] = config["inspection"]["num_images"]
     eval_conf["random"] = config["inspection"]["random"]
@@ -285,9 +284,21 @@ def get_images(test_ds, num_images, rand=False, indices=None):
         indices = torch.arange(num_images)
         if rand:
             indices = torch.randint(0, len(test_ds), size=(num_images,))
+
+            # remove dublicate indices
+            while len(torch.unique(indices)) < len(indices):
+                new_indices = torch.randint(
+                    0, len(test_ds), size=(num_images - len(torch.unique(indices)),)
+                )
+                indices = torch.cat((torch.unique(indices), new_indices))
+
+            # sort after getting indices
             indices, _ = torch.sort(indices)
+
         img_test = test_ds[indices][0]
         img_true = test_ds[indices][1]
+        img_test = img_test[:, :, :65, :]
+        img_true = img_true[:, :, :65, :]
         return img_test, img_true, indices
     else:
         mean = test_ds[indices][0]
@@ -469,6 +480,53 @@ def check_outpath(model_path):
     return exists
 
 
+def sym_new(image, key):
+    """
+    Symmetry function to complete the images
+
+    Parameters
+    ----------
+    image : torch.Tensor
+        (stack of) half images
+
+    Returns
+    -------
+    torch.Tensor
+        quadratic images after utilizing symmetry
+    """
+    # set channel for phase dependent of uncertainty training
+    if isinstance(image, np.ndarray):
+        image = torch.tensor(image)
+    upper_half = image[:, :, :64, :].clone()
+    a = torch.rot90(upper_half, 2, dims=[-2, -1])
+
+    image[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
+    image[:, 0, 65:, 0] = a[:, 0, :-1, -1]
+
+    if key == "unc":
+        image[:, 1, 65:, 1:] = a[:, 1, :-1, :-1]
+        image[:, 1, 65:, 0] = a[:, 1, :-1, -1]
+    else:
+        image[:, 1, 65:, 1:] = -a[:, 1, :-1, :-1]
+        image[:, 1, 65:, 0] = -a[:, 1, :-1, -1]
+
+    return image
+
+
+def apply_symmetry(img_dict):
+    for key in img_dict:
+        if key != "indices":
+            if isinstance(img_dict[key], np.ndarray):
+                img_dict[key] = torch.tensor(img_dict[key])
+            output = F.pad(
+                input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
+            )
+            output = sym_new(output, key)
+            img_dict[key] = output
+
+    return img_dict
+
+
 def even_better_symmetry(x):
     upper_half = x[:, :, 0 : x.shape[2] // 2, :].copy()
     upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].copy()
@@ -499,23 +557,45 @@ def trunc_rvs(loc, scale, mode, num_samples, num_img):
         raise ValueError("Wrong mode!")
     a, b = (myclip_a - loc) / scale, (myclip_b - loc) / scale
     sampled_gauss = truncnorm.rvs(
-        a, b, loc=loc, scale=scale, size=(num_samples, num_img, 128, 128)
+        a, b, loc=loc, scale=scale, size=(num_samples, num_img, 65, 128)
     )
 
     return sampled_gauss.swapaxes(0, 1)
 
 
 def sample_images(mean, std, num_samples):
+    """Samples for every pixel in Fourier space from a truncated Gaussian distribution
+    based on the output of the network.
+
+    Parameters
+    ----------
+    mean : torch.tensor
+        mean values of the pixels with shape (number of images, number of samples,
+        image size // 2 + 1, image_size)
+    std : torch.tensor
+        uncertainty values of the pixels with shape (number of images,
+        number of samples, image size // 2 + 1, image_size)
+    num_samples : int
+        number of samples in Fourier space
+
+    Returns
+    -------
+    dict
+        resulting mean and standard deviation
+    """
     mean_amp, mean_phase = mean[:, 0], mean[:, 1]
     std_amp, std_phase = std[:, 0], std[:, 1]
     num_img = mean_amp.shape[0]
+
     # amplitude
-    sampled_gauss_amp = trunc_rvs(mean_amp, std_amp, "amp", num_samples, num_img)
+    sampled_gauss_amp = trunc_rvs(
+        mean_amp, std_amp, "amp", num_samples, num_img
+    ).reshape(num_img * num_samples, 65, 128)
 
     # phase
     sampled_gauss_phase = trunc_rvs(
         mean_phase, std_phase, "phase", num_samples, num_img
-    )
+    ).reshape(num_img * num_samples, 65, 128)
 
     # masks
     mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
@@ -528,9 +608,17 @@ def sample_images(mean, std, num_samples):
     assert mask_invalid_phase.sum() == 0
 
     sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
-    sampled_gauss_symmetry = even_better_symmetry(sampled_gauss)
 
-    fft_sampled_symmetry = get_ifft(sampled_gauss_symmetry, amp_phase=True, scale=False)
+    # pad resulting images and utilize symmetry
+    sampled_gauss = F.pad(
+        input=torch.tensor(sampled_gauss), pad=(0, 0, 0, 63), mode="constant", value=0
+    )
+    sampled_gauss_symmetry = sym_new(sampled_gauss, None)
+
+    fft_sampled_symmetry = get_ifft(
+        sampled_gauss_symmetry, amp_phase=True, scale=False
+    ).reshape(num_img, num_samples, 128, 128)
+
     results = {
         "mean": fft_sampled_symmetry.mean(axis=1),
         "std": fft_sampled_symmetry.std(axis=1),
@@ -543,11 +631,6 @@ def mergeDictionary(dict_1, dict_2):
     for key, value in dict_3.items():
         if key in dict_1 and key in dict_2:
             dict_3[key] = np.append(dict_1[key], value)
-            # try:
-            #     dict_3[key] = np.stack((dict_1[key], value))
-            # except ValueError:
-            #     value = value.reshape(1, *value.shape)
-            #     dict_3[key] = np.concatenate((dict_1[key], value))
     return dict_3
 
 
