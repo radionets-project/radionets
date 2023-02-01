@@ -38,6 +38,7 @@ def main(configuration_path):
     print(eval_conf, "\n")
 
     if eval_conf["sample_unc"]:
+        click.echo("Sampling test data set.\n")
         save_sampled(eval_conf)
 
     for entry in conf["inspection"]:

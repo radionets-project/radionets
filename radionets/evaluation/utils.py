@@ -564,9 +564,29 @@ def trunc_rvs(loc, scale, mode, num_samples, num_img):
 
 
 def sample_images(mean, std, num_samples):
+    """Samples for every pixel in Fourier space from a truncated Gaussian distribution
+    based on the output of the network.
+
+    Parameters
+    ----------
+    mean : torch.tensor
+        mean values of the pixels with shape (number of images, number of samples,
+        image size // 2 + 1, image_size)
+    std : torch.tensor
+        uncertainty values of the pixels with shape (number of images,
+        number of samples, image size // 2 + 1, image_size)
+    num_samples : int
+        number of samples in Fourier space
+
+    Returns
+    -------
+    dict
+        resulting mean and standard deviation
+    """
     mean_amp, mean_phase = mean[:, 0], mean[:, 1]
     std_amp, std_phase = std[:, 0], std[:, 1]
     num_img = mean_amp.shape[0]
+
     # amplitude
     sampled_gauss_amp = trunc_rvs(
         mean_amp, std_amp, "amp", num_samples, num_img
@@ -611,11 +631,6 @@ def mergeDictionary(dict_1, dict_2):
     for key, value in dict_3.items():
         if key in dict_1 and key in dict_2:
             dict_3[key] = np.append(dict_1[key], value)
-            # try:
-            #     dict_3[key] = np.stack((dict_1[key], value))
-            # except ValueError:
-            #     value = value.reshape(1, *value.shape)
-            #     dict_3[key] = np.concatenate((dict_1[key], value))
     return dict_3
 
 
