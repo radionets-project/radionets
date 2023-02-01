@@ -359,12 +359,22 @@ class TestEvaluation:
 
         # amplitude
         sampled_gauss_amp = trunc_rvs(
-            mean_amp, std_amp, "amp", num_samples, num_img=num_img
+            mean_amp,
+            std_amp,
+            mode="amp",
+            num_samples=num_samples,
+            target="cpu",
+            nthreads=1,
         )
 
         # phase
         sampled_gauss_phase = trunc_rvs(
-            mean_phase, std_phase, "phase", num_samples, num_img=num_img
+            mean_phase,
+            std_phase,
+            mode="phase",
+            num_sampels=num_samples,
+            target="cpu",
+            nthreads=1,
         )
 
         assert sampled_gauss_amp.shape == (
