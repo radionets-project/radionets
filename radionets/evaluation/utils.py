@@ -567,17 +567,6 @@ def tn_numba_vec_parallel(mu, sig, a, b):
     return rv
 
 
-@vectorize(["float64(float64, float64, float64, float64)"], target="cuda")
-def tn_numba_vec_cuda(mu, sig, a, b):
-    rv = np.random.normal(loc=mu, scale=sig)
-    cond = rv > a and rv < b
-    while not cond:
-        rv = np.random.normal(loc=mu, scale=sig)
-        cond = rv > a and rv < b
-
-    return rv
-
-
 def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
     if mode == "amp":
         a = 0
@@ -603,8 +592,6 @@ def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
             )
         set_num_threads(int(nthreads))
         res = tn_numba_vec_parallel(mu, sig, a, b)
-    elif target == "cuda":
-        res = tn_numba_vec_cuda(mu, sig, a, b)
     else:
         raise ValueError("Unsupported target, use cpu, parallel or cuda.")
 
