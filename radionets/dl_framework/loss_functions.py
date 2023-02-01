@@ -61,12 +61,8 @@ def fft_L1(x, y):
     ifft_pred = get_ifft_torch(x.clamp(0, 2), amp_phase=True, scale=True)
     ifft_truth = get_ifft_torch(y, amp_phase=True, scale=True)
 
-    # ifft_pred *= 1e4
-    # ifft_truth *= 1e4
-
     ifft_pred[torch.isnan(ifft_pred)] = 1
     ifft_pred[torch.isinf(ifft_pred)] = 1
-    # ifft_pred[ifft_pred == 0] = 1
 
     inp_amp = x[:, 0, :]
     inp_phase = x[:, 1, :]
@@ -75,13 +71,9 @@ def fft_L1(x, y):
     tar_phase = y[:, 1, :]
 
     l1 = nn.L1Loss()
-    # mse = nn.MSELoss()
     loss_amp = l1(inp_amp, tar_amp)
     loss_phase = l1(inp_phase, tar_phase)
     loss_fft = l1(ifft_pred[ifft_truth > 0], ifft_truth[ifft_truth > 0])
-    # print("amp", loss_amp)
-    # print("phase", loss_phase)
-    # print("fft", loss_fft)
     loss = loss_amp + 10 * loss_phase + loss_fft
     return loss
 
