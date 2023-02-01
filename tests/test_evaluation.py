@@ -5,8 +5,7 @@ import pytest
 class TestEvaluation:
     def test_get_images(self):
         import torch
-        from radionets.dl_framework.data import load_data, do_normalisation
-        import pandas as pd
+        from radionets.dl_framework.data import load_data
         from radionets.evaluation.utils import get_images
 
         test_ds = load_data(
@@ -18,7 +17,6 @@ class TestEvaluation:
 
         num_images = 10
         rand = True
-        norm_path = "none"
 
         indices = torch.arange(num_images)
         assert len(indices) == 10
@@ -28,16 +26,13 @@ class TestEvaluation:
         img_test = test_ds[indices][0]
 
         assert img_test.shape == (10, 2, 64, 64)
-        norm = "none"
-        if norm_path != "none":
-            norm = pd.read_csv(norm_path)
-        img_test = do_normalisation(img_test, norm)
         img_true = test_ds[indices][1]
 
-        img_test, img_true = get_images(test_ds, num_images, norm_path, rand)
+        img_test, img_true, indices = get_images(test_ds, num_images, rand)
 
         assert img_true.shape == (10, 2, 64, 64)
         assert img_test.shape == (10, 2, 64, 64)
+        assert len(indices) == 10
 
     def test_get_prediction(self):
         from pathlib import Path
@@ -46,37 +41,21 @@ class TestEvaluation:
             save_pred,
         )
         import toml
-        import torch
         from radionets.evaluation.train_inspection import get_prediction
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = get_prediction(conf)
-        assert str(pred.device) == "cpu"
+        img = get_prediction(conf)
+        assert str(img["pred"].device) == "cpu"
 
-        # test for uncertainty
-        if pred.shape[1] == 4:
-            pred_1 = pred[:, 0, :].unsqueeze(1)
-            pred_2 = pred[:, 2, :].unsqueeze(1)
-            pred = torch.cat((pred_1, pred_2), dim=1)
+        assert img["pred"].shape == (10, 2, 64, 64)
+        assert img["inp"].shape == (10, 2, 64, 64)
+        assert img["true"].shape == (10, 2, 64, 64)
 
-        assert pred.shape == (10, 2, 64, 64)
-        assert img_test.shape == (10, 2, 64, 64)
-        assert img_true.shape == (10, 2, 64, 64)
-
-        pred = pred.numpy()
         out_path = Path("./tests/build/test_training/evaluation/")
         out_path.mkdir(parents=True, exist_ok=True)
-        save_pred(
-            str(out_path) + "/predictions_model_eval.h5",
-            pred,
-            img_test,
-            img_true,
-            "pred",
-            "img_test",
-            "img_true",
-        )
+        save_pred(str(out_path) + "/predictions_model_eval.h5", img)
 
     def test_contour(self):
         from radionets.evaluation.utils import (
@@ -93,12 +72,12 @@ class TestEvaluation:
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, img_test, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
-        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(img["pred"], amp_phase=conf["amp_phase"])
+        ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
         assert ~np.isnan([ifft_pred, ifft_truth]).any()
 
@@ -109,17 +88,17 @@ class TestEvaluation:
 
         assert isinstance(val, np.float64)
         assert ~np.isnan(val).any()
-        assert val > 0
+        assert val >= 0
 
     def test_im_to_array_value(self):
         from radionets.evaluation.utils import read_pred
         from radionets.evaluation.jet_angle import im_to_array_value
 
-        pred, img_test, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        image = pred[0]
+        image = img["pred"][0]
 
         x_coords, y_coords, value = im_to_array_value(image)
 
@@ -150,11 +129,11 @@ class TestEvaluation:
 
         torch.set_printoptions(precision=16)
 
-        pred, img_test, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        ifft_pred = get_ifft(pred, conf["amp_phase"])
+        ifft_pred = get_ifft(img["pred"], conf["amp_phase"])
         assert ifft_pred.shape == (10, 64, 64)
 
         pix_x, pix_y, image = im_to_array_value(torch.tensor(ifft_pred))
@@ -181,7 +160,7 @@ class TestEvaluation:
             (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
         )
 
-        eig_vals_torch, eig_vecs_torch = torch.linalg.eigh(cov_w, UPLO='U')
+        eig_vals_torch, eig_vecs_torch = torch.linalg.eigh(cov_w, UPLO="U")
 
         assert eig_vals_torch.shape == (10, 2)
         assert eig_vecs_torch.shape == (10, 2, 2)
@@ -200,11 +179,11 @@ class TestEvaluation:
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, _, _ = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        image = get_ifft(pred, conf["amp_phase"])
+        image = get_ifft(img["pred"], conf["amp_phase"])
         assert image.shape == (10, 64, 64)
 
         if not isinstance(image, torch.Tensor):
@@ -255,12 +234,14 @@ class TestEvaluation:
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
 
-        pred, _, img_true = read_pred(
+        img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
 
-        ifft_pred = get_ifft(torch.tensor(pred[0]), conf["amp_phase"]).reshape(64, 64)
-        ifft_truth = get_ifft(torch.tensor(img_true[0]), conf["amp_phase"]).reshape(
+        ifft_pred = get_ifft(torch.tensor(img["pred"][0]), conf["amp_phase"]).reshape(
+            64, 64
+        )
+        ifft_truth = get_ifft(torch.tensor(img["true"][0]), conf["amp_phase"]).reshape(
             64, 64
         )
 
@@ -281,7 +262,172 @@ class TestEvaluation:
         assert flux_pred.all() > 0
         assert flux_truth.all() > 0
 
-    @pytest.mark.xfail
+    def test_gan_sources(self):
+        import toml
+        import torch
+        import numpy as np
+        from radionets.evaluation.train_inspection import evaluate_gan_sources
+        from radionets.evaluation.utils import read_config, get_ifft, read_pred
+
+        config = toml.load("./tests/evaluate.toml")
+        conf = read_config(config)
+
+        img = read_pred(
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
+        )
+
+        ifft_pred = get_ifft(torch.tensor(img["pred"][0]), conf["amp_phase"])
+        ifft_truth = get_ifft(torch.tensor(img["true"][0]), conf["amp_phase"])
+
+        img_size = ifft_pred.shape[-1]
+
+        diff = (ifft_pred - ifft_truth).reshape(1, img_size, img_size)
+
+        zero = np.isclose((np.zeros((1, img_size, img_size))), diff, atol=1e-3)
+        assert zero.shape == (1, 64, 64)
+
+        num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
+        assert num_zero >= 0
+        assert num_zero <= 100
+        assert ~np.isnan(num_zero)
+        assert num_zero.dtype == "float64"
+
+        ratio = diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
+        assert ratio.dtype == "float64"
+        assert ratio > 0
+
+        below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100
+        above_zero = np.sum(diff > 0, axis=(1, 2)) / (img_size * img_size) * 100
+        assert below_zero >= 0
+        assert below_zero <= 100
+        assert ~np.isnan(below_zero)
+        assert below_zero.dtype == "float64"
+        assert above_zero >= 0
+        assert above_zero <= 100
+        assert ~np.isnan(above_zero)
+        assert above_zero.dtype == "float64"
+        assert np.isclose(below_zero + above_zero, 100)
+
+        assert evaluate_gan_sources(conf) is None
+
+    def test_symmetry(self):
+        import torch
+        from radionets.dl_framework.model import symmetry
+
+        x = torch.randint(0, 9, size=(1, 2, 4, 4))
+        x_symm = symmetry(x.clone())
+        for i in range(x.shape[-1]):
+            for j in range(x.shape[-1]):
+                assert (
+                    x_symm[0, 0, i, j]
+                    == x_symm[0, 0, x.shape[-1] - 1 - i, x.shape[-1] - 1 - j]
+                )
+                assert (
+                    x_symm[0, 1, i, j]
+                    == -x_symm[0, 1, x.shape[-1] - 1 - i, x.shape[-1] - 1 - j]
+                )
+
+        rot_amp = torch.rot90(x_symm[0, 0], 2)
+        rot_phase = torch.rot90(x_symm[0, 1], 2)
+
+        assert torch.isclose(rot_amp - x_symm[0, 0], torch.tensor(0)).all()
+        assert torch.isclose(rot_phase + x_symm[0, 1], torch.tensor(0)).all()
+
+    def test_sample_images(self):
+        import numpy as np
+        import torch
+        import torch.nn.functional as F
+        from radionets.evaluation.utils import (
+            read_pred,
+            trunc_rvs,
+            get_ifft,
+            sym_new,
+        )
+
+        num_samples = 100
+        num_img = 2
+        img = read_pred("./tests/model/predictions_unc.h5")
+        mean_amp, mean_phase = (
+            img["pred"][:num_img, 0, :65, :],
+            img["pred"][:num_img, 1, :65, :],
+        )
+        std_amp, std_phase = (
+            img["unc"][:num_img, 0, :65, :],
+            img["unc"][:num_img, 1, :65, :],
+        )
+        img_size = mean_amp.shape[-1]
+
+        # amplitude
+        sampled_gauss_amp = trunc_rvs(
+            mean_amp, std_amp, "amp", num_samples, num_img=num_img
+        )
+
+        # phase
+        sampled_gauss_phase = trunc_rvs(
+            mean_phase, std_phase, "phase", num_samples, num_img=num_img
+        )
+
+        assert sampled_gauss_amp.shape == (
+            num_img,
+            num_samples,
+            img_size // 2 + 1,
+            img_size,
+        )
+        assert sampled_gauss_phase.shape == (
+            num_img,
+            num_samples,
+            img_size // 2 + 1,
+            img_size,
+        )
+
+        sampled_gauss_amp = sampled_gauss_amp.reshape(num_img * num_samples, 65, 128)
+        sampled_gauss_phase = sampled_gauss_phase.reshape(
+            num_img * num_samples, 65, 128
+        )
+
+        with pytest.raises(ValueError):
+            trunc_rvs(mean_phase, std_phase, "pase", num_samples, num_img=num_img)
+
+        # masks
+        mask_invalid_amp = sampled_gauss_amp < 0
+        mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+            sampled_gauss_phase >= (np.pi + 1e-4)
+        )
+        assert mask_invalid_amp.sum() == 0
+        assert mask_invalid_phase.sum() == 0
+
+        sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
+
+        # pad resulting images and utilize symmetry
+        sampled_gauss = F.pad(
+            input=torch.tensor(sampled_gauss),
+            pad=(0, 0, 0, 63),
+            mode="constant",
+            value=0,
+        )
+        sampled_gauss_symmetry = sym_new(sampled_gauss, None)
+
+        fft_sampled_symmetry = get_ifft(
+            sampled_gauss_symmetry, amp_phase=True, scale=False
+        ).reshape(num_img, num_samples, 128, 128)
+
+        results = {
+            "mean": fft_sampled_symmetry.mean(axis=1),
+            "std": fft_sampled_symmetry.std(axis=1),
+        }
+        assert results["mean"].shape == (num_img, img_size, img_size)
+        assert results["std"].shape == (num_img, img_size, img_size)
+
+    def test_uncertainty_plots(self):
+        from radionets.evaluation.utils import read_pred, sample_images
+
+        img = read_pred("./tests/model/predictions_unc.h5")
+        results = sample_images(
+            img["pred"][:2, :, :65, :], img["unc"][:2, :, :65, :], 100
+        )
+        assert results["mean"].shape == (2, 128, 128)
+        assert results["std"].shape == (2, 128, 128)
+
     def test_evaluation(self):
         import shutil
         import os

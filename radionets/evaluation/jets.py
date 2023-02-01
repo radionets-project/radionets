@@ -1,8 +1,6 @@
 import numpy as np
 from astropy.modeling import models, fitting
 from radionets.evaluation.plotting import plot_fitgaussian
-import matplotlib.pyplot as plt
-from pathlib import Path
 
 
 def fitgaussian_crop(data, amp_scale=0.97, crop_size=0.1):
@@ -10,20 +8,20 @@ def fitgaussian_crop(data, amp_scale=0.97, crop_size=0.1):
     Fitting a gaussian around the maximum
     Parameters
     ----------
-    data: 2d array 
+    data: 2d array
         Image
     amp_scale: float
         Reduces the fitted amplitude, encounters (partially) the problem
         of overlapping gaussians: amplitude in image is too high -> fit is too
         high -> next gaussian is shifted to the outside
     crop_size: float
-        proportionate size of the image after cropping 
+        proportionate size of the image after cropping
 
 
     Returns
     -------
     result_lmf: astropy model
-        Fitted astropy model object 
+        Fitted astropy model object
     """
     size = data.shape[-1]
     data[data < 0] = 0
@@ -57,13 +55,15 @@ def fitgaussian_crop(data, amp_scale=0.97, crop_size=0.1):
     return result_lmf
 
 
-def fitgaussian_iterativ(data, i=0, visualize=False, path=None, save=False, plot_format="pdf"):
+def fitgaussian_iterativ(
+    data, i=0, visualize=False, path=None, save=False, plot_format="pdf"
+):
     """
     Fitting a gaussian iteratively around the maxima.
     Fit -> Substract -> Fit -> Substract ... until stopping criteria
     Parameters
     ----------
-    data: 2d array 
+    data: 2d array
         Image
     i: int
         Index of input image
@@ -79,11 +79,11 @@ def fitgaussian_iterativ(data, i=0, visualize=False, path=None, save=False, plot
     Returns
     -------
     result_lmf: astropy model
-        Fitted astropy model object 
+        Fitted astropy model object
     """
-    if visualize and path == None:
+    if visualize and path is None:
         print("Visualize is True, but no path is given.")
-    if not visualize and path != None:
+    if not visualize and path is not None:
         print("Visualize is False, but a path is given.")
 
     params_list = []

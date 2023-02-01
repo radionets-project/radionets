@@ -9,10 +9,6 @@ quiet = true
 data_path = "./tests/build/data/"
 data_format = "h5"
 
-[mnist]
-simulate = false
-resource = "../../resources/mnist.pkl.gz"
-
 [gaussians]
 simulate = true
 num_components = [4, 10]
@@ -29,8 +25,11 @@ bundle_size = 100
 img_size = 64
 noise = true
 noise_level = 5
-white_noise = true
-white_noise_level = 0.5
+white_noise = false
+mean_real = 0.85
+std_real = 0.0425
+mean_imag = 0.2
+std_imag = 0.01
 
 [sampling_options]
 fourier = true
@@ -46,3 +45,4 @@ keep_fft_files = true
 source_list = false
 interpolation = false
 multi_channel= false
+bandwidths = 1

@@ -144,7 +144,7 @@ def im_to_array_value(image):
     pix = image.shape[-1]
 
     a = torch.arange(0, pix, 1)
-    grid_x, grid_y = torch.meshgrid(a, a) #, indexing='xy')
+    grid_x, grid_y = torch.meshgrid(a, a, indexing="xy")
     x_coords = torch.cat(num * [grid_x.flatten().unsqueeze(0)])
     y_coords = torch.cat(num * [grid_y.flatten().unsqueeze(0)])
     value = image.reshape(-1, pix ** 2)

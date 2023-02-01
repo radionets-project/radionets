@@ -7,9 +7,9 @@ channels:
 dependencies:
   - python>=3.6
   - pytorch>=1.6
-  - torchvision
   - cudatoolkit
   - cartopy
   - pip
   - pip:
+    - towncrier
     - -e .

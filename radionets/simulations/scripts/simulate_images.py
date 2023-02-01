@@ -1,7 +1,7 @@
 import click
 import toml
 from radionets.simulations.simulate import create_fft_images, sample_fft_images
-from radionets.simulations.utils import check_outpath, read_config, calc_norm
+from radionets.simulations.utils import check_outpath, read_config
 
 
 @click.command()
@@ -37,8 +37,6 @@ def main(configuration_path):
     if sim_sampled is True:
         click.echo("Start sampling fft_files!")
         sample_fft_images(sim_conf)
-        click.echo("\n Calculating normalization factors.")
-        calc_norm(sim_conf)
 
 
 if __name__ == "__main__":

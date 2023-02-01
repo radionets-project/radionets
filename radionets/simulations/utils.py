@@ -1,22 +1,14 @@
 from pathlib import Path
 import click
-import gzip
-import pickle
 import os
 import sys
 import re
 import numpy as np
-import pandas as pd
-from tqdm import tqdm
 from scipy import interpolate
-from skimage.transform import resize
 from radionets.dl_framework.data import (
-    save_fft_pair,
-    open_fft_pair,
     get_bundles,
     split_amp_phase,
     split_real_imag,
-    mean_and_std,
 )
 
 
@@ -94,11 +86,6 @@ def read_config(config):
     sim_conf = {}
     sim_conf["data_path"] = config["paths"]["data_path"]
     sim_conf["data_format"] = config["paths"]["data_format"]
-    if config["mnist"]["simulate"]:
-        click.echo("Create fft_images from mnist data set!")
-
-        sim_conf["type"] = "mnist"
-        sim_conf["resource"] = config["mnist"]["resource"]
     if config["gaussians"]["simulate"]:
         click.echo("Create fft_images from gaussian data set! \n")
 
@@ -121,7 +108,10 @@ def read_config(config):
     sim_conf["noise"] = config["image_options"]["noise"]
     sim_conf["noise_level"] = config["image_options"]["noise_level"]
     sim_conf["white_noise"] = config["image_options"]["white_noise"]
-    sim_conf["white_noise_level"] = config["image_options"]["white_noise_level"]
+    sim_conf["mean_real"] = config["image_options"]["mean_real"]
+    sim_conf["std_real"] = config["image_options"]["std_real"]
+    sim_conf["mean_imag"] = config["image_options"]["mean_imag"]
+    sim_conf["std_imag"] = config["image_options"]["std_imag"]
 
     sim_conf["amp_phase"] = config["sampling_options"]["amp_phase"]
     sim_conf["real_imag"] = config["sampling_options"]["real_imag"]
@@ -136,28 +126,8 @@ def read_config(config):
     sim_conf["keep_fft_files"] = config["sampling_options"]["keep_fft_files"]
     sim_conf["interpolation"] = config["sampling_options"]["interpolation"]
     sim_conf["multi_channel"] = config["sampling_options"]["multi_channel"]
+    sim_conf["bandwidths"] = config["sampling_options"]["bandwidths"]
     return sim_conf
-
-
-def open_mnist(path):
-    """
-    Open MNIST data set pickle file.
-
-    Parameters
-    ----------
-    path: str
-        path to MNIST pickle file
-
-    Returns
-    -------
-    train_x: 2d array
-        50000 x 784 images
-    valid_x: 2d array
-        10000 x 784 images
-    """
-    with gzip.open(path, "rb") as f:
-        ((train_x, _), (valid_x, _), _) = pickle.load(f, encoding="latin-1")
-    return train_x, valid_x
 
 
 def adjust_outpath(path, option, form="h5"):
@@ -182,38 +152,6 @@ def adjust_outpath(path, option, form="h5"):
         counter += 1
     out = filename.format(counter)
     return out
-
-
-def prepare_mnist_bundles(bundle, path, option, noise=False, pixel=63):
-    """
-    Resize images to specific squared pixel size and calculate fft
-
-    Parameters
-    ----------
-    image: 2d array
-        input image
-    pixel: int
-        number of pixel in x and y
-
-    Returns
-    -------
-    x: 2d array
-        fft of rescaled input image
-    y: 2d array
-        rescaled input image
-    """
-    y = resize(
-        bundle.swapaxes(0, 2),
-        (pixel, pixel),
-        anti_aliasing=True,
-        mode="constant",
-    ).swapaxes(2, 0)
-    y_prep = y.copy()
-    if noise:
-        y_prep = add_noise(y_prep)
-    x = np.fft.fftshift(np.fft.fft2(y_prep))
-    path = adjust_outpath(path, "/fft_" + option)
-    save_fft_pair(path, x, y)
 
 
 def get_fft_bundle_paths(data_path, ftype, mode):
@@ -289,41 +227,6 @@ def add_noise(bundle, noise_level):
     return bundle_noised
 
 
-def calc_norm(sim_conf):
-    bundle_paths = get_fft_bundle_paths(sim_conf["data_path"], "samp", "train")
-
-    # create empty arrays
-    means_amp = np.array([])
-    stds_amp = np.array([])
-    means_imag = np.array([])
-    stds_imag = np.array([])
-
-    for path in tqdm(bundle_paths):
-        x, _ = open_fft_pair(path)
-        x_amp, x_imag = np.double(x[:, 0]), np.double(x[:, 1])
-        mean_amp, std_amp = mean_and_std(x_amp)
-        mean_imag, std_imag = mean_and_std(x_imag)
-        means_amp = np.append(mean_amp, means_amp)
-        means_imag = np.append(mean_imag, means_imag)
-        stds_amp = np.append(std_amp, stds_amp)
-        stds_imag = np.append(std_imag, stds_imag)
-
-    mean_amp = means_amp.mean()
-    std_amp = stds_amp.mean()
-    mean_imag = means_imag.mean()
-    std_imag = stds_imag.mean()
-
-    d = {
-        "train_mean_c0": [mean_amp],
-        "train_std_c0": [std_amp],
-        "train_mean_c1": [mean_imag],
-        "train_std_c1": [std_imag],
-    }
-
-    df = pd.DataFrame(data=d)
-    df.to_csv(sim_conf["data_path"] + "/norm_factors.csv", index=False)
-
-
 def interpol(img):
     """Interpolates fft sampled amplitude and phase data.
     Parameters
@@ -365,9 +268,14 @@ def interpol(img):
     return np.array([amp, phase])
 
 
-def add_white_noise(images, noise_level):
+def add_white_noise(images, mean_real=25, std_real=1.25, mean_imag=7, std_imag=0.35):
     img_size = images.shape[2]
-    noise = np.random.normal(0, noise_level, size=(images.shape[0], img_size, img_size))
-    images.real += noise
-    images.imag += noise
+    noise_real = np.random.normal(
+        mean_real, std_real, size=(images.shape[0], img_size, img_size)
+    )
+    noise_imag = np.random.normal(
+        mean_imag, std_imag, size=(images.shape[0], img_size, img_size)
+    )
+    images.real += noise_real
+    images.imag += noise_imag
     return images

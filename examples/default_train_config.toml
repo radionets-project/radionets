@@ -5,7 +5,6 @@ title = "Train configuration"
 [mode]
 quiet = true
 gpu = false
-telegram_logger = false
 
 [logging]
 comet_ml = true
@@ -28,6 +27,8 @@ loss_func = "splitted_L1"
 num_epochs = 5
 inspection = true
 output_format = "png"
+switch_loss = false
+when_switch = 25
 
 [hypers]
 batch_size = 100
@@ -38,3 +39,4 @@ use = true
 lr_start = 7e-2
 lr_max = 3e-1
 lr_stop = 5e-2
+lr_ratio = 0.25

@@ -6,38 +6,13 @@ import numpy as np
 from pathlib import Path
 
 
-def normalize(x, m, s):
-    return (x - m) / s
-
-
-def do_normalisation(x, norm):
-    """
-    :param x        Object to be normalized
-    :param norm     Pandas Dataframe which includes the normalisation factors
-    """
-    if len(x.shape) == 3:
-        x = x.unsqueeze(0)
-    if isinstance(norm, str):
-        return x
-    else:
-        train_mean_c0 = torch.tensor(norm["train_mean_c0"].values[0]).double()
-        train_std_c0 = torch.tensor(norm["train_std_c0"].values[0]).double()
-        train_mean_c1 = torch.tensor(norm["train_mean_c1"].values[0]).double()
-        train_std_c1 = torch.tensor(norm["train_std_c1"].values[0]).double()
-        x[:, 0] = normalize(x[:, 0], train_mean_c0, train_std_c0)
-        x[:, 1] = normalize(x[:, 1], train_mean_c1, train_std_c1)
-
-    assert not torch.isinf(x).any()
-    return x
-
-
 class h5_dataset:
     def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False):
         """
         Save the bundle paths and the number of bundles in one file.
         """
         if bundle_paths == []:
-            raise ValueError('No bundles found! Please check the names of your files.')
+            raise ValueError("No bundles found! Please check the names of your files.")
         self.bundles = bundle_paths
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
         self.tar_fourier = tar_fourier
@@ -92,6 +67,11 @@ class h5_dataset:
                 "Two channeled data is used despite Fourier being False.\
                     Set Fourier to True!"
             )
+
+        if data.shape[0] == 1:
+            data = data.squeeze(0)
+
+        data = data[:, :65, :]
 
         return data.float()
 
@@ -187,16 +167,6 @@ def save_fft_pair(path, x, y, z=None, name_x="x", name_y="y", name_z="z"):
         hf.close()
 
 
-def open_fft_pair(path):
-    """
-    open fft_pairs which were created in second analysis step
-    """
-    f = h5py.File(path, "r")
-    bundle_x = np.array(f["x"])
-    bundle_y = np.array(f["y"])
-    return bundle_x, bundle_y
-
-
 def open_bundle_pack(path):
     bundle_x = []
     bundle_y = []
@@ -212,10 +182,6 @@ def open_bundle_pack(path):
         bundle_z.append(bundle_z_i)
     f.close()
     return np.array(bundle_x), np.array(bundle_y), bundle_z
-
-
-def mean_and_std(array):
-    return array.mean(), array.std()
 
 
 def load_data(data_path, mode, fourier=False, source_list=False):
