@@ -156,9 +156,9 @@ def adjust_outpath(path, option, form="h5"):
 
 def get_fft_bundle_paths(data_path, ftype, mode):
     bundles = get_bundles(data_path)
-    bundle_paths = [
-        path for path in bundles if re.findall(f"{ftype}_{mode}", path.name)
-    ]
+    bundle_paths = np.sort(
+        [path for path in bundles if re.findall(f"{ftype}_{mode}", path.name)]
+    )
     return bundle_paths
 
 
