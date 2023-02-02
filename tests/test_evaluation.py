@@ -5,10 +5,8 @@ from scipy.stats import truncnorm
 
 def truncnorm_moments(mu, sig, a, b):
     a, b = (a - mu) / sig, (b - mu) / sig
-    sampled_gauss = truncnorm(
-        a, b, loc=mu, scale=sig
-    )
-    
+    sampled_gauss = truncnorm(a, b, loc=mu, scale=sig)
+
     return sampled_gauss.mean(), sampled_gauss.std()
 
 
@@ -460,23 +458,28 @@ class TestEvaluation:
             shutil.rmtree("tests/model/evaluation")
 
 
-@pytest.mark.parametrize("mode, target", 
-                         [("phase", "cpu"), 
-                          ("phase", "parallel"), 
-                          ("amp", "cpu"),
-                          ("amp", "parallel")])
+@pytest.mark.parametrize(
+    "mode, target",
+    [("phase", "cpu"), ("phase", "parallel"), ("amp", "cpu"), ("amp", "parallel")],
+)
 def test_trunc_rv(mode, target):
     from radionets.evaluation.utils import trunc_rvs
 
     mu = np.array([[0, 1], [1, 0]])
     sig = np.array([[0.5, 0.5], [1, 1]])
     nrand = int(1e5)
-    
+
     if mode == "phase":
         a, b = -np.pi, np.pi
     elif mode == "amp":
-        a, b, = 0, np.inf
-        
+        (
+            a,
+            b,
+        ) = (
+            0,
+            np.inf,
+        )
+
     if target == "cpu":
         nthreads = 1
         with pytest.raises(ValueError):
@@ -485,19 +488,18 @@ def test_trunc_rv(mode, target):
         nthreads = 2
         with pytest.raises(ValueError):
             trunc_rvs(mu, sig, nrand, mode, target, nthreads=1)
-            
+
     with pytest.raises(ValueError):
         trunc_rvs(mu, sig, nrand, "phas", target, nthreads)
-        
+
     with pytest.raises(ValueError):
         trunc_rvs(mu, sig, nrand, mode, "cp", nthreads)
-            
+
     rvs = trunc_rvs(mu, sig, nrand, mode, target, nthreads)
     assert rvs.shape == (1, nrand, 2, 2)
 
     rvs = rvs.squeeze().reshape(nrand, 4)
     mu, sig = mu.flatten(), sig.flatten()
-
 
     for i in range(len(mu)):
         true_mu, true_sig = truncnorm_moments(mu[i], sig[i], a, b)

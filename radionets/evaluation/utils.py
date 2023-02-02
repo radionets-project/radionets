@@ -582,7 +582,8 @@ def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
     if target == "cpu":
         if nthreads > 1:
             raise ValueError(
-                f"Target is ``cpu`` but nthreads is {nthreads}, use target=``parallel`` instead."
+                f"Target is ``cpu`` but nthreads is {nthreads}, " 
+                "use target=``parallel`` instead."
             )
         res = tn_numba_vec_cpu(mu, sig, a, b)
     elif target == "parallel":
