@@ -14,8 +14,7 @@ def create_databunch(data_path, fourier, source_list, batch_size):
     valid_ds = load_data(data_path, "valid", source_list=source_list, fourier=fourier)
 
     # Create databunch with defined batchsize
-    bs = batch_size
-    data = DataBunch(*get_dls(train_ds, valid_ds, bs))
+    data = DataBunch(*get_dls(train_ds, valid_ds, batch_size))
     return data
 
 
@@ -34,7 +33,7 @@ def read_config(config):
     train_conf["project_name"] = config["logging"]["project_name"]
     train_conf["scale"] = config["logging"]["scale"]
 
-    train_conf["bs"] = config["hypers"]["batch_size"]
+    train_conf["batch_size"] = config["hypers"]["batch_size"]
     train_conf["lr"] = config["hypers"]["lr"]
 
     train_conf["fourier"] = config["general"]["fourier"]
