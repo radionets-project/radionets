@@ -89,11 +89,11 @@ def calc_jet_angle(image):
     if len(image.shape) == 2:
         image = image.unsqueeze(0)
 
-    bs = image.shape[0]
+    batch_size = image.shape[0]
 
     # only use brightest pixel
     max_val = torch.tensor([(i.max() * 0.4) for i in image])
-    max_arr = (torch.ones(img_size, img_size, bs) * max_val).permute(2, 0, 1)
+    max_arr = (torch.ones(img_size, img_size, batch_size) * max_val).permute(2, 0, 1)
     image[image < max_arr] = 0
 
     _, _, alpha_pca = pca(image)
