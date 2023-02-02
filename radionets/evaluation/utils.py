@@ -594,7 +594,7 @@ def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
         set_num_threads(int(nthreads))
         res = tn_numba_vec_parallel(mu, sig, a, b)
     else:
-        raise ValueError("Unsupported target, use cpu, parallel or cuda.")
+        raise ValueError("Unsupported target, use cpu or parallel.")
 
     return res.swapaxes(0, 1)
 
