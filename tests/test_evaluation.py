@@ -1,4 +1,15 @@
 import pytest
+import numpy as np
+from scipy.stats import truncnorm
+
+
+def truncnorm_moments(mu, sig, a, b):
+    a, b = (a - mu) / sig, (b - mu) / sig
+    sampled_gauss = truncnorm(
+        a, b, loc=mu, scale=sig
+    )
+    
+    return sampled_gauss.mean(), sampled_gauss.std()
 
 
 @pytest.mark.order("last")
@@ -395,46 +406,6 @@ class TestEvaluation:
             num_img * num_samples, 65, 128
         )
 
-        # Unknown mode
-        with pytest.raises(ValueError):
-            trunc_rvs(mean_phase, 
-                      std_phase, 
-                      mode="pase", 
-                      num_samples=num_samples,
-                      target="cpu",
-                      nthreads=1,
-            )
-            
-        # Unknown target
-        with pytest.raises(ValueError):
-            trunc_rvs(mean_phase, 
-                      std_phase, 
-                      mode="phase", 
-                      num_samples=num_samples,
-                      target="cp",
-                      nthreads=1,
-            )
-            
-        # cpu but 2 threads
-        with pytest.raises(ValueError):
-            trunc_rvs(mean_phase, 
-                      std_phase, 
-                      mode="phase", 
-                      num_samples=num_samples,
-                      target="cpu",
-                      nthreads=2,
-            )
-            
-        # parallel but only one thread    
-        with pytest.raises(ValueError):
-            trunc_rvs(mean_phase, 
-                      std_phase, 
-                      mode="phase", 
-                      num_samples=num_samples,
-                      target="parallel",
-                      nthreads=1,
-            )
-       
         # masks
         mask_invalid_amp = sampled_gauss_amp < 0
         mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
@@ -487,3 +458,50 @@ class TestEvaluation:
 
         if os.path.exists("tests/model/evaluation"):
             shutil.rmtree("tests/model/evaluation")
+
+
+@pytest.mark.parametrize("mode, target", 
+                         [("phase", "cpu"), 
+                          ("phase", "parallel"), 
+                          ("amp", "cpu"),
+                          ("amp", "parallel")])
+def test_trunc_rv(mode, target):
+    from radionets.evaluation.utils import trunc_rvs
+
+    mu = np.array([[0, 1], [1, 0]])
+    sig = np.array([[0.5, 0.5], [1, 1]])
+    nrand = int(1e5)
+    
+    if mode == "phase":
+        a, b = -np.pi, np.pi
+    elif mode == "amp":
+        a, b, = 0, np.inf
+        
+    if target == "cpu":
+        nthreads = 1
+        with pytest.raises(ValueError):
+            trunc_rvs(mu, sig, nrand, mode, target, nthreads=2)
+    elif target == "parallel":
+        nthreads = 2
+        with pytest.raises(ValueError):
+            trunc_rvs(mu, sig, nrand, mode, target, nthreads=1)
+            
+    with pytest.raises(ValueError):
+        trunc_rvs(mu, sig, nrand, "phas", target, nthreads)
+        
+    with pytest.raises(ValueError):
+        trunc_rvs(mu, sig, nrand, mode, "cp", nthreads)
+            
+    rvs = trunc_rvs(mu, sig, nrand, mode, target, nthreads)
+    assert rvs.shape == (1, nrand, 2, 2)
+
+    rvs = rvs.squeeze().reshape(nrand, 4)
+    mu, sig = mu.flatten(), sig.flatten()
+
+
+    for i in range(len(mu)):
+        true_mu, true_sig = truncnorm_moments(mu[i], sig[i], a, b)
+        assert np.isclose(np.mean(rvs[:, i]), true_mu, atol=1e-2, rtol=1e-2)
+        assert np.isclose(np.std(rvs[:, i], ddof=1), true_sig, atol=1e-2, rtol=1e-2)
+        assert np.max(rvs[:, i]) < b
+        assert np.min(rvs[:, i]) > a
