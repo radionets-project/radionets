@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import h5py
-from numba import float64, vectorize, set_num_threads
+from numba import vectorize, set_num_threads
 from pathlib import Path
 
 
