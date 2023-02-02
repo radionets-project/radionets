@@ -6,6 +6,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 import h5py
+from numba import vectorize, set_num_threads
 from pathlib import Path
 
 
@@ -544,23 +545,58 @@ def even_better_symmetry(x):
     return x
 
 
-def trunc_rvs(loc, scale, mode, num_samples, num_img):
-    from scipy.stats import truncnorm
+@vectorize(["float64(float64, float64, float64, float64)"], target="cpu")
+def tn_numba_vec_cpu(mu, sig, a, b):
+    rv = np.random.normal(loc=mu, scale=sig)
+    cond = rv > a and rv < b
+    while not cond:
+        rv = np.random.normal(loc=mu, scale=sig)
+        cond = rv > a and rv < b
 
+    return rv
+
+
+@vectorize(["float64(float64, float64, float64, float64)"], target="parallel")
+def tn_numba_vec_parallel(mu, sig, a, b):
+    rv = np.random.normal(loc=mu, scale=sig)
+    cond = rv > a and rv < b
+    while not cond:
+        rv = np.random.normal(loc=mu, scale=sig)
+        cond = rv > a and rv < b
+
+    return rv
+
+
+def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
     if mode == "amp":
-        myclip_a = 0
-        myclip_b = np.inf
+        a = 0
+        b = np.inf
     elif mode == "phase":
-        myclip_a = -np.pi
-        myclip_b = np.pi
+        a = -np.pi
+        b = np.pi
     else:
-        raise ValueError("Wrong mode!")
-    a, b = (myclip_a - loc) / scale, (myclip_b - loc) / scale
-    sampled_gauss = truncnorm.rvs(
-        a, b, loc=loc, scale=scale, size=(num_samples, num_img, 65, 128)
-    )
+        raise ValueError("Unsupported mode, use either ``phase`` or ``amp``.")
+    mu = np.tile(mu, (num_samples, 1, 1, 1))
+    sig = np.tile(sig, (num_samples, 1, 1, 1))
 
-    return sampled_gauss.swapaxes(0, 1)
+    if target == "cpu":
+        if nthreads > 1:
+            raise ValueError(
+                f"Target is ``cpu`` but nthreads is {nthreads}, " 
+                "use target=``parallel`` instead."
+            )
+        res = tn_numba_vec_cpu(mu, sig, a, b)
+    elif target == "parallel":
+        if nthreads == 1:
+            raise ValueError(
+                "Target is ``parallel`` but nthreaads is 1, use target=``cpu`` instead."
+            )
+        set_num_threads(int(nthreads))
+        res = tn_numba_vec_parallel(mu, sig, a, b)
+    else:
+        raise ValueError("Unsupported target, use cpu or parallel.")
+
+    return res.swapaxes(0, 1)
 
 
 def sample_images(mean, std, num_samples):
@@ -589,12 +625,18 @@ def sample_images(mean, std, num_samples):
 
     # amplitude
     sampled_gauss_amp = trunc_rvs(
-        mean_amp, std_amp, "amp", num_samples, num_img
+        mu=mean_amp,
+        sig=std_amp,
+        mode="amp",
+        num_samples=num_samples,
     ).reshape(num_img * num_samples, 65, 128)
 
     # phase
     sampled_gauss_phase = trunc_rvs(
-        mean_phase, std_phase, "phase", num_samples, num_img
+        mu=mean_phase,
+        sig=std_phase,
+        mode="phase",
+        num_samples=num_samples,
     ).reshape(num_img * num_samples, 65, 128)
 
     # masks

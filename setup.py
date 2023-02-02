@@ -17,6 +17,7 @@ setup(
         "astropy",
         "tqdm",
         "click",
+        "numba",
         "jupyter",
         "h5py",
         "scikit-image",
