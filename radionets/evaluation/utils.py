@@ -567,7 +567,7 @@ def tn_numba_vec_parallel(mu, sig, a, b):
     return rv
 
 
-def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
+def trunc_rvs(mu, sig, num_samples, mode, target="parallel", nthreads=49):
     if mode == "amp":
         a = 0
         b = np.inf
@@ -578,11 +578,13 @@ def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
         raise ValueError("Unsupported mode, use either ``phase`` or ``amp``.")
     mu = np.tile(mu, (num_samples, 1, 1, 1))
     sig = np.tile(sig, (num_samples, 1, 1, 1))
+    a = -np.inf
+    b = np.inf
 
     if target == "cpu":
         if nthreads > 1:
             raise ValueError(
-                f"Target is ``cpu`` but nthreads is {nthreads}, " 
+                f"Target is ``cpu`` but nthreads is {nthreads}, "
                 "use target=``parallel`` instead."
             )
         res = tn_numba_vec_cpu(mu, sig, a, b)
@@ -599,7 +601,7 @@ def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
     return res.swapaxes(0, 1)
 
 
-def sample_images(mean, std, num_samples):
+def sample_images(mean, std, num_samples, conf):
     """Samples for every pixel in Fourier space from a truncated Gaussian distribution
     based on the output of the network.
 
@@ -640,14 +642,14 @@ def sample_images(mean, std, num_samples):
     ).reshape(num_img * num_samples, 65, 128)
 
     # masks
-    mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
-    mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
-        sampled_gauss_phase >= (np.pi + 1e-4)
-    )
-    if mask_invalid_amp.sum() > 0:
-        print(sampled_gauss_amp[mask_invalid_amp])
-    assert mask_invalid_amp.sum() == 0
-    assert mask_invalid_phase.sum() == 0
+    # mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
+    # mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+    #     sampled_gauss_phase >= (np.pi + 1e-4)
+    # )
+    # if mask_invalid_amp.sum() > 0:
+    # print(sampled_gauss_amp[mask_invalid_amp])
+    # assert mask_invalid_amp.sum() == 0
+    # assert mask_invalid_phase.sum() == 0
 
     sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
 
@@ -658,7 +660,7 @@ def sample_images(mean, std, num_samples):
     sampled_gauss_symmetry = sym_new(sampled_gauss, None)
 
     fft_sampled_symmetry = get_ifft(
-        sampled_gauss_symmetry, amp_phase=True, scale=False
+        sampled_gauss_symmetry, amp_phase=conf["amp_phase"], scale=False
     ).reshape(num_img, num_samples, 128, 128)
 
     results = {

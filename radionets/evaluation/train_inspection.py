@@ -590,7 +590,7 @@ def save_sampled(conf):
         img["unc"] = unc
         img["pred"] = pred
 
-        result = sample_images(img["pred"], img["unc"], 10)
+        result = sample_images(img["pred"], img["unc"], 1000, conf)
 
         # pad true image
         output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
@@ -608,6 +608,39 @@ def save_sampled(conf):
 
     name_model = Path(model_path).stem
     save_pred(str(out_path) + f"/sampled_imgs_{name_model}.h5", results)
+
+
+def evaluate_ms_ssim_sampled(conf):
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    data_path = str(out_path) + "/sampled_imgs.h5"
+    loader = create_sampled_databunch(data_path, conf["batch_size"])
+    vals = []
+
+    # iterate trough DataLoader
+    for i, (samp, std, img_true) in enumerate(tqdm(loader)):
+        val = ms_ssim(
+            samp.unsqueeze(1),
+            img_true.unsqueeze(1),
+            data_range=1,
+            win_size=7,
+            size_average=False,
+        )
+        vals.extend(val)
+
+    click.echo("\nCreating ms-ssim histogram.\n")
+    vals = torch.tensor(vals)
+    histogram_ms_ssim(vals, out_path, plot_format=conf["format"])
+
+    click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
+
+    if conf["save_vals"]:
+        click.echo("\nSaving area ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "area_ratios.txt", vals)
 
 
 def evaluate_area_sampled(conf):

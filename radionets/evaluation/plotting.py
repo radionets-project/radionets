@@ -423,19 +423,19 @@ def visualize_uncertainty(
         2, 2, sharey=True, sharex=True, figsize=(12, 10)
     )
 
-    im1 = ax1.imshow(true_phase, cmap=OrBu, vmin=-np.pi, vmax=np.pi)
+    im1 = ax1.imshow(true_phase, cmap=OrBu)
 
-    im2 = ax2.imshow(pred_phase, cmap=OrBu, vmin=-np.pi, vmax=np.pi)
+    im2 = ax2.imshow(pred_phase, cmap=OrBu)
 
     im3 = ax3.imshow(unc_phase)
 
     a = check_vmin_vmax(true_phase - pred_phase)
     im4 = ax4.imshow(true_phase - pred_phase, cmap=OrBu, vmin=-a, vmax=a)
 
-    make_axes_nice(fig, ax1, im1, r"Simulation", phase=True)
-    make_axes_nice(fig, ax2, im2, r"Predicted $\mu$", phase=True)
+    make_axes_nice(fig, ax1, im1, r"Simulation")
+    make_axes_nice(fig, ax2, im2, r"Predicted $\mu$")
     make_axes_nice(fig, ax3, im3, r"Predicted $\sigma^2$", unc=True)
-    make_axes_nice(fig, ax4, im4, r"Difference", phase_diff=True)
+    make_axes_nice(fig, ax4, im4, r"Difference")
 
     ax1.set_ylabel(r"pixels")
     ax3.set_ylabel(r"pixels")
@@ -640,7 +640,7 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         msssim.numpy(),
-        51,
+        80,
         color="darkorange",
         linewidth=3,
         histtype="step",
