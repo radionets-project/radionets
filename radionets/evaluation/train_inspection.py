@@ -605,7 +605,8 @@ def save_sampled(conf):
     for key in results.keys():
         results[key] = results[key].reshape(num_img, img_size, img_size)
 
-    save_pred(str(out_path) + "/sampled_imgs.h5", results)
+    name_model = Path(model_path).stem
+    save_pred(str(out_path) + f"/sampled_imgs_{name_model}.h5", results)
 
 
 def evaluate_area_sampled(conf):
