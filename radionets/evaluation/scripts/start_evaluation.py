@@ -11,7 +11,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_dynamic_range,
     evaluate_ms_ssim_sampled,
     evaluate_mean_diff,
-    evaluate_area,
+    evaluate_area_sampled,
     evaluate_point,
     create_predictions,
     evaluate_gan_sources,
@@ -105,7 +105,7 @@ def main(configuration_path):
 
     if eval_conf["area"]:
         click.echo("\nStart evaluation of the area.\n")
-        evaluate_area(eval_conf)
+        evaluate_area_sampled(eval_conf)
 
     if eval_conf["point"]:
         click.echo("\nStart evaluation of point sources.\n")
