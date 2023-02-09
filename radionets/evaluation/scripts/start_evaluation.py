@@ -13,6 +13,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_mean_diff,
     evaluate_area,
     evaluate_point,
+    evaluate_intensity,
     create_predictions,
     evaluate_gan_sources,
     create_uncertainty_plots,
@@ -98,6 +99,10 @@ def main(configuration_path):
     if eval_conf["ms_ssim"]:
         click.echo("\nStart evaluation of ms ssim.\n")
         evaluate_ms_ssim(eval_conf)
+
+    if eval_conf["intensity"]:
+        click.echo("\nStart evaluation of ms ssim.\n")
+        evaluate_intensity(eval_conf)
 
     if eval_conf["mean_diff"]:
         click.echo("\nStart evaluation of mean difference.\n")

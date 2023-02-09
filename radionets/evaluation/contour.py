@@ -73,3 +73,13 @@ def area_of_contour(ifft_pred, ifft_truth):
     val = compute_area_ratio(CS1, CS2)
     mpl.rcParams.update(mpl.rcParamsDefault)
     return val
+
+
+def sum_intensity(pred, truth):
+    pred = pred.numpy()
+    truth = truth.numpy()
+    threshold = (truth.max(-1).max(-1) * 0.1).reshape(truth.shape[0], 1, 1)
+    sum_truth = np.where(truth > threshold, truth, 0).sum(-1).sum(-1)
+    sum_pred = np.where(pred > threshold, pred, 0).sum(-1).sum(-1)
+
+    return sum_pred / sum_truth
