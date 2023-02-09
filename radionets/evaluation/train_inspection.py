@@ -33,13 +33,14 @@ from radionets.evaluation.plotting import (
     plot_yolo_post_clustering,
     plot_yolo_eval,
     plot_yolo_mojave,
+    plot_yolo_velocity,
     visualize_source_reconstruction,
     visualize_with_fourier_diff,
     visualize_with_fourier,
 )
 from radionets.evaluation.pointsources import flux_comparison
 from radionets.evaluation.utils import (
-    # calculate_velocity,
+    calculate_velocity,
     create_databunch,
     eval_model,
     get_ifft,
@@ -52,6 +53,7 @@ from radionets.evaluation.utils import (
     scaling_log10_noisecut,
     yolo_apply_nms,
     yolo_df,
+    yolo_linear_fit,
 )
 
 
@@ -708,10 +710,11 @@ def evaluate_yolo(conf):
 def evaluate_mojave(conf):
     loader = MojaveDataset(
         data_path=conf["data_path"],
-        crop_size=192,
+        crop_size=256,
         scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
         # scaling = partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
     )
+    print(loader.source_list)
     print("Finished loading MOJAVE data")
 
     model_path = Path(conf["model_path"])
@@ -727,11 +730,13 @@ def evaluate_mojave(conf):
             loader.source_list, conf["num_images"], replace=False
         )
     else:
-        selected_sources = loader.source_list[2 : conf["num_images"] + 2]
+        selected_sources = loader.source_list[5 : conf["num_images"] + 5]
     print("Evaluated sources:", selected_sources)
 
     for source in tqdm(selected_sources):
         img = torch.from_numpy(loader.open_source(source))
+        print(f"Evaluation of source {source} including {img.shape[0]} images.")
+
         # print("Source:", source, type(img), img.shape)
         pred = eval_model(img, model, amp_phase=conf["amp_phase"])
 
@@ -750,11 +755,11 @@ def evaluate_mojave(conf):
 
         outputs = yolo_apply_nms(pred, x=img)
 
-        df = yolo_df(outputs=outputs, ds=loader)
+        df = yolo_df(outputs=outputs, ds=loader, source=source)
 
         # Apply the cluster algorythm
         xy_mas = np.array([df["x_mas"], df["y_mas"]]).T
-        print("xy_max shape:", xy_mas.shape)
+        # print("xy_mas shape:", xy_mas.shape)
         cluster_model = spectralClustering(xy_mas)
         df["idx_comp"] = cluster_model.labels_
 
@@ -801,3 +806,14 @@ def evaluate_mojave(conf):
                 df.loc[index, "distance"] = dist
 
         df = df.dropna()
+
+        df = yolo_linear_fit(df)
+
+        v = calculate_velocity(df["fit_param_m"].values, df["redshift"].values)
+        v_err = calculate_velocity(df["fit_error_m"].values, df["redshift"].values)
+
+        df["v"] = v
+        df["v_err"] = v_err
+
+        if conf["vis_pred"]:
+            plot_yolo_velocity(df=df, out_path=out_path, name=source)

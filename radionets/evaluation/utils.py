@@ -1,14 +1,15 @@
 from astropy import constants as const
 from astropy import units as u
 from astropy.coordinates import Distance
-
-# from astropy.modeling import models, fitting
-from bs4 import BeautifulSoup
+from astropy.modeling import models, fitting
+from astropy.utils.exceptions import AstropyWarning
 import numpy as np
 import pandas as pd
 from radionets.evaluation.coordinates import pixel2coordinate
 from radionets.dl_framework.model import load_pre_model
-from radionets.dl_framework.data import load_data
+from radionets.dl_framework.data import (
+    load_data,
+)
 from radionets.dl_framework.utils import (
     decode_yolo_box,
     xywh2xyxy,
@@ -22,7 +23,6 @@ import h5py
 from pathlib import Path
 from PIL import Image
 import warnings
-from urllib.request import urlopen
 
 
 def source_list_collate(batch):
@@ -762,32 +762,6 @@ def SymLogNorm(
     return out
 
 
-def get_redshift(source: str):
-    """Get redshift information of source from MOJAVE webpage.
-
-    Parameters
-    ----------
-    source: str
-        B1950 name of source
-
-    Returns
-    -------
-    redshift: float
-        Redshift of the object
-    """
-    url = "https://www.cv.nrao.edu/MOJAVE/sourcepages/" + source + ".shtml"
-    page = urlopen(url)
-    html_bytes = page.read()
-    soup = BeautifulSoup(html_bytes, features="lxml")
-    redshift = soup.find("td", text="Redshift:").find_next_sibling("td").text
-    try:
-        redshift = float(redshift.split()[0])
-    except ValueError:
-        redshift = np.nan
-
-    return redshift
-
-
 def calculate_velocity(theta: float, z: float):
     """Calculate velocity of jet components.
     Parallax: l = d * tan(theta)
@@ -815,7 +789,7 @@ def calculate_velocity(theta: float, z: float):
     return vc
 
 
-def yolo_df(outputs: list, ds):
+def yolo_df(outputs: list, ds, source: str):
     """Creates a pandas dataframe to sort outputs for further calculations.
 
     Parameters
@@ -824,6 +798,8 @@ def yolo_df(outputs: list, ds):
         list of outputs from nms
     ds:
         MojaveDataset class
+    source: str
+        name of the source
 
     Returns
     -------
@@ -833,10 +809,12 @@ def yolo_df(outputs: list, ds):
     pred_list = []
     for i, output in enumerate(outputs):
         output = output.cpu().detach().numpy()
-        header = ds.get_header(i)
+        header = ds.get_header(i, source)
+        # redshift = get_redshift(source)  # ds.source not defined in "evaluate_mojave"
         for out in output:
             pred_dict = {}
             pred_dict["date"] = pd.Timestamp(header["DATE-OBS"])
+            pred_dict["redshift"] = header["REDSHIFT"]
             pred_dict["idx_img"] = i
             pred_dict["x"] = out[0]
             pred_dict["y"] = out[1]
@@ -855,18 +833,41 @@ def yolo_df(outputs: list, ds):
     return df
 
 
-# def yolo_linear_fit(df):
-#     """Linear fit with astropy in MOJAVE evaluation.
+def yolo_linear_fit(df):
+    """Linear fit with astropy in MOJAVE evaluation.
 
-#     Parameters
-#     ----------
-#     df: pandas.DataFrame
-#         dataframe with reconstructed properties
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        dataframe with reconstructed properties
 
-#     Returns
-#     -------
+    Returns
+    -------
+    df: pandas.DataFrame
+        dataframe including fit parameters and errors
+    """
+    for i in df["idx_comp"].unique():
+        # in seconds, pandas returns in ns
+        x0 = df[df["idx_comp"] == i]["date"].astype(int) / 1e9
+        # in mas
+        y0 = df[df["idx_comp"] == i]["distance"]
 
-#     """
+        fit = fitting.LevMarLSQFitter()
+        line_init = models.Linear1D()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", AstropyWarning)
+            fitted_line = fit(line_init, x0, y0)
+
+        parameters = fitted_line.parameters
+        errors = np.sqrt(np.diag(fit.fit_info["param_cov"]))
+
+        df.loc[df["idx_comp"] == i, "fit_param_m"] = parameters[0]
+        df.loc[df["idx_comp"] == i, "fit_param_b"] = parameters[1]
+        df.loc[df["idx_comp"] == i, "fit_error_m"] = errors[0]
+        df.loc[df["idx_comp"] == i, "fit_error_b"] = errors[1]
+
+    return df
 
 
 def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):

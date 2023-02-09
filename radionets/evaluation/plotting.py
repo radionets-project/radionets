@@ -5,6 +5,7 @@ from pathlib import Path
 import torch
 import matplotlib as mpl
 from matplotlib.colors import ListedColormap, LogNorm
+import matplotlib.dates as mdates
 from matplotlib.lines import Line2D
 from matplotlib.patches import Arc, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -1327,9 +1328,7 @@ def plot_yolo_clustering(
         format of the plot
     """
     fig, ax = plt.subplots(1, 1, figsize=((4.5, 4)))
-    for i in range(df["idx_comp"].max() + 1):
-        if not np.any(df["idx_comp"] == i):
-            continue
+    for i in sorted(df["idx_comp"].unique()):
         ax.scatter(
             df[df["idx_comp"] == i]["x_mas"],
             df[df["idx_comp"] == i]["y_mas"],
@@ -1346,6 +1345,73 @@ def plot_yolo_clustering(
     fig.tight_layout(pad=0.05)
     if out_path and name:
         out_path = str(out_path) + f"/{name}/cluster_positions.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_yolo_velocity(
+    df, out_path: str = "", name: str = "", plot_format: str = "pdf"
+):
+    """Plot all predicted distances and the linear fit for the velocity
+
+    Parameters
+    ----------
+    df: pandas.DataFrame
+        dataframe with reconstructed properties
+    out_path: str
+        path in file directory to save output
+    name: str
+        name of source
+    plot_format: str
+        format of the plot
+    """
+    textstr = ""
+
+    fig, ax = plt.subplots(1, 1)
+    for i in sorted(df["idx_comp"].unique()):
+        x = df[df["idx_comp"] == i]["date"]
+        y = df[df["idx_comp"] == i]["distance"]
+        m = df[df["idx_comp"] == i]["fit_param_m"]
+        b = df[df["idx_comp"] == i]["fit_param_b"]
+
+        ax.plot(x, y, "o", label=f"C$_{i}$")
+        ax.plot(x, m * x.astype(int) / 1e9 + b, "k-")
+
+        v = np.round(df[df["idx_comp"] == i]["v"].values[0], 3)
+        v_err = np.round(df[df["idx_comp"] == i]["v_err"].values[0], 3)
+        textstr += f"$v_{i} = {v} \pm {v_err}$c\n"
+
+    ax.text(
+        1.03,
+        0.5,
+        textstr[:-2],
+        horizontalalignment="left",
+        verticalalignment="center",
+        transform=ax.transAxes,
+        bbox=dict(
+            boxstyle="round",
+            facecolor="white",
+            edgecolor="lightgray",
+        ),
+        # usetex=True,
+    )
+
+    ax.set_xlabel("")
+    ax.set_ylabel("Distance / mas")
+    ax.grid()
+    ax.legend(
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.1),
+        ncol=5,
+        # fancybox=True,
+        # shadow=True,
+    )
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+    for label in ax.get_xticklabels(which="major"):
+        label.set(rotation=30, horizontalalignment="right")
+
+    fig.tight_layout(pad=0.05)
+    if out_path and name:
+        out_path = str(out_path) + f"/{name}/velocity.{plot_format}"
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
