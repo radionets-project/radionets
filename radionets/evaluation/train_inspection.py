@@ -340,7 +340,8 @@ def create_uncertainty_plots(conf, num_images=3, rand=False):
             plot_format=conf["format"],
         )
 
-    sampling_path = path + "/sampled_imgs.h5"
+    name_model = Path(model_path).stem
+    sampling_path = path + f"/sampled_imgs_{name_model}.h5"
     test_ds = sampled_dataset(sampling_path)
     mean_imgs, std_imgs, true_imgs = get_images(
         test_ds, num_images, rand=rand, indices=img["indices"]
@@ -614,7 +615,8 @@ def evaluate_area_sampled(conf):
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
-    data_path = str(out_path) + "/sampled_imgs.h5"
+    name_model = Path(model_path).stem
+    data_path = str(out_path) + f"/sampled_imgs_{name_model}.h5"
     loader = create_sampled_databunch(data_path, conf["batch_size"])
     vals = []
 
