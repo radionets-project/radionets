@@ -14,7 +14,8 @@ from radionets.evaluation.plotting import (
     histogram_mean_diff,
     histogram_area,
     histogram_gan_sources,
-    histogram_intensity,
+    histogram_sum_intensity,
+    histogram_peak_intensity,
     plot_contour,
     hist_point,
     plot_length_point,
@@ -41,7 +42,7 @@ from radionets.evaluation.utils import (
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
 from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
-from radionets.evaluation.contour import area_of_contour, sum_intensity
+from radionets.evaluation.contour import area_of_contour, analyse_intensity
 from radionets.evaluation.pointsources import flux_comparison
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
@@ -719,18 +720,21 @@ def evaluate_intensity(conf):
     name_model = Path(model_path).stem
     data_path = str(out_path) + f"/sampled_imgs_{name_model}.h5"
     loader = create_sampled_databunch(data_path, conf["batch_size"])
-    vals = np.array([])
+    ratios_sum = np.array([])
+    ratios_peak = np.array([])
 
     # iterate trough DataLoader
     for i, (samp, std, img_true) in enumerate(tqdm(loader)):
-        val = sum_intensity(samp, img_true)
-        vals = np.append(vals, val)
+        ratio_sum, ratio_peak = analyse_intensity(samp, img_true)
+        ratios_sum = np.append(ratios_sum, ratio_sum)
+        ratios_peak = np.append(ratios_peak, ratio_peak)
 
     click.echo("\nCreating eval_intensity histogram.\n")
-    vals = vals[vals < 10]
-    histogram_intensity(vals, out_path, plot_format=conf["format"])
+    # vals = vals[vals < 10]
+    histogram_sum_intensity(ratios_sum, out_path, plot_format=conf["format"])
+    histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
 
-    click.echo(f"\nThe mean intensity ratio is {vals.mean()}.\n")
+    click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
 
     # if conf["save_vals"]:
     #     click.echo("\nSaving area ratios.\n")

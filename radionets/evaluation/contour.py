@@ -75,11 +75,17 @@ def area_of_contour(ifft_pred, ifft_truth):
     return val
 
 
-def sum_intensity(pred, truth):
+def analyse_intensity(pred, truth):
     pred = pred.numpy()
     truth = truth.numpy()
     threshold = (truth.max(-1).max(-1) * 0.1).reshape(truth.shape[0], 1, 1)
-    sum_truth = np.where(truth > threshold, truth, 0).sum(-1).sum(-1)
-    sum_pred = np.where(pred > threshold, pred, 0).sum(-1).sum(-1)
+    source_truth = np.where(truth > threshold, truth, 0)
+    source_pred = np.where(pred > threshold, pred, 0)
 
-    return sum_pred / sum_truth
+    sum_truth = source_truth.sum(-1).sum(-1)
+    sum_pred = source_pred.sum(-1).sum(-1)
+
+    peak_truth = source_truth.max(-1).max(-1)
+    peak_pred = source_pred.max(-1).max(-1)
+
+    return sum_pred / sum_truth, peak_pred / peak_truth
