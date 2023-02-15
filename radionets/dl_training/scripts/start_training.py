@@ -67,9 +67,8 @@ def main(configuration_path, mode):
         arch_name=train_conf["arch_name"], img_size=train_conf["image_size"]
     )
 
-    train_conf["norm_factors"] = get_normalisation_factors(data)
-
     if mode == "train":
+        train_conf["norm_factors"] = get_normalisation_factors(data)
         # check out path and look for existing model files
         check_outpath(train_conf["model_path"], train_conf)
 

@@ -51,7 +51,6 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             SaveTempCallback(model_path=model_path),
             AvgLossCallback,
             DataAug,
-            Normalize(train_conf=train_conf),
         ]
     )
 
@@ -79,6 +78,8 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             ]
         )
 
+    if not lr_find and not plot_loss:
+        cbfs.extend([Normalize(train_conf=train_conf)])
     # get loss func
     if train_conf["loss_func"] == "feature_loss":
         loss_func = loss_functions.init_feature_loss()
