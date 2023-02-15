@@ -7,6 +7,7 @@ from radionets.dl_framework.callbacks import (
     SwitchLoss,
     CudaCallback,
     CometCallback,
+    Normalize,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -50,6 +51,7 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             SaveTempCallback(model_path=model_path),
             AvgLossCallback,
             DataAug,
+            Normalize(train_conf=train_conf),
         ]
     )
 

@@ -1,4 +1,6 @@
 import sys
+import torch
+from tqdm import tqdm
 import click
 from pathlib import Path
 from radionets.dl_framework.data import load_data, DataBunch, get_dls
@@ -108,3 +110,34 @@ def end_training(learn, train_conf):
 
     # Plot loss
     plot_loss(learn, Path(train_conf["model_path"]))
+
+
+def get_normalisation_factors(data):
+    mean_real = []
+    mean_imag = []
+    std_real = []
+    std_imag = []
+
+    for inp, true in tqdm(data.train_ds):
+        mean_batch_imag = inp[1].mean()
+        mean_batch_real = inp[0].mean()
+        std_batch_imag = inp[1].std()
+        std_batch_real = inp[0].std()
+        mean_real.append(mean_batch_real)
+        mean_imag.append(mean_batch_imag)
+        std_real.append(std_batch_real)
+        std_imag.append(std_batch_imag)
+
+    mean_real = torch.tensor(mean_real).mean()
+    mean_imag = torch.tensor(mean_imag).mean()
+    std_real = torch.tensor(std_real).std()
+    std_imag = torch.tensor(std_imag).std()
+
+    norm_factors = {
+        "mean_real": mean_real,
+        "mean_imag": mean_imag,
+        "std_real": std_real,
+        "std_imag": std_imag,
+    }
+
+    return norm_factors

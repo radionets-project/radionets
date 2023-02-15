@@ -8,6 +8,7 @@ from radionets.dl_training.utils import (
     define_arch,
     pop_interrupt,
     end_training,
+    get_normalisation_factors,
 )
 from radionets.dl_framework.learner import define_learner
 from radionets.dl_framework.model import load_pre_model
@@ -65,6 +66,8 @@ def main(configuration_path, mode):
     arch = define_arch(
         arch_name=train_conf["arch_name"], img_size=train_conf["image_size"]
     )
+
+    train_conf["norm_factors"] = get_normalisation_factors(data)
 
     if mode == "train":
         # check out path and look for existing model files

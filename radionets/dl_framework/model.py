@@ -171,6 +171,13 @@ def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
 
 
 def save_model(learn, model_path):
+    norm_dict = {
+        "mean_real": learn.normalize.mean_real,
+        "mean_imag": learn.normalize.mean_imag,
+        "std_real": learn.normalize.std_real,
+        "std_imag": learn.normalize.std_imag,
+    }
+
     torch.save(
         {
             "model": learn.model.state_dict(),
@@ -181,6 +188,7 @@ def save_model(learn, model_path):
             "train_loss": learn.avg_loss.loss_train,
             "valid_loss": learn.avg_loss.loss_valid,
             "lrs": learn.avg_loss.lrs,
+            "norm_dict": norm_dict,
         },
         model_path,
     )

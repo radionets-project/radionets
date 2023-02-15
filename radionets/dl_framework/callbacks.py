@@ -194,6 +194,31 @@ class DataAug(Callback):
         self.learn.yb = [y]
 
 
+class Normalize(Callback):
+    _order = 4
+
+    def __init__(self, train_conf):
+        self.mean_real = train_conf["norm_factors"]["mean_real"]
+        self.mean_imag = train_conf["norm_factors"]["mean_imag"]
+        self.std_real = train_conf["norm_factors"]["std_real"]
+        self.std_imag = train_conf["norm_factors"]["std_imag"]
+
+    def normalize(self, x, m, s):
+        return (x - m) / s
+
+    def before_batch(self):
+        x = self.xb[0].clone()
+        y = self.yb[0].clone()
+
+        x[:, 0] = self.normalize(x[:, 0], self.mean_real, self.std_real)
+        x[:, 1] = self.normalize(x[:, 1], self.mean_imag, self.std_imag)
+        y[:, 0] = self.normalize(y[:, 0], self.mean_real, self.std_real)
+        y[:, 1] = self.normalize(y[:, 1], self.mean_imag, self.std_imag)
+
+        self.learn.xb = [x]
+        self.learn.yb = [y]
+
+
 class SaveTempCallback(Callback):
     _order = 95
 
