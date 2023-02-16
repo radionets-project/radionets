@@ -52,10 +52,13 @@ def create_predictions(conf):
         img = get_separate_prediction(conf)
     else:
         img = get_prediction(conf)
+
     model_path = conf["model_path"]
+    name_model = Path(model_path).stem
+
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
-    out_path = str(out_path) + "/predictions.h5"
+    out_path = str(out_path) + f"/predictions_{name_model}.h5"
 
     if not conf["fourier"]:
         click.echo("\n This is not a fourier dataset.\n")
@@ -151,7 +154,8 @@ def get_separate_prediction(conf):
 def create_inspection_plots(conf, num_images=3, rand=False):
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    path += "/predictions.h5"
+    name_model = Path(model_path).stem
+    path += f"/predictions_{name_model}.h5"
     out_path = Path(model_path).parent / "evaluation/"
 
     img = read_pred(path)
@@ -261,7 +265,8 @@ def create_source_plots(conf, num_images=3, rand=False):
     """
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    path += "/predictions.h5"
+    name_model = Path(model_path).stem
+    path += f"/predictions_{name_model}.h5"
     out_path = Path(model_path).parent / "evaluation"
 
     img = read_pred(path)
@@ -293,7 +298,8 @@ def create_source_plots(conf, num_images=3, rand=False):
 def create_contour_plots(conf, num_images=3, rand=False):
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    path += "/predictions.h5"
+    name_model = Path(model_path).stem
+    path += f"/predictions_{name_model}.h5"
     out_path = Path(model_path).parent / "evaluation"
 
     if not conf["fourier"]:
@@ -325,7 +331,8 @@ def create_uncertainty_plots(conf, num_images=3, rand=False):
     """
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    predictions_path = path + "/predictions.h5"
+    name_model = Path(model_path).stem
+    predictions_path = path + f"/predictions_{name_model}.h5"
     out_path = Path(model_path).parent / "evaluation/"
 
     img = read_pred(predictions_path)

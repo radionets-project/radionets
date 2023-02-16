@@ -475,7 +475,8 @@ def check_outpath(model_path):
     bool
         true, if the file exists
     """
-    model_path = Path(model_path).parent / "evaluation" / "predictions.h5"
+    name_model = Path(model_path).stem
+    model_path = Path(model_path).parent / "evaluation" / f"predictions_{name_model}.h5"
     path = Path(model_path)
     exists = path.exists()
     return exists
