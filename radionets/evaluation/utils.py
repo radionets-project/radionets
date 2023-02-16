@@ -475,7 +475,6 @@ def sym_new(image, key):
     torch.Tensor
         quadratic images after utilizing symmetry
     """
-    # set channel for phase dependent of uncertainty training
     if isinstance(image, np.ndarray):
         image = torch.tensor(image)
     upper_half = image[:, :, :64, :].clone()
@@ -495,6 +494,19 @@ def sym_new(image, key):
 
 
 def apply_symmetry(img_dict):
+    """
+    Pads and applies symmetry to half images. Takes a dict as input
+
+    Parameters
+    ----------
+    img_dict : dict
+        input dict which contains the half images
+
+    Returns
+    -------
+    dict
+        input dict with quadratic images
+    """
     for key in img_dict:
         if key != "indices":
             if isinstance(img_dict[key], np.ndarray):
