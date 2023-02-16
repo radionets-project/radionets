@@ -1344,7 +1344,9 @@ def plot_yolo_clustering(
 
     fig.tight_layout(pad=0.05)
     if out_path and name:
-        out_path = str(out_path) + f"/{name}/cluster_positions.{plot_format}"
+        out_path = str(out_path) + "/" + name
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/cluster_positions.{plot_format}"
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
@@ -1366,7 +1368,7 @@ def plot_yolo_velocity(
     """
     textstr = ""
 
-    fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1, figsize=((6, 4)))
     for i in sorted(df["idx_comp"].unique()):
         x = df[df["idx_comp"] == i]["date"]
         y = df[df["idx_comp"] == i]["distance"]
@@ -1376,14 +1378,14 @@ def plot_yolo_velocity(
         ax.plot(x, y, "o", label=f"C$_{i}$")
         ax.plot(x, m * x.astype(int) / 1e9 + b, "k-")
 
-        v = np.round(df[df["idx_comp"] == i]["v"].values[0], 3)
-        v_err = np.round(df[df["idx_comp"] == i]["v_err"].values[0], 3)
+        v = np.round(df[df["idx_comp"] == i]["v"].values[0], 2)
+        v_err = np.round(df[df["idx_comp"] == i]["v_err"].values[0], 2)
         textstr += f"$v_{i} = {v} \pm {v_err}$c\n"
 
     ax.text(
         1.03,
         0.5,
-        textstr[:-2],
+        textstr[:-1],
         horizontalalignment="left",
         verticalalignment="center",
         transform=ax.transAxes,
@@ -1411,7 +1413,9 @@ def plot_yolo_velocity(
 
     fig.tight_layout(pad=0.05)
     if out_path and name:
-        out_path = str(out_path) + f"/{name}/velocity.{plot_format}"
+        out_path = str(out_path) + "/" + name
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/velocity.{plot_format}"
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 

@@ -105,7 +105,7 @@ def build_target_yolo(y, shape, stride):
 
         for j in range(y.shape[1]):  # for each target component
 
-            if y[i, j, 0] > 0:  # only assign when amplitude is larger 0
+            if y[i, j, 0] > 0.01:  # only assign when amplitude is larger 0.01
                 ny = target_idx[i, j, 1]
                 nx = target_idx[i, j, 0]
                 anchor = anchors[ny, nx]

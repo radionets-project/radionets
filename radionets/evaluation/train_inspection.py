@@ -731,18 +731,20 @@ def evaluate_mojave(conf):
         )
     else:
         selected_sources = loader.source_list[5 : conf["num_images"] + 5]
+    # selected_sources = ["0723-008"]
     print("Evaluated sources:", selected_sources)
 
     for source in tqdm(selected_sources):
         img = torch.from_numpy(loader.open_source(source))
         print(f"Evaluation of source {source} including {img.shape[0]} images.")
-
         # print("Source:", source, type(img), img.shape)
+
         pred = eval_model(img, model, amp_phase=conf["amp_phase"])
 
         if conf["vis_pred"]:
             for i in range(len(img)):
                 date = loader.get_header(i, source)["DATE-OBS"]
+                continue
                 if i < 3:
                     plot_yolo_mojave(
                         x=img[:, None],
@@ -780,6 +782,7 @@ def evaluate_mojave(conf):
         if conf["vis_pred"]:
             for i in range(len(img)):
                 date = loader.get_header(i, source)["DATE-OBS"]
+                continue
                 if i < 3:
                     plot_yolo_post_clustering(
                         x=img, df=df, idx=i, out_path=out_path, name=source, date=date
@@ -790,7 +793,7 @@ def evaluate_mojave(conf):
 
         # Calculate distance to main component
         df["distance"] = np.nan
-        for i in range(len(source)):
+        for i in range(len(img)):
             main_component = df[(df["idx_img"] == i) & (df["idx_comp"] == idx_main)]
             x1 = main_component["x_mas"].to_numpy()
             y1 = main_component["y_mas"].to_numpy()
@@ -805,7 +808,13 @@ def evaluate_mojave(conf):
                 dist = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
                 df.loc[index, "distance"] = dist
 
+        # print(df)
         df = df.dropna()
+
+        for i in sorted(df["idx_comp"].unique()):
+            if len(df[df["idx_comp"] == i]) == 1:
+                idx = df[df["idx_comp"] == i].index
+                df.drop(idx, inplace=True)
 
         df = yolo_linear_fit(df)
 

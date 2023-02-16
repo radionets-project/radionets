@@ -846,6 +846,7 @@ def yolo_linear_fit(df):
     df: pandas.DataFrame
         dataframe including fit parameters and errors
     """
+    # print(df)
     for i in df["idx_comp"].unique():
         # in seconds, pandas returns in ns
         x0 = df[df["idx_comp"] == i]["date"].astype(int) / 1e9
@@ -857,10 +858,18 @@ def yolo_linear_fit(df):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", AstropyWarning)
+            print(len(x0))
             fitted_line = fit(line_init, x0, y0)
 
         parameters = fitted_line.parameters
-        errors = np.sqrt(np.diag(fit.fit_info["param_cov"]))
+        param_cov = fit.fit_info["param_cov"]
+        if param_cov is not None:
+            errors = np.sqrt(np.diag(fit.fit_info["param_cov"]))
+        elif len(x0) == 2 and len(y0) == 2:
+            errors = np.array([0, 0])
+        else:
+            print("x", x0)
+            print("y", y0)
 
         df.loc[df["idx_comp"] == i, "fit_param_m"] = parameters[0]
         df.loc[df["idx_comp"] == i, "fit_param_b"] = parameters[1]
