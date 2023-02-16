@@ -28,7 +28,6 @@ from radionets.evaluation.utils import (
     get_images,
     eval_model,
     get_ifft,
-    pad_unsqueeze,
     save_pred,
     read_pred,
     apply_symmetry,
@@ -85,7 +84,11 @@ def get_prediction(conf, mode="test"):
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
 
+    img_test[:, 0] = (img_test[:, 0] - 0.0931) / 1.0073
+    img_test[:, 1] = (img_test[:, 1] - -0.0093) / 0.4720
     pred = eval_model(img_test, model)
+    pred[:, 0] = pred[:, 0] * 1.0073 + 0.0931
+    pred[:, 1] = pred[:, 1] * 0.4720 - 0.0093
     images = {"pred": pred, "inp": img_test, "true": img_true}
 
     if pred.shape[1] == 4:
@@ -479,12 +482,6 @@ def evaluate_ms_ssim(conf):
 
     vals = []
 
-    if img_size < 160:
-        click.echo(
-            "\nThis is only a placeholder!\
-                Images too small for meaningful ms ssim calculations.\n"
-        )
-
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
@@ -493,19 +490,23 @@ def evaluate_ms_ssim(conf):
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
 
-        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+        # apply symmetry
+        img_dict = {"truth": img_true, "pred": pred}
+        img_dict = apply_symmetry(img_dict)
+        img_true = img_dict["truth"]
+        pred = img_dict["pred"]
 
-        if img_size < 160:
-            ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
-            ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred))
+        ifft_truth = torch.tensor(get_ifft(img_true, amp_phase=conf["amp_phase"]))
+        ifft_pred = torch.tensor(get_ifft(pred, amp_phase=conf["amp_phase"]))
 
-        vals.extend(
-            [
-                ms_ssim(pred.unsqueeze(0), truth.unsqueeze(0), data_range=truth.max())
-                for pred, truth in zip(ifft_pred, ifft_truth)
-            ]
+        val = ms_ssim(
+            ifft_pred.unsqueeze(1),
+            ifft_truth.unsqueeze(1),
+            data_range=1,
+            win_size=7,
+            size_average=False,
         )
+        vals.extend(val)
 
     click.echo("\nCreating ms-ssim histogram.\n")
     vals = torch.tensor(vals)
@@ -704,6 +705,12 @@ def evaluate_area(conf):
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
+
+        # apply symmetry
+        img_dict = {"truth": img_true, "pred": pred}
+        img_dict = apply_symmetry(img_dict)
+        img_true = img_dict["truth"]
+        pred = img_dict["pred"]
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])

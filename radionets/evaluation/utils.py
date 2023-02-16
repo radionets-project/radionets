@@ -370,27 +370,6 @@ def get_ifft(array, amp_phase=False, scale=False):
     return np.abs(np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(compl))))
 
 
-def pad_unsqueeze(tensor):
-    """Unsqueeze with zeros until the image has a length of 160 pixels.
-    Needed as a helper function for the ms_ssim, as is only operates on
-    images which are at least 160x160 pixels.
-
-    Parameters
-    ----------
-    tensor : torch.tensor
-        image to pad
-
-    Returns
-    -------
-    torch.tensor
-        padded tensor
-    """
-    while tensor.shape[-1] < 160:
-        tensor = F.pad(input=tensor, pad=(1, 1, 1, 1), mode="constant", value=0)
-    tensor = tensor.unsqueeze(1)
-    return tensor
-
-
 def fft_pred(pred, truth, amp_phase=True):
     """
     Transform predicted image and true image to local domain.
