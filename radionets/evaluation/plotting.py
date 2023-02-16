@@ -235,15 +235,12 @@ def visualize_with_fourier(
         im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax6, im6, r"Phase Truth", phase=True)
     else:
-        # a = check_vmin_vmax(inp_real)
         im1 = ax1.imshow(inp_real, cmap="RdBu")
         make_axes_nice(fig, ax1, im1, r"Real Input")
 
-        # a = check_vmin_vmax(real_truth)
         im2 = ax2.imshow(real_pred, cmap="RdBu")
         make_axes_nice(fig, ax2, im2, r"Real Prediction")
 
-        # a = check_vmin_vmax(real_truth)
         im3 = ax3.imshow(real_truth, cmap="RdBu")
         make_axes_nice(fig, ax3, im3, r"Real Truth")
 
@@ -318,26 +315,26 @@ def visualize_with_fourier_diff(
 
     else:
         im1 = ax1.imshow(real_pred, cmap="inferno")
-        make_axes_nice(fig, ax1, im1, r"Amplitude Prediction")
+        make_axes_nice(fig, ax1, im1, r"Real Prediction")
 
         im2 = ax2.imshow(real_truth, cmap="inferno")
-        make_axes_nice(fig, ax2, im2, r"Amplitude Truth")
+        make_axes_nice(fig, ax2, im2, "Real Truth")
 
         a = check_vmin_vmax(real_pred - real_truth)
         im3 = ax3.imshow(real_pred - real_truth, cmap=OrBu, vmin=-a, vmax=a)
-        make_axes_nice(fig, ax3, im3, r"Amplitude Difference")
+        make_axes_nice(fig, ax3, im3, r"Real Difference")
 
         a = check_vmin_vmax(imag_truth)
         im4 = ax4.imshow(imag_pred, cmap=OrBu)
-        make_axes_nice(fig, ax4, im4, r"Phase Prediction")
+        make_axes_nice(fig, ax4, im4, r"Imaginary Prediction")
 
         a = check_vmin_vmax(imag_truth)
         im5 = ax5.imshow(imag_truth, cmap=OrBu)
-        make_axes_nice(fig, ax5, im5, r"Phase Truth")
+        make_axes_nice(fig, ax5, im5, r"Imaginary Truth")
 
         a = check_vmin_vmax(imag_pred - imag_truth)
         im6 = ax6.imshow(imag_pred - imag_truth, cmap=OrBu)
-        make_axes_nice(fig, ax6, im6, r"Phase Difference")
+        make_axes_nice(fig, ax6, im6, r"Imaginary Difference")
 
     ax1.set_ylabel(r"Pixels")
     ax4.set_ylabel(r"Pixels")
