@@ -495,10 +495,11 @@ def evaluate_ms_ssim(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         # apply symmetry
-        img_dict = {"truth": img_true, "pred": pred}
-        img_dict = apply_symmetry(img_dict)
-        img_true = img_dict["truth"]
-        pred = img_dict["pred"]
+        if pred.shape[-1] == 128:
+            img_dict = {"truth": img_true, "pred": pred}
+            img_dict = apply_symmetry(img_dict)
+            img_true = img_dict["truth"]
+            pred = img_dict["pred"]
 
         ifft_truth = torch.tensor(get_ifft(img_true, amp_phase=conf["amp_phase"]))
         ifft_pred = torch.tensor(get_ifft(pred, amp_phase=conf["amp_phase"]))
@@ -715,10 +716,11 @@ def evaluate_area(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         # apply symmetry
-        img_dict = {"truth": img_true, "pred": pred}
-        img_dict = apply_symmetry(img_dict)
-        img_true = img_dict["truth"]
-        pred = img_dict["pred"]
+        if pred.shape[-1] == 128:
+            img_dict = {"truth": img_true, "pred": pred}
+            img_dict = apply_symmetry(img_dict)
+            img_true = img_dict["truth"]
+            pred = img_dict["pred"]
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
