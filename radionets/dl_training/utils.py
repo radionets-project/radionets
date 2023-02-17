@@ -40,6 +40,7 @@ def read_config(config):
 
     train_conf["fourier"] = config["general"]["fourier"]
     train_conf["amp_phase"] = config["general"]["amp_phase"]
+    train_conf["normalize"] = config["general"]["normalize"]
     train_conf["arch_name"] = config["general"]["arch_name"]
     train_conf["loss_func"] = config["general"]["loss_func"]
     train_conf["num_epochs"] = config["general"]["num_epochs"]
