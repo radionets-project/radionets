@@ -197,11 +197,13 @@ class DataAug(Callback):
 class Normalize(Callback):
     _order = 4
 
-    def __init__(self, train_conf):
-        self.mean_real = train_conf["norm_factors"]["mean_real"]
-        self.mean_imag = train_conf["norm_factors"]["mean_imag"]
-        self.std_real = train_conf["norm_factors"]["std_real"]
-        self.std_imag = train_conf["norm_factors"]["std_imag"]
+    def __init__(self, conf):
+        self.mode = conf["normalize"]
+        if self.mode == "mean":
+            self.mean_real = conf["norm_factors"]["mean_real"]
+            self.mean_imag = conf["norm_factors"]["mean_imag"]
+            self.std_real = conf["norm_factors"]["std_real"]
+            self.std_imag = conf["norm_factors"]["std_imag"]
 
     def normalize(self, x, m, s):
         return (x - m) / s
@@ -210,10 +212,16 @@ class Normalize(Callback):
         x = self.xb[0].clone()
         y = self.yb[0].clone()
 
-        x[:, 0] = self.normalize(x[:, 0], self.mean_real, self.std_real)
-        x[:, 1] = self.normalize(x[:, 1], self.mean_imag, self.std_imag)
-        y[:, 0] = self.normalize(y[:, 0], self.mean_real, self.std_real)
-        y[:, 1] = self.normalize(y[:, 1], self.mean_imag, self.std_imag)
+        if self.mode == "max":
+            x[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
+            x[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
+            y[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
+            y[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
+        elif self.mode == "mean":
+            x[:, 0] = self.normalize(x[:, 0], self.mean_real, self.std_real)
+            x[:, 1] = self.normalize(x[:, 1], self.mean_imag, self.std_imag)
+            y[:, 0] = self.normalize(y[:, 0], self.mean_real, self.std_real)
+            y[:, 1] = self.normalize(y[:, 1], self.mean_imag, self.std_imag)
 
         self.learn.xb = [x]
         self.learn.yb = [y]

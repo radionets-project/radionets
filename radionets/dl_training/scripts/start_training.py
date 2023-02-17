@@ -68,7 +68,8 @@ def main(configuration_path, mode):
     )
 
     if mode == "train":
-        train_conf["norm_factors"] = get_normalisation_factors(data)
+        if train_conf["normalize"] == "mean":
+            train_conf["norm_factors"] = get_normalisation_factors(data)
         # check out path and look for existing model files
         check_outpath(train_conf["model_path"], train_conf)
 
