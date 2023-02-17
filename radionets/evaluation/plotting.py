@@ -16,7 +16,6 @@ from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.utils import (
     check_vmin_vmax,
     make_axes_nice,
-    pad_unsqueeze,
     reshape_2d,
 )
 from radionets.simulations.utils import adjust_outpath
@@ -389,11 +388,16 @@ def visualize_source_reconstruction(
         plot_box(ax2, num_boxes, corners[0])
 
     if msssim:
-        ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth).unsqueeze(0))
-        ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
-        val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
-
-        ax1.plot([], [], " ", label=f"ms ssim: {val:.2f}")
+        val = ms_ssim(
+            torch.tensor(ifft_pred).unsqueeze(0).unsqueeze(0),
+            torch.tensor(ifft_truth).unsqueeze(0).unsqueeze(0),
+            data_range=1,
+            win_size=7,
+            size_average=False,
+        )
+        val = val.numpy()[0]
+        ax1.plot([], [], " ", label=f"MS-SSIM: {val:.2f}")
+        ax1.legend(loc="best")
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
