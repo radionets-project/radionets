@@ -405,12 +405,12 @@ class TestEvaluation:
         )
 
         # masks
-        # mask_invalid_amp = sampled_gauss_amp < 0
-        # mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
-        #   sampled_gauss_phase >= (np.pi + 1e-4)
-        # )
-        # assert mask_invalid_amp.sum() == 0
-        # assert mask_invalid_phase.sum() == 0
+        mask_invalid_amp = sampled_gauss_amp < 0
+        mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+            sampled_gauss_phase >= (np.pi + 1e-4)
+        )
+        assert mask_invalid_amp.sum() == 0
+        assert mask_invalid_phase.sum() == 0
 
         sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
 
@@ -475,10 +475,7 @@ def test_trunc_rv(mode, target):
     if mode == "phase":
         a, b = -np.pi, np.pi
     elif mode == "amp":
-        (a, b,) = (
-            0,
-            np.inf,
-        )
+        (a, b) = (0, np.inf)
 
     if target == "cpu":
         nthreads = 1
