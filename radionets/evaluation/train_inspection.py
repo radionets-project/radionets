@@ -84,11 +84,7 @@ def get_prediction(conf, mode="test"):
     img_size = img_test.shape[-1]
     model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
 
-    img_test[:, 0] = (img_test[:, 0] - 0.0931) / 1.0073
-    img_test[:, 1] = (img_test[:, 1] - -0.0093) / 0.4720
     pred = eval_model(img_test, model)
-    pred[:, 0] = pred[:, 0] * 1.0073 + 0.0931
-    pred[:, 1] = pred[:, 1] * 0.4720 - 0.0093
     images = {"pred": pred, "inp": img_test, "true": img_true}
 
     if pred.shape[1] == 4:
@@ -485,11 +481,7 @@ def evaluate_ms_ssim(conf):
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
-        img_test[:, 0] = (img_test[:, 0] - 0.0931) / 1.0073
-        img_test[:, 1] = (img_test[:, 1] - -0.0093) / 0.4720
         pred = eval_model(img_test, model)
-        pred[:, 0] = pred[:, 0] * 1.0073 + 0.0931
-        pred[:, 1] = pred[:, 1] * 0.4720 - 0.0093
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
@@ -706,11 +698,7 @@ def evaluate_area(conf):
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
 
-        img_test[:, 0] = (img_test[:, 0] - 0.0931) / 1.0073
-        img_test[:, 1] = (img_test[:, 1] - -0.0093) / 0.4720
         pred = eval_model(img_test, model)
-        pred[:, 0] = pred[:, 0] * 1.0073 + 0.0931
-        pred[:, 1] = pred[:, 1] * 0.4720 - 0.0093
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
             pred = torch.cat((pred, pred_2), dim=1)
