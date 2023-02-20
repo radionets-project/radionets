@@ -256,8 +256,8 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
-    load_pre_model(arch, model_path, visualize=True)
-    return arch
+    norm_dict = load_pre_model(arch, model_path, visualize=True)
+    return arch, norm_dict
 
 
 def get_images(test_ds, num_images, rand=False, indices=None):

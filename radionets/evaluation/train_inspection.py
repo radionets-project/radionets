@@ -82,9 +82,39 @@ def get_prediction(conf, mode="test"):
     img_test, img_true, indices = get_images(test_ds, num_images, rand=rand)
 
     img_size = img_test.shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
+
+    # Rescale if necessary
+    if norm_dict and "mean_real" in norm_dict:
+        img_test[:, 0] = (img_test[:, 0] - norm_dict["mean_real"]) / norm_dict[
+            "std_real"
+        ]
+        img_test[:, 1] = (img_test[:, 1] - norm_dict["mean_imag"]) / norm_dict[
+            "std_imag"
+        ]
+
+    elif norm_dict and "max_scaling" in norm_dict:
+        max_factors_real = torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
+        max_factors_imag = torch.amax(
+            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
+        )
+        img_test[:, 0] *= 1 / torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
+        img_test[:, 1] *= 1 / torch.amax(
+            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
+        )
 
     pred = eval_model(img_test, model)
+
+    if norm_dict and "mean_real" in norm_dict:
+        pred[:, 0] = pred[:, 0] * norm_dict["std_real"] + norm_dict["mean_real"]
+        pred[:, 0] = pred[:, 0] * norm_dict["std_imag"] + norm_dict["mean_imag"]
+
+    elif norm_dict and "max_scaling" in norm_dict:
+        pred[:, 0] *= max_factors_real
+        pred[:, 1] *= max_factors_imag
+
     images = {"pred": pred, "inp": img_test, "true": img_true}
 
     if pred.shape[1] == 4:
@@ -135,8 +165,12 @@ def get_separate_prediction(conf):
         num_images = len(test_ds)
     img_test, img_true = get_images(test_ds, num_images, rand=rand)
     img_size = img_test.shape[-1]
-    model_1 = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-    model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)
+    model_1, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
+    model_2, norm_dict = load_pretrained_model(
+        conf["arch_name_2"], conf["model_path_2"], img_size
+    )
 
     pred_1 = eval_model(img_test, model_1)
     pred_2 = eval_model(img_test, model_2)
@@ -375,9 +409,11 @@ def evaluate_viewing_angle(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -423,9 +459,11 @@ def evaluate_dynamic_range(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -470,9 +508,11 @@ def evaluate_ms_ssim(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -522,9 +562,11 @@ def evaluate_mean_diff(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -569,9 +611,11 @@ def save_sampled(conf):
 
     img_size = loader.dataset[0][0][0].shape[-1]
     num_img = len(loader) * conf["batch_size"]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -687,9 +731,11 @@ def evaluate_area(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -740,9 +786,11 @@ def evaluate_point(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -787,9 +835,11 @@ def evaluate_gan_sources(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
