@@ -323,15 +323,12 @@ def visualize_with_fourier_diff(
         im3 = ax3.imshow(real_pred - real_truth, cmap=OrBu, vmin=-a, vmax=a)
         make_axes_nice(fig, ax3, im3, r"Real Difference")
 
-        a = check_vmin_vmax(imag_truth)
         im4 = ax4.imshow(imag_pred, cmap=OrBu)
         make_axes_nice(fig, ax4, im4, r"Imaginary Prediction")
 
-        a = check_vmin_vmax(imag_truth)
         im5 = ax5.imshow(imag_truth, cmap=OrBu)
         make_axes_nice(fig, ax5, im5, r"Imaginary Truth")
 
-        a = check_vmin_vmax(imag_pred - imag_truth)
         im6 = ax6.imshow(imag_pred - imag_truth, cmap=OrBu)
         make_axes_nice(fig, ax6, im6, r"Imaginary Difference")
 
