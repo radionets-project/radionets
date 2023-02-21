@@ -34,6 +34,8 @@ from radionets.evaluation.utils import (
     sample_images,
     mergeDictionary,
     sampled_dataset,
+    apply_normalization,
+    rescale_normalization,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
@@ -87,33 +89,9 @@ def get_prediction(conf, mode="test"):
     )
 
     # Rescale if necessary
-    if norm_dict and "mean_real" in norm_dict:
-        img_test[:, 0] = (img_test[:, 0] - norm_dict["mean_real"]) / norm_dict[
-            "std_real"
-        ]
-        img_test[:, 1] = (img_test[:, 1] - norm_dict["mean_imag"]) / norm_dict[
-            "std_imag"
-        ]
-
-    elif norm_dict and "max_scaling" in norm_dict:
-        max_factors_real = torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
-        max_factors_imag = torch.amax(
-            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
-        )
-        img_test[:, 0] *= 1 / torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
-        img_test[:, 1] *= 1 / torch.amax(
-            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
-        )
-
+    img_test, norm_dict = apply_normalization(img_test, norm_dict)
     pred = eval_model(img_test, model)
-
-    if norm_dict and "mean_real" in norm_dict:
-        pred[:, 0] = pred[:, 0] * norm_dict["std_real"] + norm_dict["mean_real"]
-        pred[:, 0] = pred[:, 0] * norm_dict["std_imag"] + norm_dict["mean_imag"]
-
-    elif norm_dict and "max_scaling" in norm_dict:
-        pred[:, 0] *= max_factors_real
-        pred[:, 1] *= max_factors_imag
+    pred = rescale_normalization(pred, norm_dict)
 
     images = {"pred": pred, "inp": img_test, "true": img_true}
 
@@ -422,9 +400,12 @@ def evaluate_viewing_angle(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -472,10 +453,12 @@ def evaluate_dynamic_range(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -520,10 +503,12 @@ def evaluate_ms_ssim(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         # apply symmetry
@@ -574,10 +559,12 @@ def evaluate_mean_diff(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -622,10 +609,12 @@ def save_sampled(conf):
     results = {}
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         img = {"pred": pred, "inp": img_test, "true": img_true}
@@ -743,10 +732,12 @@ def evaluate_area(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         # apply symmetry
@@ -798,10 +789,12 @@ def evaluate_point(conf):
     lengths = []
 
     for i, (img_test, img_true, source_list) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -850,10 +843,12 @@ def evaluate_gan_sources(conf):
     atols = [1e-4, 1e-3, 1e-2, 1e-1]
 
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])

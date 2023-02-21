@@ -696,3 +696,71 @@ class sampled_dataset:
         data = bundle[var]
         data = data[i]
         return data
+
+
+def apply_normalization(img_test, norm_dict):
+    """
+    Applies one of currently two normalization methods if the training was normalized
+
+    Parameters
+    ----------
+    img_test : torch.Tensor
+        input image
+    norm_dict : dictionary
+        either empty (no normalization) or containing the factors
+
+    Returns
+    -------
+    img_test : torch.Tensor
+        normalized image
+    norm_dict : dictionary
+        updated dictionary
+    """
+    if norm_dict and "mean_real" in norm_dict:
+        img_test[:, 0] = (img_test[:, 0] - norm_dict["mean_real"]) / norm_dict[
+            "std_real"
+        ]
+        img_test[:, 1] = (img_test[:, 1] - norm_dict["mean_imag"]) / norm_dict[
+            "std_imag"
+        ]
+
+    elif norm_dict and "max_scaling" in norm_dict:
+        max_factors_real = torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
+        max_factors_imag = torch.amax(
+            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
+        )
+        img_test[:, 0] *= 1 / torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
+        img_test[:, 1] *= 1 / torch.amax(
+            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
+        )
+        norm_dict["max_factors_real"] = max_factors_real
+        norm_dict["max_factors_imag"] = max_factors_imag
+
+    return img_test, norm_dict
+
+
+def rescale_normalization(pred, norm_dict):
+    """
+    Rescale the prediction after normalized training
+
+    Parameters
+    ----------
+    pred : torch.Tensor
+        predicted image
+    norm_dict : dictionary
+        either empty (no normalization) or containing the factors
+
+    Returns
+    -------
+    pred : torch.Tensor
+        recaled predicted image
+    """
+    if norm_dict and "mean_real" in norm_dict:
+        pred[:, 0] = pred[:, 0] * norm_dict["std_real"] + norm_dict["mean_real"]
+        pred[:, 0] = pred[:, 0] * norm_dict["std_imag"] + norm_dict["mean_imag"]
+
+    elif norm_dict and "max_scaling" in norm_dict:
+        pred[:, 0] *= norm_dict["max_factors_real"]
+        pred[:, 1] *= norm_dict["max_factors_imag"]
+
+    return pred
