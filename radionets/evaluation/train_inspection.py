@@ -28,13 +28,14 @@ from radionets.evaluation.utils import (
     get_images,
     eval_model,
     get_ifft,
-    pad_unsqueeze,
     save_pred,
     read_pred,
     apply_symmetry,
     sample_images,
     mergeDictionary,
     sampled_dataset,
+    apply_normalization,
+    rescale_normalization,
 )
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.dynamic_range import calc_dr
@@ -52,10 +53,13 @@ def create_predictions(conf):
         img = get_separate_prediction(conf)
     else:
         img = get_prediction(conf)
+
     model_path = conf["model_path"]
+    name_model = Path(model_path).stem
+
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
-    out_path = str(out_path) + "/predictions.h5"
+    out_path = str(out_path) + f"/predictions_{name_model}.h5"
 
     if not conf["fourier"]:
         click.echo("\n This is not a fourier dataset.\n")
@@ -80,9 +84,15 @@ def get_prediction(conf, mode="test"):
     img_test, img_true, indices = get_images(test_ds, num_images, rand=rand)
 
     img_size = img_test.shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
 
+    # Rescale if necessary
+    img_test, norm_dict = apply_normalization(img_test, norm_dict)
     pred = eval_model(img_test, model)
+    pred = rescale_normalization(pred, norm_dict)
+
     images = {"pred": pred, "inp": img_test, "true": img_true}
 
     if pred.shape[1] == 4:
@@ -133,8 +143,12 @@ def get_separate_prediction(conf):
         num_images = len(test_ds)
     img_test, img_true = get_images(test_ds, num_images, rand=rand)
     img_size = img_test.shape[-1]
-    model_1 = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
-    model_2 = load_pretrained_model(conf["arch_name_2"], conf["model_path_2"], img_size)
+    model_1, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
+    model_2, norm_dict = load_pretrained_model(
+        conf["arch_name_2"], conf["model_path_2"], img_size
+    )
 
     pred_1 = eval_model(img_test, model_1)
     pred_2 = eval_model(img_test, model_2)
@@ -151,7 +165,8 @@ def get_separate_prediction(conf):
 def create_inspection_plots(conf, num_images=3, rand=False):
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    path += "/predictions.h5"
+    name_model = Path(model_path).stem
+    path += f"/predictions_{name_model}.h5"
     out_path = Path(model_path).parent / "evaluation/"
 
     img = read_pred(path)
@@ -261,7 +276,8 @@ def create_source_plots(conf, num_images=3, rand=False):
     """
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    path += "/predictions.h5"
+    name_model = Path(model_path).stem
+    path += f"/predictions_{name_model}.h5"
     out_path = Path(model_path).parent / "evaluation"
 
     img = read_pred(path)
@@ -293,7 +309,8 @@ def create_source_plots(conf, num_images=3, rand=False):
 def create_contour_plots(conf, num_images=3, rand=False):
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    path += "/predictions.h5"
+    name_model = Path(model_path).stem
+    path += f"/predictions_{name_model}.h5"
     out_path = Path(model_path).parent / "evaluation"
 
     if not conf["fourier"]:
@@ -325,7 +342,8 @@ def create_uncertainty_plots(conf, num_images=3, rand=False):
     """
     model_path = conf["model_path"]
     path = str(Path(model_path).parent / "evaluation")
-    predictions_path = path + "/predictions.h5"
+    name_model = Path(model_path).stem
+    predictions_path = path + f"/predictions_{name_model}.h5"
     out_path = Path(model_path).parent / "evaluation/"
 
     img = read_pred(predictions_path)
@@ -369,9 +387,11 @@ def evaluate_viewing_angle(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -380,9 +400,12 @@ def evaluate_viewing_angle(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -417,9 +440,11 @@ def evaluate_dynamic_range(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -428,10 +453,12 @@ def evaluate_dynamic_range(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -464,41 +491,44 @@ def evaluate_ms_ssim(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
     vals = []
 
-    if img_size < 160:
-        click.echo(
-            "\nThis is only a placeholder!\
-                Images too small for meaningful ms ssim calculations.\n"
-        )
-
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
-        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
-        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+        # apply symmetry
+        if pred.shape[-1] == 128:
+            img_dict = {"truth": img_true, "pred": pred}
+            img_dict = apply_symmetry(img_dict)
+            img_true = img_dict["truth"]
+            pred = img_dict["pred"]
 
-        if img_size < 160:
-            ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth))
-            ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred))
+        ifft_truth = torch.tensor(get_ifft(img_true, amp_phase=conf["amp_phase"]))
+        ifft_pred = torch.tensor(get_ifft(pred, amp_phase=conf["amp_phase"]))
 
-        vals.extend(
-            [
-                ms_ssim(pred.unsqueeze(0), truth.unsqueeze(0), data_range=truth.max())
-                for pred, truth in zip(ifft_pred, ifft_truth)
-            ]
+        val = ms_ssim(
+            ifft_pred.unsqueeze(1),
+            ifft_truth.unsqueeze(1),
+            data_range=1,
+            win_size=7,
+            size_average=False,
         )
+        vals.extend(val)
 
     click.echo("\nCreating ms-ssim histogram.\n")
     vals = torch.tensor(vals)
@@ -517,9 +547,11 @@ def evaluate_mean_diff(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -527,10 +559,12 @@ def evaluate_mean_diff(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -564,19 +598,23 @@ def save_sampled(conf):
 
     img_size = loader.dataset[0][0][0].shape[-1]
     num_img = len(loader) * conf["batch_size"]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
     results = {}
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         img = {"pred": pred, "inp": img_test, "true": img_true}
@@ -590,7 +628,7 @@ def save_sampled(conf):
         img["unc"] = unc
         img["pred"] = pred
 
-        result = sample_images(img["pred"], img["unc"], 10)
+        result = sample_images(img["pred"], img["unc"], 1000, conf)
 
         # pad true image
         output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
@@ -608,6 +646,39 @@ def save_sampled(conf):
 
     name_model = Path(model_path).stem
     save_pred(str(out_path) + f"/sampled_imgs_{name_model}.h5", results)
+
+
+def evaluate_ms_ssim_sampled(conf):
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    data_path = str(out_path) + "/sampled_imgs.h5"
+    loader = create_sampled_databunch(data_path, conf["batch_size"])
+    vals = []
+
+    # iterate trough DataLoader
+    for i, (samp, std, img_true) in enumerate(tqdm(loader)):
+        val = ms_ssim(
+            samp.unsqueeze(1),
+            img_true.unsqueeze(1),
+            data_range=1,
+            win_size=7,
+            size_average=False,
+        )
+        vals.extend(val)
+
+    click.echo("\nCreating ms-ssim histogram.\n")
+    vals = torch.tensor(vals)
+    histogram_ms_ssim(vals, out_path, plot_format=conf["format"])
+
+    click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
+
+    if conf["save_vals"]:
+        click.echo("\nSaving area ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "area_ratios.txt", vals)
 
 
 def evaluate_area_sampled(conf):
@@ -649,9 +720,11 @@ def evaluate_area(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -659,11 +732,20 @@ def evaluate_area(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
+
+        # apply symmetry
+        if pred.shape[-1] == 128:
+            img_dict = {"truth": img_true, "pred": pred}
+            img_dict = apply_symmetry(img_dict)
+            img_true = img_dict["truth"]
+            pred = img_dict["pred"]
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
         ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
@@ -695,9 +777,11 @@ def evaluate_point(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -705,10 +789,12 @@ def evaluate_point(conf):
     lengths = []
 
     for i, (img_test, img_true, source_list) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
@@ -742,9 +828,11 @@ def evaluate_gan_sources(conf):
     out_path.mkdir(parents=True, exist_ok=True)
 
     img_size = loader.dataset[0][0][0].shape[-1]
-    model = load_pretrained_model(conf["arch_name"], conf["model_path"], img_size)
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
     if conf["model_path_2"] != "none":
-        model_2 = load_pretrained_model(
+        model_2, norm_dict = load_pretrained_model(
             conf["arch_name_2"], conf["model_path_2"], img_size
         )
 
@@ -755,10 +843,12 @@ def evaluate_gan_sources(conf):
     atols = [1e-4, 1e-3, 1e-2, 1e-1]
 
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
         pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if conf["model_path_2"] != "none":
             pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
             pred = torch.cat((pred, pred_2), dim=1)
 
         ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])

@@ -16,7 +16,6 @@ from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.utils import (
     check_vmin_vmax,
     make_axes_nice,
-    pad_unsqueeze,
     reshape_2d,
 )
 from radionets.simulations.utils import adjust_outpath
@@ -235,28 +234,25 @@ def visualize_with_fourier(
         im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax6, im6, r"Phase Truth", phase=True)
     else:
-        a = check_vmin_vmax(inp_real)
-        im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
+        im1 = ax1.imshow(inp_real, cmap="RdBu")
         make_axes_nice(fig, ax1, im1, r"Real Input")
 
-        a = check_vmin_vmax(real_truth)
-        im2 = ax2.imshow(real_pred, cmap="RdBu", vmin=-a, vmax=a)
+        im2 = ax2.imshow(real_pred, cmap="RdBu")
         make_axes_nice(fig, ax2, im2, r"Real Prediction")
 
-        a = check_vmin_vmax(real_truth)
-        im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
+        im3 = ax3.imshow(real_truth, cmap="RdBu")
         make_axes_nice(fig, ax3, im3, r"Real Truth")
 
         a = check_vmin_vmax(inp_imag)
-        im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
+        im4 = ax4.imshow(inp_imag, cmap="RdBu")
         make_axes_nice(fig, ax4, im4, r"Imaginary Input")
 
         a = check_vmin_vmax(imag_truth)
-        im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        im5 = ax5.imshow(imag_pred, cmap="RdBu")
         make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
 
         a = check_vmin_vmax(imag_truth)
-        im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        im6 = ax6.imshow(imag_truth, cmap="RdBu")
         make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
 
     ax1.set_ylabel(r"Pixels")
@@ -316,6 +312,26 @@ def visualize_with_fourier_diff(
         )
         make_axes_nice(fig, ax6, im6, r"Phase Difference", phase_diff=True)
 
+    else:
+        im1 = ax1.imshow(real_pred, cmap="inferno")
+        make_axes_nice(fig, ax1, im1, r"Real Prediction")
+
+        im2 = ax2.imshow(real_truth, cmap="inferno")
+        make_axes_nice(fig, ax2, im2, "Real Truth")
+
+        a = check_vmin_vmax(real_pred - real_truth)
+        im3 = ax3.imshow(real_pred - real_truth, cmap=OrBu, vmin=-a, vmax=a)
+        make_axes_nice(fig, ax3, im3, r"Real Difference")
+
+        im4 = ax4.imshow(imag_pred, cmap=OrBu)
+        make_axes_nice(fig, ax4, im4, r"Imaginary Prediction")
+
+        im5 = ax5.imshow(imag_truth, cmap=OrBu)
+        make_axes_nice(fig, ax5, im5, r"Imaginary Truth")
+
+        im6 = ax6.imshow(imag_pred - imag_truth, cmap=OrBu)
+        make_axes_nice(fig, ax6, im6, r"Imaginary Difference")
+
     ax1.set_ylabel(r"Pixels")
     ax4.set_ylabel(r"Pixels")
     ax4.set_xlabel(r"Pixels")
@@ -369,11 +385,16 @@ def visualize_source_reconstruction(
         plot_box(ax2, num_boxes, corners[0])
 
     if msssim:
-        ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth).unsqueeze(0))
-        ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
-        val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
-
-        ax1.plot([], [], " ", label=f"ms ssim: {val:.2f}")
+        val = ms_ssim(
+            torch.tensor(ifft_pred).unsqueeze(0).unsqueeze(0),
+            torch.tensor(ifft_truth).unsqueeze(0).unsqueeze(0),
+            data_range=1,
+            win_size=7,
+            size_average=False,
+        )
+        val = val.numpy()[0]
+        ax1.plot([], [], " ", label=f"MS-SSIM: {val:.2f}")
+        ax1.legend(loc="best")
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
@@ -423,19 +444,19 @@ def visualize_uncertainty(
         2, 2, sharey=True, sharex=True, figsize=(12, 10)
     )
 
-    im1 = ax1.imshow(true_phase, cmap=OrBu, vmin=-np.pi, vmax=np.pi)
+    im1 = ax1.imshow(true_phase, cmap=OrBu)
 
-    im2 = ax2.imshow(pred_phase, cmap=OrBu, vmin=-np.pi, vmax=np.pi)
+    im2 = ax2.imshow(pred_phase, cmap=OrBu)
 
     im3 = ax3.imshow(unc_phase)
 
     a = check_vmin_vmax(true_phase - pred_phase)
     im4 = ax4.imshow(true_phase - pred_phase, cmap=OrBu, vmin=-a, vmax=a)
 
-    make_axes_nice(fig, ax1, im1, r"Simulation", phase=True)
-    make_axes_nice(fig, ax2, im2, r"Predicted $\mu$", phase=True)
+    make_axes_nice(fig, ax1, im1, r"Simulation")
+    make_axes_nice(fig, ax2, im2, r"Predicted $\mu$")
     make_axes_nice(fig, ax3, im3, r"Predicted $\sigma^2$", unc=True)
-    make_axes_nice(fig, ax4, im4, r"Difference", phase_diff=True)
+    make_axes_nice(fig, ax4, im4, r"Difference")
 
     ax1.set_ylabel(r"pixels")
     ax3.set_ylabel(r"pixels")
@@ -640,7 +661,7 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         msssim.numpy(),
-        51,
+        80,
         color="darkorange",
         linewidth=3,
         histtype="step",

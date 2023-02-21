@@ -256,8 +256,8 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
-    load_pre_model(arch, model_path, visualize=True)
-    return arch
+    norm_dict = load_pre_model(arch, model_path, visualize=True)
+    return arch, norm_dict
 
 
 def get_images(test_ds, num_images, rand=False, indices=None):
@@ -370,27 +370,6 @@ def get_ifft(array, amp_phase=False, scale=False):
     return np.abs(np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(compl))))
 
 
-def pad_unsqueeze(tensor):
-    """Unsqueeze with zeros until the image has a length of 160 pixels.
-    Needed as a helper function for the ms_ssim, as is only operates on
-    images which are at least 160x160 pixels.
-
-    Parameters
-    ----------
-    tensor : torch.tensor
-        image to pad
-
-    Returns
-    -------
-    torch.tensor
-        padded tensor
-    """
-    while tensor.shape[-1] < 160:
-        tensor = F.pad(input=tensor, pad=(1, 1, 1, 1), mode="constant", value=0)
-    tensor = tensor.unsqueeze(1)
-    return tensor
-
-
 def fft_pred(pred, truth, amp_phase=True):
     """
     Transform predicted image and true image to local domain.
@@ -475,7 +454,8 @@ def check_outpath(model_path):
     bool
         true, if the file exists
     """
-    model_path = Path(model_path).parent / "evaluation" / "predictions.h5"
+    name_model = Path(model_path).stem
+    model_path = Path(model_path).parent / "evaluation" / f"predictions_{name_model}.h5"
     path = Path(model_path)
     exists = path.exists()
     return exists
@@ -495,7 +475,6 @@ def sym_new(image, key):
     torch.Tensor
         quadratic images after utilizing symmetry
     """
-    # set channel for phase dependent of uncertainty training
     if isinstance(image, np.ndarray):
         image = torch.tensor(image)
     upper_half = image[:, :, :64, :].clone()
@@ -515,6 +494,19 @@ def sym_new(image, key):
 
 
 def apply_symmetry(img_dict):
+    """
+    Pads and applies symmetry to half images. Takes a dict as input
+
+    Parameters
+    ----------
+    img_dict : dict
+        input dict which contains the half images
+
+    Returns
+    -------
+    dict
+        input dict with quadratic images
+    """
     for key in img_dict:
         if key != "indices":
             if isinstance(img_dict[key], np.ndarray):
@@ -582,7 +574,7 @@ def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
     if target == "cpu":
         if nthreads > 1:
             raise ValueError(
-                f"Target is ``cpu`` but nthreads is {nthreads}, " 
+                f"Target is ``cpu`` but nthreads is {nthreads}, "
                 "use target=``parallel`` instead."
             )
         res = tn_numba_vec_cpu(mu, sig, a, b)
@@ -599,7 +591,7 @@ def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
     return res.swapaxes(0, 1)
 
 
-def sample_images(mean, std, num_samples):
+def sample_images(mean, std, num_samples, conf):
     """Samples for every pixel in Fourier space from a truncated Gaussian distribution
     based on the output of the network.
 
@@ -658,7 +650,7 @@ def sample_images(mean, std, num_samples):
     sampled_gauss_symmetry = sym_new(sampled_gauss, None)
 
     fft_sampled_symmetry = get_ifft(
-        sampled_gauss_symmetry, amp_phase=True, scale=False
+        sampled_gauss_symmetry, amp_phase=conf["amp_phase"], scale=False
     ).reshape(num_img, num_samples, 128, 128)
 
     results = {
@@ -704,3 +696,71 @@ class sampled_dataset:
         data = bundle[var]
         data = data[i]
         return data
+
+
+def apply_normalization(img_test, norm_dict):
+    """
+    Applies one of currently two normalization methods if the training was normalized
+
+    Parameters
+    ----------
+    img_test : torch.Tensor
+        input image
+    norm_dict : dictionary
+        either empty (no normalization) or containing the factors
+
+    Returns
+    -------
+    img_test : torch.Tensor
+        normalized image
+    norm_dict : dictionary
+        updated dictionary
+    """
+    if norm_dict and "mean_real" in norm_dict:
+        img_test[:, 0] = (img_test[:, 0] - norm_dict["mean_real"]) / norm_dict[
+            "std_real"
+        ]
+        img_test[:, 1] = (img_test[:, 1] - norm_dict["mean_imag"]) / norm_dict[
+            "std_imag"
+        ]
+
+    elif norm_dict and "max_scaling" in norm_dict:
+        max_factors_real = torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
+        max_factors_imag = torch.amax(
+            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
+        )
+        img_test[:, 0] *= 1 / torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
+        img_test[:, 1] *= 1 / torch.amax(
+            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
+        )
+        norm_dict["max_factors_real"] = max_factors_real
+        norm_dict["max_factors_imag"] = max_factors_imag
+
+    return img_test, norm_dict
+
+
+def rescale_normalization(pred, norm_dict):
+    """
+    Rescale the prediction after normalized training
+
+    Parameters
+    ----------
+    pred : torch.Tensor
+        predicted image
+    norm_dict : dictionary
+        either empty (no normalization) or containing the factors
+
+    Returns
+    -------
+    pred : torch.Tensor
+        recaled predicted image
+    """
+    if norm_dict and "mean_real" in norm_dict:
+        pred[:, 0] = pred[:, 0] * norm_dict["std_real"] + norm_dict["mean_real"]
+        pred[:, 0] = pred[:, 0] * norm_dict["std_imag"] + norm_dict["mean_imag"]
+
+    elif norm_dict and "max_scaling" in norm_dict:
+        pred[:, 0] *= norm_dict["max_factors_real"]
+        pred[:, 1] *= norm_dict["max_factors_imag"]
+
+    return pred

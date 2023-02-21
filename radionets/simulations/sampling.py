@@ -36,7 +36,7 @@ def sample_frequencies(
 
         bundle_paths = get_fft_bundle_paths(data_path, "fft", mode)
 
-        if bundle_paths == []:
+        if bundle_paths.size == 0:
             print(f"\n No {mode} data set fft images available.\n")
 
         for path in tqdm(bundle_paths):

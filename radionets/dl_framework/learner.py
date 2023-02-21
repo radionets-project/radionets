@@ -7,6 +7,7 @@ from radionets.dl_framework.callbacks import (
     SwitchLoss,
     CudaCallback,
     CometCallback,
+    Normalize,
 )
 from fastai.optimizer import Adam
 from fastai.learner import Learner
@@ -77,6 +78,8 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             ]
         )
 
+    if not lr_find and not plot_loss and train_conf["normalize"] != "none":
+        cbfs.extend([Normalize(train_conf)])
     # get loss func
     if train_conf["loss_func"] == "feature_loss":
         loss_func = loss_functions.init_feature_loss()

@@ -26,6 +26,7 @@ class TestEvaluation:
 
         num_images = 10
         rand = True
+        img_size = test_ds[0][0][0].shape[-1]
 
         indices = torch.arange(num_images)
         assert len(indices) == 10
@@ -34,13 +35,13 @@ class TestEvaluation:
             indices = torch.randint(0, len(test_ds), size=(num_images,))
         img_test = test_ds[indices][0]
 
-        assert img_test.shape == (10, 2, 64, 64)
+        assert img_test.shape == (10, 2, img_size, img_size)
         img_true = test_ds[indices][1]
 
         img_test, img_true, indices = get_images(test_ds, num_images, rand)
 
-        assert img_true.shape == (10, 2, 64, 64)
-        assert img_test.shape == (10, 2, 64, 64)
+        assert img_true.shape == (10, 2, img_size, img_size)
+        assert img_test.shape == (10, 2, img_size, img_size)
         assert len(indices) == 10
 
     def test_get_prediction(self):
@@ -56,11 +57,12 @@ class TestEvaluation:
         conf = read_config(config)
 
         img = get_prediction(conf)
+        img_size = img["pred"].shape[-1]
         assert str(img["pred"].device) == "cpu"
 
-        assert img["pred"].shape == (10, 2, 64, 64)
-        assert img["inp"].shape == (10, 2, 64, 64)
-        assert img["true"].shape == (10, 2, 64, 64)
+        assert img["pred"].shape == (10, 2, img_size, img_size)
+        assert img["inp"].shape == (10, 2, img_size, img_size)
+        assert img["true"].shape == (10, 2, img_size, img_size)
 
         out_path = Path("./tests/build/test_training/evaluation/")
         out_path.mkdir(parents=True, exist_ok=True)
@@ -84,14 +86,15 @@ class TestEvaluation:
         img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
+        img_size = img["pred"].shape[-1]
 
         ifft_pred = get_ifft(img["pred"], amp_phase=conf["amp_phase"])
         ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
         assert ~np.isnan([ifft_pred, ifft_truth]).any()
 
-        assert ifft_pred[0].shape == (64, 64)
-        assert ifft_truth[0].shape == (64, 64)
+        assert ifft_pred[0].shape == (img_size, img_size)
+        assert ifft_truth[0].shape == (img_size, img_size)
 
         val = area_of_contour(ifft_pred[0], ifft_truth[0])
 
@@ -108,12 +111,13 @@ class TestEvaluation:
         )
 
         image = img["pred"][0]
+        img_size = image.shape[-1]
 
         x_coords, y_coords, value = im_to_array_value(image)
 
-        assert x_coords.shape == (2, 64**2)
-        assert y_coords.shape == (2, 64**2)
-        assert value.shape == (2, 64**2)
+        assert x_coords.shape == (2, img_size**2)
+        assert y_coords.shape == (2, img_size**2)
+        assert value.shape == (2, img_size**2)
 
     def test_bmul(self):
         import torch
@@ -141,9 +145,10 @@ class TestEvaluation:
         img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
+        img_size = img["pred"].shape[-1]
 
         ifft_pred = get_ifft(img["pred"], conf["amp_phase"])
-        assert ifft_pred.shape == (10, 64, 64)
+        assert ifft_pred.shape == (10, img_size, img_size)
 
         pix_x, pix_y, image = im_to_array_value(torch.tensor(ifft_pred))
 
@@ -191,9 +196,10 @@ class TestEvaluation:
         img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
+        img_size = img["pred"].shape[-1]
 
         image = get_ifft(img["pred"], conf["amp_phase"])
-        assert image.shape == (10, 64, 64)
+        assert image.shape == (10, img_size, img_size)
 
         if not isinstance(image, torch.Tensor):
             image = torch.tensor(image)
@@ -212,7 +218,7 @@ class TestEvaluation:
         max_arr = (torch.ones(img_size, img_size, bs) * max_val).permute(2, 0, 1)
         image[image < max_arr] = 0
 
-        assert image.shape == (10, 64, 64)
+        assert image.shape == (10, img_size, img_size)
 
         m, n, alpha = calc_jet_angle(image)
 
@@ -246,12 +252,13 @@ class TestEvaluation:
         img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
         )
+        img_size = img["pred"].shape[-1]
 
         ifft_pred = get_ifft(torch.tensor(img["pred"][0]), conf["amp_phase"]).reshape(
-            64, 64
+            img_size, img_size
         )
         ifft_truth = get_ifft(torch.tensor(img["true"][0]), conf["amp_phase"]).reshape(
-            64, 64
+            img_size, img_size
         )
 
         blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
@@ -293,7 +300,7 @@ class TestEvaluation:
         diff = (ifft_pred - ifft_truth).reshape(1, img_size, img_size)
 
         zero = np.isclose((np.zeros((1, img_size, img_size))), diff, atol=1e-3)
-        assert zero.shape == (1, 64, 64)
+        assert zero.shape == (1, img_size, img_size)
 
         num_zero = zero.sum(axis=-1).sum(axis=-1) / (img_size * img_size) * 100
         assert num_zero >= 0
@@ -435,11 +442,14 @@ class TestEvaluation:
         assert results["std"].shape == (num_img, img_size, img_size)
 
     def test_uncertainty_plots(self):
-        from radionets.evaluation.utils import read_pred, sample_images
+        import toml
+        from radionets.evaluation.utils import read_pred, sample_images, read_config
 
+        config = toml.load("./tests/evaluate.toml")
+        conf = read_config(config)
         img = read_pred("./tests/model/predictions_unc.h5")
         results = sample_images(
-            img["pred"][:2, :, :65, :], img["unc"][:2, :, :65, :], 100
+            img["pred"][:2, :, :65, :], img["unc"][:2, :, :65, :], 100, conf
         )
         assert results["mean"].shape == (2, 128, 128)
         assert results["std"].shape == (2, 128, 128)
@@ -472,13 +482,7 @@ def test_trunc_rv(mode, target):
     if mode == "phase":
         a, b = -np.pi, np.pi
     elif mode == "amp":
-        (
-            a,
-            b,
-        ) = (
-            0,
-            np.inf,
-        )
+        (a, b) = (0, np.inf)
 
     if target == "cpu":
         nthreads = 1

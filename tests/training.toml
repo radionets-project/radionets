@@ -21,6 +21,7 @@ norm_path = "none"
 [general]
 fourier = true
 amp_phase = true
+normalize = "none"
 source_list = false
 arch_name = "SRResNet"
 loss_func = "splitted_L1"
