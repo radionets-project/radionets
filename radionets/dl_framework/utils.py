@@ -54,7 +54,7 @@ def decode_yolo_box(x, stride):
     Parameters
     ----------
     x: nd-array
-        prediction of model (bs, (1), n, n, 4 or more)
+        prediction of model (bs, a, n, n, 4 or more)
     stride: int
         stride used in model
 

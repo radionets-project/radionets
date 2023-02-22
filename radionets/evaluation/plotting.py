@@ -1379,8 +1379,8 @@ def plot_yolo_velocity(
         ax.plot(x, m * x.astype(int) / 1e9 + b, "k-")
 
         v = np.round(df[df["idx_comp"] == i]["v"].values[0], 2)
-        v_err = np.round(df[df["idx_comp"] == i]["v_err"].values[0], 2)
-        textstr += f"$v_{i} = {v} \pm {v_err}$c\n"
+        v_unc = np.round(df[df["idx_comp"] == i]["v_unc"].values[0], 2)
+        textstr += f"$v_{i} = {v} \pm {v_unc}$c\n"
 
     ax.text(
         1.03,

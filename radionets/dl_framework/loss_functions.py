@@ -236,10 +236,10 @@ def yolo(x, y):
     """
     w_box = 1
     w_obj = 5
-    w_rot = 1
+    w_rot = 0.2
 
     # how much the image got reduced, must match self.strides_head of architecture
-    strides_head = torch.tensor([2, 4, 8])
+    strides_head = torch.tensor([8, 16, 32])
     weighted_bce = True
 
     loss_box = 0
@@ -300,15 +300,19 @@ def yolo(x, y):
             output_rot = output[..., 5].reshape(-1)
             target_rot = target[..., 5].reshape(-1) / np.pi
 
-            loss_rot += l1(output_rot[target_rot > 0], target_rot[target_rot > 0])
+            loss_rot += (
+                l1(output_rot[target_rot > 0], target_rot[target_rot > 0]) * w_rot
+            )
 
     # print(f'loss box: {loss_box:.4f}, obj: {loss_obj:.4f}')
 
     loss = loss_box + loss_obj + loss_rot
+    # print(
+    #     f"Box loss: {loss_box:.3}, Objectness loss: {loss_obj:.3}, Rotation loss: {loss_rot:.3}"
+    # )
     if torch.isnan(loss):
         print(
-            f"Loss got nan. Box loss: {loss_box}, Objectness loss: {loss_obj}, \
-                Rotation loss: {loss_rot}"
+            f"Loss got nan. Box loss: {loss_box}, Objectness loss: {loss_obj}, Rotation loss: {loss_rot}"
         )
         quit()
     return loss
@@ -319,9 +323,6 @@ def one_or_two_sided(x, y):
     amps = y[:, -int((n_components - 1) / 2) :, 0]
     amps_summed = torch.sum(amps, axis=1)
     target = (amps_summed > 0).float()
-
-    # print(type(x.squeeze()))
-    # print(type(target.shape))
 
     bce = nn.BCEWithLogitsLoss()
     loss = bce(x, target)

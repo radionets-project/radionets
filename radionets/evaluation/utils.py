@@ -490,7 +490,6 @@ def get_pred_boxes(x, pred, **kwargs):
 def non_max_suppression(
     boxes,
     obj_thres: float = 0.25,
-    rel_obj_tresh: bool = False,
     max_nms: int = 1000,
     iou_thres: float = 0.3,
     max_det: int = 30,
@@ -503,8 +502,6 @@ def non_max_suppression(
         boxes of shape (bs, n_boxes, 6), where 6 is: x, y, width, height, objectness, rotation
     obj_thres: float
         only take boxes with objectness above this value into account for nms, range: [0, 1]
-    rel_obj_thresh: bool
-        use objectness threshold relative to maximum threshold of image
     max_nms: int
         maximum number of boxes put into torchvision.ops.nms()
     iou_thres: float
@@ -521,15 +518,11 @@ def non_max_suppression(
     output = []
 
     for box in boxes:
-        if rel_obj_tresh:
-            obj_threshold = obj_thres * box[:, 4].max()
-        else:
-            obj_threshold = obj_thres
-
-        boxes_candidates = box[..., 4] > obj_threshold  # candidates
+        boxes_candidates = box[..., 4] > obj_thres  # candidates
         box = box[boxes_candidates]  # filter candidates
 
         if not box.shape[0]:  # if no box remains, skip the next image
+            output.append(torch.tensor([]).to(boxes.device))
             continue
         elif box.shape[0] > max_nms:  # if boxes exceeds maximum for nms
             box = box[box[:, 4].argsort(descending=True)[:max_nms]]
@@ -553,7 +546,7 @@ def yolo_apply_nms(
     Parameters
     ----------
     pred: list
-        list of feature maps, each of shape (bs, 1, my, mx, 6)
+        list of feature maps, each of shape (bs, a, my, mx, 6)
     x: 4d-array
         input image (bs, 1, ny, nx)
     strides: 1d-array or list
@@ -574,24 +567,31 @@ def yolo_apply_nms(
         strides_calc = get_strides(x, pred)
         assert (
             strides == strides_calc
-        ), f"Provides strides {strides} not equal calculated strides {strides_calc}."
+        ), f"Provided strides {strides} not equal calculated strides {strides_calc}."
     elif x is not None:
         strides = get_strides(x, pred)
 
-    # use boxes from prediction of highest resolution
     if not torch.is_tensor(strides):
         strides = torch.tensor(strides)
 
-    boxes = decode_yolo_box(pred[0], strides[0])
-    # use mean of all objectness map
     obj_map = objectness_mapping(pred)
-    boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
-    outputs = non_max_suppression(
-        boxes.reshape(boxes.shape[0], -1, 6),
-        obj_thres=rel_obj_thres,
-        rel_obj_tresh=True,
-        iou_thres=iou_thres,
-    )
+    obj_max = np.max(obj_map)
+
+    outputs = []
+    for i_anchor in range(pred[0].shape[1]):
+        # use boxes from prediction of highest resolution
+        boxes = decode_yolo_box(pred[0][:, [i_anchor]], strides[0])
+        boxes[..., 4] = torch.tensor(obj_map[:, [i_anchor]]).to(boxes.device)
+        boxes_nms = non_max_suppression(
+            boxes.reshape(boxes.shape[0], -1, 6),
+            obj_thres=rel_obj_thres * obj_max,
+            iou_thres=iou_thres,
+        )
+        if i_anchor == 0:
+            outputs = boxes_nms
+        else:
+            for i_img in range(len(boxes_nms)):
+                outputs[i_img] = torch.cat((outputs[i_img], boxes_nms[i_img]))
 
     return outputs
 
@@ -814,8 +814,11 @@ def yolo_df(outputs: list, ds, source: str):
         for out in output:
             pred_dict = {}
             pred_dict["date"] = pd.Timestamp(header["DATE-OBS"])
-            pred_dict["redshift"] = header["REDSHIFT"]
             pred_dict["idx_img"] = i
+            pred_dict["redshift"] = header["REDSHIFT"]
+            pred_dict["v_ref"] = header["SPEED"]
+            pred_dict["v_unc_ref"] = header["SPEEDUNC"]
+            pred_dict["n_feat"] = header["N_FEAT"]
             pred_dict["x"] = out[0]
             pred_dict["y"] = out[1]
             pred_dict["sx"] = out[2]
@@ -858,7 +861,7 @@ def yolo_linear_fit(df):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", AstropyWarning)
-            print(len(x0))
+            # print(len(x0))
             fitted_line = fit(line_init, x0, y0)
 
         parameters = fitted_line.parameters

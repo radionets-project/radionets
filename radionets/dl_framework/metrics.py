@@ -14,7 +14,7 @@ def iou_YOLOv6(pred, target):
     Parameters
     ----------
     pred: list
-        The output layers of YOLOv6
+        list of feature maps, each of shape (bs, a, ny, nx, 6)
     target: ndarray
         Array with target boxes of shape (bs, n_components, 8)
         8: [amplitude, x, y, sx, sy, y_rotation, z_rotation, beta]
@@ -25,7 +25,7 @@ def iou_YOLOv6(pred, target):
         Mean Intersection over Union of all boxes after nms
     """
     bs = target.shape[0]
-    strides_head = torch.tensor([2, 4, 8])
+    strides_head = torch.tensor([8, 16, 32])
 
     target[..., 3:5] *= 2  # increased box sizes (same as in loss function)
 
@@ -35,7 +35,10 @@ def iou_YOLOv6(pred, target):
     ious = torch.zeros(bs)
     for i in range(bs):
         target_boxes = target[i, :, 1:5][target[i, :, 0] > amp_threshold]
-        ious[i] = overall_iou(pred_nms[i][:, :4], target_boxes)
+        if len(pred_nms[i]) == 0:  # no predicted box -> no intersection over union
+            ious[i] = 0
+        else:
+            ious[i] = overall_iou(pred_nms[i][:, :4], target_boxes)
     iou = torch.mean(ious)
     return iou
 

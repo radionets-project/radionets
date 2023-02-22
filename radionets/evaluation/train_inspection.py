@@ -714,7 +714,7 @@ def evaluate_mojave(conf):
         scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
         # scaling = partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
     )
-    print(loader.source_list)
+    # print(loader.source_list)
     print("Finished loading MOJAVE data")
 
     model_path = Path(conf["model_path"])
@@ -744,7 +744,7 @@ def evaluate_mojave(conf):
         if conf["vis_pred"]:
             for i in range(len(img)):
                 date = loader.get_header(i, source)["DATE-OBS"]
-                continue
+                # continue
                 if i < 3:
                     plot_yolo_mojave(
                         x=img[:, None],
@@ -775,21 +775,23 @@ def evaluate_mojave(conf):
 
         # Build mean of components, which are from the same image and the same cluster
         df = (
-            df.groupby(["date", "idx_img", "idx_comp"], sort=False).mean().reset_index()
+            df.groupby(["date", "idx_img", "idx_comp"], sort=False)
+            .mean(numeric_only=True)
+            .reset_index()
         )
         df["intensity"] = img[i, df["y"].astype(int), df["x"].astype(int)].numpy()
 
         if conf["vis_pred"]:
             for i in range(len(img)):
                 date = loader.get_header(i, source)["DATE-OBS"]
-                continue
+                # continue
                 if i < 3:
                     plot_yolo_post_clustering(
                         x=img, df=df, idx=i, out_path=out_path, name=source, date=date
                     )
 
         # Find components with the maximum intensity -> main component
-        idx_main = df.groupby("idx_comp")["intensity"].mean().argmax()
+        idx_main = df.groupby("idx_comp")["intensity"].mean(numeric_only=True).argmax()
 
         # Calculate distance to main component
         df["distance"] = np.nan
@@ -798,7 +800,7 @@ def evaluate_mojave(conf):
             x1 = main_component["x_mas"].to_numpy()
             y1 = main_component["y_mas"].to_numpy()
 
-            # main component not detected in image, distance is not calculated
+            # Main component not detected in image, distance is not calculated
             if not x1 or not y1:
                 continue
 
@@ -807,22 +809,38 @@ def evaluate_mojave(conf):
                 y2 = row["y_mas"]
                 dist = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
                 df.loc[index, "distance"] = dist
-
         # print(df)
         df = df.dropna()
 
+        # Drop components with one appearance, because it leads to no velocity
         for i in sorted(df["idx_comp"].unique()):
             if len(df[df["idx_comp"] == i]) == 1:
                 idx = df[df["idx_comp"] == i].index
                 df.drop(idx, inplace=True)
 
+        # Perform fit (y=m*x+n) and calculate velocity
         df = yolo_linear_fit(df)
-
         v = calculate_velocity(df["fit_param_m"].values, df["redshift"].values)
-        v_err = calculate_velocity(df["fit_error_m"].values, df["redshift"].values)
+        v_unc = calculate_velocity(df["fit_error_m"].values, df["redshift"].values)
 
         df["v"] = v
-        df["v_err"] = v_err
+        df["v_unc"] = v_unc
 
         if conf["vis_pred"]:
             plot_yolo_velocity(df=df, out_path=out_path, name=source)
+
+        # Compare velocities (fitted vs. MOJAVE (only max vel. stated))
+        v_max = v.max()
+        v_argmax = v.argmax()
+        v_unc_max = v_unc[v_argmax]
+
+        v_ncomps = (v == v_max).sum()
+
+        v_ref = df["v_ref"][v_argmax]
+        v_unc_ref = df["v_unc_ref"][v_argmax]
+        v_ncomps_ref = df["n_feat"][v_argmax]
+
+        print(rf"max velocity: {v_max:.2} \pm {v_unc_max:.2} by {v_ncomps} components")
+        print(
+            rf"max velocity: {v_ref} \pm {v_unc_ref} by {int(v_ncomps_ref)} components"
+        )

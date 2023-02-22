@@ -202,13 +202,13 @@ class YOLOv6flex(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.channels = 16
-        self.anchors = 1
-        self.strides_head = torch.tensor([2, 4, 8])
+        self.channels = 8
+        self.anchors = 3
+        self.strides_head = torch.tensor([8, 16, 32])
         self.bb_repeats = [1, 2, 4, 6, 4]
-        #        self.bb_repeats = [1, 6, 12, 18, 6]
+        # self.bb_repeats = [1, 6, 12, 18, 6]
         self.neck_repeats = 4
-        #        self.neck_repeats = 12
+        # self.neck_repeats = 12
 
         if torch.log2(torch.max(self.strides_head)) > len(self.bb_repeats):
             print("Warning. Backbone size is larger than output size")
