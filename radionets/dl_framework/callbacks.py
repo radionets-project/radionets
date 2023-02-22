@@ -218,8 +218,12 @@ class Normalize(Callback):
             y[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
             y[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
         elif self.mode == "mean":
-            x[:, 0] = self.normalize(x[:, 0], self.mean_real, self.std_real)
-            x[:, 1] = self.normalize(x[:, 1], self.mean_imag, self.std_imag)
+            x[:, 0][x[:, 0] != 0] = self.normalize(
+                x[:, 0][x[:, 0] != 0], self.mean_real, self.std_real
+            )
+            x[:, 1][x[:, 1] != 0] = self.normalize(
+                x[:, 1][x[:, 1] != 0], self.mean_imag, self.std_imag
+            )
             y[:, 0] = self.normalize(y[:, 0], self.mean_real, self.std_real)
             y[:, 1] = self.normalize(y[:, 1], self.mean_imag, self.std_imag)
 
