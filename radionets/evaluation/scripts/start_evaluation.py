@@ -101,7 +101,7 @@ def main(configuration_path):
         evaluate_ms_ssim(eval_conf)
 
     if eval_conf["intensity"]:
-        click.echo("\nStart evaluation of ms ssim.\n")
+        click.echo("\nStart evaluation of intensity.\n")
         evaluate_intensity(eval_conf)
 
     if eval_conf["mean_diff"]:

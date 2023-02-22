@@ -713,19 +713,45 @@ def evaluate_area_sampled(conf):
 
 
 def evaluate_intensity(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
     model_path = conf["model_path"]
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
-    name_model = Path(model_path).stem
-    data_path = str(out_path) + f"/sampled_imgs_{name_model}.h5"
-    loader = create_sampled_databunch(data_path, conf["batch_size"])
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
+    if conf["model_path_2"] != "none":
+        model_2, norm_dict = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
     ratios_sum = np.array([])
     ratios_peak = np.array([])
 
     # iterate trough DataLoader
-    for i, (samp, std, img_true) in enumerate(tqdm(loader)):
-        ratio_sum, ratio_peak = analyse_intensity(samp, img_true)
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
+        pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
+        if conf["model_path_2"] != "none":
+            pred_2 = eval_model(img_test, model_2)
+            pred_2 = rescale_normalization(pred_2, norm_dict)
+            pred = torch.cat((pred, pred_2), dim=1)
+
+        # apply symmetry
+        if pred.shape[-1] == 128:
+            img_dict = {"truth": img_true, "pred": pred}
+            img_dict = apply_symmetry(img_dict)
+            img_true = img_dict["truth"]
+            pred = img_dict["pred"]
+
+        ifft_truth = torch.tensor(get_ifft(img_true, amp_phase=conf["amp_phase"]))
+        ifft_pred = torch.tensor(get_ifft(pred, amp_phase=conf["amp_phase"]))
+        ratio_sum, ratio_peak = analyse_intensity(ifft_pred, ifft_truth)
         ratios_sum = np.append(ratios_sum, ratio_sum)
         ratios_peak = np.append(ratios_peak, ratio_peak)
 
