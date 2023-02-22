@@ -767,3 +767,47 @@ def rescale_normalization(pred, norm_dict):
         pred[:, 1] *= norm_dict["max_factors_imag"]
 
     return pred
+
+
+def preprocessing(conf):
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
+    model_2 = None
+    if conf["model_path_2"] != "none":
+        model_2, norm_dict = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    return model, model_2, loader, norm_dict, out_path
+
+
+def create_pred_ifft(conf, img_test, img_true, norm_dict, model, model_2):
+    img_test, norm_dict = apply_normalization(img_test, norm_dict)
+    pred = eval_model(img_test, model)
+    pred = rescale_normalization(pred, norm_dict)
+    if conf["model_path_2"] != "none":
+        pred_2 = eval_model(img_test, model_2)
+        pred_2 = rescale_normalization(pred_2, norm_dict)
+        pred = torch.cat((pred, pred_2), dim=1)
+
+    # apply symmetry
+    if pred.shape[-1] == 128:
+        img_dict = {"truth": img_true, "pred": pred}
+        img_dict = apply_symmetry(img_dict)
+        img_true = img_dict["truth"]
+        pred = img_dict["pred"]
+
+    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+    return ifft_pred, ifft_truth
