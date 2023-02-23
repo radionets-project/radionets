@@ -1,0 +1,1 @@
+add evaluation of intensity via peak flux and integrated flux comparison
