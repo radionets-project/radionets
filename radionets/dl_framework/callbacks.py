@@ -1,22 +1,23 @@
-import torch
-import numpy as np
-import kornia as K
-from radionets.dl_framework.model import save_model
-from radionets.dl_framework.utils import _maybe_item
-from fastai.callback.core import Callback, CancelBackwardException
 from pathlib import Path
+
+import kornia as K
 import matplotlib.pyplot as plt
-from radionets.evaluation.utils import (
-    load_data,
-    get_images,
-    eval_model,
-    make_axes_nice,
-    check_vmin_vmax,
-    get_ifft,
-    load_pretrained_model,
-)
+import numpy as np
+import torch
+from fastai.callback.core import Callback, CancelBackwardException
+
+from radionets.dl_framework.model import save_model
+from radionets.dl_framework.utils import _maybe_item, get_ifft_torch
 from radionets.evaluation.plotting import create_OrBu
-from radionets.dl_framework.utils import get_ifft_torch
+from radionets.evaluation.utils import (
+    check_vmin_vmax,
+    eval_model,
+    get_ifft,
+    get_images,
+    load_data,
+    load_pretrained_model,
+    make_axes_nice,
+)
 
 OrBu = create_OrBu()
 
@@ -217,13 +218,16 @@ class Normalize(Callback):
             x[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
             y[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
             y[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
+
         elif self.mode == "mean":
             x[:, 0][x[:, 0] != 0] = self.normalize(
                 x[:, 0][x[:, 0] != 0], self.mean_real, self.std_real
             )
+
             x[:, 1][x[:, 1] != 0] = self.normalize(
                 x[:, 1][x[:, 1] != 0], self.mean_imag, self.std_imag
             )
+
             y[:, 0] = self.normalize(y[:, 0], self.mean_real, self.std_real)
             y[:, 1] = self.normalize(y[:, 1], self.mean_imag, self.std_imag)
 
