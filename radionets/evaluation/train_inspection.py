@@ -749,24 +749,17 @@ def evaluate_intensity(conf):
             img_true = img_dict["truth"]
             pred = img_dict["pred"]
 
-        ifft_truth = torch.tensor(get_ifft(img_true, amp_phase=conf["amp_phase"]))
-        ifft_pred = torch.tensor(get_ifft(pred, amp_phase=conf["amp_phase"]))
+        ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+        ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
         ratio_sum, ratio_peak = analyse_intensity(ifft_pred, ifft_truth)
         ratios_sum = np.append(ratios_sum, ratio_sum)
         ratios_peak = np.append(ratios_peak, ratio_peak)
 
     click.echo("\nCreating eval_intensity histogram.\n")
-    # vals = vals[vals < 10]
     histogram_sum_intensity(ratios_sum, out_path, plot_format=conf["format"])
     histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
-
-    # if conf["save_vals"]:
-    #     click.echo("\nSaving area ratios.\n")
-    #     out = Path(conf["save_path"])
-    #     out.mkdir(parents=True, exist_ok=True)
-    #     np.savetxt(out / "area_ratios.txt", vals)
 
 
 def evaluate_area(conf):
