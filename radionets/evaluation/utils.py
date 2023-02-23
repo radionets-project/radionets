@@ -770,6 +770,28 @@ def rescale_normalization(pred, norm_dict):
 
 
 def preprocessing(conf):
+    """
+    Makes the necessary preprocessing for the evaluation methods analyzing the whole
+    test dataset
+
+    Parameters
+    ----------
+    conf : dictionary
+        config file containing the settings
+
+    Returns
+    -------
+    model : architecture
+        model initialized with save file
+    model_2 : architecture
+        model initialized with save file
+    loader : torch.Dataloader
+        feeds the data batch-wise
+    norm_dict : dictionary
+        dict containing the normalization factors
+    out_path : Path object
+        path to the evaluation folder
+    """
     # create DataLoader
     loader = create_databunch(
         conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
@@ -782,6 +804,8 @@ def preprocessing(conf):
     model, norm_dict = load_pretrained_model(
         conf["arch_name"], conf["model_path"], img_size
     )
+
+    # Loads second model if the two channels were trainined separately
     model_2 = None
     if conf["model_path_2"] != "none":
         model_2, norm_dict = load_pretrained_model(
@@ -792,10 +816,36 @@ def preprocessing(conf):
 
 
 def create_pred_ifft(conf, img_test, img_true, norm_dict, model, model_2):
+    """
+    Applies the normalization, gets and rescales a prediction and performs
+    the inverse Fourier transformation.
+
+    Parameters
+    ----------
+    conf : dictionary
+        config files containing the settings
+    img_test :  torch.Tensor
+        input file for the network
+    img_true : torch.tensor
+        true image
+    norm_dict : dictionary
+        dict containing the normalization factors
+    model : architecture
+        model initialized with save file
+    model_2 :
+        model initialized with save file
+
+    Returns
+    -------
+    ifft_pred : ndarray
+        predicted source in image space
+    ifft_truth : ndarray
+        true source in image space
+    """
     img_test, norm_dict = apply_normalization(img_test, norm_dict)
     pred = eval_model(img_test, model)
     pred = rescale_normalization(pred, norm_dict)
-    if conf["model_path_2"] != "none":
+    if model_2 is not None:
         pred_2 = eval_model(img_test, model_2)
         pred_2 = rescale_normalization(pred_2, norm_dict)
         pred = torch.cat((pred, pred_2), dim=1)
