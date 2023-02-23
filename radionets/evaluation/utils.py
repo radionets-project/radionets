@@ -1,13 +1,15 @@
+from pathlib import Path
+
+import h5py
 import numpy as np
-from radionets.dl_framework.model import load_pre_model
-from radionets.dl_framework.data import load_data
-import radionets.dl_framework.architecture as architecture
 import torch
 import torch.nn.functional as F
+from numba import set_num_threads, vectorize
 from torch.utils.data import DataLoader
-import h5py
-from numba import vectorize, set_num_threads
-from pathlib import Path
+
+import radionets.dl_framework.architecture as architecture
+from radionets.dl_framework.data import load_data
+from radionets.dl_framework.model import load_pre_model
 
 
 def source_list_collate(batch):
@@ -717,12 +719,13 @@ def apply_normalization(img_test, norm_dict):
         updated dictionary
     """
     if norm_dict and "mean_real" in norm_dict:
-        img_test[:, 0] = (img_test[:, 0] - norm_dict["mean_real"]) / norm_dict[
-            "std_real"
-        ]
-        img_test[:, 1] = (img_test[:, 1] - norm_dict["mean_imag"]) / norm_dict[
-            "std_imag"
-        ]
+        img_test[:, 0][img_test[:, 0] != 0] = (
+            img_test[:, 0][img_test[:, 0] != 0] - norm_dict["mean_real"]
+        ) / norm_dict["std_real"]
+
+        img_test[:, 1][img_test[:, 1] != 0] = (
+            img_test[:, 1][img_test[:, 1] != 0] - norm_dict["mean_imag"]
+        ) / norm_dict["std_imag"]
 
     elif norm_dict and "max_scaling" in norm_dict:
         max_factors_real = torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
@@ -757,7 +760,7 @@ def rescale_normalization(pred, norm_dict):
     """
     if norm_dict and "mean_real" in norm_dict:
         pred[:, 0] = pred[:, 0] * norm_dict["std_real"] + norm_dict["mean_real"]
-        pred[:, 0] = pred[:, 0] * norm_dict["std_imag"] + norm_dict["mean_imag"]
+        pred[:, 1] = pred[:, 1] * norm_dict["std_imag"] + norm_dict["mean_imag"]
 
     elif norm_dict and "max_scaling" in norm_dict:
         pred[:, 0] *= norm_dict["max_factors_real"]
