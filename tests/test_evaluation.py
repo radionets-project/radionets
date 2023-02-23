@@ -454,6 +454,34 @@ class TestEvaluation:
         assert results["mean"].shape == (2, 128, 128)
         assert results["std"].shape == (2, 128, 128)
 
+    def test_analyse_intensity(self):
+        import toml
+        from radionets.evaluation.utils import read_config, read_pred, get_ifft
+        import torch
+        from radionets.evaluation.contour import analyse_intensity
+
+        config = toml.load("./tests/evaluate.toml")
+        conf = read_config(config)
+
+        img = read_pred(
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
+        )
+        img_size = img["pred"].shape[-1]
+
+        ifft_pred = get_ifft(torch.tensor(img["pred"][0]), conf["amp_phase"]).reshape(
+            img_size, img_size
+        )
+        ifft_truth = get_ifft(torch.tensor(img["true"][0]), conf["amp_phase"]).reshape(
+            img_size, img_size
+        )
+
+        sum_val, peak_val = analyse_intensity(ifft_pred, ifft_truth)
+
+        assert len(sum_val) == 1
+        assert len(peak_val) == 1
+        assert sum_val > 0
+        assert peak_val > 0
+
     def test_evaluation(self):
         import shutil
         import os
