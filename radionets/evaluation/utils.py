@@ -815,7 +815,7 @@ def preprocessing(conf):
     return model, model_2, loader, norm_dict, out_path
 
 
-def create_pred_ifft(conf, img_test, img_true, norm_dict, model, model_2):
+def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
     """
     Applies the normalization, gets and rescales a prediction and performs
     the inverse Fourier transformation.

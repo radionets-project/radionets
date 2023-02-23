@@ -1,53 +1,55 @@
-import click
-import torch
-import numpy as np
 from pathlib import Path
-from radionets.dl_framework.data import load_data
-from radionets.evaluation.plotting import (
-    visualize_with_fourier_diff,
-    visualize_with_fourier,
-    plot_results,
-    visualize_source_reconstruction,
-    histogram_jet_angles,
-    histogram_dynamic_ranges,
-    histogram_ms_ssim,
-    histogram_mean_diff,
-    histogram_area,
-    histogram_gan_sources,
-    plot_contour,
-    hist_point,
-    plot_length_point,
-    visualize_uncertainty,
-    visualize_sampled_unc,
-)
-from radionets.evaluation.utils import (
-    create_databunch,
-    create_sampled_databunch,
-    reshape_2d,
-    load_pretrained_model,
-    get_images,
-    eval_model,
-    get_ifft,
-    save_pred,
-    read_pred,
-    apply_symmetry,
-    sample_images,
-    mergeDictionary,
-    sampled_dataset,
-    apply_normalization,
-    rescale_normalization,
-    preprocessing,
-    create_pred_ifft,
-)
-from radionets.evaluation.jet_angle import calc_jet_angle
-from radionets.evaluation.dynamic_range import calc_dr
-from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
-from radionets.evaluation.contour import area_of_contour
-from radionets.evaluation.pointsources import flux_comparison
+
+import click
+import numpy as np
+import torch
+import torch.nn.functional as F
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
-import torch.nn.functional as F
-from radionets.evaluation.utils import sym_new
+
+from radionets.dl_framework.data import load_data
+from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
+from radionets.evaluation.contour import area_of_contour
+from radionets.evaluation.dynamic_range import calc_dr
+from radionets.evaluation.jet_angle import calc_jet_angle
+from radionets.evaluation.plotting import (
+    hist_point,
+    histogram_area,
+    histogram_dynamic_ranges,
+    histogram_gan_sources,
+    histogram_jet_angles,
+    histogram_mean_diff,
+    histogram_ms_ssim,
+    plot_contour,
+    plot_length_point,
+    plot_results,
+    visualize_sampled_unc,
+    visualize_source_reconstruction,
+    visualize_uncertainty,
+    visualize_with_fourier,
+    visualize_with_fourier_diff,
+)
+from radionets.evaluation.pointsources import flux_comparison
+from radionets.evaluation.utils import (
+    apply_normalization,
+    apply_symmetry,
+    create_databunch,
+    create_sampled_databunch,
+    eval_model,
+    get_ifft,
+    get_images,
+    load_pretrained_model,
+    mergeDictionary,
+    preprocessing,
+    process_prediction,
+    read_pred,
+    rescale_normalization,
+    reshape_2d,
+    sample_images,
+    sampled_dataset,
+    save_pred,
+    sym_new,
+)
 
 
 def create_predictions(conf):
@@ -386,7 +388,7 @@ def evaluate_viewing_angle(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-        ifft_pred, ifft_truth = create_pred_ifft(
+        ifft_pred, ifft_truth = process_prediction(
             conf, img_test, img_true, norm_dict, model, model_2
         )
 
@@ -416,7 +418,7 @@ def evaluate_dynamic_range(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-        ifft_pred, ifft_truth = create_pred_ifft(
+        ifft_pred, ifft_truth = process_prediction(
             conf, img_test, img_true, norm_dict, model, model_2
         )
 
@@ -443,7 +445,7 @@ def evaluate_ms_ssim(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-        ifft_pred, ifft_truth = create_pred_ifft(
+        ifft_pred, ifft_truth = process_prediction(
             conf, img_test, img_true, norm_dict, model, model_2
         )
 
@@ -469,7 +471,7 @@ def evaluate_mean_diff(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-        ifft_pred, ifft_truth = create_pred_ifft(
+        ifft_pred, ifft_truth = process_prediction(
             conf, img_test, img_true, norm_dict, model, model_2
         )
 
@@ -619,7 +621,7 @@ def evaluate_area(conf):
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-        ifft_pred, ifft_truth = create_pred_ifft(
+        ifft_pred, ifft_truth = process_prediction(
             conf, img_test, img_true, norm_dict, model, model_2
         )
 
@@ -646,7 +648,7 @@ def evaluate_point(conf):
     lengths = []
 
     for i, (img_test, img_true, source_list) in enumerate(tqdm(loader)):
-        ifft_pred, ifft_truth = create_pred_ifft(
+        ifft_pred, ifft_truth = process_prediction(
             conf, img_test, img_true, norm_dict, model, model_2
         )
 
@@ -679,7 +681,7 @@ def evaluate_gan_sources(conf):
     atols = [1e-4, 1e-3, 1e-2, 1e-1]
 
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
-        ifft_pred, ifft_truth = create_pred_ifft(
+        ifft_pred, ifft_truth = process_prediction(
             conf, img_test, img_true, norm_dict, model, model_2
         )
 
