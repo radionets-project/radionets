@@ -1,0 +1,1 @@
+Outsource preprocessing steps in `train_inspection.py`
