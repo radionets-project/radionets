@@ -717,12 +717,12 @@ def apply_normalization(img_test, norm_dict):
         updated dictionary
     """
     if norm_dict and "mean_real" in norm_dict:
-        img_test[:, 0] = (img_test[:, 0] - norm_dict["mean_real"]) / norm_dict[
-            "std_real"
-        ]
-        img_test[:, 1] = (img_test[:, 1] - norm_dict["mean_imag"]) / norm_dict[
-            "std_imag"
-        ]
+        img_test[:, 0][img_test[:, 0] != 0] = (
+            img_test[:, 0][img_test[:, 0] != 0] - norm_dict["mean_real"]
+        ) / norm_dict["std_real"]
+        img_test[:, 1][img_test[:, 1] != 0] = (
+            img_test[:, 1][img_test[:, 1] != 0] - norm_dict["mean_imag"]
+        ) / norm_dict["std_imag"]
 
     elif norm_dict and "max_scaling" in norm_dict:
         max_factors_real = torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
