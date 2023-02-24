@@ -133,6 +133,7 @@ def read_config(config):
     eval_conf["viewing_angle"] = config["eval"]["evaluate_viewing_angle"]
     eval_conf["dynamic_range"] = config["eval"]["evaluate_dynamic_range"]
     eval_conf["ms_ssim"] = config["eval"]["evaluate_ms_ssim"]
+    eval_conf["intensity"] = config["eval"]["evaluate_intensity"]
     eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
     eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]

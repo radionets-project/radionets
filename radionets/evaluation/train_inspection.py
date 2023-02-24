@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from radionets.dl_framework.data import load_data
 from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
-from radionets.evaluation.contour import area_of_contour
+from radionets.evaluation.contour import analyse_intensity, area_of_contour
 from radionets.evaluation.dynamic_range import calc_dr
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.plotting import (
@@ -20,6 +20,8 @@ from radionets.evaluation.plotting import (
     histogram_jet_angles,
     histogram_mean_diff,
     histogram_ms_ssim,
+    histogram_peak_intensity,
+    histogram_sum_intensity,
     plot_contour,
     plot_length_point,
     plot_results,
@@ -613,6 +615,28 @@ def evaluate_area_sampled(conf):
         out = Path(conf["save_path"])
         out.mkdir(parents=True, exist_ok=True)
         np.savetxt(out / "area_ratios.txt", vals)
+
+
+def evaluate_intensity(conf):
+    model, model_2, loader, norm_dict, out_path = preprocessing(conf)
+    ratios_sum = np.array([])
+    ratios_peak = np.array([])
+
+    # iterate trough DataLoader
+    for i, (img_test, img_true) in enumerate(tqdm(loader)):
+        ifft_pred, ifft_truth = process_prediction(
+            conf, img_test, img_true, norm_dict, model, model_2
+        )
+
+        ratio_sum, ratio_peak = analyse_intensity(ifft_pred, ifft_truth)
+        ratios_sum = np.append(ratios_sum, ratio_sum)
+        ratios_peak = np.append(ratios_peak, ratio_peak)
+
+    click.echo("\nCreating eval_intensity histogram.\n")
+    histogram_sum_intensity(ratios_sum, out_path, plot_format=conf["format"])
+    histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
+
+    click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
 
 
 def evaluate_area(conf):

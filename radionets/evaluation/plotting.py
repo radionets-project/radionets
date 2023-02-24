@@ -676,6 +676,62 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
 
 
+def histogram_sum_intensity(ratios_sum, out_path, plot_format="png"):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    mean = np.mean(ratios_sum)
+    std = np.std(ratios_sum, ddof=1)
+    bins = np.arange(0, ratios_sum.max() + 0.1, 0.1)
+    ax1.hist(
+        ratios_sum,
+        bins=bins,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.axvline(1, color="red", linestyle="dashed")
+    ax1.set_xlabel("Ratio of integrated intensity")
+    ax1.set_ylabel("Number of sources")
+
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
+    ax1.set_xlim(-0.5, 5)
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/intensity_sum.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def histogram_peak_intensity(ratios_peak, out_path, plot_format="png"):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    mean = np.mean(ratios_peak)
+    std = np.std(ratios_peak, ddof=1)
+    bins = np.arange(0, ratios_peak.max() + 0.1, 0.1)
+    ax1.hist(
+        ratios_peak,
+        bins=bins,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.axvline(1, color="red", linestyle="dashed")
+    ax1.set_xlabel("Ratio of intensity peak flux")
+    ax1.set_ylabel("Number of sources")
+
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
+    ax1.set_xlim(-0.5, 5)
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/intensity_peak.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
 def histogram_mean_diff(vals, out_path, plot_format="png"):
     vals = vals.numpy()
     mean = np.mean(vals)
