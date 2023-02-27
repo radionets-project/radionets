@@ -1,25 +1,20 @@
 from math import pi
+from pathlib import Path
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
 import torch
-import matplotlib as mpl
 from matplotlib.colors import ListedColormap, LogNorm
 from matplotlib.patches import Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pytorch_msssim import ms_ssim
+from tqdm import tqdm
 
 from radionets.evaluation.contour import compute_area_ratio
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
-
-from radionets.evaluation.utils import (
-    check_vmin_vmax,
-    make_axes_nice,
-    reshape_2d,
-)
+from radionets.evaluation.utils import check_vmin_vmax, make_axes_nice, reshape_2d
 from radionets.simulations.utils import adjust_outpath
-from tqdm import tqdm
 
 # make nice Latex friendly plots
 # mpl.use("pgf")
@@ -680,7 +675,8 @@ def histogram_sum_intensity(ratios_sum, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     mean = np.mean(ratios_sum)
     std = np.std(ratios_sum, ddof=1)
-    bins = np.arange(0, ratios_sum.max() + 0.1, 0.1)
+    bins = np.arange(0.05, ratios_sum.max() + 0.05, 0.1)
+    bins = np.insert(bins, 0, 0)
     ax1.hist(
         ratios_sum,
         bins=bins,
@@ -708,7 +704,8 @@ def histogram_peak_intensity(ratios_peak, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     mean = np.mean(ratios_peak)
     std = np.std(ratios_peak, ddof=1)
-    bins = np.arange(0, ratios_peak.max() + 0.1, 0.1)
+    bins = np.arange(0.05, ratios_peak.max() + 0.05, 0.1)
+    bins = np.insert(bins, 0, 0)
     ax1.hist(
         ratios_peak,
         bins=bins,
@@ -754,7 +751,8 @@ def histogram_area(vals, out_path, plot_format="png"):
     vals = vals.numpy()
     mean = np.mean(vals)
     std = np.std(vals, ddof=1)
-    bins = np.arange(0, vals.max() + 0.1, 0.1)
+    bins = np.arange(0.05, np.round(vals.max()) + 0.05, 0.1)
+    bins = np.insert(bins, 0, 0)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75
