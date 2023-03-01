@@ -1419,6 +1419,98 @@ def plot_yolo_velocity(
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
+def plot_hist_velocity(v1, v2=None, out_path: str = "", plot_format: str = "pdf"):
+    """Plot destribution of velocities in a histogram
+
+    Parameters
+    ----------
+    v1: array
+        velocities as a 1d array
+    v2: array
+        velocities as a 1d array
+    out_path: str
+        path in file directory to save output
+    plot_format: str
+        format of the plot
+    """
+    if v2 is not None:
+        r_min = np.min(np.concatenate((v1, v2)))
+        r_max = np.max(np.concatenate((v1, v2)))
+    else:
+        r_min = np.min(v1)
+        r_max = np.max(v1)
+    # bins = 10**(np.linspace(np.log10(r_min), np.log10(r_max), 30))
+    bins = 30
+
+    fig, ax = plt.subplots(1, 1, figsize=((4.5, 4)))
+    ax.hist(
+        v1,
+        bins=bins,
+        range=(r_min, r_max),
+        alpha=0.7,
+        label="Lister et al. - Predicted",
+    )
+    if v2 is not None:
+        ax.hist(v2, bins=bins, range=(r_min, r_max), alpha=0.7, label="Lister et al.")
+
+    ax.set_xlabel("Velocity difference / c")
+    ax.set_ylabel("Counts")
+    # ax.set_xscale("log")
+    # ax.grid()
+    ax.legend()
+
+    fig.tight_layout(pad=0.05)
+    if out_path:
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/velocity_hist.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_hist_velocity_unc(
+    v1_unc, v2_unc=None, out_path: str = "", plot_format: str = "pdf"
+):
+    """Plot destribution of velocities in a histogram
+
+    Parameters
+    ----------
+    v1_unc: array
+        relative velocity uncertainty as a 1d array
+    v2_unc: array
+        relative velocity uncertainty as a 1d array
+    out_path: str
+        path in file directory to save output
+    plot_format: str
+        format of the plot
+    """
+    if v2_unc is not None:
+        r_min = np.min(np.concatenate((v1_unc, v2_unc)))
+        r_max = np.max(np.concatenate((v1_unc, v2_unc)))
+    else:
+        r_min = np.min(v1_unc)
+        r_max = np.max(v1_unc)
+
+    bins = 10 ** (np.linspace(np.log10(r_min), np.log10(r_max), 30))
+
+    fig, ax = plt.subplots(1, 1, figsize=((4.5, 4)))
+    ax.hist(v1_unc, bins=bins, range=(r_min, r_max), alpha=0.7, label="Predicted")
+    if v2_unc is not None:
+        ax.hist(
+            v2_unc, bins=bins, range=(r_min, r_max), alpha=0.7, label="Lister et al."
+        )
+
+    ax.set_xlabel("Relative velocity uncertainty")
+    ax.set_ylabel("Counts")
+    ax.set_xscale("log")
+    # ax.grid()
+    ax.legend()
+
+    fig.tight_layout(pad=0.05)
+    if out_path:
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/velocity_hist_unc.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
 def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
     """
     Plotting image of the dataset

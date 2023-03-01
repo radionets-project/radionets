@@ -26,6 +26,8 @@ from radionets.evaluation.plotting import (
     histogram_ms_ssim,
     hist_point,
     plot_contour,
+    plot_hist_velocity,
+    plot_hist_velocity_unc,
     plot_length_point,
     plot_loss,
     plot_results,
@@ -731,13 +733,18 @@ def evaluate_mojave(conf):
         )
     else:
         selected_sources = loader.source_list[5 : conf["num_images"] + 5]
-    # selected_sources = ["0723-008"]
-    print("Evaluated sources:", selected_sources)
+    # selected_sources = ["0116-219"]
+    # print("Evaluated sources:", selected_sources)
 
+    stds = []
+    v1 = []
+    v2 = []
+    v1_unc = []
+    v2_unc = []
     for source in tqdm(selected_sources):
+        # for source in selected_sources:
         img = torch.from_numpy(loader.open_source(source))
-        print(f"Evaluation of source {source} including {img.shape[0]} images.")
-        # print("Source:", source, type(img), img.shape)
+        # print(f"Evaluation of source {source} including {img.shape[0]} images.")
 
         pred = eval_model(img, model, amp_phase=conf["amp_phase"])
 
@@ -779,7 +786,9 @@ def evaluate_mojave(conf):
             .mean(numeric_only=True)
             .reset_index()
         )
-        df["intensity"] = img[i, df["y"].astype(int), df["x"].astype(int)].numpy()
+        df["intensity"] = img[
+            df["idx_img"], df["y"].astype(int), df["x"].astype(int)
+        ].numpy()
 
         if conf["vis_pred"]:
             for i in range(len(img)):
@@ -834,13 +843,38 @@ def evaluate_mojave(conf):
         v_argmax = v.argmax()
         v_unc_max = v_unc[v_argmax]
 
-        v_ncomps = (v == v_max).sum()
+        # v_ncomps = (v == v_max).sum()
+        v_ref = df["v_ref"].values[v_argmax]
+        v_unc_ref = df["v_unc_ref"].values[v_argmax]
+        # v_ncomps_ref = df["n_feat"].values[v_argmax]
 
-        v_ref = df["v_ref"][v_argmax]
-        v_unc_ref = df["v_unc_ref"][v_argmax]
-        v_ncomps_ref = df["n_feat"][v_argmax]
+        # print(rf"max velocity: {v_max:.2} \pm {v_unc_max:.2} by {v_ncomps} components")
+        # print(
+        #     rf"max velocity: {v_ref} \pm {v_unc_ref} by {int(v_ncomps_ref)} components"
+        # )
+        # print("v_max", v_max)
+        if v_max != 0:
+            v1.append(v_max)
+            v2.append(v_ref)
+            if v_unc_max != 0:
+                std_env = (v_ref - v_max) / v_unc_max  # v1 + n*s1 = v2
+                stds.append(std_env)
+                v1_unc.append(v_unc_max / v_max)
+                v2_unc.append(v_unc_ref / v_ref)
 
-        print(rf"max velocity: {v_max:.2} \pm {v_unc_max:.2} by {v_ncomps} components")
+    if stds:
+        stds = np.array(stds)
         print(
-            rf"max velocity: {v_ref} \pm {v_unc_ref} by {int(v_ncomps_ref)} components"
+            f"Lister velocity lie within {stds.mean():.2} \pm {stds.std():.2} standard deviations of the prediction"
         )
+
+    v1 = np.array(v1)
+    v2 = np.array(v2)
+    # if conf["vis_pred"]:
+    print(len(v2 - v1))
+    plot_hist_velocity(v2 - v1, out_path=out_path)
+
+    v1_unc = np.array(v1_unc)
+    v2_unc = np.array(v2_unc)
+    # if conf["vis_pred"]:
+    plot_hist_velocity_unc(v1_unc, v2_unc, out_path=out_path)
