@@ -541,8 +541,12 @@ def histogram_jet_angles(dif, out_path, plot_format="png"):
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     ax2.hist(
@@ -667,8 +671,12 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     ax1.set_xlabel("ms ssim")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 0.1, 0.1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend(
         [extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"), loc="upper center"
     )
@@ -696,8 +704,12 @@ def histogram_sum_intensity(ratios_sum, out_path, plot_format="png"):
     ax1.set_xlabel("Ratio of integrated intensity")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
     ax1.set_xlim(-0.5, 5)
 
@@ -725,8 +737,12 @@ def histogram_peak_intensity(ratios_peak, out_path, plot_format="png"):
     ax1.set_xlabel("Ratio of intensity peak flux")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
     ax1.set_xlim(-0.5, 5)
 
@@ -744,8 +760,12 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     ax1.hist(vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75)
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
@@ -768,8 +788,12 @@ def histogram_area(vals, out_path, plot_format="png"):
     ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
