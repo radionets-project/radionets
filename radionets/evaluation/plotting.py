@@ -653,9 +653,11 @@ def plot_blobs(blobs_log, ax):
 
 
 def histogram_ms_ssim(msssim, out_path, plot_format="png"):
+    mean = np.mean(msssim)
+    std = np.std(msssim, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        msssim.numpy(),
+        msssim,
         80,
         color="darkorange",
         linewidth=3,
@@ -665,6 +667,11 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     ax1.set_xlabel("ms ssim")
     ax1.set_ylabel("Number of sources")
 
+    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    ax1.legend(
+        [extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"), loc="upper center"
+    )
     fig.tight_layout()
 
     outpath = str(out_path) + f"/ms_ssim.{plot_format}"
