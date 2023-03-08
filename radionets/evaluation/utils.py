@@ -480,6 +480,8 @@ def sym_new(image, key):
     """
     if isinstance(image, np.ndarray):
         image = torch.tensor(image)
+    if len(image.shape) == 3:
+        image = image.view(1, image.shape[0], image.shape[1], image.shape[2])
     upper_half = image[:, :, :64, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
 
