@@ -140,6 +140,7 @@ def read_config(config):
     eval_conf["predict_grad"] = config["eval"]["predict_grad"]
     eval_conf["gan"] = config["eval"]["evaluate_gan"]
     eval_conf["yolo"] = config["eval"]["evaluate_yolo"]
+    eval_conf["pybdsf"] = config["eval"]["evaluate_pybdsf"]
     eval_conf["mojave"] = config["eval"]["evaluate_mojave"]
     eval_conf["save_vals"] = config["eval"]["save_vals"]
     eval_conf["save_path"] = config["eval"]["save_path"]
@@ -852,32 +853,38 @@ def yolo_linear_fit(df):
     # print(df)
     for i in df["idx_comp"].unique():
         # in seconds, pandas returns in ns
-        x0 = df[df["idx_comp"] == i]["date"].astype(int) / 1e9
+        x = df[df["idx_comp"] == i]["date"].astype(int) / 1e9
         # in mas
-        y0 = df[df["idx_comp"] == i]["distance"]
+        y = df[df["idx_comp"] == i]["distance"]
 
+        # scipy.optimize.curve_fit gives same results, but is slower (03.2023)
         fit = fitting.LevMarLSQFitter()
         line_init = models.Linear1D()
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", AstropyWarning)
-            # print(len(x0))
-            fitted_line = fit(line_init, x0, y0)
+            # print(len(x))
+            fitted_line = fit(line_init, x, y)
 
         parameters = fitted_line.parameters
         param_cov = fit.fit_info["param_cov"]
         if param_cov is not None:
-            errors = np.sqrt(np.diag(fit.fit_info["param_cov"]))
-        elif len(x0) == 2 and len(y0) == 2:
+            errors = np.sqrt(np.diag(param_cov))
+        elif len(x) == 2 and len(y) == 2:
             errors = np.array([0, 0])
         else:
-            print("x", x0)
-            print("y", y0)
+            print("x", x)
+            print("y", y)
 
+        v = calculate_velocity(parameters[0], df["redshift"].values[0])
+        v_unc = calculate_velocity(errors[0], df["redshift"].values[0])
+
+        df.loc[df["idx_comp"] == i, "v"] = v
+        df.loc[df["idx_comp"] == i, "v_unc"] = v_unc
+
+        # Needed for plotting the fit
         df.loc[df["idx_comp"] == i, "fit_param_m"] = parameters[0]
         df.loc[df["idx_comp"] == i, "fit_param_b"] = parameters[1]
-        df.loc[df["idx_comp"] == i, "fit_error_m"] = errors[0]
-        df.loc[df["idx_comp"] == i, "fit_error_b"] = errors[1]
 
     return df
 

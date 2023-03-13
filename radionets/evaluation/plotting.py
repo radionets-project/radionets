@@ -1051,6 +1051,8 @@ def plot_yolo_obj_true(ax, y, pred: list, strides, idx: int = 0, anchor_idx: int
         strides used in model
     idx: int
         index of image to be plotted
+    anchor_idx: int
+        indes of the anchor
     """
     obj_true = []
     for i in range(len(pred)):
@@ -1081,7 +1083,7 @@ def plot_yolo_obj_pred(ax, pred: list, idx: int = 0, anchor_idx: int = 0):
         indes of the anchor
     """
     out = objectness_mapping(pred)
-    img = ax.imshow(out[idx, anchor_idx])
+    img = ax.imshow(out[idx, anchor_idx], vmin=0, vmax=1)
 
     ax.set_xlabel("Pixel")
     ax.set_ylabel("Pixel")
@@ -1258,7 +1260,7 @@ def plot_yolo_mojave(
     if out_path and name and date:
         out_path = str(out_path) + f"/{name}"
         Path(out_path).mkdir(parents=True, exist_ok=True)
-        out_path = str(out_path) + f"/yolo_eval_{date}.{plot_format}"
+        out_path = str(out_path) + f"/mojave_eval_{date}.{plot_format}"
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
@@ -1403,7 +1405,7 @@ def plot_yolo_velocity(
     ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.5, 1.1),
-        ncol=5,
+        ncol=10,
         # fancybox=True,
         # shadow=True,
     )
@@ -1411,47 +1413,39 @@ def plot_yolo_velocity(
     for label in ax.get_xticklabels(which="major"):
         label.set(rotation=30, horizontalalignment="right")
 
-    fig.tight_layout(pad=0.05)
+    fig.tight_layout()
     if out_path and name:
         out_path = str(out_path) + "/" + name
         Path(out_path).mkdir(parents=True, exist_ok=True)
         out_path = str(out_path) + f"/velocity.{plot_format}"
-        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+        plt.savefig(out_path, bbox_inches="tight")
 
 
-def plot_hist_velocity(v1, v2=None, out_path: str = "", plot_format: str = "pdf"):
+def plot_hist_velocity(v, out_path: str = "", plot_format: str = "pdf"):
     """Plot destribution of velocities in a histogram
 
     Parameters
     ----------
-    v1: array
-        velocities as a 1d array
-    v2: array
-        velocities as a 1d array
+    v: array
+        velocity difference as a 1d array
     out_path: str
         path in file directory to save output
     plot_format: str
         format of the plot
     """
-    if v2 is not None:
-        r_min = np.min(np.concatenate((v1, v2)))
-        r_max = np.max(np.concatenate((v1, v2)))
-    else:
-        r_min = np.min(v1)
-        r_max = np.max(v1)
+    r_min = np.min(v)
+    r_max = np.max(v)
     # bins = 10**(np.linspace(np.log10(r_min), np.log10(r_max), 30))
     bins = 30
 
     fig, ax = plt.subplots(1, 1, figsize=((4.5, 4)))
     ax.hist(
-        v1,
+        v,
         bins=bins,
         range=(r_min, r_max),
         alpha=0.7,
         label="Lister et al. - Predicted",
     )
-    if v2 is not None:
-        ax.hist(v2, bins=bins, range=(r_min, r_max), alpha=0.7, label="Lister et al.")
 
     ax.set_xlabel("Velocity difference / c")
     ax.set_ylabel("Counts")
@@ -1462,7 +1456,7 @@ def plot_hist_velocity(v1, v2=None, out_path: str = "", plot_format: str = "pdf"
     fig.tight_layout(pad=0.05)
     if out_path:
         Path(out_path).mkdir(parents=True, exist_ok=True)
-        out_path = str(out_path) + f"/velocity_hist.{plot_format}"
+        out_path = str(out_path) + f"/hist_velocity.{plot_format}"
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
@@ -1507,8 +1501,61 @@ def plot_hist_velocity_unc(
     fig.tight_layout(pad=0.05)
     if out_path:
         Path(out_path).mkdir(parents=True, exist_ok=True)
-        out_path = str(out_path) + f"/velocity_hist_unc.{plot_format}"
+        out_path = str(out_path) + f"/hist_velocity_unc.{plot_format}"
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
+def plot_beam_props(
+    bmaj: list,
+    bmin: list,
+    bpa: list,
+    freq: list,
+    out_path: str = "",
+    plot_format: str = "pdf",
+):
+    """Plot histogram of beam properties in MOJAVE dataset to find value for
+    evaluating simulated sources with PyBDSF.
+
+    Parameters
+    ----------
+    bmaj: list or array
+        clean beam major axis diameter (degrees)
+    bmin: list or array
+        clean beam minor axis diameter (degrees)
+    bpa: list or array
+        clean beam position angle (degrees)
+    freq: list or array
+        frequency value (Hz)
+    out_path: str
+        path in file directory to save output
+    plot_format: str
+        format of the plot
+    """
+    fig, ax = plt.subplots(1, 4, figsize=((18, 4)))
+    ax[0].hist(bmaj, bins=20, label=f"Mean: {np.array(bmaj).mean():.3}")
+    ax[1].hist(bmin, bins=20, label=f"Mean: {np.array(bmin).mean():.3}")
+    ax[2].hist(bpa, bins=20, label=f"Mean: {np.array(bpa).mean():.3}")
+    ax[3].hist(freq, bins=20, label=f"Mean: {np.array(freq).mean():.3}")
+
+    ax[0].set_xlabel("Clean beam major axis diameter / °")
+    ax[0].set_ylabel("Counts")
+    ax[1].set_xlabel("Clean beam minor axis diameter / °")
+    ax[1].set_ylabel("Counts")
+    ax[2].set_xlabel("Clean beam position angle / °")
+    ax[2].set_ylabel("Counts")
+    ax[3].set_xlabel("Frequency / Hz")
+    ax[3].set_ylabel("Counts")
+
+    ax[0].legend()
+    ax[1].legend()
+    ax[2].legend()
+    ax[3].legend()
+
+    fig.tight_layout()
+    if out_path:
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/beam_props.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight")
 
 
 def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):

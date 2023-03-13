@@ -1,17 +1,25 @@
+import bdsf
 import click
 from functools import partial
 import numpy as np
 from pathlib import Path
 from pytorch_msssim import ms_ssim
+import re
+import time
 from tqdm import tqdm
 import torch
 
 from radionets.dl_framework.clustering import (
     spectralClustering,
+    gmmClustering,
 )
 from radionets.dl_framework.data import (
+    get_bundles,
     load_data,
     MojaveDataset,
+)
+from radionets.dl_framework.metrics import (
+    iou_YOLOv6,
 )
 from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 from radionets.evaluation.contour import area_of_contour
@@ -25,6 +33,7 @@ from radionets.evaluation.plotting import (
     histogram_mean_diff,
     histogram_ms_ssim,
     hist_point,
+    plot_beam_props,
     plot_contour,
     plot_hist_velocity,
     plot_hist_velocity_unc,
@@ -53,6 +62,7 @@ from radionets.evaluation.utils import (
     read_pred,
     save_pred,
     scaling_log10_noisecut,
+    SymLogNorm,
     yolo_apply_nms,
     yolo_df,
     yolo_linear_fit,
@@ -690,11 +700,13 @@ def evaluate_yolo(conf):
 
     model = load_pretrained_model(conf["arch_name"], model_path)
 
+    iou = []
     plotted_images = 0
     for img_test, img_true in tqdm(loader):
+        # img_true is soure list, not an image. Name is kept for consistency.
+        pred = eval_model(img_test, model)
+        iou.append(iou_YOLOv6(pred, img_true))
         if plotted_images < conf["num_images"]:
-            # img_true is soure list, not an image. Name is kept for consistency.
-            pred = eval_model(img_test, model)
             for _ in range(len(img_test)):
                 if plotted_images < conf["num_images"]:
                     plot_yolo_eval(
@@ -704,17 +716,54 @@ def evaluate_yolo(conf):
                         out_path=out_path,
                         idx=plotted_images,
                         anchor_idx=0,
-                        plot_format="pdf",
                     )
                     plotted_images += 1
+
+    print(f"IoU of test dataset: {np.mean(np.array(iou)):.2}")
+
+
+def evaluate_pybdsf(conf):
+    bundle_paths = get_bundles(conf["data_path"])
+    data = np.sort(
+        [path for path in bundle_paths if re.findall("samp_test.*\.fits", path.name)]
+    )
+
+    if conf["random"]:
+        if conf["num_images"] > len(data):
+            conf["num_images"] = len(data)
+        data = np.random.choice(data, conf["num_images"], replace=False)
+    else:
+        data = data[: conf["num_images"]]
+
+    # iou = []
+    for filename in data:
+        print(filename)
+        img = bdsf.process_image(
+            filename,
+            beam=(3.04e-7, 1.57e-7, -5.57),  # values are average of MOJAVE data
+            frequency=1.53e10,
+            quiet=True,
+        )
+        print(img.model_gaus_arr)
+        # print(img.opts.to_list())
+        # iou.append(iou_YOLOv6(pred, img_true))
+        if conf["vis_pred"]:
+            img.show_fit()
+
+    # Remove logfiles to allow more than one evaluation run
+    logfiles = [p for p in Path(conf["data_path"]).rglob("*.log")]
+    [logfile.unlink() for logfile in logfiles]
+
+    # print(f"IoU of test dataset: {np.mean(np.array(iou)):.2}")
 
 
 def evaluate_mojave(conf):
     loader = MojaveDataset(
         data_path=conf["data_path"],
-        crop_size=256,
-        scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
-        # scaling = partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
+        crop_size=128,
+        # scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
+        # scaling=partial(scaling_log10_noisecut, thres_adj=1),
+        scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
     )
     # print(loader.source_list)
     print("Finished loading MOJAVE data")
@@ -733,20 +782,32 @@ def evaluate_mojave(conf):
         )
     else:
         selected_sources = loader.source_list[5 : conf["num_images"] + 5]
-    # selected_sources = ["0116-219"]
+    # selected_sources = ["1142+198"]
+    # selected_sources = ["0149+710"]
+    # selected_sources = ["0035+413"]
     # print("Evaluated sources:", selected_sources)
+
+    # Informations about beam properties
+    bmaj = []  # clean beam major axis diameter (degrees)
+    bmin = []  # clean beam minor axis diameter (degrees)
+    bpa = []  # clean beam position angle (degrees)
+    freq = []  # frequency value (Hz)
 
     stds = []
     v1 = []
     v2 = []
     v1_unc = []
     v2_unc = []
+    eval_time = []
     for source in tqdm(selected_sources):
         # for source in selected_sources:
         img = torch.from_numpy(loader.open_source(source))
         # print(f"Evaluation of source {source} including {img.shape[0]} images.")
 
+        st = time.time()
         pred = eval_model(img, model, amp_phase=conf["amp_phase"])
+        outputs = yolo_apply_nms(pred, x=img)
+        eval_time.append((time.time() - st) / img.shape[0])
 
         if conf["vis_pred"]:
             for i in range(len(img)):
@@ -762,15 +823,22 @@ def evaluate_mojave(conf):
                         date=date,
                     )
 
-        outputs = yolo_apply_nms(pred, x=img)
-
         df = yolo_df(outputs=outputs, ds=loader, source=source)
 
         # Apply the cluster algorythm
         xy_mas = np.array([df["x_mas"], df["y_mas"]]).T
         # print("xy_mas shape:", xy_mas.shape)
-        cluster_model = spectralClustering(xy_mas)
-        df["idx_comp"] = cluster_model.labels_
+
+        # st = time.time()
+        # cluster_model = spectralClustering(xy_mas)
+        # df["idx_comp"] = cluster_model.labels_
+        cluster_model = gmmClustering(xy_mas, score_type="BIC")
+        if cluster_model is None:
+            print(f"No successful GMM cluster for source {source}!")
+            df["idx_comp"] = np.zeros(len(xy_mas), dtype=int)
+        else:
+            df["idx_comp"] = cluster_model.predict(xy_mas)
+        # print("Zeit für Clustering:", time.time() - st)
 
         # Change colums (just for the look)
         cols = df.columns.tolist()
@@ -827,21 +895,20 @@ def evaluate_mojave(conf):
                 idx = df[df["idx_comp"] == i].index
                 df.drop(idx, inplace=True)
 
+        if df.empty:
+            print(f"DataFrame is empty for source {source}!")
+            continue
+
         # Perform fit (y=m*x+n) and calculate velocity
         df = yolo_linear_fit(df)
-        v = calculate_velocity(df["fit_param_m"].values, df["redshift"].values)
-        v_unc = calculate_velocity(df["fit_error_m"].values, df["redshift"].values)
-
-        df["v"] = v
-        df["v_unc"] = v_unc
 
         if conf["vis_pred"]:
             plot_yolo_velocity(df=df, out_path=out_path, name=source)
 
         # Compare velocities (fitted vs. MOJAVE (only max vel. stated))
-        v_max = v.max()
-        v_argmax = v.argmax()
-        v_unc_max = v_unc[v_argmax]
+        v_max = df["v"].max()
+        v_argmax = df["v"].argmax()
+        v_unc_max = df["v_unc"].values[v_argmax]
 
         # v_ncomps = (v == v_max).sum()
         v_ref = df["v_ref"].values[v_argmax]
@@ -853,6 +920,7 @@ def evaluate_mojave(conf):
         #     rf"max velocity: {v_ref} \pm {v_unc_ref} by {int(v_ncomps_ref)} components"
         # )
         # print("v_max", v_max)
+
         if v_max != 0:
             v1.append(v_max)
             v2.append(v_ref)
@@ -862,19 +930,33 @@ def evaluate_mojave(conf):
                 v1_unc.append(v_unc_max / v_max)
                 v2_unc.append(v_unc_ref / v_ref)
 
+        for i in range(len(img)):
+            hdr = loader.get_header(i, source)
+            bmaj.append(hdr["BMAJ"])
+            bmin.append(hdr["BMIN"])
+            bpa.append(hdr["BPA"])
+            freq.append(hdr["CRVAL3"])
+
+    # if conf["vis_pred"]:
+    plot_beam_props(bmaj=bmaj, bmin=bmin, bpa=bpa, freq=freq, out_path=out_path)
+
     if stds:
         stds = np.array(stds)
         print(
-            f"Lister velocity lie within {stds.mean():.2} \pm {stds.std():.2} standard deviations of the prediction"
+            f"Lister velocity lie within {stds.mean():.2} \pm {stds.std():.2} standard deviations of the prediction\n"
         )
+
+    eval_time = np.array(eval_time).mean()
+    print(f"Average evalution time of YOLO & NMS: {eval_time:.8} s per image")
 
     v1 = np.array(v1)
     v2 = np.array(v2)
     # if conf["vis_pred"]:
-    print(len(v2 - v1))
-    plot_hist_velocity(v2 - v1, out_path=out_path)
+    if v1.size != 0 and v2.size != 0:
+        plot_hist_velocity(v2 - v1, out_path=out_path)
 
     v1_unc = np.array(v1_unc)
     v2_unc = np.array(v2_unc)
     # if conf["vis_pred"]:
-    plot_hist_velocity_unc(v1_unc, v2_unc, out_path=out_path)
+    if v1_unc.size != 0 and v2_unc.size != 0:
+        plot_hist_velocity_unc(v1_unc, v2_unc, out_path=out_path)
