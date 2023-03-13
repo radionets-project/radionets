@@ -207,7 +207,11 @@ def load_data(data_path, mode, fourier=False, source_list=False):
     """
     bundle_paths = get_bundles(data_path)
     data = np.sort(
-        [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
+        [
+            path
+            for path in bundle_paths
+            if re.findall("samp_" + mode + ".*\.h5", path.name)
+        ]
     )
     data = sorted(data, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
     ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)

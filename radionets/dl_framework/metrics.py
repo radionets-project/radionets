@@ -24,6 +24,11 @@ def iou_YOLOv6(pred, target):
     iou: float
         Mean Intersection over Union of all boxes after nms
     """
+    if torch.is_tensor(target):
+        target = target.clone()
+    else:
+        target = target.copy()
+
     bs = target.shape[0]
     strides_head = torch.tensor([8, 16, 32])
 
