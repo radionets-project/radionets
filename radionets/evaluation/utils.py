@@ -564,13 +564,16 @@ def tn_numba_vec_parallel(mu, sig, a, b):
     return rv
 
 
-def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
+def trunc_rvs(mu, sig, num_samples, mode, target="parallel", nthreads=49):
     if mode == "amp":
         a = 0
         b = np.inf
     elif mode == "phase":
         a = -np.pi
         b = np.pi
+    elif mode == "real" or mode == "imag":
+        a = -np.inf
+        b = np.inf
     else:
         raise ValueError("Unsupported mode, use either ``phase`` or ``amp``.")
     mu = np.tile(mu, (num_samples, 1, 1, 1))
@@ -620,11 +623,16 @@ def sample_images(mean, std, num_samples, conf):
     std_amp, std_phase = std[:, 0], std[:, 1]
     num_img = mean_amp.shape[0]
 
+    if conf["amp_phase"]:
+        mode = ["amp", "phase"]
+    else:
+        mode = ["real", "imag"]
+
     # amplitude
     sampled_gauss_amp = trunc_rvs(
         mu=mean_amp,
         sig=std_amp,
-        mode="amp",
+        mode=mode[0],
         num_samples=num_samples,
     ).reshape(num_img * num_samples, 65, 128)
 
@@ -632,19 +640,19 @@ def sample_images(mean, std, num_samples, conf):
     sampled_gauss_phase = trunc_rvs(
         mu=mean_phase,
         sig=std_phase,
-        mode="phase",
+        mode=mode[1],
         num_samples=num_samples,
     ).reshape(num_img * num_samples, 65, 128)
 
     # masks
-    mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
-    mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
-        sampled_gauss_phase >= (np.pi + 1e-4)
-    )
-    if mask_invalid_amp.sum() > 0:
-        print(sampled_gauss_amp[mask_invalid_amp])
-    assert mask_invalid_amp.sum() == 0
-    assert mask_invalid_phase.sum() == 0
+    if conf["amp_phase"]:
+        mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
+        mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+            sampled_gauss_phase >= (np.pi + 1e-4)
+        )
+
+        assert mask_invalid_amp.sum() == 0
+        assert mask_invalid_phase.sum() == 0
 
     sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
 
