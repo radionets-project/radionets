@@ -461,10 +461,9 @@ def evaluate_ms_ssim(conf):
         vals.extend(val)
 
     click.echo("\nCreating ms-ssim histogram.\n")
-    vals = torch.tensor(vals)
     histogram_ms_ssim(vals, out_path, plot_format=conf["format"])
 
-    click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
+    click.echo(f"\nThe mean ms-ssim value is {np.mean(vals)}.\n")
 
 
 def evaluate_mean_diff(conf):
