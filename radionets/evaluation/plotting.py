@@ -760,7 +760,7 @@ def histogram_sum_intensity(ratios_sum, out_path, plot_format="png"):
     ax1.text(
         0.1,
         0.8,
-        f"Mean: {mean:.2f} \n Std: {std:.2f}",
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
         horizontalalignment="left",
         verticalalignment="center",
         transform=ax1.transAxes,
@@ -799,7 +799,7 @@ def histogram_peak_intensity(ratios_peak, out_path, plot_format="png"):
     ax1.text(
         0.1,
         0.8,
-        f"Mean: {mean:.2f} \n Std: {std:.2f}",
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
         horizontalalignment="left",
         verticalalignment="center",
         transform=ax1.transAxes,
@@ -856,7 +856,7 @@ def histogram_area(vals, out_path, plot_format="png"):
     ax1.text(
         0.1,
         0.8,
-        f"Mean: {mean:.2f} \n Std: {std:.2f}",
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
         horizontalalignment="left",
         verticalalignment="center",
         transform=ax1.transAxes,
