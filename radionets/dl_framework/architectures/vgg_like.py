@@ -2,7 +2,7 @@ from torch import nn
 import numpy as np
 
 
-class One_or_Two_sided(nn.Module):
+class Counterjet(nn.Module):
     def __init__(self, img_size=256):
         super().__init__()
 

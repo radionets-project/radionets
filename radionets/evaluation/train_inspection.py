@@ -1,4 +1,4 @@
-import bdsf
+# import bdsf
 import click
 from functools import partial
 import numpy as np
@@ -20,6 +20,7 @@ from radionets.dl_framework.data import (
 )
 from radionets.dl_framework.metrics import (
     iou_YOLOv6,
+    binary_accuracy,
 )
 from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 from radionets.evaluation.contour import area_of_contour
@@ -35,6 +36,8 @@ from radionets.evaluation.plotting import (
     hist_point,
     plot_beam_props,
     plot_contour,
+    plot_counterjet_eval,
+    plot_hist_counterjet,
     plot_hist_velocity,
     plot_hist_velocity_unc,
     plot_length_point,
@@ -722,42 +725,44 @@ def evaluate_yolo(conf):
     print(f"IoU of test dataset: {np.mean(np.array(iou)):.2}")
 
 
-def evaluate_pybdsf(conf):
-    bundle_paths = get_bundles(conf["data_path"])
-    data = np.sort(
-        [path for path in bundle_paths if re.findall("samp_test.*\.fits", path.name)]
-    )
+# def evaluate_pybdsf(conf):
+#     bundle_paths = get_bundles(conf["data_path"])
+#     data = np.sort(
+#         [path for path in bundle_paths if re.findall("samp_test.*\.fits", path.name)]
+#     )
 
-    if conf["random"]:
-        if conf["num_images"] > len(data):
-            conf["num_images"] = len(data)
-        data = np.random.choice(data, conf["num_images"], replace=False)
-    else:
-        data = data[: conf["num_images"]]
+#     if conf["random"]:
+#         if conf["num_images"] > len(data):
+#             conf["num_images"] = len(data)
+#         data = np.random.choice(data, conf["num_images"], replace=False)
+#     else:
+#         data = data[: conf["num_images"]]
 
-    # iou = []
-    for filename in data:
-        print(filename)
-        img = bdsf.process_image(
-            filename,
-            beam=(3.04e-7, 1.57e-7, -5.57),  # values are average of MOJAVE data
-            frequency=1.53e10,
-            quiet=True,
-        )
-        print(img.model_gaus_arr)
-        # print(img.opts.to_list())
-        # iou.append(iou_YOLOv6(pred, img_true))
-        if conf["vis_pred"]:
-            img.show_fit()
+#     # iou = []
+#     for filename in data:
+#         print(filename)
+#         img = bdsf.process_image(
+#             filename,
+#             beam=(3.04e-7, 1.57e-7, -5.57),  # values are average of MOJAVE data
+#             frequency=1.53e10,
+#             quiet=True,
+#         )
+#         print(img.model_gaus_arr)
+#         # print(img.opts.to_list())
+#         # iou.append(iou_YOLOv6(pred, img_true))
+#         if conf["vis_pred"]:
+#             img.show_fit()
 
-    # Remove logfiles to allow more than one evaluation run
-    logfiles = [p for p in Path(conf["data_path"]).rglob("*.log")]
-    [logfile.unlink() for logfile in logfiles]
+#     # Remove logfiles to allow more than one evaluation run
+#     logfiles = [p for p in Path(conf["data_path"]).rglob("*.log")]
+#     [logfile.unlink() for logfile in logfiles]
 
-    # print(f"IoU of test dataset: {np.mean(np.array(iou)):.2}")
+#     # print(f"IoU of test dataset: {np.mean(np.array(iou)):.2}")
 
 
 def evaluate_mojave(conf):
+    visualize = True
+
     loader = MojaveDataset(
         data_path=conf["data_path"],
         crop_size=128,
@@ -809,7 +814,7 @@ def evaluate_mojave(conf):
         outputs = yolo_apply_nms(pred, x=img)
         eval_time.append((time.time() - st) / img.shape[0])
 
-        if conf["vis_pred"]:
+        if visualize:
             for i in range(len(img)):
                 date = loader.get_header(i, source)["DATE-OBS"]
                 # continue
@@ -845,7 +850,7 @@ def evaluate_mojave(conf):
         cols.insert(2, cols.pop(-1))
         df = df[cols]
 
-        if conf["vis_pred"]:
+        if visualize:
             plot_yolo_clustering(df=df, out_path=out_path, name=source)
 
         # Build mean of components, which are from the same image and the same cluster
@@ -858,7 +863,7 @@ def evaluate_mojave(conf):
             df["idx_img"], df["y"].astype(int), df["x"].astype(int)
         ].numpy()
 
-        if conf["vis_pred"]:
+        if visualize:
             for i in range(len(img)):
                 date = loader.get_header(i, source)["DATE-OBS"]
                 # continue
@@ -902,7 +907,7 @@ def evaluate_mojave(conf):
         # Perform fit (y=m*x+n) and calculate velocity
         df = yolo_linear_fit(df)
 
-        if conf["vis_pred"]:
+        if visualize:
             plot_yolo_velocity(df=df, out_path=out_path, name=source)
 
         # Compare velocities (fitted vs. MOJAVE (only max vel. stated))
@@ -937,7 +942,7 @@ def evaluate_mojave(conf):
             bpa.append(hdr["BPA"])
             freq.append(hdr["CRVAL3"])
 
-    # if conf["vis_pred"]:
+    # if visualize:
     plot_beam_props(bmaj=bmaj, bmin=bmin, bpa=bpa, freq=freq, out_path=out_path)
 
     if stds:
@@ -951,12 +956,132 @@ def evaluate_mojave(conf):
 
     v1 = np.array(v1)
     v2 = np.array(v2)
-    # if conf["vis_pred"]:
+    # if visualize:
     if v1.size != 0 and v2.size != 0:
         plot_hist_velocity(v2 - v1, out_path=out_path)
 
     v1_unc = np.array(v1_unc)
     v2_unc = np.array(v2_unc)
-    # if conf["vis_pred"]:
+    # if visualize:
     if v1_unc.size != 0 and v2_unc.size != 0:
         plot_hist_velocity_unc(v1_unc, v2_unc, out_path=out_path)
+
+
+def evaluate_counterjet(conf):
+    if "MOJAVE" in conf["data_path"]:
+        loader = MojaveDataset(
+            data_path=conf["data_path"],
+            crop_size=128,
+            # scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
+            # scaling=partial(scaling_log10_noisecut, thres_adj=1),
+            scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
+        )
+        # print(loader.source_list)
+        print("Finished loading MOJAVE data")
+
+        model_path = Path(conf["model_path"])
+        out_path = model_path.parent / "evaluation" / model_path.stem
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        model = load_pretrained_model(conf["arch_name"], model_path)
+
+        images = np.zeros((3, 128, 128))    # images to plot
+        images_value = np.array([1, 1, 0])          # prediction of images to plot
+        acc = []  # accuracy on simulated data
+        preds = []
+        for source in tqdm(loader.source_list):
+            img = torch.from_numpy(loader.open_source(source))
+            # print(f"Evaluation of source {source} including {img.shape[0]} images.")
+
+            pred = torch.sigmoid(eval_model(img, model, amp_phase=conf["amp_phase"]))
+            preds.append(pred)
+
+            if pred.min() < images_value[0]:
+                images_value[0] = pred.min()
+                images[0] = img[pred.argmin()]
+            if pred.max() > images_value[2]:
+                images_value[2] = pred.max()
+                images[2] = img[pred.argmax()]
+            if np.abs(pred - 0.5).min() < np.abs(images_value[1] - 0.5).min():
+                images_value[1] = pred[np.abs(pred - 0.5).argmin()]
+                images[1] = img[np.abs(pred - 0.5).argmin()]
+
+        plot_counterjet_eval(
+            x=images,
+            pred=images_value,
+            data_name="MOJAVE",
+            out_path=out_path,
+        )
+
+        preds = torch.cat(preds)
+
+        threshold_cj = 0.9
+        cj = (preds > threshold_cj).float().mean()
+        ncj = (preds < 1 - threshold_cj).float().mean()
+        unsure = 1 - cj - ncj
+        print(f"No counterjet - Unsure - Counterjet: {ncj:.3} {unsure:.3} {cj:.3}")
+
+        plot_hist_counterjet(
+            x1=preds, 
+            threshold=threshold_cj, 
+            data_name="MOJAVE",
+            out_path=out_path,
+        )
+
+    else:
+        loader = create_databunch(
+            conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+        )
+        model_path = Path(conf["model_path"])
+        out_path = model_path.parent / "evaluation" / model_path.stem
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        plot_loss(
+            model_path=model_path,
+            out_path=out_path,
+            metric_name="Accuracy",
+            save=True,
+            plot_format="pdf",
+        )
+
+        model = load_pretrained_model(conf["arch_name"], model_path)
+
+        acc = []  # accuracy on simulated data
+        preds, targets = [], []
+        for img_test, img_true in tqdm(loader):
+            # img_true is soure list, not an image. Name is kept for consistency.
+            n_components = img_true.shape[1]
+            amps = img_true[:, -int((n_components - 1) / 2) :, 0]
+            amps_summed = torch.sum(amps, axis=1)
+            target = (amps_summed > 0).float()
+            targets.append(target)
+
+            pred = torch.sigmoid(eval_model(img_test, model))
+            preds.append(pred)
+            acc.append(binary_accuracy(pred, img_true))
+
+        plot_counterjet_eval(
+            x=img_test,
+            pred=pred,
+            y=target,
+            data_name="simulation",
+            out_path=out_path,
+        )
+
+        preds = torch.cat(preds)
+        targets = np.concatenate(targets)
+
+        print(f"Accuracy of test dataset: {np.mean(np.array(acc)):.3}")
+
+        threshold_cj = 0.9
+        cj = (preds > threshold_cj).float().mean()
+        ncj = (preds < 1 - threshold_cj).float().mean()
+        unsure = 1 - cj - ncj
+        print(f"No counterjet - Unsure - Counterjet: {ncj:.3} {unsure:.3} {cj:.3}")
+
+        plot_hist_counterjet(
+            x1=preds, 
+            x2=targets, 
+            threshold=threshold_cj, 
+            data_name="simulation",
+            out_path=out_path)

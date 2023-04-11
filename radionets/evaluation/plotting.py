@@ -1218,6 +1218,66 @@ def plot_yolo_eval(
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
+def plot_counterjet_eval(
+    x,
+    pred,
+    y = None,
+    data_name: str = "",
+    out_path: str = "",
+    plot_format: str = "pdf",
+):
+    """Evaluation plot for counterjet method
+
+    Parameters
+    ----------
+    x: 4d-array
+        input image (bs, 1, ny, nx)
+    pred: 
+        1d-array
+    y: 3d-array
+        true data from simulation (bs, components, paramters)
+    data_name: str
+        name to save plots for different data types
+    out_path: str
+        path in file directory to save output
+    plot_format: str
+        format of the plot
+    """
+    idx_min = np.argmin(pred)
+    idx_max = np.argmax(pred)
+    idx_mid = (np.abs(pred - 0.5)).argmin()
+
+    fig, axs = plt.subplots(1, 3, figsize=(10, 5), sharey=True)
+    for ax, idx in zip(axs, [idx_min, idx_mid, idx_max]):
+        if y is None:
+            s = f"Pred: {np.round(pred[idx], 2):.2}"
+        else:
+            s = f"True: {int(y[idx])}, Pred: {np.round(pred[idx], 2):.2}"
+        im = ax.imshow(x[idx, 0], cmap="inferno")
+        ax.text(0.10, 0.90, s,
+            horizontalalignment='left',
+            verticalalignment='center',
+            transform = ax.transAxes,
+            bbox=dict(
+                boxstyle="round",
+                facecolor="white",
+                edgecolor="lightgray",
+                alpha=0.7,
+            ),
+        )
+        ax.set_xlabel("Pixel")
+        ax.set_ylabel("Pixel")
+
+    make_axes_nice(fig, ax, im)
+
+
+    plt.tight_layout()
+    if out_path:
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/counterjet_eval_{data_name}.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
+
+
 def plot_yolo_mojave(
     x,
     pred: list,
@@ -1419,6 +1479,49 @@ def plot_yolo_velocity(
         Path(out_path).mkdir(parents=True, exist_ok=True)
         out_path = str(out_path) + f"/velocity.{plot_format}"
         plt.savefig(out_path, bbox_inches="tight")
+
+
+def plot_hist_counterjet(
+    x1, x2=None, threshold: float = None, data_name: str = "", out_path: str = "", plot_format: str = "pdf"
+):
+    """Plot destribution of counterjet in a histogram
+
+    Parameters
+    ----------
+    x1: array
+        prediction
+    x2: array
+        true value
+    threshold: float
+        threshold for detecting a counterjet
+    data_name: str
+        name to save plots for different data types
+    out_path: str
+        path in file directory to save output
+    plot_format: str
+        format of the plot
+    """
+    fig, ax = plt.subplots(1, 1, figsize=((4.5, 3)))
+    ax.hist(x1, bins=20, range=(0, 1), alpha=0.7, label="Predicted")
+    if x2 is not None:
+        ax.hist(x2, bins=20, range=(0, 1), alpha=0.7, label="True")
+    if threshold is not None:
+        ax.axvline(threshold, c="red")
+        ax.axvline(1 - threshold, c="red")
+
+    # ax.set_xticks([0, 1])
+    # ax.set_xticklabels(["No counterjet", "Counterjet"])
+    ax.set_xlabel("No counterjet - counterjet")
+    ax.set_ylabel("Counts")
+
+    ax.set_yscale("log")
+    ax.legend()
+
+    fig.tight_layout(pad=0.05)
+    if out_path:
+        Path(out_path).mkdir(parents=True, exist_ok=True)
+        out_path = str(out_path) + f"/hist_counterjet_{data_name}.{plot_format}"
+        plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
 def plot_hist_velocity(v, out_path: str = "", plot_format: str = "pdf"):

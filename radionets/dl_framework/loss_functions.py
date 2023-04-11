@@ -318,7 +318,7 @@ def yolo(x, y):
     return loss
 
 
-def one_or_two_sided(x, y):
+def counterjet(x, y):
     n_components = y.shape[1]
     amps = y[:, -int((n_components - 1) / 2) :, 0]
     amps_summed = torch.sum(amps, axis=1)

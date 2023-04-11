@@ -16,8 +16,9 @@ from radionets.evaluation.train_inspection import (
     create_predictions,
     evaluate_gan_sources,
     evaluate_yolo,
-    evaluate_pybdsf,
+    # evaluate_pybdsf,
     evaluate_mojave,
+    evaluate_counterjet,
 )
 
 
@@ -143,3 +144,7 @@ def main(configuration_path):
     if eval_conf["mojave"]:
         click.echo("\nStart evaluation of MOJAVE data.\n")
         evaluate_mojave(eval_conf)
+
+    if eval_conf["counterjet"]:
+        click.echo("\nStart evaluation for counterjet.\n")
+        evaluate_counterjet(eval_conf)
