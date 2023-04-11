@@ -713,9 +713,10 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     mean = np.mean(msssim)
     std = np.std(msssim, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    bins = np.arange(msssim.min(), 1 + 0.01, 0.01)
     ax1.hist(
         msssim,
-        80,
+        bins=bins,
         color="darkorange",
         linewidth=3,
         histtype="step",
@@ -724,14 +725,19 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     ax1.set_xlabel("ms ssim")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle(
-        (0, 0), 0.1, 0.1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
-    )
-    extra_2 = Rectangle(
-        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
-    )
-    ax1.legend(
-        [extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"), loc="upper center"
+    ax1.text(
+        0.1,
+        0.8,
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
+        horizontalalignment="left",
+        verticalalignment="center",
+        transform=ax1.transAxes,
+        bbox=dict(
+            boxstyle="round",
+            facecolor="white",
+            edgecolor="lightgray",
+            alpha=0.8,
+        ),
     )
     fig.tight_layout()
 
