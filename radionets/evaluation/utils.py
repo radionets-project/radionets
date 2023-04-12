@@ -140,7 +140,6 @@ def read_config(config):
     eval_conf["predict_grad"] = config["eval"]["predict_grad"]
     eval_conf["gan"] = config["eval"]["evaluate_gan"]
     eval_conf["yolo"] = config["eval"]["evaluate_yolo"]
-    eval_conf["pybdsf"] = config["eval"]["evaluate_pybdsf"]
     eval_conf["mojave"] = config["eval"]["evaluate_mojave"]
     eval_conf["counterjet"] = config["eval"]["evaluate_counterjet"]
     eval_conf["save_vals"] = config["eval"]["save_vals"]

@@ -16,7 +16,6 @@ from radionets.evaluation.train_inspection import (
     create_predictions,
     evaluate_gan_sources,
     evaluate_yolo,
-    # evaluate_pybdsf,
     evaluate_mojave,
     evaluate_counterjet,
 )
@@ -136,10 +135,6 @@ def main(configuration_path):
     if eval_conf["yolo"]:
         click.echo("\nStart evaluation of YOLO model.\n")
         evaluate_yolo(eval_conf)
-
-    if eval_conf["pybdsf"]:
-        click.echo("\nStart evaluation using PyBDSF.\n")
-        evaluate_pybdsf(eval_conf)
 
     if eval_conf["mojave"]:
         click.echo("\nStart evaluation of MOJAVE data.\n")

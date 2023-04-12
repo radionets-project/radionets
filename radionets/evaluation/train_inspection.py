@@ -725,41 +725,6 @@ def evaluate_yolo(conf):
     print(f"IoU of test dataset: {np.mean(np.array(iou)):.2}")
 
 
-# def evaluate_pybdsf(conf):
-#     bundle_paths = get_bundles(conf["data_path"])
-#     data = np.sort(
-#         [path for path in bundle_paths if re.findall("samp_test.*\.fits", path.name)]
-#     )
-
-#     if conf["random"]:
-#         if conf["num_images"] > len(data):
-#             conf["num_images"] = len(data)
-#         data = np.random.choice(data, conf["num_images"], replace=False)
-#     else:
-#         data = data[: conf["num_images"]]
-
-#     # iou = []
-#     for filename in data:
-#         print(filename)
-#         img = bdsf.process_image(
-#             filename,
-#             beam=(3.04e-7, 1.57e-7, -5.57),  # values are average of MOJAVE data
-#             frequency=1.53e10,
-#             quiet=True,
-#         )
-#         print(img.model_gaus_arr)
-#         # print(img.opts.to_list())
-#         # iou.append(iou_YOLOv6(pred, img_true))
-#         if conf["vis_pred"]:
-#             img.show_fit()
-
-#     # Remove logfiles to allow more than one evaluation run
-#     logfiles = [p for p in Path(conf["data_path"]).rglob("*.log")]
-#     [logfile.unlink() for logfile in logfiles]
-
-#     # print(f"IoU of test dataset: {np.mean(np.array(iou)):.2}")
-
-
 def evaluate_mojave(conf):
     visualize = True
 
@@ -985,8 +950,8 @@ def evaluate_counterjet(conf):
 
         model = load_pretrained_model(conf["arch_name"], model_path)
 
-        images = np.zeros((3, 128, 128))    # images to plot
-        images_value = np.array([1, 1, 0])          # prediction of images to plot
+        images = np.zeros((3, 128, 128))  # images to plot
+        images_value = np.array([1, 1, 0])  # prediction of images to plot
         acc = []  # accuracy on simulated data
         preds = []
         for source in tqdm(loader.source_list):
@@ -1022,8 +987,8 @@ def evaluate_counterjet(conf):
         print(f"No counterjet - Unsure - Counterjet: {ncj:.3} {unsure:.3} {cj:.3}")
 
         plot_hist_counterjet(
-            x1=preds, 
-            threshold=threshold_cj, 
+            x1=preds,
+            threshold=threshold_cj,
             data_name="MOJAVE",
             out_path=out_path,
         )
@@ -1080,8 +1045,9 @@ def evaluate_counterjet(conf):
         print(f"No counterjet - Unsure - Counterjet: {ncj:.3} {unsure:.3} {cj:.3}")
 
         plot_hist_counterjet(
-            x1=preds, 
-            x2=targets, 
-            threshold=threshold_cj, 
+            x1=preds,
+            x2=targets,
+            threshold=threshold_cj,
             data_name="simulation",
-            out_path=out_path)
+            out_path=out_path,
+        )
