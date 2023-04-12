@@ -14,8 +14,7 @@ def test_create_databunch():
     valid_ds = load_data(data_path, "valid", source_list=source_list, fourier=fourier)
 
     # Create databunch with defined batchsize
-    bs = batch_size
-    data = DataBunch(*get_dls(train_ds, valid_ds, bs))
+    data = DataBunch(*get_dls(train_ds, valid_ds, batch_size))
 
     assert data.train_dl is not None
     assert data.valid_dl is not None
@@ -25,7 +24,12 @@ def test_create_databunch():
 def test_define_learner():
     from radionets.dl_framework.learner import define_learner
     import toml
-    from radionets.dl_training.utils import read_config, define_arch, create_databunch
+    from radionets.dl_training.utils import (
+        read_config,
+        define_arch,
+        create_databunch,
+        get_normalisation_factors,
+    )
 
     config = toml.load("./tests/training.toml")
     train_conf = read_config(config)
@@ -34,10 +38,11 @@ def test_define_learner():
     data = create_databunch(
         data_path=train_conf["data_path"],
         fourier=train_conf["fourier"],
-        batch_size=train_conf["bs"],
+        batch_size=train_conf["batch_size"],
         source_list=train_conf["source_list"],
     )
-
+    norm_factors = get_normalisation_factors(data)
+    train_conf["norm_factors"] = norm_factors
     learn = define_learner(data, arch, train_conf)
 
     assert learn.loss_func is not None

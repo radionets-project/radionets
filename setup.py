@@ -1,8 +1,8 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="radionets",
-    version="0.1.17",
+    version="0.2.0",
     description="Imaging radio interferometric data with neural networks",
     url="https://github.com/radionets-project/radionets",
     author="Kevin Schmidt, Felix Geyer",
@@ -17,6 +17,7 @@ setup(
         "astropy",
         "tqdm",
         "click",
+        "numba",
         "jupyter",
         "h5py",
         "scikit-image",

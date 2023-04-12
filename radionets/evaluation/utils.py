@@ -1,28 +1,26 @@
+import warnings
+from pathlib import Path
+
+import h5py
+import numpy as np
+import pandas as pd
+import torch
+import torch.nn.functional as F
+import torchvision
 from astropy import constants as const
 from astropy import units as u
 from astropy.coordinates import Distance
-from astropy.modeling import models, fitting
+from astropy.modeling import fitting, models
 from astropy.utils.exceptions import AstropyWarning
-import numpy as np
-import pandas as pd
-from radionets.evaluation.coordinates import pixel2coordinate
-from radionets.dl_framework.model import load_pre_model
-from radionets.dl_framework.data import (
-    load_data,
-)
-from radionets.dl_framework.utils import (
-    decode_yolo_box,
-    xywh2xyxy,
-)
-import radionets.dl_framework.architecture as architecture
-import torch
-import torch.nn.functional as F
-from torch.utils.data import DataLoader
-import torchvision
-import h5py
-from pathlib import Path
+from numba import set_num_threads, vectorize
 from PIL import Image
-import warnings
+from torch.utils.data import DataLoader
+
+import radionets.dl_framework.architecture as architecture
+from radionets.dl_framework.data import load_data
+from radionets.dl_framework.model import load_pre_model
+from radionets.dl_framework.utils import decode_yolo_box, xywh2xyxy
+from radionets.evaluation.coordinates import pixel2coordinate
 
 
 def source_list_collate(batch):
@@ -89,7 +87,33 @@ def create_databunch(data_path, fourier, source_list, batch_size):
             test_ds, batch_size=batch_size, shuffle=True, collate_fn=source_list_collate
         )
     else:
-        data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
+        data = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
+    return data
+
+
+def create_sampled_databunch(data_path, batch_size):
+    """Create a dataloader object, which feeds the data batch-wise
+
+    Parameters
+    ----------
+    data_path : str
+        path to the data
+    fourier : bool
+        true, if data in Fourier space is used
+    source_list : bool
+        true, if source_list data is used
+    batch_size : int
+        number of images for one batch
+
+    Returns
+    -------
+    DataLoader
+        dataloader object
+    """
+    # Load data sets
+    test_ds = sampled_dataset(data_path)
+
+    data = DataLoader(test_ds, batch_size=batch_size, shuffle=True)
     return data
 
 
@@ -123,9 +147,10 @@ def read_config(config):
 
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
+    eval_conf["sample_unc"] = config["inspection"]["sample_uncertainty"]
+    eval_conf["unc"] = config["inspection"]["visualize_uncertainty"]
     eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
-    eval_conf["vis_blobs"] = config["inspection"]["visualize_blobs"]
     eval_conf["vis_ms_ssim"] = config["inspection"]["visualize_ms_ssim"]
     eval_conf["num_images"] = config["inspection"]["num_images"]
     eval_conf["random"] = config["inspection"]["random"]
@@ -133,6 +158,7 @@ def read_config(config):
     eval_conf["viewing_angle"] = config["eval"]["evaluate_viewing_angle"]
     eval_conf["dynamic_range"] = config["eval"]["evaluate_dynamic_range"]
     eval_conf["ms_ssim"] = config["eval"]["evaluate_ms_ssim"]
+    eval_conf["intensity"] = config["eval"]["evaluate_intensity"]
     eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
     eval_conf["area"] = config["eval"]["evaluate_area"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
@@ -267,13 +293,14 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
-    load_pre_model(arch, model_path, visualize=True)
-    return arch
+    norm_dict = load_pre_model(arch, model_path, visualize=True)
+    return arch, norm_dict
 
 
-def get_images(test_ds, num_images, rand=False):
+def get_images(test_ds, num_images, rand=False, indices=None):
     """
-    Get n random test and truth images.
+    Get n random test and truth images or mean, standard deviation and
+    true images from an already sampled dataset.
 
     Parameters
     ----------
@@ -291,12 +318,31 @@ def get_images(test_ds, num_images, rand=False):
     img_true: n 2d arrays
         truth images
     """
-    indices = torch.arange(num_images)
-    if rand:
-        indices = torch.randint(0, len(test_ds), size=(num_images,))
-    img_test = test_ds[indices][0]
-    img_true = test_ds[indices][1]
-    return img_test, img_true
+    if hasattr(test_ds, "amp_phase"):
+        indices = torch.arange(num_images)
+        if rand:
+            indices = torch.randint(0, len(test_ds), size=(num_images,))
+
+            # remove dublicate indices
+            while len(torch.unique(indices)) < len(indices):
+                new_indices = torch.randint(
+                    0, len(test_ds), size=(num_images - len(torch.unique(indices)),)
+                )
+                indices = torch.cat((torch.unique(indices), new_indices))
+
+            # sort after getting indices
+            indices, _ = torch.sort(indices)
+
+        img_test = test_ds[indices][0]
+        img_true = test_ds[indices][1]
+        img_test = img_test[:, :, :65, :]
+        img_true = img_true[:, :, :65, :]
+        return img_test, img_true, indices
+    else:
+        mean = test_ds[indices][0]
+        std = test_ds[indices][1]
+        img_true = test_ds[indices][2]
+        return mean, std, img_true
 
 
 def eval_model(img, model, amp_phase: bool = True):
@@ -338,7 +384,7 @@ def eval_model(img, model, amp_phase: bool = True):
         return pred.cpu()
 
 
-def get_ifft(array, amp_phase=True):
+def get_ifft(array, amp_phase=False, scale=False):
     """Compute the inverse Fourier transformation
 
     Parameters
@@ -356,7 +402,10 @@ def get_ifft(array, amp_phase=True):
     if len(array.shape) == 3:
         array = array.unsqueeze(0)
     if amp_phase:
-        amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        if scale:
+            amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
+        else:
+            amp = array[:, 0]
 
         a = amp * np.cos(array[:, 1])
         b = amp * np.sin(array[:, 1])
@@ -366,27 +415,6 @@ def get_ifft(array, amp_phase=True):
     if compl.shape[0] == 1:
         compl = compl.squeeze(0)
     return np.abs(np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(compl))))
-
-
-def pad_unsqueeze(tensor):
-    """Unsqueeze with zeros until the image has a length of 160 pixels.
-    Needed as a helper function for the ms_ssim, as is only operates on
-    images which are at least 160x160 pixels.
-
-    Parameters
-    ----------
-    tensor : torch.tensor
-        image to pad
-
-    Returns
-    -------
-    torch.tensor
-        padded tensor
-    """
-    while tensor.shape[-1] < 160:
-        tensor = F.pad(input=tensor, pad=(1, 1, 1, 1), mode="constant", value=0)
-    tensor = tensor.unsqueeze(1)
-    return tensor
 
 
 def fft_pred(pred, truth, amp_phase=True):
@@ -889,7 +917,7 @@ def yolo_linear_fit(df):
     return df
 
 
-def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
+def save_pred(path, img):
     """
     write test data and predictions to h5 file
     x: predictions of truth of test data
@@ -897,9 +925,8 @@ def save_pred(path, x, y, z, name_x="x", name_y="y", name_z="z"):
     z: truth of the test data
     """
     with h5py.File(path, "w") as hf:
-        hf.create_dataset(name_x, data=x)
-        hf.create_dataset(name_y, data=y)
-        hf.create_dataset(name_z, data=z)
+        for key, value in img.items():
+            hf.create_dataset(key, data=value)
         hf.close()
 
 
@@ -910,12 +937,12 @@ def read_pred(path):
     y: input image of the test data
     z: truth of the test data
     """
+    images = {}
     with h5py.File(path, "r") as hf:
-        x = np.array(hf["pred"])
-        y = np.array(hf["img_test"])
-        z = np.array(hf["img_true"])
+        for key in hf.keys():
+            images[key] = np.array(hf[key])
         hf.close()
-    return x, y, z
+    return images
 
 
 def check_outpath(model_path):
@@ -931,7 +958,410 @@ def check_outpath(model_path):
     bool
         true, if the file exists
     """
-    model_path = Path(model_path).parent / "evaluation" / "predictions.h5"
+    name_model = Path(model_path).stem
+    model_path = Path(model_path).parent / "evaluation" / f"predictions_{name_model}.h5"
     path = Path(model_path)
     exists = path.exists()
     return exists
+
+
+def sym_new(image, key):
+    """
+    Symmetry function to complete the images
+
+    Parameters
+    ----------
+    image : torch.Tensor
+        (stack of) half images
+
+    Returns
+    -------
+    torch.Tensor
+        quadratic images after utilizing symmetry
+    """
+    if isinstance(image, np.ndarray):
+        image = torch.tensor(image)
+    if len(image.shape) == 3:
+        image = image.view(1, image.shape[0], image.shape[1], image.shape[2])
+    upper_half = image[:, :, :64, :].clone()
+    a = torch.rot90(upper_half, 2, dims=[-2, -1])
+
+    image[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
+    image[:, 0, 65:, 0] = a[:, 0, :-1, -1]
+
+    if key == "unc":
+        image[:, 1, 65:, 1:] = a[:, 1, :-1, :-1]
+        image[:, 1, 65:, 0] = a[:, 1, :-1, -1]
+    else:
+        image[:, 1, 65:, 1:] = -a[:, 1, :-1, :-1]
+        image[:, 1, 65:, 0] = -a[:, 1, :-1, -1]
+
+    return image
+
+
+def apply_symmetry(img_dict):
+    """
+    Pads and applies symmetry to half images. Takes a dict as input
+
+    Parameters
+    ----------
+    img_dict : dict
+        input dict which contains the half images
+
+    Returns
+    -------
+    dict
+        input dict with quadratic images
+    """
+    for key in img_dict:
+        if key != "indices":
+            if isinstance(img_dict[key], np.ndarray):
+                img_dict[key] = torch.tensor(img_dict[key])
+            output = F.pad(
+                input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
+            )
+            output = sym_new(output, key)
+            img_dict[key] = output
+
+    return img_dict
+
+
+def even_better_symmetry(x):
+    upper_half = x[:, :, 0 : x.shape[2] // 2, :].copy()
+    upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].copy()
+    upper_right = upper_half[:, :, :, upper_half.shape[3] // 2 :].copy()
+    a = np.flip(upper_left, axis=2)
+    b = np.flip(upper_right, axis=2)
+    a = np.flip(a, axis=3)
+    b = np.flip(b, axis=3)
+
+    upper_half[:, :, :, 0 : upper_half.shape[3] // 2] = b
+    upper_half[:, :, :, upper_half.shape[3] // 2 :] = a
+
+    x[:, 0, x.shape[2] // 2 :, :] = upper_half[:, 0]
+    x[:, 1, x.shape[2] // 2 :, :] = -upper_half[:, 1]
+    return x
+
+
+@vectorize(["float64(float64, float64, float64, float64)"], target="cpu")
+def tn_numba_vec_cpu(mu, sig, a, b):
+    rv = np.random.normal(loc=mu, scale=sig)
+    cond = rv > a and rv < b
+    while not cond:
+        rv = np.random.normal(loc=mu, scale=sig)
+        cond = rv > a and rv < b
+
+    return rv
+
+
+@vectorize(["float64(float64, float64, float64, float64)"], target="parallel")
+def tn_numba_vec_parallel(mu, sig, a, b):
+    rv = np.random.normal(loc=mu, scale=sig)
+    cond = rv > a and rv < b
+    while not cond:
+        rv = np.random.normal(loc=mu, scale=sig)
+        cond = rv > a and rv < b
+
+    return rv
+
+
+def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
+    if mode == "amp":
+        a = 0
+        b = np.inf
+    elif mode == "phase":
+        a = -np.pi
+        b = np.pi
+    else:
+        raise ValueError("Unsupported mode, use either ``phase`` or ``amp``.")
+    mu = np.tile(mu, (num_samples, 1, 1, 1))
+    sig = np.tile(sig, (num_samples, 1, 1, 1))
+
+    if target == "cpu":
+        if nthreads > 1:
+            raise ValueError(
+                f"Target is ``cpu`` but nthreads is {nthreads}, "
+                "use target=``parallel`` instead."
+            )
+        res = tn_numba_vec_cpu(mu, sig, a, b)
+    elif target == "parallel":
+        if nthreads == 1:
+            raise ValueError(
+                "Target is ``parallel`` but nthreaads is 1, use target=``cpu`` instead."
+            )
+        set_num_threads(int(nthreads))
+        res = tn_numba_vec_parallel(mu, sig, a, b)
+    else:
+        raise ValueError("Unsupported target, use cpu or parallel.")
+
+    return res.swapaxes(0, 1)
+
+
+def sample_images(mean, std, num_samples, conf):
+    """Samples for every pixel in Fourier space from a truncated Gaussian distribution
+    based on the output of the network.
+
+    Parameters
+    ----------
+    mean : torch.tensor
+        mean values of the pixels with shape (number of images, number of samples,
+        image size // 2 + 1, image_size)
+    std : torch.tensor
+        uncertainty values of the pixels with shape (number of images,
+        number of samples, image size // 2 + 1, image_size)
+    num_samples : int
+        number of samples in Fourier space
+
+    Returns
+    -------
+    dict
+        resulting mean and standard deviation
+    """
+    mean_amp, mean_phase = mean[:, 0], mean[:, 1]
+    std_amp, std_phase = std[:, 0], std[:, 1]
+    num_img = mean_amp.shape[0]
+
+    # amplitude
+    sampled_gauss_amp = trunc_rvs(
+        mu=mean_amp,
+        sig=std_amp,
+        mode="amp",
+        num_samples=num_samples,
+    ).reshape(num_img * num_samples, 65, 128)
+
+    # phase
+    sampled_gauss_phase = trunc_rvs(
+        mu=mean_phase,
+        sig=std_phase,
+        mode="phase",
+        num_samples=num_samples,
+    ).reshape(num_img * num_samples, 65, 128)
+
+    # masks
+    mask_invalid_amp = sampled_gauss_amp <= (0 - 1e-4)
+    mask_invalid_phase = (sampled_gauss_phase <= (-np.pi - 1e-4)) | (
+        sampled_gauss_phase >= (np.pi + 1e-4)
+    )
+    if mask_invalid_amp.sum() > 0:
+        print(sampled_gauss_amp[mask_invalid_amp])
+    assert mask_invalid_amp.sum() == 0
+    assert mask_invalid_phase.sum() == 0
+
+    sampled_gauss = np.stack([sampled_gauss_amp, sampled_gauss_phase], axis=1)
+
+    # pad resulting images and utilize symmetry
+    sampled_gauss = F.pad(
+        input=torch.tensor(sampled_gauss), pad=(0, 0, 0, 63), mode="constant", value=0
+    )
+    sampled_gauss_symmetry = sym_new(sampled_gauss, None)
+
+    fft_sampled_symmetry = get_ifft(
+        sampled_gauss_symmetry, amp_phase=conf["amp_phase"], scale=False
+    ).reshape(num_img, num_samples, 128, 128)
+
+    results = {
+        "mean": fft_sampled_symmetry.mean(axis=1),
+        "std": fft_sampled_symmetry.std(axis=1),
+    }
+    return results
+
+
+def mergeDictionary(dict_1, dict_2):
+    dict_3 = {**dict_1, **dict_2}
+    for key, value in dict_3.items():
+        if key in dict_1 and key in dict_2:
+            dict_3[key] = np.append(dict_1[key], value)
+    return dict_3
+
+
+class sampled_dataset:
+    def __init__(self, bundle_path):
+        """
+        Save the bundle paths and the number of bundles in one file.
+        """
+        if bundle_path == []:
+            raise ValueError("No bundles found! Please check the names of your files.")
+        self.bundle_path = bundle_path
+
+    def __len__(self):
+        """
+        Returns the total number of pictures in this dataset
+        """
+        bundle = h5py.File(self.bundle_path, "r")
+        data = bundle["mean"]
+        return data.shape[0]
+
+    def __getitem__(self, i):
+        mean = self.open_image("mean", i)
+        std = self.open_image("std", i)
+        true = self.open_image("true", i)
+        return mean, std, true
+
+    def open_image(self, var, i):
+        bundle = h5py.File(self.bundle_path, "r")
+        data = bundle[var]
+        data = data[i]
+        return data
+
+
+def apply_normalization(img_test, norm_dict):
+    """
+    Applies one of currently two normalization methods if the training was normalized
+
+    Parameters
+    ----------
+    img_test : torch.Tensor
+        input image
+    norm_dict : dictionary
+        either empty (no normalization) or containing the factors
+
+    Returns
+    -------
+    img_test : torch.Tensor
+        normalized image
+    norm_dict : dictionary
+        updated dictionary
+    """
+    if norm_dict and "mean_real" in norm_dict:
+        img_test[:, 0][img_test[:, 0] != 0] = (
+            img_test[:, 0][img_test[:, 0] != 0] - norm_dict["mean_real"]
+        ) / norm_dict["std_real"]
+
+        img_test[:, 1][img_test[:, 1] != 0] = (
+            img_test[:, 1][img_test[:, 1] != 0] - norm_dict["mean_imag"]
+        ) / norm_dict["std_imag"]
+
+    elif norm_dict and "max_scaling" in norm_dict:
+        max_factors_real = torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
+        max_factors_imag = torch.amax(
+            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
+        )
+        img_test[:, 0] *= 1 / torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
+        img_test[:, 1] *= 1 / torch.amax(
+            torch.abs(img_test[:, 1]), dim=(-2, -1), keepdim=True
+        )
+        norm_dict["max_factors_real"] = max_factors_real
+        norm_dict["max_factors_imag"] = max_factors_imag
+
+    return img_test, norm_dict
+
+
+def rescale_normalization(pred, norm_dict):
+    """
+    Rescale the prediction after normalized training
+
+    Parameters
+    ----------
+    pred : torch.Tensor
+        predicted image
+    norm_dict : dictionary
+        either empty (no normalization) or containing the factors
+
+    Returns
+    -------
+    pred : torch.Tensor
+        recaled predicted image
+    """
+    if norm_dict and "mean_real" in norm_dict:
+        pred[:, 0] = pred[:, 0] * norm_dict["std_real"] + norm_dict["mean_real"]
+        pred[:, 1] = pred[:, 1] * norm_dict["std_imag"] + norm_dict["mean_imag"]
+
+    elif norm_dict and "max_scaling" in norm_dict:
+        pred[:, 0] *= norm_dict["max_factors_real"]
+        pred[:, 1] *= norm_dict["max_factors_imag"]
+
+    return pred
+
+
+def preprocessing(conf):
+    """
+    Makes the necessary preprocessing for the evaluation methods analyzing the whole
+    test dataset
+
+    Parameters
+    ----------
+    conf : dictionary
+        config file containing the settings
+
+    Returns
+    -------
+    model : architecture
+        model initialized with save file
+    model_2 : architecture
+        model initialized with save file
+    loader : torch.Dataloader
+        feeds the data batch-wise
+    norm_dict : dictionary
+        dict containing the normalization factors
+    out_path : Path object
+        path to the evaluation folder
+    """
+    # create DataLoader
+    loader = create_databunch(
+        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+    )
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    img_size = loader.dataset[0][0][0].shape[-1]
+    model, norm_dict = load_pretrained_model(
+        conf["arch_name"], conf["model_path"], img_size
+    )
+
+    # Loads second model if the two channels were trainined separately
+    model_2 = None
+    if conf["model_path_2"] != "none":
+        model_2, norm_dict = load_pretrained_model(
+            conf["arch_name_2"], conf["model_path_2"], img_size
+        )
+
+    return model, model_2, loader, norm_dict, out_path
+
+
+def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
+    """
+    Applies the normalization, gets and rescales a prediction and performs
+    the inverse Fourier transformation.
+
+    Parameters
+    ----------
+    conf : dictionary
+        config files containing the settings
+    img_test :  torch.Tensor
+        input file for the network
+    img_true : torch.tensor
+        true image
+    norm_dict : dictionary
+        dict containing the normalization factors
+    model : architecture
+        model initialized with save file
+    model_2 :
+        model initialized with save file
+
+    Returns
+    -------
+    ifft_pred : ndarray
+        predicted source in image space
+    ifft_truth : ndarray
+        true source in image space
+    """
+    img_test, norm_dict = apply_normalization(img_test, norm_dict)
+    pred = eval_model(img_test, model)
+    pred = rescale_normalization(pred, norm_dict)
+    if model_2 is not None:
+        pred_2 = eval_model(img_test, model_2)
+        pred_2 = rescale_normalization(pred_2, norm_dict)
+        pred = torch.cat((pred, pred_2), dim=1)
+
+    # apply symmetry
+    if pred.shape[-1] == 128:
+        img_dict = {"truth": img_true, "pred": pred}
+        img_dict = apply_symmetry(img_dict)
+        img_true = img_dict["truth"]
+        pred = img_dict["pred"]
+
+    ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
+    ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+
+    return ifft_pred, ifft_truth

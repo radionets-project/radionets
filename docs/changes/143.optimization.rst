@@ -1,0 +1,1 @@
+Optimize ``evaluation.utils.trunc_rvs`` with numba, providing functions compiled for cpu and parallel cpu computation.

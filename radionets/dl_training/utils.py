@@ -1,17 +1,18 @@
-from asyncio import subprocess
+import subprocess
 import sys
-import click
 from io import StringIO
-import pandas as pd
 from pathlib import Path
-from radionets.dl_framework.data import load_data, DataBunch, get_dls
+
+import click
+import pandas as pd
+import torch
+from tqdm import tqdm
+
 import radionets.dl_framework.architecture as architecture
+from radionets.dl_framework.data import DataBunch, get_dls, load_data
 from radionets.dl_framework.inspection import plot_loss
 from radionets.dl_framework.model import save_model
 from radionets.evaluation.train_inspection import create_inspection_plots
-import subprocess
-import sys
-import torch
 
 
 def create_databunch(data_path, fourier, source_list, batch_size):
@@ -20,8 +21,7 @@ def create_databunch(data_path, fourier, source_list, batch_size):
     valid_ds = load_data(data_path, "valid", source_list=source_list, fourier=fourier)
 
     # Create databunch with defined batchsize
-    bs = batch_size
-    data = DataBunch(*get_dls(train_ds, valid_ds, bs))
+    data = DataBunch(*get_dls(train_ds, valid_ds, batch_size))
     return data
 
 
@@ -40,11 +40,12 @@ def read_config(config):
     train_conf["project_name"] = config["logging"]["project_name"]
     train_conf["scale"] = config["logging"]["scale"]
 
-    train_conf["bs"] = config["hypers"]["batch_size"]
+    train_conf["batch_size"] = config["hypers"]["batch_size"]
     train_conf["lr"] = config["hypers"]["lr"]
 
     train_conf["fourier"] = config["general"]["fourier"]
     train_conf["amp_phase"] = config["general"]["amp_phase"]
+    train_conf["normalize"] = config["general"]["normalize"]
     train_conf["arch_name"] = config["general"]["arch_name"]
     train_conf["loss_func"] = config["general"]["loss_func"]
     train_conf["metric"] = config["general"]["metric"]
@@ -136,7 +137,38 @@ def get_free_gpu():
         gpu_df["memory.free"] = gpu_df["memory.free"].map(lambda x: x.rstrip(" [MiB]"))
         gpu_df["memory.free"] = pd.to_numeric(gpu_df["memory.free"])
         idx = gpu_df["memory.free"].idxmax()
-    except subprocess.CalledProcessError: # accures, if nvidia-smi is not working
+    except subprocess.CalledProcessError:  # accures, if nvidia-smi is not working
         click.echo("nvidia-smi not availabe! Device is set to cuda:0. \n")
         idx = 0
     return idx
+
+
+def get_normalisation_factors(data):
+    mean_real = []
+    mean_imag = []
+    std_real = []
+    std_imag = []
+
+    for inp, true in tqdm(data.train_ds):
+        mean_batch_imag = inp[1].mean()
+        mean_batch_real = inp[0].mean()
+        std_batch_imag = inp[1].std()
+        std_batch_real = inp[0].std()
+        mean_real.append(mean_batch_real)
+        mean_imag.append(mean_batch_imag)
+        std_real.append(std_batch_real)
+        std_imag.append(std_batch_imag)
+
+    mean_real = torch.tensor(mean_real).mean()
+    mean_imag = torch.tensor(mean_imag).mean()
+    std_real = torch.tensor(std_real).std()
+    std_imag = torch.tensor(std_imag).std()
+
+    norm_factors = {
+        "mean_real": mean_real,
+        "mean_imag": mean_imag,
+        "std_real": std_real,
+        "std_imag": std_imag,
+    }
+
+    return norm_factors

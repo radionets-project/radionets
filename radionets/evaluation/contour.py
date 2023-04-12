@@ -58,7 +58,7 @@ def area_of_contour(ifft_pred, ifft_truth):
     Returns
     -------
     float
-        area differencw
+        area difference
     """
     mpl.use("Agg")
 
@@ -73,3 +73,21 @@ def area_of_contour(ifft_pred, ifft_truth):
     val = compute_area_ratio(CS1, CS2)
     mpl.rcParams.update(mpl.rcParamsDefault)
     return val
+
+
+def analyse_intensity(pred, truth):
+    if len(pred.shape) == 2:
+        pred = pred.reshape(1, pred.shape[-2], pred.shape[-1])
+        truth = truth.reshape(1, truth.shape[-2], truth.shape[-1])
+
+    threshold = (truth.max(-1).max(-1) * 0.1).reshape(truth.shape[0], 1, 1)
+    source_truth = np.where(truth > threshold, truth, 0)
+    source_pred = np.where(pred > threshold, pred, 0)
+
+    sum_truth = source_truth.sum(-1).sum(-1)
+    sum_pred = source_pred.sum(-1).sum(-1)
+
+    peak_truth = source_truth.max(-1).max(-1)
+    peak_pred = source_pred.max(-1).max(-1)
+
+    return sum_pred / sum_truth, peak_pred / peak_truth

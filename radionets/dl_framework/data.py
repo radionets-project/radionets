@@ -1,14 +1,15 @@
-from torch.utils.data import DataLoader
-import torch
-import h5py
+import os
 import re
-import numpy as np
+import warnings
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
+
+import h5py
+import numpy as np
+import torch
 from astropy.io import fits
-import os
-from datetime import datetime
-import warnings
+from torch.utils.data import DataLoader
 
 
 class h5_dataset:
@@ -76,6 +77,8 @@ class h5_dataset:
         if data.shape[0] == 1:
             data = data.squeeze(0)
 
+        data = data[:, :65, :]
+
         return data.float()
 
 
@@ -99,10 +102,10 @@ def split_amp_phase(array):
     return amp, phase
 
 
-def get_dls(train_ds, valid_ds, bs, **kwargs):
+def get_dls(train_ds, valid_ds, batch_size, **kwargs):
     return (
-        DataLoader(train_ds, batch_size=bs, shuffle=True, **kwargs),
-        DataLoader(valid_ds, batch_size=bs, shuffle=True, **kwargs),
+        DataLoader(train_ds, batch_size=batch_size, shuffle=True, **kwargs),
+        DataLoader(valid_ds, batch_size=batch_size, shuffle=True, **kwargs),
     )
 
 

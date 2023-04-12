@@ -1,29 +1,40 @@
 import torch.nn as nn
-from radionets.dl_framework.model import init_cnn
-from radionets.dl_framework.callbacks import (
-    SaveTempCallback,
-    DataAug,
-    AvgLossCallback,
-    SwitchLoss,
-    CudaCallback,
-    CometCallback,
-)
-from fastai.optimizer import Adam
-from fastai.learner import Learner
-from fastai.data.core import DataLoaders
 from fastai.callback.schedule import ParamScheduler, combined_cos
+from fastai.data.core import DataLoaders
+from fastai.learner import Learner
+from fastai.optimizer import Adam
+
 import radionets.dl_framework.loss_functions as loss_functions
 import radionets.dl_framework.metrics as metrics
+from radionets.dl_framework.callbacks import (
+    AvgLossCallback,
+    CometCallback,
+    CudaCallback,
+    DataAug,
+    Normalize,
+    SaveTempCallback,
+    SwitchLoss,
+)
+from radionets.dl_framework.model import init_cnn
 
 
 def get_learner(
-    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=Adam, metrics=None, **kwargs
+    data,
+    arch,
+    lr,
+    loss_func=nn.MSELoss(),
+    cb_funcs=None,
+    opt_func=Adam,
+    metrics=None,
+    **kwargs
 ):
     init_cnn(arch)
     dls = DataLoaders.from_dsets(
         data.train_ds, data.valid_ds, bs=data.train_dl.batch_size
     )
-    return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func, metrics=metrics)
+    return Learner(
+        dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func, metrics=metrics
+    )
 
 
 def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
@@ -53,9 +64,7 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
         ]
     )
     if not train_conf["source_list"]:
-        cbfs.extend(
-            [DataAug]
-        )
+        cbfs.extend([DataAug])
 
     # use switch loss
     if train_conf["switch_loss"]:
@@ -82,6 +91,8 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             ]
         )
 
+    if not lr_find and not plot_loss and train_conf["normalize"] != "none":
+        cbfs.extend([Normalize(train_conf)])
     # get loss func
     if train_conf["loss_func"] == "feature_loss":
         loss_func = loss_functions.init_feature_loss()
@@ -95,6 +106,12 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
 
     # Combine model and data in learner
     learn = get_learner(
-        data, arch, lr=lr, opt_func=opt_func, cb_funcs=cbfs, loss_func=loss_func, metrics=metric
+        data,
+        arch,
+        lr=lr,
+        opt_func=opt_func,
+        cb_funcs=cbfs,
+        loss_func=loss_func,
+        metrics=metric,
     )
     return learn

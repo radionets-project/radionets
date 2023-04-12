@@ -1,12 +1,14 @@
 import numpy as np
 import torch
+from pytorch_msssim import MS_SSIM
 from torch import nn
+
 from radionets.dl_framework.utils import (
     bbox_iou,
     build_target_yolo,
     decode_yolo_box,
+    get_ifft_torch,
 )
-from pytorch_msssim import MS_SSIM
 
 
 def l1(x, y):
@@ -24,6 +26,61 @@ def l1_amp(x, y):
 def l1_phase(x, y):
     l1 = nn.L1Loss()
     loss = l1(x, y[:, 1].unsqueeze(1))
+    return loss
+
+
+def create_circular_mask(h, w, center=None, radius=None, bs=64):
+    if center is None:
+        center = (int(w / 2), int(h / 2))
+    if radius is None:
+        radius = min(center[0], center[1], w - center[0], h - center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
+
+    mask = dist_from_center <= radius
+    return np.repeat([mask], bs, axis=0)
+
+
+def splitted_L1_masked(x, y):
+    inp_amp = x[:, 0, :]
+    inp_phase = x[:, 1, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    mask = torch.tensor(create_circular_mask(256, 256, radius=50, bs=y.shape[0]))
+
+    inp_amp[~mask] *= 0.3
+    inp_phase[~mask] *= 0.3
+    tar_amp[~mask] *= 0.3
+    tar_phase[~mask] *= 0.3
+
+    l1 = nn.L1Loss()
+    loss_amp = l1(inp_amp, tar_amp)
+    loss_phase = l1(inp_phase, tar_phase)
+    loss = loss_amp + loss_phase
+    return loss
+
+
+def fft_L1(x, y):
+    ifft_pred = get_ifft_torch(x.clamp(0, 2), amp_phase=True, scale=True)
+    ifft_truth = get_ifft_torch(y, amp_phase=True, scale=True)
+
+    ifft_pred[torch.isnan(ifft_pred)] = 1
+    ifft_pred[torch.isinf(ifft_pred)] = 1
+
+    inp_amp = x[:, 0, :]
+    inp_phase = x[:, 1, :]
+
+    tar_amp = y[:, 0, :]
+    tar_phase = y[:, 1, :]
+
+    l1 = nn.L1Loss()
+    loss_amp = l1(inp_amp, tar_amp)
+    loss_phase = l1(inp_phase, tar_phase)
+    loss_fft = l1(ifft_pred[ifft_truth > 0], ifft_truth[ifft_truth > 0])
+    loss = loss_amp + 10 * loss_phase + loss_fft
     return loss
 
 

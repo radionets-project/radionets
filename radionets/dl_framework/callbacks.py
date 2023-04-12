@@ -1,30 +1,29 @@
-import torch
-import numpy as np
-import kornia as K
-from radionets.dl_framework.model import save_model
-from radionets.dl_framework.utils import _maybe_item
-from fastai.callback.core import Callback, CancelBackwardException
 from pathlib import Path
+
+import kornia as K
 import matplotlib.pyplot as plt
-from radionets.evaluation.utils import (
-    load_data,
-    get_images,
-    eval_model,
-    make_axes_nice,
-    check_vmin_vmax,
-    get_ifft,
-    load_pretrained_model,
-    get_strides,
-)
+import numpy as np
+import torch
+from fastai.callback.core import Callback, CancelBackwardException
+
+from radionets.dl_framework.model import save_model
+from radionets.dl_framework.utils import _maybe_item, get_ifft_torch
 from radionets.evaluation.plotting import (
     create_OrBu,
-    plot_yolo_box,
-    plot_yolo_obj_true,
-    plot_yolo_obj_pred,
     legend_without_duplicate_labels,
+    plot_yolo_box,
+    plot_yolo_obj_pred,
+    plot_yolo_obj_true,
 )
-from radionets.dl_framework.utils import (
-    get_ifft_torch,
+from radionets.evaluation.utils import (
+    check_vmin_vmax,
+    eval_model,
+    get_ifft,
+    get_images,
+    get_strides,
+    load_data,
+    load_pretrained_model,
+    make_axes_nice,
 )
 
 OrBu = create_OrBu()
@@ -225,13 +224,53 @@ class DataAug(Callback):
     def before_batch(self):
         x = self.xb[0].clone()
         y = self.yb[0].clone()
-        randint = np.random.randint(0, 4, x.shape[0])
+        randint = np.random.randint(0, 1, x.shape[0]) * 2
         last_axis = len(x.shape) - 1
         for i in range(x.shape[0]):
             x[i] = torch.rot90(x[i], int(randint[i]), [last_axis - 2, last_axis - 1])
             y[i] = torch.rot90(y[i], int(randint[i]), [last_axis - 2, last_axis - 1])
         x = x.squeeze(1)
         y = y.squeeze(1)
+        self.learn.xb = [x]
+        self.learn.yb = [y]
+
+
+class Normalize(Callback):
+    _order = 4
+
+    def __init__(self, conf):
+        self.mode = conf["normalize"]
+        if self.mode == "mean":
+            self.mean_real = conf["norm_factors"]["mean_real"]
+            self.mean_imag = conf["norm_factors"]["mean_imag"]
+            self.std_real = conf["norm_factors"]["std_real"]
+            self.std_imag = conf["norm_factors"]["std_imag"]
+
+    def normalize(self, x, m, s):
+        return (x - m) / s
+
+    def before_batch(self):
+        x = self.xb[0].clone()
+        y = self.yb[0].clone()
+
+        if self.mode == "max":
+            x[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
+            x[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
+            y[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
+            y[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
+
+        elif self.mode == "mean":
+            x[:, 0][x[:, 0] != 0] = self.normalize(
+                x[:, 0][x[:, 0] != 0], self.mean_real, self.std_real
+            )
+
+            x[:, 1][x[:, 1] != 0] = self.normalize(
+                x[:, 1][x[:, 1] != 0], self.mean_imag, self.std_imag
+            )
+
+            y[:, 0] = self.normalize(y[:, 0], self.mean_real, self.std_real)
+            y[:, 1] = self.normalize(y[:, 1], self.mean_imag, self.std_imag)
+
         self.learn.xb = [x]
         self.learn.yb = [y]
 

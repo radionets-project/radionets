@@ -1,24 +1,28 @@
 import click
-import toml
 import numpy as np
-from radionets.evaluation.utils import read_config, check_outpath
+import toml
+
 from radionets.dl_framework.callbacks import PredictionImageGradient
 from radionets.evaluation.train_inspection import (
-    create_inspection_plots,
-    create_source_plots,
     create_contour_plots,
-    evaluate_viewing_angle,
-    evaluate_dynamic_range,
-    evaluate_ms_ssim,
-    evaluate_mean_diff,
-    evaluate_area,
-    evaluate_point,
+    create_inspection_plots,
     create_predictions,
-    evaluate_gan_sources,
-    evaluate_yolo,
-    evaluate_mojave,
+    create_source_plots,
+    create_uncertainty_plots,
+    evaluate_area,
     evaluate_counterjet,
+    evaluate_dynamic_range,
+    evaluate_gan_sources,
+    evaluate_intensity,
+    evaluate_mean_diff,
+    evaluate_mojave,
+    evaluate_ms_ssim,
+    evaluate_point,
+    evaluate_viewing_angle,
+    evaluate_yolo,
+    save_sampled,
 )
+from radionets.evaluation.utils import check_outpath, read_config
 
 
 @click.command()
@@ -38,6 +42,10 @@ def main(configuration_path):
     click.echo("\nEvaluation config:")
     print(eval_conf, "\n")
 
+    if eval_conf["sample_unc"]:
+        click.echo("Sampling test data set.\n")
+        save_sampled(eval_conf)
+
     for entry in conf["inspection"]:
         if (
             conf["inspection"][entry] is not False
@@ -51,15 +59,18 @@ def main(configuration_path):
                 create_predictions(eval_conf)
                 break
 
+    if eval_conf["unc"]:
+        create_uncertainty_plots(
+            eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
+        )
+        click.echo(f"\nCreated {eval_conf['num_images']} uncertainty images.\n")
+
     if eval_conf["vis_pred"]:
         create_inspection_plots(
             eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
         )
 
         click.echo(f"\nCreated {eval_conf['num_images']} test predictions.\n")
-
-    if eval_conf["vis_blobs"]:
-        click.echo("\nBlob visualization is enabled for source plots.\n")
 
     if eval_conf["vis_ms_ssim"]:
         click.echo("\nVisualization of ms ssim is enabled for source plots.\n")
@@ -92,6 +103,10 @@ def main(configuration_path):
     if eval_conf["ms_ssim"]:
         click.echo("\nStart evaluation of ms ssim.\n")
         evaluate_ms_ssim(eval_conf)
+
+    if eval_conf["intensity"]:
+        click.echo("\nStart evaluation of intensity.\n")
+        evaluate_intensity(eval_conf)
 
     if eval_conf["mean_diff"]:
         click.echo("\nStart evaluation of mean difference.\n")

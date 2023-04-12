@@ -1,24 +1,23 @@
-import click
 import sys
+from pathlib import Path
+
+import click
 import toml
+
+from radionets.dl_framework.inspection import plot_loss, plot_lr, plot_lr_loss
+from radionets.dl_framework.learner import define_learner
+from radionets.dl_framework.model import load_pre_model
 from radionets.dl_training.utils import (
-    read_config,
     check_outpath,
     create_databunch,
     define_arch,
-    pop_interrupt,
     end_training,
+    get_normalisation_factors,
+    pop_interrupt,
+    read_config,
     set_decive,
 )
-from radionets.dl_framework.learner import define_learner
-from radionets.dl_framework.model import load_pre_model
-from radionets.dl_framework.inspection import (
-    plot_lr_loss,
-    plot_loss,
-    plot_lr,
-)
 from radionets.evaluation.train_inspection import after_training_plots
-from pathlib import Path
 
 
 @click.command()
@@ -57,7 +56,7 @@ def main(configuration_path, mode):
     data = create_databunch(
         data_path=train_conf["data_path"],
         fourier=train_conf["fourier"],
-        batch_size=train_conf["bs"],
+        batch_size=train_conf["batch_size"],
         source_list=train_conf["source_list"],
     )
 
@@ -70,6 +69,8 @@ def main(configuration_path, mode):
     )
 
     if mode == "train":
+        if train_conf["normalize"] == "mean":
+            train_conf["norm_factors"] = get_normalisation_factors(data)
         # check out path and look for existing model files
         check_outpath(train_conf["model_path"], train_conf)
 

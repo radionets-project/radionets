@@ -21,6 +21,7 @@ norm_path = "none"
 [general]
 fourier = true
 amp_phase = true
+normalize = false
 source_list = false
 arch_name = "filter_deep"
 loss_func = "splitted_L1"

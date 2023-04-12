@@ -151,9 +151,7 @@ class SRResNet_16(nn.Module):
             nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
-        self.final = nn.Sequential(
-            nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2),
-        )
+        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2))
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
@@ -167,9 +165,9 @@ class SRResNet_16(nn.Module):
 
         x = self.final(x)
 
-        x0 = x[:, 0].reshape(-1, 1, s, s)
-        x0 = self.relu(x0)
-        x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s, s)
+        x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
+        # x0 = self.relu(x0)
+        x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
 
         return torch.cat([x0, x1], dim=1)
 

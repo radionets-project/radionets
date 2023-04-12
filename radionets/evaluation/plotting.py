@@ -1,33 +1,33 @@
 from math import pi
+from pathlib import Path
+
+import matplotlib as mpl
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
 import torch
-import matplotlib as mpl
 from matplotlib.colors import ListedColormap, LogNorm
-import matplotlib.dates as mdates
 from matplotlib.lines import Line2D
 from matplotlib.patches import Arc, Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pytorch_msssim import ms_ssim
-from radionets.dl_framework.utils import (
-    build_target_yolo,
-)
+from tqdm import tqdm
+
+from radionets.dl_framework.utils import build_target_yolo
 from radionets.evaluation.blob_detection import calc_blobs
 from radionets.evaluation.contour import compute_area_ratio
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.utils import (
     check_vmin_vmax,
+    get_strides,
     make_axes_nice,
+    objectness_mapping,
     pad_unsqueeze,
     reshape_2d,
-    objectness_mapping,
-    get_strides,
     yolo_apply_nms,
 )
 from radionets.simulations.utils import adjust_outpath
-from tqdm import tqdm
 
 # make nice Latex friendly plots
 # mpl.use("pgf")
@@ -223,11 +223,6 @@ def visualize_with_fourier(
     real_pred, imag_pred = img_pred[0], img_pred[1]
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
-    if amp_phase:
-        inp_real = 10 ** (10 * inp_real - 10) - 1e-10
-        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
-        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
-
     # plotting
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
         2, 3, figsize=(16, 10), sharex=True, sharey=True
@@ -255,28 +250,25 @@ def visualize_with_fourier(
         im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
         make_axes_nice(fig, ax6, im6, r"Phase Truth", phase=True)
     else:
-        a = check_vmin_vmax(inp_real)
-        im1 = ax1.imshow(inp_real, cmap="RdBu", vmin=-a, vmax=a)
+        im1 = ax1.imshow(inp_real, cmap="RdBu")
         make_axes_nice(fig, ax1, im1, r"Real Input")
 
-        a = check_vmin_vmax(real_truth)
-        im2 = ax2.imshow(real_pred, cmap="RdBu", vmin=-a, vmax=a)
+        im2 = ax2.imshow(real_pred, cmap="RdBu")
         make_axes_nice(fig, ax2, im2, r"Real Prediction")
 
-        a = check_vmin_vmax(real_truth)
-        im3 = ax3.imshow(real_truth, cmap="RdBu", vmin=-a, vmax=a)
+        im3 = ax3.imshow(real_truth, cmap="RdBu")
         make_axes_nice(fig, ax3, im3, r"Real Truth")
 
         a = check_vmin_vmax(inp_imag)
-        im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
+        im4 = ax4.imshow(inp_imag, cmap="RdBu")
         make_axes_nice(fig, ax4, im4, r"Imaginary Input")
 
         a = check_vmin_vmax(imag_truth)
-        im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        im5 = ax5.imshow(imag_pred, cmap="RdBu")
         make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
 
         a = check_vmin_vmax(imag_truth)
-        im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
+        im6 = ax6.imshow(imag_truth, cmap="RdBu")
         make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
 
     ax1.set_ylabel(r"Pixels")
@@ -305,10 +297,6 @@ def visualize_with_fourier_diff(
     real_pred, imag_pred = img_pred[0], img_pred[1]
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
-    if amp_phase:
-        real_pred = 10 ** (10 * real_pred - 10) - 1e-10
-        real_truth = 10 ** (10 * real_truth - 10) - 1e-10
-
     # plotting
     # plt.style.use('./paper_large_3_2.rc')
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
@@ -316,10 +304,10 @@ def visualize_with_fourier_diff(
     )
 
     if amp_phase:
-        im1 = ax1.imshow(real_pred, cmap="inferno", norm=LogNorm())
+        im1 = ax1.imshow(real_pred, cmap="inferno")
         make_axes_nice(fig, ax1, im1, r"Amplitude Prediction")
 
-        im2 = ax2.imshow(real_truth, cmap="inferno", norm=LogNorm())
+        im2 = ax2.imshow(real_truth, cmap="inferno")
         make_axes_nice(fig, ax2, im2, r"Amplitude Truth")
 
         a = check_vmin_vmax(real_pred - real_truth)
@@ -340,6 +328,26 @@ def visualize_with_fourier_diff(
         )
         make_axes_nice(fig, ax6, im6, r"Phase Difference", phase_diff=True)
 
+    else:
+        im1 = ax1.imshow(real_pred, cmap="inferno")
+        make_axes_nice(fig, ax1, im1, r"Real Prediction")
+
+        im2 = ax2.imshow(real_truth, cmap="inferno")
+        make_axes_nice(fig, ax2, im2, "Real Truth")
+
+        a = check_vmin_vmax(real_pred - real_truth)
+        im3 = ax3.imshow(real_pred - real_truth, cmap=OrBu, vmin=-a, vmax=a)
+        make_axes_nice(fig, ax3, im3, r"Real Difference")
+
+        im4 = ax4.imshow(imag_pred, cmap=OrBu)
+        make_axes_nice(fig, ax4, im4, r"Imaginary Prediction")
+
+        im5 = ax5.imshow(imag_truth, cmap=OrBu)
+        make_axes_nice(fig, ax5, im5, r"Imaginary Truth")
+
+        im6 = ax6.imshow(imag_pred - imag_truth, cmap=OrBu)
+        make_axes_nice(fig, ax6, im6, r"Imaginary Difference")
+
     ax1.set_ylabel(r"Pixels")
     ax4.set_ylabel(r"Pixels")
     ax4.set_xlabel(r"Pixels")
@@ -358,41 +366,16 @@ def visualize_source_reconstruction(
     out_path,
     i,
     dr=False,
-    blobs=False,
     msssim=False,
     plot_format="png",
 ):
-    m_truth, n_truth, alpha_truth = calc_jet_angle(ifft_truth)
-    m_pred, n_pred, alpha_pred = calc_jet_angle(ifft_pred)
-    x_space = torch.arange(0, 63, 1)
-
     # plt.style.use("./paper_large_3.rc")
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
 
     # Plot prediction
-    ax1.plot(x_space, m_pred * x_space + n_pred, "w--", alpha=0.5)
-    ax1.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5)
-
-    # create angle visualization
-    theta1 = min(0, -alpha_pred.numpy()[0])
-    theta2 = max(0, -alpha_pred.numpy()[0])
-    ax1.add_patch(
-        Arc([32, 32], 50, 50, angle=90, theta1=theta1, theta2=theta2, color="white")
-    )
-
     im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
 
     # Plot truth
-    ax2.plot(x_space, m_truth * x_space + n_truth, "w--", alpha=0.5)
-    ax2.axvline(32, 0, 1, linestyle="--", color="white", alpha=0.5)
-
-    # create angle visualization
-    theta1 = min(0, -alpha_truth.numpy()[0])
-    theta2 = max(0, -alpha_truth.numpy()[0])
-    ax2.add_patch(
-        Arc([32, 32], 50, 50, angle=90, theta1=theta1, theta2=theta2, color="white")
-    )
-
     im2 = ax2.imshow(ifft_truth, cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
@@ -407,15 +390,6 @@ def visualize_source_reconstruction(
     ax2.set_xlabel(r"Pixels")
     ax3.set_xlabel(r"Pixels")
 
-    # ax1.tick_params(axis="both", labelsize=20)
-    # ax2.tick_params(axis="both", labelsize=20)
-    # ax3.tick_params(axis="both", labelsize=20)
-
-    if blobs:
-        blobs_pred, blobs_truth = calc_blobs(ifft_pred, ifft_truth)
-        plot_blobs(blobs_pred, ax1)
-        plot_blobs(blobs_truth, ax2)
-
     if dr:
         dr_truth, dr_pred, num_boxes, corners = calc_dr(
             ifft_truth[None, ...], ifft_pred[None, ...]
@@ -427,27 +401,115 @@ def visualize_source_reconstruction(
         plot_box(ax2, num_boxes, corners[0])
 
     if msssim:
-        ifft_truth = pad_unsqueeze(torch.tensor(ifft_truth).unsqueeze(0))
-        ifft_pred = pad_unsqueeze(torch.tensor(ifft_pred).unsqueeze(0))
-        val = ms_ssim(ifft_pred, ifft_truth, data_range=ifft_truth.max())
-
-        ax1.plot([], [], " ", label=f"ms ssim: {val:.2f}")
+        val = ms_ssim(
+            torch.tensor(ifft_pred).unsqueeze(0).unsqueeze(0),
+            torch.tensor(ifft_truth).unsqueeze(0).unsqueeze(0),
+            data_range=1,
+            win_size=7,
+            size_average=False,
+        )
+        val = val.numpy()[0]
+        ax1.plot([], [], " ", label=f"MS-SSIM: {val:.2f}")
+        ax1.legend(loc="best")
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
 
-    line = Line2D(
-        [], [], linestyle="-", color="w", label=rf"$\alpha = {alpha_pred[0]:.2f}\,$deg"
-    )
-    line_truth = Line2D(
-        [], [], linestyle="-", color="w", label=rf"$\alpha = {alpha_truth[0]:.2f}\,$deg"
-    )
-
-    ax1.legend(loc="best", handles=[line])
-    ax2.legend(loc="best", handles=[line_truth])
     fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
     plt.close("all")
     return np.abs(ifft_pred), np.abs(ifft_truth)
+
+
+def visualize_uncertainty(
+    i, img_pred, img_truth, img_unc, amp_phase, out_path, plot_format="png"
+):
+    pred_amp, pred_phase = img_pred[0], img_pred[1]
+    true_amp, true_phase = img_truth[0], img_truth[1]
+    unc_amp, unc_phase = img_unc[0], img_unc[1]
+
+    # amplitude
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+        2, 2, sharey=True, sharex=True, figsize=(12, 10)
+    )
+
+    im1 = ax1.imshow(true_amp)
+
+    im2 = ax2.imshow(pred_amp)
+
+    im3 = ax3.imshow(unc_amp)
+
+    a = check_vmin_vmax(true_amp - pred_amp)
+    im4 = ax4.imshow(true_amp - pred_amp, cmap=OrBu, vmin=-a, vmax=a)
+
+    make_axes_nice(fig, ax1, im1, r"Simulation")
+    make_axes_nice(fig, ax2, im2, r"Predicted $\mu$")
+    make_axes_nice(fig, ax3, im3, r"Predicted $\sigma^2$", unc=True)
+    make_axes_nice(fig, ax4, im4, r"Difference")
+
+    ax1.set_ylabel(r"pixels")
+    ax3.set_ylabel(r"pixels")
+    ax3.set_xlabel(r"pixels")
+    ax4.set_xlabel(r"pixels")
+
+    fig.tight_layout(pad=1)
+    outpath = str(out_path) + f"/unc_amp{i}.{plot_format}"
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+
+    # phase
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+        2, 2, sharey=True, sharex=True, figsize=(12, 10)
+    )
+
+    im1 = ax1.imshow(true_phase, cmap=OrBu)
+
+    im2 = ax2.imshow(pred_phase, cmap=OrBu)
+
+    im3 = ax3.imshow(unc_phase)
+
+    a = check_vmin_vmax(true_phase - pred_phase)
+    im4 = ax4.imshow(true_phase - pred_phase, cmap=OrBu, vmin=-a, vmax=a)
+
+    make_axes_nice(fig, ax1, im1, r"Simulation")
+    make_axes_nice(fig, ax2, im2, r"Predicted $\mu$")
+    make_axes_nice(fig, ax3, im3, r"Predicted $\sigma^2$", unc=True)
+    make_axes_nice(fig, ax4, im4, r"Difference")
+
+    ax1.set_ylabel(r"pixels")
+    ax3.set_ylabel(r"pixels")
+    ax3.set_xlabel(r"pixels")
+    ax4.set_xlabel(r"pixels")
+
+    fig.tight_layout(pad=1)
+    outpath = str(out_path) + f"/unc_phase{i}.{plot_format}"
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close("all")
+
+
+def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
+    # plt.style.use('../paper_large_3.rc')
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+        2, 2, figsize=(12, 10), sharey=True, sharex=True
+    )
+
+    im1 = ax1.imshow(ifft_truth)
+    im2 = ax2.imshow(mean)
+    im3 = ax3.imshow(std)
+    a = check_vmin_vmax(mean - ifft_truth)
+    im4 = ax4.imshow(mean - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
+
+    make_axes_nice(fig, ax1, im1, r"Simulation")
+    make_axes_nice(fig, ax2, im2, r"Prediction")
+    make_axes_nice(fig, ax3, im3, r"Uncertainty")
+    make_axes_nice(fig, ax4, im4, r"Difference")
+
+    ax1.set_ylabel(r"pixels")
+    ax3.set_xlabel(r"pixels")
+    ax3.set_ylabel(r"pixels")
+    ax4.set_xlabel(r"pixels")
+    fig.tight_layout(pad=1.5)
+    outpath = str(out_path) + f"/unc_samp{i}.{plot_format}"
+    fig.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
+    plt.close("all")
 
 
 def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
@@ -500,8 +562,12 @@ def histogram_jet_angles(dif, out_path, plot_format="png"):
     ax1.set_xlabel("Offset / deg")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     ax2.hist(
@@ -653,10 +719,12 @@ def plot_blobs(blobs_log, ax):
 
 
 def histogram_ms_ssim(msssim, out_path, plot_format="png"):
+    mean = np.mean(msssim)
+    std = np.std(msssim, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        msssim.numpy(),
-        51,
+        msssim,
+        80,
         color="darkorange",
         linewidth=3,
         histtype="step",
@@ -665,9 +733,84 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     ax1.set_xlabel("ms ssim")
     ax1.set_ylabel("Number of sources")
 
+    extra_1 = Rectangle(
+        (0, 0), 0.1, 0.1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    ax1.legend(
+        [extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"), loc="upper center"
+    )
     fig.tight_layout()
 
     outpath = str(out_path) + f"/ms_ssim.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def histogram_sum_intensity(ratios_sum, out_path, plot_format="png"):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    mean = np.mean(ratios_sum)
+    std = np.std(ratios_sum, ddof=1)
+    bins = np.arange(0.05, ratios_sum.max() + 0.05, 0.1)
+    bins = np.insert(bins, 0, 0)
+    ax1.hist(
+        ratios_sum,
+        bins=bins,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.axvline(1, color="red", linestyle="dashed")
+    ax1.set_xlabel("Ratio of integrated intensity")
+    ax1.set_ylabel("Number of sources")
+
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
+    ax1.set_xlim(-0.5, 5)
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/intensity_sum.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def histogram_peak_intensity(ratios_peak, out_path, plot_format="png"):
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    mean = np.mean(ratios_peak)
+    std = np.std(ratios_peak, ddof=1)
+    bins = np.arange(0.05, ratios_peak.max() + 0.05, 0.1)
+    bins = np.insert(bins, 0, 0)
+    ax1.hist(
+        ratios_peak,
+        bins=bins,
+        color="darkorange",
+        linewidth=3,
+        histtype="step",
+        alpha=0.75,
+    )
+    ax1.axvline(1, color="red", linestyle="dashed")
+    ax1.set_xlabel("Ratio of intensity peak flux")
+    ax1.set_ylabel("Number of sources")
+
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
+    ax1.set_xlim(-0.5, 5)
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/intensity_peak.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
 
 
@@ -679,8 +822,12 @@ def histogram_mean_diff(vals, out_path, plot_format="png"):
     ax1.hist(vals, 51, color="darkorange", linewidth=3, histtype="step", alpha=0.75)
     ax1.set_xlabel("Mean flux deviation / %")
     ax1.set_ylabel("Number of sources")
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
@@ -693,7 +840,8 @@ def histogram_area(vals, out_path, plot_format="png"):
     vals = vals.numpy()
     mean = np.mean(vals)
     std = np.std(vals, ddof=1)
-    bins = np.arange(0, vals.max() + 0.1, 0.1)
+    bins = np.arange(0.05, np.round(vals.max()) + 0.05, 0.1)
+    bins = np.insert(bins, 0, 0)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
         vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75
@@ -702,8 +850,12 @@ def histogram_area(vals, out_path, plot_format="png"):
     ax1.set_xlabel("ratio of areas")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
-    extra_2 = Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor="none", linewidth=0)
+    extra_1 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
+    extra_2 = Rectangle(
+        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    )
     ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
@@ -1221,7 +1373,7 @@ def plot_yolo_eval(
 def plot_counterjet_eval(
     x,
     pred,
-    y = None,
+    y=None,
     data_name: str = "",
     out_path: str = "",
     plot_format: str = "pdf",
@@ -1232,7 +1384,7 @@ def plot_counterjet_eval(
     ----------
     x: 4d-array
         input image (bs, 1, ny, nx)
-    pred: 
+    pred:
         1d-array
     y: 3d-array
         true data from simulation (bs, components, paramters)
@@ -1254,10 +1406,13 @@ def plot_counterjet_eval(
         else:
             s = f"True: {int(y[idx])}, Pred: {np.round(pred[idx], 2):.2}"
         im = ax.imshow(x[idx, 0], cmap="inferno")
-        ax.text(0.10, 0.90, s,
-            horizontalalignment='left',
-            verticalalignment='center',
-            transform = ax.transAxes,
+        ax.text(
+            0.10,
+            0.90,
+            s,
+            horizontalalignment="left",
+            verticalalignment="center",
+            transform=ax.transAxes,
             bbox=dict(
                 boxstyle="round",
                 facecolor="white",
@@ -1269,7 +1424,6 @@ def plot_counterjet_eval(
         ax.set_ylabel("Pixel")
 
     make_axes_nice(fig, ax, im)
-
 
     plt.tight_layout()
     if out_path:
@@ -1482,7 +1636,12 @@ def plot_yolo_velocity(
 
 
 def plot_hist_counterjet(
-    x1, x2=None, threshold: float = None, data_name: str = "", out_path: str = "", plot_format: str = "pdf"
+    x1,
+    x2=None,
+    threshold: float = None,
+    data_name: str = "",
+    out_path: str = "",
+    plot_format: str = "pdf",
 ):
     """Plot destribution of counterjet in a histogram
 
