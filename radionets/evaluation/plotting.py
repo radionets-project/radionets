@@ -23,7 +23,6 @@ from radionets.evaluation.utils import (
     get_strides,
     make_axes_nice,
     objectness_mapping,
-    pad_unsqueeze,
     reshape_2d,
     yolo_apply_nms,
 )
