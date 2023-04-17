@@ -786,7 +786,7 @@ def evaluate_yolo(conf):
         plot_format="pdf",
     )
 
-    model = load_pretrained_model(conf["arch_name"], model_path)
+    model = load_pretrained_model(conf["arch_name"], model_path)[0]
 
     iou = []
     plotted_images = 0
@@ -815,7 +815,7 @@ def evaluate_mojave(conf):
 
     loader = MojaveDataset(
         data_path=conf["data_path"],
-        crop_size=128,
+        crop_size=256,
         # scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
         # scaling=partial(scaling_log10_noisecut, thres_adj=1),
         scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
@@ -827,7 +827,7 @@ def evaluate_mojave(conf):
     out_path = model_path.parent / "evaluation" / model_path.stem
     out_path.mkdir(parents=True, exist_ok=True)
 
-    model = load_pretrained_model(conf["arch_name"], model_path)
+    model = load_pretrained_model(conf["arch_name"], model_path)[0]
 
     if conf["random"]:
         if conf["num_images"] > len(loader.source_list):
@@ -837,7 +837,7 @@ def evaluate_mojave(conf):
         )
     else:
         selected_sources = loader.source_list[5 : conf["num_images"] + 5]
-    # selected_sources = ["1142+198"]
+    selected_sources = ["1142+198"]
     # selected_sources = ["0149+710"]
     # selected_sources = ["0035+413"]
     # print("Evaluated sources:", selected_sources)
@@ -1021,40 +1021,39 @@ def evaluate_counterjet(conf):
     if "MOJAVE" in conf["data_path"]:
         loader = MojaveDataset(
             data_path=conf["data_path"],
-            crop_size=128,
+            crop_size=256,
             # scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
             # scaling=partial(scaling_log10_noisecut, thres_adj=1),
             scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
         )
-        # print(loader.source_list)
         print("Finished loading MOJAVE data")
 
         model_path = Path(conf["model_path"])
         out_path = model_path.parent / "evaluation" / model_path.stem
         out_path.mkdir(parents=True, exist_ok=True)
 
-        model = load_pretrained_model(conf["arch_name"], model_path)
+        model = load_pretrained_model(conf["arch_name"], model_path)[0]
 
-        images = np.zeros((3, 128, 128))  # images to plot
-        images_value = np.array([1, 1, 0])  # prediction of images to plot
+        images = np.zeros((3, 1, 256, 256))  # images to plot
+        images_value = np.array([1.0, 1.0, 0.0])  # prediction of images to plot
         acc = []  # accuracy on simulated data
         preds = []
-        for source in tqdm(loader.source_list):
-            img = torch.from_numpy(loader.open_source(source))
+        for i in tqdm(range(len(loader))):
+            img = torch.from_numpy(loader.open_image(i))[None, None]
             # print(f"Evaluation of source {source} including {img.shape[0]} images.")
 
             pred = torch.sigmoid(eval_model(img, model, amp_phase=conf["amp_phase"]))
             preds.append(pred)
 
-            if pred.min() < images_value[0]:
-                images_value[0] = pred.min()
-                images[0] = img[pred.argmin()]
-            if pred.max() > images_value[2]:
-                images_value[2] = pred.max()
-                images[2] = img[pred.argmax()]
-            if np.abs(pred - 0.5).min() < np.abs(images_value[1] - 0.5).min():
-                images_value[1] = pred[np.abs(pred - 0.5).argmin()]
-                images[1] = img[np.abs(pred - 0.5).argmin()]
+            if pred < images_value[0]:
+                images_value[0] = pred
+                images[0, 0] = img
+            if pred > images_value[2]:
+                images_value[2] = pred
+                images[2, 0] = img
+            if np.abs(pred - 0.5) < np.abs(images_value[1] - 0.5):
+                images_value[1] = pred
+                images[1, 0] = img
 
         plot_counterjet_eval(
             x=images,
@@ -1063,7 +1062,7 @@ def evaluate_counterjet(conf):
             out_path=out_path,
         )
 
-        preds = torch.cat(preds)
+        preds = torch.tensor(preds)
 
         threshold_cj = 0.9
         cj = (preds > threshold_cj).float().mean()
@@ -1094,7 +1093,7 @@ def evaluate_counterjet(conf):
             plot_format="pdf",
         )
 
-        model = load_pretrained_model(conf["arch_name"], model_path)
+        model = load_pretrained_model(conf["arch_name"], model_path)[0]
 
         acc = []  # accuracy on simulated data
         preds, targets = [], []
@@ -1121,7 +1120,7 @@ def evaluate_counterjet(conf):
         preds = torch.cat(preds)
         targets = np.concatenate(targets)
 
-        print(f"Accuracy of test dataset: {np.mean(np.array(acc)):.3}")
+        print(f"Accuracy of test dataset: {np.mean(np.array(acc)):.4}")
 
         threshold_cj = 0.9
         cj = (preds > threshold_cj).float().mean()

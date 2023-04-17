@@ -1398,7 +1398,7 @@ def plot_counterjet_eval(
     idx_max = np.argmax(pred)
     idx_mid = (np.abs(pred - 0.5)).argmin()
 
-    fig, axs = plt.subplots(1, 3, figsize=(10, 5), sharey=True)
+    fig, axs = plt.subplots(1, 3, figsize=(12, 5), sharey=True)
     for ax, idx in zip(axs, [idx_min, idx_mid, idx_max]):
         if y is None:
             s = f"Pred: {np.round(pred[idx], 2):.2}"
@@ -1422,7 +1422,7 @@ def plot_counterjet_eval(
         ax.set_xlabel("Pixel")
         ax.set_ylabel("Pixel")
 
-    make_axes_nice(fig, ax, im)
+        make_axes_nice(fig, ax, im)
 
     plt.tight_layout()
     if out_path:
