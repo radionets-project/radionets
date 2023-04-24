@@ -163,15 +163,40 @@ def loss_new_msssim(x, y):
 
 
 def jet_seg(x, y):
-    # weight components farer outside more
+    """
+    Loss function for architecture UNet_jet
+
+    Parameters
+    ----------
+    x: tuple
+        Output of the network (bs, 18, 256, 256)
+    y: tuple
+        Simulated values
+        (component images, all parameters (amplitude, x, y, width, height, comp-rotation, jet-rotation, velocity))
+        shapes: (bs, 19, 256, 256)
+
+    Returns
+    -------
+    loss: float
+    """
+    if len(x) == 3:  # unet_jet_advanced output
+        x = x[0]
+
     loss_main_comp = l1(x[:, 0], y[:, 0])
-    loss_all_comps_summed = l1(x[:, -1], y[:, -1])
+    loss_all_comps_summed = l1(x[:, -1], y[:, -2])
+
+    # weight components farer outside more
+    n_not_main_comps = (y.shape[1] - 3) / 2  # -3: main comp, summed comp, parameters
+    assert (
+        n_not_main_comps % 1 == 0
+    ), f"Number of components not handled correctly: {n_not_main_comps}"
+
     loss_l1_weighted = 0
-    for i in range(
-        int((x.shape[1] - 2) / 2)
-    ):  # -2: main component and summed component, /2: two sides
+    for i in range(int(n_not_main_comps)):
         loss_l1_weighted += l1(x[:, i + 1], y[:, i + 1]) * (i / 2 + 1.5)
-        loss_l1_weighted += l1(x[:, i + 6], y[:, i + 6]) * (i / 2 + 1.5)
+        loss_l1_weighted += l1(
+            x[:, i + 1 + int(n_not_main_comps)], y[:, i + 1 + int(n_not_main_comps)]
+        ) * (i / 2 + 1.5)
 
     loss = loss_main_comp + loss_all_comps_summed + loss_l1_weighted
     return loss
@@ -185,92 +210,120 @@ def jet_list(x, y):
     ----------
     x: tuple
         Output of the network
-        (component images, components parameters (confidence, amplitude, x, y, width, height), jet parameters (velocity, angle))
-        shapes: (bs, 12, 256, 256), (bs, 11, 6), (bs, 12)
+        (component images, components parameters, jet parameters)
+        components parameters: confidence, amplitude, x, y, width, height, comp-rotation, velocity
+        jet parameters: jet-rotation
+        shapes: (bs, 18, 256, 256), (bs, 17, 8), (bs, 17)
     y: tuple
         Simulated values
         (component images, all parameters (amplitude, x, y, width, height, comp-rotation, jet-rotation, velocity))
-        shapes: (bs, 13, 256, 256)
+        shapes: (bs, 19, 256, 256)
 
     Returns
     -------
     loss: float
     """
-    x_comp, x_list, x_angle = x
+    x_comp, x_list, x_jet = x
 
-    y_comp, y_param = torch.split(y, [y.shape[1] - 1, 1], dim=1)
+    y_param = y[:, -1]
 
-    w_image = 0.0  # weight image loss
+    w_image = 0.5  # weight image loss
     w_regressor = 1
     w_box = min(1, w_regressor)  # weight image loss
     w_conf = min(0.5, w_regressor)  # weight image losss
     w_amp = min(0.3, w_regressor)  # weight image loss
-    w_angle = min(0.2, w_regressor)  # weight image loss
     w_beta = min(0.2, w_regressor)  # weight image loss
+    w_rot = min(0.2, w_regressor)  # weight image loss
+    w_rot_jet = min(0.2, w_regressor)  # weight image loss
+
+    img_size = 256
 
     loss = 0
 
     if w_image:
-        loss += jet_seg(x_comp, y_comp) * w_image
+        # loss += l1(x_comp, y[:, :-1]) * w_image
+        loss += jet_seg(x_comp, y) * w_image
+        # print('loss image:', jet_seg(x_comp, y) * w_image)
 
-    y_param = y_param.squeeze()
-    for i_row in range(len(y_param[0])):
-        if y_param[0, i_row, 0].isnan():
-            break
-    for i_col in range(len(y_param[0])):
-        if y_param[0, 0, i_col].isnan():
-            break
-    y_param = y_param[:, 0:i_row, 0:i_col]
+    if w_regressor:
+        y_param = y_param.squeeze()
+        for i_row in range(len(y_param[0])):
+            if y_param[0, i_row, 0].isnan():
+                break
+        for i_col in range(len(y_param[0])):
+            if y_param[0, 0, i_col].isnan():
+                break
+        y_param = y_param[:, 0:i_row, 0:i_col]
 
-    assert y_param.shape[2] == 8, (
-        "Number of parameters for the components has changed. Check simulations and/or "
-        "        indexing in loss function!"
-    )
+        assert y_param.shape[2] == 8, (
+            "Number of parameters for the components has changed. Check simulations and/or "
+            "        indexing in loss function!"
+        )
 
-    y_box_list = y_param[..., 1:5] / 256
+        y_box_list = y_param[..., 1:5] / img_size
 
-    # IoU-loss for the box
-    if w_box:
-        box_size_scale = 1
-        x_box = x_list[..., 2:6].reshape(-1, 4)
-        x_box_packed = [
-            x_box[:, 0],
-            x_box[:, 1],
-            x_box[:, 2] * box_size_scale,
-            x_box[:, 3] * box_size_scale,
-        ]
-        y_box = y_box_list.reshape(-1, 4)
-        y_box_packed = [
-            y_box[:, 0],
-            y_box[:, 1],
-            y_box[:, 2] * box_size_scale,
-            y_box[:, 3] * box_size_scale,
-        ]
+        # IoU-loss for the box
+        if w_box:
+            x_box = x_list[..., 2:6].reshape(-1, 4)
+            x_box_rot = x_list[..., 6].reshape(-1)
+            x_box_packed = [
+                x_box[:, 0],
+                x_box[:, 1],
+                # x_box[:, 2],
+                # x_box[:, 3],
+                x_box[:, 2] * torch.abs(torch.cos(x_box_rot * torch.pi))
+                + x_box[:, 3] * torch.abs(torch.sin(x_box_rot * torch.pi)),
+                x_box[:, 3] * torch.abs(torch.cos(x_box_rot * torch.pi))
+                + x_box[:, 2] * torch.abs(torch.sin(x_box_rot * torch.pi)),
+            ]
+            y_box = y_box_list.reshape(-1, 4)
+            y_box_rot = y_param[..., 5].reshape(-1)
+            y_box_packed = [
+                y_box[:, 0],
+                y_box[:, 1],
+                # y_box[:, 2],
+                # y_box[:, 3],
+                (
+                    y_box[:, 2] * torch.abs(torch.cos(y_box_rot))
+                    + y_box[:, 3] * torch.abs(torch.sin(y_box_rot))
+                )
+                * 2,
+                (
+                    y_box[:, 3] * torch.abs(torch.cos(y_box_rot))
+                    + y_box[:, 2] * torch.abs(torch.sin(y_box_rot))
+                )
+                * 2,
+            ]
 
-        ciou = bbox_iou(x_box_packed, y_box_packed, iou_type="ciou")
-        ciou = ciou[y_param[..., 0].reshape(-1).bool()]  # no loss, if amplitude is 0
-        loss += (1.0 - ciou).mean() * w_box
-        # print('loss box:', (1.0 - ciou).mean() * w_box)
+            ciou = bbox_iou(x_box_packed, y_box_packed, iou_type="ciou")
+            ciou = ciou[
+                y_param[..., 0].reshape(-1).bool()
+            ]  # no loss, if amplitude is 0
+            loss += (1.0 - ciou).mean() * w_box
+            # print('loss box:', (1.0 - ciou).mean() * w_box)
 
-    if w_conf:
-        confidence = bbox_iou(x_box_packed, y_box_packed)
-        loss += l1(x_list[..., 0].reshape(-1), confidence) * w_box
-        # print('loss confidence:', l1(x_list[..., 0].reshape(-1), confidence) * w_box)
+        if w_conf:  # try to predict the IoU
+            iou = bbox_iou(x_box_packed, y_box_packed, iou_type="iou")
+            loss += l1(x_list[..., 0].reshape(-1), iou) * w_conf
+            # print('loss confidence:', l1(x_list[..., 0].reshape(-1), iou) * w_conf)
 
-    if w_amp:
-        loss += l1(x_list[..., 1], y_param[..., 0]) * w_amp
-        # print('loss amplitude:', l1(x_list[..., 1], y_param[..., 0]) * w_amp)
+        if w_amp:
+            loss += l1(x_list[..., 1], y_param[..., 0]) * w_amp
+            # print('loss amplitude:', l1(x_list[..., 1], y_param[..., 0]) * w_amp)
 
-    y_angle = y_param[:, 0, 6] / (torch.pi / 2)
-    if w_angle:
-        loss += l1(x_angle[..., -1], y_angle) * w_angle
-        # print('loss angle:', l1(x_angle[..., -1], y_angle) * w_angle)
+        if w_rot:
+            loss += l1(x_list[..., 6], y_param[..., 5] / (2 * torch.pi)) * w_rot
+            # print('loss rotation:', l1(x_list[..., 6], y_param[..., 5] / (2 * torch.pi)) * w_rot)
 
-    if w_beta:
-        loss += l1(x_angle[..., 0:-1], y_param[..., 7]) * w_beta
-        # print('loss velocity:', l1(x_angle[..., 0:-1], y_param[..., 7]) * w_beta)
+        if w_beta:
+            loss += l1(x_list[..., 7], y_param[..., 7]) * w_beta
+            # print('loss velocity:', l1(x_list[..., 7], y_param[..., 7]) * w_beta)
 
-    # print()
+        y_angle = y_param[:, 0, 6] / (torch.pi / 2)
+        if w_rot_jet:
+            loss += l1(x_jet.squeeze(), y_angle) * w_rot_jet
+            # print('loss rotation jet:', l1(x_jet.squeeze(), y_angle) * w_rot_jet)
+
     # print(loss)
     return loss
 
@@ -293,10 +346,10 @@ def yolo(x, y):
     """
     w_box = 1
     w_obj = 5
-    w_rot = 0.2
+    w_rot = 1
 
     # how much the image got reduced, must match self.strides_head of architecture
-    strides_head = torch.tensor([8, 16, 32])
+    strides_head = torch.tensor([4, 8, 16])
     weighted_bce = True
 
     loss_box = 0
@@ -310,21 +363,42 @@ def yolo(x, y):
 
         if w_box:
             output = decode_yolo_box(output, strides_head[i_layer])
+            target_obj = target[..., 4].reshape(-1)
 
             output_box = output[..., :4].reshape(-1, 4)
+            output_box_rot = output[..., 5].reshape(-1)
             output_box_packed = [
                 output_box[:, 0],
                 output_box[:, 1],
-                output_box[:, 2],
-                output_box[:, 3],
+                # output_box[:, 2],
+                # output_box[:, 3],
+                output_box[:, 2] * torch.abs(torch.cos(output_box_rot * torch.pi))
+                + output_box[:, 3] * torch.abs(torch.sin(output_box_rot * torch.pi)),
+                output_box[:, 3] * torch.abs(torch.cos(output_box_rot * torch.pi))
+                + output_box[:, 2] * torch.abs(torch.sin(output_box_rot * torch.pi)),
             ]
 
             target_box = target[..., :4].reshape(-1, 4)
+            target_box_rot = target[..., 5].reshape(-1)
+            # print("rotation:", target_box_rot[target_obj.bool()][:3] * 180 / torch.pi)
+            # print("w, h before:", target_box[:, 2][target_obj.bool()][:3], target_box[:, 3][target_obj.bool()][:3])
+            # print("w, h after:", (torch.abs(target_box[:, 2] * torch.cos(target_box_rot)) + torch.abs(target_box[:, 3] * torch.sin(target_box_rot)))[target_obj.bool()][:3], (torch.abs(target_box[:, 3] * torch.cos(target_box_rot)) + torch.abs(target_box[:, 2] * torch.sin(target_box_rot)))[target_obj.bool()][:3])
+            # print()
             target_box_packed = [
                 target_box[:, 0],
                 target_box[:, 1],
-                target_box[:, 2] * 2,  # target width is std of gauss -> too small
-                target_box[:, 3] * 2,  # target heigth is std of gauss -> too small
+                # target_box[:, 2] * 2,  # target width is std of gauss -> too small
+                # target_box[:, 3] * 2,  # target heigth is std of gauss -> too small
+                (
+                    target_box[:, 2] * torch.abs(torch.cos(target_box_rot))
+                    + target_box[:, 3] * torch.abs(torch.sin(target_box_rot))
+                )
+                * 2,
+                (
+                    target_box[:, 3] * torch.abs(torch.cos(target_box_rot))
+                    + target_box[:, 2] * torch.abs(torch.sin(target_box_rot))
+                )
+                * 2,
             ]
 
             ciou = bbox_iou(output_box_packed, target_box_packed, iou_type="ciou")
@@ -342,9 +416,11 @@ def yolo(x, y):
 
             if weighted_bce:
                 bcewithlog_loss = nn.BCEWithLogitsLoss(
-                    pos_weight=torch.sqrt(
-                        (target_obj == 0).sum() / (target_obj == 1).sum()
-                    )
+                    # pos_weight=torch.sqrt(
+                    #     (target_obj == 0).sum() / (target_obj == 1).sum()
+                    # )
+                    pos_weight=(target_obj == 0).sum()
+                    / (target_obj == 1).sum()
                 )
             else:
                 bcewithlog_loss = nn.BCEWithLogitsLoss()
@@ -355,7 +431,7 @@ def yolo(x, y):
 
         if w_rot:
             output_rot = output[..., 5].reshape(-1)
-            target_rot = target[..., 5].reshape(-1) / np.pi
+            target_rot = target[..., 5].reshape(-1) / torch.pi
 
             loss_rot += (
                 l1(output_rot[target_rot > 0], target_rot[target_rot > 0]) * w_rot
@@ -379,9 +455,12 @@ def counterjet(x, y):
     n_components = y.shape[1]
     amps = y[:, -int((n_components - 1) / 2) :, 0]
     amps_summed = torch.sum(amps, axis=1)
-    target = (amps_summed > 0).float()
 
+    target = (amps_summed > 0).float()
     bce = nn.BCEWithLogitsLoss()
     loss = bce(x, target)
+
+    # mse = nn.MSELoss()
+    # loss = mse(x, amps_summed)
 
     return loss

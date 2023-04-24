@@ -1,11 +1,7 @@
 import torch
 
-from radionets.dl_framework.utils import (
-    overall_iou,
-)
-from radionets.evaluation.utils import (
-    yolo_apply_nms,
-)
+from radionets.dl_framework.utils import overall_iou
+from radionets.evaluation.utils import yolo_apply_nms
 
 
 def iou_YOLOv6(pred, target):
@@ -30,7 +26,7 @@ def iou_YOLOv6(pred, target):
         target = target.copy()
 
     bs = target.shape[0]
-    strides_head = torch.tensor([8, 16, 32])
+    strides_head = torch.tensor([4, 8, 16])
 
     target[..., 3:5] *= 2  # increased box sizes (same as in loss function)
 
