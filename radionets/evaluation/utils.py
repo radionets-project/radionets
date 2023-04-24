@@ -566,7 +566,7 @@ def non_max_suppression(
 
 
 def yolo_apply_nms(
-    pred, x=None, strides=None, rel_obj_thres: float = 0.5, iou_thres: float = 0.1
+    pred, x=None, strides=None, rel_obj_thres: float = 0.5, iou_thres: float = 0.25
 ):
     """Perform basic evaluation steps after YOLO model.
     From YOLO output (pred) to list of boxes after nms.

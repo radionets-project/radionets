@@ -818,7 +818,7 @@ def evaluate_mojave(conf):
         crop_size=256,
         # scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
         # scaling=partial(scaling_log10_noisecut, thres_adj=1),
-        scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
+        scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=1.5),
     )
     # print(loader.source_list)
     print("Finished loading MOJAVE data")
@@ -885,14 +885,17 @@ def evaluate_mojave(conf):
         # print("xy_mas shape:", xy_mas.shape)
 
         # st = time.time()
+
         # cluster_model = spectralClustering(xy_mas)
         # df["idx_comp"] = cluster_model.labels_
+
         cluster_model = gmmClustering(xy_mas, score_type="BIC")
         if cluster_model is None:
             print(f"No successful GMM cluster for source {source}!")
             df["idx_comp"] = np.zeros(len(xy_mas), dtype=int)
         else:
             df["idx_comp"] = cluster_model.predict(xy_mas)
+
         # print("Zeit für Clustering:", time.time() - st)
 
         # Change colums (just for the look)
@@ -1089,6 +1092,7 @@ def evaluate_counterjet(conf):
             model_path=model_path,
             out_path=out_path,
             metric_name="Accuracy",
+            log_loss=True,
             save=True,
             plot_format="pdf",
         )

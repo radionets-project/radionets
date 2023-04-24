@@ -1233,7 +1233,7 @@ def plot_yolo_obj_pred(ax, pred: list, idx: int = 0, anchor_idx: int = 0):
     anchor_idx: int
         indes of the anchor
     """
-    out = objectness_mapping(pred)
+    out = objectness_mapping(pred, calc="sum")
     img = ax.imshow(out[idx, anchor_idx], vmin=0, vmax=1)
 
     ax.set_xlabel("Pixel")
@@ -1858,6 +1858,7 @@ def plot_loss(
     model_path: str,
     out_path: str,
     metric_name: str = "",
+    log_loss: bool = True,
     save: bool = False,
     plot_format: str = "pdf",
 ):
@@ -1903,7 +1904,8 @@ def plot_loss(
 
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
-    # ax1.set_yscale('log')
+    if log_loss:
+        ax1.set_yscale("log")
     ax2.set_ylabel(metric_name)
 
     plt.tight_layout()
