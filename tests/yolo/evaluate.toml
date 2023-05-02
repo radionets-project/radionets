@@ -1,0 +1,48 @@
+# This is a TOML document.
+
+title = "Evaluation configuration"
+
+[mode]
+quiet = false
+
+[paths]
+data_path = "./tests/yolo/"
+model_path = "./tests/build/test_training/test_training_yolo.model"
+model_path_2 = "none"
+
+[general]
+fourier = false
+amp_phase = false
+source_list = true
+arch_name = "YOLOv6flex"
+arch_name_2 = "none"
+output_format = "png"
+diff = true
+
+[inspection]
+visualize_prediction = false
+visualize_source_reconstruction = false
+sample_uncertainty = false
+visualize_uncertainty = false
+visualize_contour = false
+visualize_dynamic_range = false
+visualize_ms_ssim = false
+random = true
+num_images = 10
+
+[eval]
+batch_size = 20
+save_vals = false
+save_path = "./build/"
+evaluate_viewing_angle = false
+evaluate_dynamic_range = false
+evaluate_ms_ssim = false
+evaluate_intensity = false
+evaluate_mean_diff = false
+evaluate_area = false
+evaluate_point = false
+predict_grad = false 
+evaluate_gan = false
+evaluate_yolo = true
+evaluate_mojave = true
+evaluate_counterjet = false

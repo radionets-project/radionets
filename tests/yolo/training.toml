@@ -1,0 +1,47 @@
+# This is a TOML document.
+
+title = "Train configuration"
+
+[mode]
+quiet = true
+gpu = false
+
+[logging]
+comet_ml = false
+project_name = "pytorch"
+plot_n_epochs = 50
+scale = true
+
+[paths]
+data_path = "./tests/yolo/"
+model_path = "./tests/build/test_training/test_training_yolo.model"
+pre_model = "none"
+norm_path = "none"
+
+[general]
+fourier = false
+amp_phase = false
+normalize = "none"
+source_list = true
+arch_name = "YOLOv6flex"
+loss_func = "yolo"
+metric = "iou_YOLOv6"
+num_epochs = 2
+inspection = false
+output_format = "pdf"
+switch_loss = false
+when_switch = 25
+
+[hypers]
+batch_size = 4
+lr = 1e-05
+
+[param_scheduling]
+use = true
+lr_start = 1e-4
+lr_max = 3e-5
+lr_stop = 7e-6
+lr_ratio = 0.25
+#lr_start = 1e-3
+#lr_max = 7e-4
+#lr_stop = 1e-4

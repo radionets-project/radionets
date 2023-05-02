@@ -1,9 +1,10 @@
 import math
+
 import numpy as np
+import torch
 from scipy.spatial.distance import pdist, squareform
 from shapely.geometry import box
 from shapely.ops import unary_union
-import torch
 
 
 def round_odd(x):
@@ -205,7 +206,31 @@ def normalizeAffinityMatrix(affinity_matrix):
 def bbox_iou(box1, box2, xywh=True, iou_type="ciou", eps=1e-7):
     """Returns Intersection over Union (IoU) of box1(n,4) to box2(n,4)
     https://github.com/nirbarazida/YOLOv6/blob/main/yolov6/utils/figure_iou.py
+
+    Parameters
+    ----------
+    box1: list
+        first box [x, y, w, h], each can be 1d array of length n
+    box2: list
+        second box [x, y, w, h], each can be 1d array of length n
+    xywh: bool
+        choose between xywh or x1x2y1y2 input
+    iou_type: str
+        can be "iou", "giou", "diou" or "ciou"
+    eps: float
+        small value for numerical stability
+
+    Returns
+    -------
+    iou, giou, diou, ciou: 1d array
+        array of length n
     """
+    for b1, b2 in zip(box1, box2):
+        if not torch.is_tensor(b1):
+            b1 = torch.tensor(b1)
+        if not torch.is_tensor(b2):
+            b2 = torch.tensor(b2)
+
     # Get the coordinates of bounding boxes
     if xywh:  # transform from xywh to xyxy
         (x1, y1, w1, h1), (x2, y2, w2, h2) = box1, box2
@@ -217,31 +242,6 @@ def bbox_iou(box1, box2, xywh=True, iou_type="ciou", eps=1e-7):
         b2_x1, b2_y1, b2_x2, b2_y2 = box2
         w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + eps
         w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + eps
-
-    if not torch.is_tensor(b1_x1):
-        b1_x1 = torch.tensor(b1_x1)
-    if not torch.is_tensor(b1_y1):
-        b1_y1 = torch.tensor(b1_y1)
-    if not torch.is_tensor(b1_x2):
-        b1_x2 = torch.tensor(b1_x2)
-    if not torch.is_tensor(b1_y2):
-        b1_y2 = torch.tensor(b1_y2)
-    if not torch.is_tensor(b2_x1):
-        b2_x1 = torch.tensor(b2_x1)
-    if not torch.is_tensor(b2_y1):
-        b2_y1 = torch.tensor(b2_y1)
-    if not torch.is_tensor(b2_x2):
-        b2_x2 = torch.tensor(b2_x2)
-    if not torch.is_tensor(b2_y2):
-        b2_y2 = torch.tensor(b2_y2)
-    if not torch.is_tensor(w1):
-        w1 = torch.tensor(w1)
-    if not torch.is_tensor(h1):
-        h1 = torch.tensor(h1)
-    if not torch.is_tensor(w2):
-        w2 = torch.tensor(w2)
-    if not torch.is_tensor(h2):
-        h2 = torch.tensor(h2)
 
     # Intersection area
     inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * (

@@ -2,7 +2,7 @@ from click.testing import CliRunner
 
 
 def test_create_databunch():
-    from radionets.dl_framework.data import load_data, DataBunch, get_dls
+    from radionets.dl_framework.data import DataBunch, get_dls, load_data
 
     data_path = "./tests/build/data/"
     source_list = False
@@ -22,13 +22,14 @@ def test_create_databunch():
 
 
 def test_define_learner():
-    from radionets.dl_framework.learner import define_learner
     import toml
+
+    from radionets.dl_framework.learner import define_learner
     from radionets.dl_training.utils import (
-        read_config,
-        define_arch,
         create_databunch,
+        define_arch,
         get_normalisation_factors,
+        read_config,
     )
 
     config = toml.load("./tests/training.toml")
@@ -59,9 +60,22 @@ def test_training():
     assert result.exit_code == 0
 
 
+def test_training_yolo():
+    from radionets.dl_training.scripts.start_training import main
+
+    runner = CliRunner()
+    options = ["tests/yolo/training.toml"]
+    result = runner.invoke(main, options)
+    import traceback
+
+    print(traceback.print_exception(*result.exc_info))
+    assert result.exit_code == 0
+
+
 def test_save_model():
-    import torch
     from collections.abc import Mapping
+
+    import torch
 
     def check(x):
         if torch.is_tensor(x):
@@ -108,6 +122,7 @@ def test_save_model():
 
 def test_load_pretrained_model():
     import toml
+
     from radionets.dl_training.scripts.start_training import main
 
     config = toml.load("tests/training.toml")

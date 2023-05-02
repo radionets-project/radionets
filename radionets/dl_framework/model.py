@@ -61,37 +61,6 @@ def init_cnn(m, uniform=False):
     init_cnn_(m, f)
 
 
-def linear(in_features, out_features):
-    layers = [
-        nn.Linear(in_features, out_features),
-        nn.BatchNorm1d(out_features),
-        GeneralRelu(leak=0.1, sub=0.4),
-    ]
-    return nn.Sequential(*layers)
-
-
-def conv_layer(ni, nf, ks=3, stride=2, bn=True, **kwargs):
-    layers = [
-        nn.Conv2d(ni, nf, ks, padding=ks // 2, stride=stride, bias=not bn),
-        GeneralRelu(**kwargs),
-    ]
-    if bn:
-        layers.append(nn.BatchNorm2d(nf, eps=1e-5, momentum=0.1))
-    return nn.Sequential(*layers)
-
-
-def conv_bn(ni, nc, ks, stride=1, padding=0, groups=1):
-    result = nn.Sequential()
-    result.add_module(
-        "conv",
-        nn.Conv2d(
-            ni, nc, ks, stride=stride, padding=padding, groups=groups, bias=False
-        ),
-    )
-    result.add_module("bn", nn.BatchNorm2d(nc))
-    return result
-
-
 def conv(
     ni,
     nc,
@@ -110,6 +79,18 @@ def conv(
     bn = (nn.BatchNorm2d(nc),)
     layers = [*conv, *bn, activation]
     return layers
+
+
+def conv_bn(ni, nc, ks, stride=1, padding=0, groups=1):
+    result = nn.Sequential()
+    result.add_module(
+        "conv",
+        nn.Conv2d(
+            ni, nc, ks, stride=stride, padding=padding, groups=groups, bias=False
+        ),
+    )
+    result.add_module("bn", nn.BatchNorm2d(nc))
+    return result
 
 
 def conv_amp(ni, nc, ks, stride, padding, dilation):
@@ -181,17 +162,6 @@ def conv_phase(ni, nc, ks, stride, padding, dilation, add):
     bn = (nn.BatchNorm2d(nc),)
     act = GeneralELU(add)
     layers = [*conv, *bn, act]
-    return layers
-
-
-def double_conv(ni, nc, ks=3, stride=1, padding=1):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding),)
-    bn = (nn.BatchNorm2d(nc),)
-    act = (nn.ReLU(inplace=True),)
-    conv2 = (nn.Conv2d(nc, nc, ks, stride, padding),)
-    bn2 = (nn.BatchNorm2d(nc),)
-    act2 = nn.ReLU(inplace=True)
-    layers = [*conv, *bn, *act, *conv2, *bn2, act2]
     return layers
 
 

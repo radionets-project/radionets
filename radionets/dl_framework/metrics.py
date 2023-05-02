@@ -26,7 +26,8 @@ def iou_YOLOv6(pred, target):
         target = target.copy()
 
     bs = target.shape[0]
-    strides_head = torch.tensor([4, 8, 16])
+    strides_head = torch.tensor([2, 4, 8])
+    # strides_head = torch.tensor([4, 8, 16])
 
     target[..., 3:5] *= 2  # increased box sizes (same as in loss function)
 

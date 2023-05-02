@@ -460,62 +460,6 @@ def fft_pred(pred, truth, amp_phase=True):
     return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
 
 
-def yolo_out_transform(output, strides):
-    """Transforms output of yolo network to list of predictions
-
-    Parameters
-    ----------
-    output:
-        list of output layers each of shape (bs, n_anchors, ny, nx, 6)
-    strides:
-        model dependent parameter
-
-    Returns
-    -------
-    pred_list:
-        list of predictions with shape (bs, depends on layers, 6)
-    """
-    pred_list = []
-    objectness = []
-    for i, out in enumerate(output):
-        out[..., 0:4] = decode_yolo_box(out[..., 0:4], torch.tensor(strides[i]))
-        out[..., 4] = torch.sigmoid(out[..., 4])
-        objectness.append(out[..., 4])
-
-        out = out.reshape(out.shape[0], -1, 6)
-        pred_list.append(out)
-
-    return torch.cat(pred_list, 1), objectness
-
-
-def get_pred_boxes(x, pred, **kwargs):
-    """Get predicted boxes by concatenating objectness from all feature maps.
-
-    Parameters
-    ----------
-    x: 4d-array
-        input image (bs, 1, ny, nx)
-    pred: list
-        list of feature maps, each of shape (bs, a, my, mx, 6)
-    **kwargs
-        objectness_mapping properties
-
-    Returns
-    -------
-    boxes: ndarray
-        predictions (bs, my, mx, 6)
-    """
-    strides = get_strides(x, pred)
-
-    # concatenate all objectness maps
-    obj_map = objectness_mapping(pred, **kwargs)
-    # use boxes from prediction of highest resolution
-    boxes = decode_yolo_box(pred[0], strides[0])
-    boxes[..., 4] = torch.tensor(obj_map).to(boxes.device)
-
-    return boxes
-
-
 def non_max_suppression(
     boxes,
     obj_thres: float = 0.25,

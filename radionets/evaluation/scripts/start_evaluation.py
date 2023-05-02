@@ -152,7 +152,7 @@ def main(configuration_path):
         evaluate_yolo(eval_conf)
 
     if eval_conf["mojave"]:
-        click.echo("\nStart evaluation of MOJAVE data.\n")
+        click.echo("\nStart evaluation of MOJAVE data with YOLO model.\n")
         evaluate_mojave(eval_conf)
 
     if eval_conf["counterjet"]:
