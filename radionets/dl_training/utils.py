@@ -95,13 +95,12 @@ def define_arch(arch_name, img_size):
 
 def pop_interrupt(learn, train_conf):
     if click.confirm("KeyboardInterrupt, do you want to save the model?", abort=False):
-        model_path = train_conf["model_path"]
         # save model
         print(f"Saving the model after epoch {learn.epoch}")
-        save_model(learn, model_path)
+        save_model(learn, Path(train_conf["model_path"]))
 
         # plot loss
-        plot_loss(learn, model_path)
+        plot_loss(learn, Path(train_conf["model_path"]))
 
         # Plot input, prediction and true image if asked
         if train_conf["inspection"]:

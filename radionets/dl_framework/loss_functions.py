@@ -174,7 +174,7 @@ def yolo(x, y):
     """
     w_box = 1
     w_obj = 5
-    w_rot = 1
+    w_rot = 3
 
     # how much the image got reduced, must match self.strides_head of architecture
     strides_head = torch.tensor([2, 4, 8])
@@ -246,7 +246,9 @@ def yolo(x, y):
             target_rot = target[..., 5].reshape(-1) / torch.pi
 
             loss_rot += (
-                l1(output_rot[target_rot > 0], target_rot[target_rot > 0]) * w_rot
+                l1(output_rot[target_rot > 0], target_rot[target_rot > 0])
+                * w_rot
+                / len(x)
             )
 
     loss = loss_box + loss_obj + loss_rot

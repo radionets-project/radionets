@@ -57,7 +57,7 @@ def source_list_collate(batch):
         print("\nData shape not implemented\n")
 
 
-def create_databunch(data_path, fourier, source_list, batch_size):
+def create_databunch(data_path, fourier, source_list, batch_size, shuffel=False):
     """Create a dataloader object, which feeds the data batch-wise
 
     Parameters
@@ -84,10 +84,13 @@ def create_databunch(data_path, fourier, source_list, batch_size):
     # Create databunch with defined batchsize and check for source_list
     if source_list:
         data = DataLoader(
-            test_ds, batch_size=batch_size, shuffle=True, collate_fn=source_list_collate
+            test_ds,
+            batch_size=batch_size,
+            shuffle=shuffel,
+            collate_fn=source_list_collate,
         )
     else:
-        data = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
+        data = DataLoader(test_ds, batch_size=batch_size, shuffle=shuffel)
     return data
 
 

@@ -15,6 +15,7 @@ from radionets.dl_framework.data import MojaveDataset, get_bundles, load_data
 from radionets.dl_framework.metrics import binary_accuracy, iou_YOLOv6
 from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 from radionets.evaluation.contour import analyse_intensity, area_of_contour
+from radionets.evaluation.coordinates import pixel2coordinate
 from radionets.evaluation.dynamic_range import calc_dr
 from radionets.evaluation.jet_angle import calc_jet_angle
 from radionets.evaluation.plotting import (
@@ -772,7 +773,11 @@ def evaluate_gan_sources(conf):
 def evaluate_yolo(conf):
     # create DataLoader
     loader = create_databunch(
-        conf["data_path"], conf["fourier"], conf["source_list"], conf["batch_size"]
+        conf["data_path"],
+        conf["fourier"],
+        conf["source_list"],
+        conf["batch_size"],
+        conf["random"],
     )
     model_path = Path(conf["model_path"])
     out_path = model_path.parent / "evaluation" / model_path.stem
@@ -788,11 +793,13 @@ def evaluate_yolo(conf):
 
     model = load_pretrained_model(conf["arch_name"], model_path)[0]
 
-    iou = []
+    iou, eval_time = [], []
     plotted_images = 0
     for img_test, img_true in tqdm(loader):
         # img_true is soure list, not an image. Name is kept for consistency.
+        start_time = time.time()
         pred = eval_model(img_test, model)
+        eval_time.append(time.time() - start_time)
         iou.append(iou_YOLOv6(pred, img_true))
         if plotted_images < conf["num_images"]:
             for _ in range(len(img_test)):
@@ -807,15 +814,17 @@ def evaluate_yolo(conf):
                     )
                     plotted_images += 1
 
-    print(f"IoU of test dataset: {np.mean(np.array(iou)):.2}")
+    print(f"IoU of test dataset: {np.mean(np.array(iou)):.4}")
+    print(f"Evaluation time per image: {np.mean(np.array(eval_time)):.4}")
 
 
 def evaluate_mojave(conf):
     visualize = True
+    reference = "image_intensity"  # image_intensity, comp_intensity, center
 
     loader = MojaveDataset(
         data_path=conf["data_path"],
-        crop_size=256,
+        crop_size=128,
         # scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
         # scaling=partial(scaling_log10_noisecut, thres_adj=1),
         scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=1.5),
@@ -837,10 +846,11 @@ def evaluate_mojave(conf):
         )
     else:
         selected_sources = loader.source_list[5 : conf["num_images"] + 5]
-    selected_sources = ["1142+198"]
+    selected_sources = ["1142+198", "0149+710", "0035+413"]
+    # selected_sources = ["1142+198"]
     # selected_sources = ["0149+710"]
     # selected_sources = ["0035+413"]
-    # print("Evaluated sources:", selected_sources)
+    print("Evaluated sources:", selected_sources)
 
     # Informations about beam properties
     bmaj = []  # clean beam major axis diameter (degrees)
@@ -925,19 +935,36 @@ def evaluate_mojave(conf):
                         x=img, df=df, idx=i, out_path=out_path, name=source, date=date
                     )
 
-        # Find components with the maximum intensity -> main component
-        idx_main = df.groupby("idx_comp")["intensity"].mean(numeric_only=True).argmax()
+        if reference == "comp_intensity":
+            # Find components with the maximum intensity -> main component
+            idx_main = (
+                df.groupby("idx_comp")["intensity"].mean(numeric_only=True).argmax()
+            )
 
         # Calculate distance to main component
         df["distance"] = np.nan
         for i in range(len(img)):
-            main_component = df[(df["idx_img"] == i) & (df["idx_comp"] == idx_main)]
-            x1 = main_component["x_mas"].to_numpy()
-            y1 = main_component["y_mas"].to_numpy()
+            if reference == "image_intensity":
+                x1, y1 = np.unravel_index(np.argmax(img[i], axis=None), img[i].shape)
+                x1, y1 = pixel2coordinate(
+                    loader.get_header(i, source), x1, y1, loader.crop_size, units=False
+                )
+            elif reference == "comp_intensity":
+                main_component = df[(df["idx_img"] == i) & (df["idx_comp"] == idx_main)]
+                x1 = main_component["x_mas"].to_numpy()
+                y1 = main_component["y_mas"].to_numpy()
+            elif reference == "center":
+                x1, y1 = pixel2coordinate(
+                    loader.get_header(i, source),
+                    img[i].shape[-1] / 2,
+                    img[i].shape[-1] / 2,
+                    loader.crop_size,
+                    units=False,
+                )
 
             # Main component not detected in image, distance is not calculated
-            if not x1 or not y1:
-                continue
+            # if not x1 or not y1:
+            #     continue
 
             for index, row in df[df["idx_img"] == i].iterrows():
                 x2 = row["x_mas"]
@@ -947,9 +974,9 @@ def evaluate_mojave(conf):
         # print(df)
         df = df.dropna()
 
-        # Drop components with one appearance, because it leads to no velocity
+        # Drop components with few appearances, because it often leads to unrealistic velocities
         for i in sorted(df["idx_comp"].unique()):
-            if len(df[df["idx_comp"] == i]) == 1:
+            if len(df[df["idx_comp"] == i]) < np.sqrt(len(img)):
                 idx = df[df["idx_comp"] == i].index
                 df.drop(idx, inplace=True)
 
@@ -1041,11 +1068,16 @@ def evaluate_counterjet(conf):
         images_value = np.array([1.0, 1.0, 0.0])  # prediction of images to plot
         acc = []  # accuracy on simulated data
         preds = []
+        eval_time = []
         for i in tqdm(range(len(loader))):
             img = torch.from_numpy(loader.open_image(i))[None, None]
             # print(f"Evaluation of source {source} including {img.shape[0]} images.")
 
-            pred = torch.sigmoid(eval_model(img, model, amp_phase=conf["amp_phase"]))
+            start_time = time.time()
+            pred = eval_model(img, model, amp_phase=conf["amp_phase"])
+            eval_time.append(time.time() - start_time)
+
+            pred = torch.sigmoid(pred)
             preds.append(pred)
 
             if pred < images_value[0]:
@@ -1101,6 +1133,7 @@ def evaluate_counterjet(conf):
 
         acc = []  # accuracy on simulated data
         preds, targets = [], []
+        eval_time = []
         for img_test, img_true in tqdm(loader):
             # img_true is soure list, not an image. Name is kept for consistency.
             n_components = img_true.shape[1]
@@ -1109,7 +1142,11 @@ def evaluate_counterjet(conf):
             target = (amps_summed > 0).float()
             targets.append(target)
 
-            pred = torch.sigmoid(eval_model(img_test, model))
+            start_time = time.time()
+            pred = eval_model(img_test, model)
+            eval_time.append(time.time() - start_time)
+
+            pred = torch.sigmoid(pred)
             preds.append(pred)
             acc.append(binary_accuracy(pred, img_true))
 
@@ -1139,3 +1176,5 @@ def evaluate_counterjet(conf):
             data_name="simulation",
             out_path=out_path,
         )
+
+    print(f"Evaluation time per image: {np.mean(np.array(eval_time)):.4}")
