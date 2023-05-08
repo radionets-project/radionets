@@ -274,8 +274,10 @@ def get_images(test_ds, num_images, rand=False, indices=None):
         data set with test images
     num_images: int
         number of test images
-    norm_path: str
-        path to normalization factors, if None: no normalization is applied
+    rand: bool
+        true if images should be drawn random
+    indices: list
+        list of indices to be used
 
     Returns
     -------
