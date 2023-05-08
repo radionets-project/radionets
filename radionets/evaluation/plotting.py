@@ -760,7 +760,7 @@ def histogram_sum_intensity(ratios_sum, out_path, plot_format="png"):
         alpha=0.75,
     )
     ax1.axvline(1, color="red", linestyle="dashed")
-    ax1.set_xlabel("Ratio of integrated intensities")
+    ax1.set_xlabel("Ratio of integrated flux densities")
     ax1.set_ylabel("Number of sources")
 
     ax1.text(
@@ -799,7 +799,7 @@ def histogram_peak_intensity(ratios_peak, out_path, plot_format="png"):
         alpha=0.75,
     )
     ax1.axvline(1, color="red", linestyle="dashed")
-    ax1.set_xlabel("Ratio of intensity peak fluxes")
+    ax1.set_xlabel("Ratio of peak flux densities")
     ax1.set_ylabel("Number of sources")
 
     ax1.text(
