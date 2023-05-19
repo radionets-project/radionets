@@ -661,9 +661,7 @@ def plot_box(ax, num_boxes, corners):
         )
 
 
-def plot_box2(
-    ax, box, angle: float = 0, label: str = "True box", c="g", alpha: float = 1
-):
+def plot_box2(ax, box, angle: float = 0, label: str = "True", c="g", alpha: float = 1):
     """Plots a box
 
     Parameters
@@ -1298,7 +1296,7 @@ def plot_yolo_box(
                 ax,
                 outputs[i, :4],
                 angle=outputs[i, 5] * 180,
-                label="Pred box",
+                label="Pred",
                 c="w",
                 alpha=0.7,
             )
@@ -1345,7 +1343,7 @@ def plot_yolo_eval(
     """
     strides = get_strides(x, pred)
 
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(9, 7))
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(3.6 * 2, 3 * 2))
 
     im1 = ax1.imshow(x[idx, 0], cmap="inferno")
     im2 = plot_yolo_box(
@@ -1398,8 +1396,8 @@ def plot_counterjet_eval(
     idx_max = np.argmax(pred)
     idx_mid = (np.abs(pred - 0.5)).argmin()
 
-    fig, axs = plt.subplots(1, 3, figsize=(12, 5), sharey=True)
-    for ax, idx in zip(axs, [idx_min, idx_mid, idx_max]):
+    fig, axs = plt.subplots(3, 1, figsize=(3.6, 3 * 3), sharex=True)
+    for i, (ax, idx) in enumerate(zip(axs, [idx_min, idx_mid, idx_max])):
         if y is None:
             s = f"Pred: {np.round(pred[idx], 2):.2}"
         else:
@@ -1419,7 +1417,8 @@ def plot_counterjet_eval(
                 alpha=0.7,
             ),
         )
-        ax.set_xlabel("Pixel")
+        if i == 2:
+            ax.set_xlabel("Pixel")
         ax.set_ylabel("Pixel")
 
         make_axes_nice(fig, ax, im)
@@ -1435,6 +1434,7 @@ def plot_yolo_mojave(
     x,
     pred: list,
     idx: int = 0,
+    objectness: bool = True,
     out_path: str = "",
     name: str = "",
     date: str = "",
@@ -1450,6 +1450,8 @@ def plot_yolo_mojave(
         list of feature maps, each of shape (bs, a, my, mx, 6)
     idx: int
         index of image to be plotted
+    objectness: bool
+        Plot objectness of prediction
     out_path: str
         path in file directory to save output
     name: str
@@ -1459,13 +1461,20 @@ def plot_yolo_mojave(
     plot_format: str
         format of the plot
     """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4))
-
-    im1 = plot_yolo_box(ax1, x, None, pred, idx=idx, true_boxes=False, pred_label=False)
-    im2 = plot_yolo_obj_pred(ax2, pred, idx=idx)
+    if objectness:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(3.6 * 2, 3))
+        im1 = plot_yolo_box(
+            ax1, x, None, pred, idx=idx, true_boxes=False, pred_label=False
+        )
+        im2 = plot_yolo_obj_pred(ax2, pred, idx=idx)
+        make_axes_nice(fig, ax2, im2, objectness=True)
+    else:
+        fig, ax1 = plt.subplots(1, 1, figsize=(3.6, 3))
+        im1 = plot_yolo_box(
+            ax1, x, None, pred, idx=idx, true_boxes=False, pred_label=False
+        )
 
     make_axes_nice(fig, ax1, im1)
-    make_axes_nice(fig, ax2, im2, objectness=True)
 
     legend_without_duplicate_labels(ax1)
 
@@ -1505,7 +1514,7 @@ def plot_yolo_post_clustering(
     plot_format: str
         format of the plot
     """
-    fig, ax = plt.subplots(1, 1, figsize=(4.5, 4))
+    fig, ax = plt.subplots(1, 1, figsize=(3.6, 3))
     im = ax.imshow(x[idx], cmap="inferno")
 
     boxes = df[df["idx_img"] == idx][["x", "y", "sx", "sy"]].to_numpy()
@@ -1522,7 +1531,7 @@ def plot_yolo_post_clustering(
     if out_path and name and date:
         out_path = str(out_path) + f"/{name}"
         Path(out_path).mkdir(parents=True, exist_ok=True)
-        out_path = str(out_path) + f"/yolo_eval_{date}.{plot_format}"
+        out_path = str(out_path) + f"/mojave_post_eval_{date}.{plot_format}"
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
@@ -1542,12 +1551,12 @@ def plot_yolo_clustering(
     plot_format: str
         format of the plot
     """
-    fig, ax = plt.subplots(1, 1, figsize=((4.5, 4)))
+    fig, ax = plt.subplots(1, 1, figsize=((3.6, 3)))
     for i in sorted(df["idx_comp"].unique()):
         ax.scatter(
             df[df["idx_comp"] == i]["x_mas"],
             df[df["idx_comp"] == i]["y_mas"],
-            10,
+            s=10,
             label=f"{i}",
         )
     legend_without_duplicate_labels(ax)
@@ -1566,7 +1575,7 @@ def plot_yolo_clustering(
 
 
 def plot_yolo_velocity(
-    df, out_path: str = "", name: str = "", plot_format: str = "pdf"
+    df, quiet: bool = True, out_path: str = "", name: str = "", plot_format: str = "pdf"
 ):
     """Plot all predicted distances and the linear fit for the velocity
 
@@ -1574,6 +1583,8 @@ def plot_yolo_velocity(
     ----------
     df: pandas.DataFrame
         dataframe with reconstructed properties
+    quiet: bool
+        suppress print, enables legend
     out_path: str
         path in file directory to save output
     name: str
@@ -1581,47 +1592,36 @@ def plot_yolo_velocity(
     plot_format: str
         format of the plot
     """
-    textstr = ""
-
-    fig, ax = plt.subplots(1, 1, figsize=((6, 4)))
+    fig, ax = plt.subplots(1, 1, figsize=((3.6, 3)))
+    ax.grid()
     for i in sorted(df["idx_comp"].unique()):
         x = df[df["idx_comp"] == i]["date"]
         y = df[df["idx_comp"] == i]["distance"]
         m = df[df["idx_comp"] == i]["fit_param_m"]
         b = df[df["idx_comp"] == i]["fit_param_b"]
 
-        ax.plot(x, y, "o", label=f"C$_{i}$")
-        ax.plot(x, m * x.astype(int) / 1e9 + b, "k-")
-
         v = np.round(df[df["idx_comp"] == i]["v"].values[0], 2)
         v_unc = np.round(df[df["idx_comp"] == i]["v_unc"].values[0], 2)
-        textstr += f"$v_{i} = {v} \pm {v_unc}$c\n"
 
-    ax.text(
-        1.03,
-        0.5,
-        textstr[:-1],
-        horizontalalignment="left",
-        verticalalignment="center",
-        transform=ax.transAxes,
-        bbox=dict(
-            boxstyle="round",
-            facecolor="white",
-            edgecolor="lightgray",
-        ),
-        # usetex=True,
-    )
+        ax.plot(x, m * x.astype(int) / 1e9 + b, "-", c=f"C{i}", linewidth=0.7)
+        if not quiet:
+            print(f"v{i} = {v} ± {v_unc} c, d{i} = {np.round(y.mean(), 2)} mas")
+            ax.scatter(x, y, s=10, c=f"C{i}")
+        else:
+            # ax.plot(x, y, "o", c=f"C{i}", label=f"$v_{i} = {v} \pm {v_unc}$c")
+            ax.scatter(
+                x,
+                y,
+                s=10,
+                c=f"C{i}",
+                label=rf"$v_{i} = \SI{{{v}({v_unc})}}{{\clight}}$",
+            )
 
     ax.set_xlabel("")
     ax.set_ylabel("Distance / mas")
-    ax.grid()
-    ax.legend(
-        loc="upper center",
-        bbox_to_anchor=(0.5, 1.1),
-        ncol=10,
-        # fancybox=True,
-        # shadow=True,
-    )
+    if quiet:
+        ax.legend()
+
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
     for label in ax.get_xticklabels(which="major"):
         label.set(rotation=30, horizontalalignment="right")
@@ -1659,21 +1659,37 @@ def plot_hist_counterjet(
     plot_format: str
         format of the plot
     """
-    fig, ax = plt.subplots(1, 1, figsize=((4.5, 3)))
-    ax.hist(x1, bins=20, range=(0, 1), alpha=0.7, label="Predicted")
-    if x2 is not None:
-        ax.hist(x2, bins=20, range=(0, 1), alpha=0.7, label="True")
-    if threshold is not None:
-        ax.axvline(threshold, c="red")
-        ax.axvline(1 - threshold, c="red")
+    if data_name == "MOJAVE":
+        bins = 20
+    else:
+        bins = 50
 
-    # ax.set_xticks([0, 1])
-    # ax.set_xticklabels(["No counterjet", "Counterjet"])
-    ax.set_xlabel("No counterjet - counterjet")
+    fig, ax = plt.subplots(1, 1, figsize=((3, 2.5)))
+
+    ax.hist(x1, bins=bins, range=(0, 1), alpha=0.7, histtype="step", label="Prediction")
+    if x2 is not None:
+        ax.hist(
+            x2,
+            bins=bins,
+            range=(0, 1),
+            alpha=0.7,
+            histtype="step",
+            linestyle="dashed",
+            label="True",
+        )
+    if threshold is not None:
+        ax.axvline(threshold, c="red", linewidth=0.5)
+        ax.axvline(1 - threshold, c="red", linewidth=0.5)
+
+    ax.set_xticks(np.linspace(0, 1, 11))
+    ax.set_xticklabels(
+        [0.0, "\nNo counterjet", 0.2, "", 0.4, "", 0.6, "", 0.8, "\nCounterjet", 1.0]
+    )
+    ax.set_xlabel("Model score")
     ax.set_ylabel("Counts")
 
     ax.set_yscale("log")
-    ax.legend()
+    ax.legend(loc="upper center")
 
     fig.tight_layout(pad=0.05)
     if out_path:
@@ -1682,7 +1698,7 @@ def plot_hist_counterjet(
         plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
-def plot_hist_velocity(v, out_path: str = "", plot_format: str = "pdf"):
+def plot_hist_velocity(v1, v2, out_path: str = "", plot_format: str = "pdf"):
     """Plot destribution of velocities in a histogram
 
     Parameters
@@ -1694,23 +1710,30 @@ def plot_hist_velocity(v, out_path: str = "", plot_format: str = "pdf"):
     plot_format: str
         format of the plot
     """
-    r_min = np.min(v)
-    r_max = np.max(v)
-    # bins = 10**(np.linspace(np.log10(r_min), np.log10(r_max), 30))
-    bins = 30
+    r_min = np.min(np.concatenate((v1, v2)))
+    r_max = np.max(np.concatenate((v1, v2)))
+    bins = 10 ** (np.linspace(np.log10(r_min), np.log10(r_max), 30))
+    # bins = 30
 
-    fig, ax = plt.subplots(1, 1, figsize=((4.5, 4)))
+    fig, ax = plt.subplots(1, 1, figsize=((3.6, 3)))
     ax.hist(
-        v,
+        v1,
         bins=bins,
         range=(r_min, r_max),
-        alpha=0.7,
-        label="Lister et al. - Predicted",
+        histtype="step",
+        label="Prediction",
+    )
+    ax.hist(
+        v2,
+        bins=bins,
+        range=(r_min, r_max),
+        histtype="step",
+        label="Lister et al.",
     )
 
-    ax.set_xlabel("Velocity difference / c")
+    ax.set_xlabel("Velocity / c")
     ax.set_ylabel("Counts")
-    # ax.set_xscale("log")
+    ax.set_xscale("log")
     # ax.grid()
     ax.legend()
 
@@ -1857,6 +1880,7 @@ def plot_data(x, path, rows=1, cols=1, save=False, plot_format="pdf"):
 def plot_loss(
     model_path: str,
     out_path: str,
+    model_name: str = "",
     metric_name: str = "",
     log_loss: bool = True,
     save: bool = False,
@@ -1877,7 +1901,7 @@ def plot_loss(
     plot_format: str
         format of the plot
     """
-    checkpoint = torch.load(model_path)
+    checkpoint = torch.load(model_path, map_location="cuda:0")
 
     fig, ax1 = plt.subplots(figsize=(6.4 * 0.8, 4.8 * 0.8))
     ax2 = ax1.twinx()
@@ -1893,14 +1917,20 @@ def plot_loss(
         )
         lns = lns1 + lns2 + lns3
         ax1.legend(handles=lns, loc="center right")
-        out_path = str(out_path) + f"/loss_metric.{plot_format}"
+        if model_name:
+            out_path = str(out_path) + f"/loss_metric_{model_name}.{plot_format}"
+        else:
+            out_path = str(out_path) + f"/loss_metric.{plot_format}"
     else:
         lns2 = ax1.plot(
             np.array(checkpoint["valid_loss"])[:, 0], label="Validation loss"
         )
         lns = lns1 + lns2
         ax1.legend(handles=lns, loc="upper right")
-        out_path = str(out_path) + f"/loss.{plot_format}"
+        if model_name:
+            out_path = str(out_path) + f"/loss_{model_name}.{plot_format}"
+        else:
+            out_path = str(out_path) + f"/loss.{plot_format}"
 
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")

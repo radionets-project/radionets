@@ -1,11 +1,8 @@
 import numpy as np
 from sklearn.cluster import SpectralClustering
-from sklearn.mixture import BayesianGaussianMixture
-from sklearn.mixture import GaussianMixture
-from radionets.dl_framework.utils import (
-    getAffinityMatrix,
-    normalizeAffinityMatrix,
-)
+from sklearn.mixture import BayesianGaussianMixture, GaussianMixture
+
+from radionets.dl_framework.utils import getAffinityMatrix, normalizeAffinityMatrix
 
 
 def bgmmClustering(data, n_components: int = 10, n_init: int = 1):
@@ -33,7 +30,11 @@ def bgmmClustering(data, n_components: int = 10, n_init: int = 1):
 
 
 def gmmClustering(
-    data, n_components: int = 10, n_init: int = 3, score_type: str = "BIC"
+    data,
+    n_components: int = 10,
+    n_init: int = 3,
+    score_type: str = "BIC",
+    random_state: int = None,
 ):
     """Use Gaussian Mixture Model for clustering data. The number of components
     is determined by the BIC or AIC score.
@@ -48,6 +49,8 @@ def gmmClustering(
         number of clustered models, best is selected
     score_type: str
         score to get best model with components < n_components. AIC or BIC
+    random_state: int
+        set random_state of GMM for reproducible clusters
 
     Returns
     -------
@@ -62,7 +65,10 @@ def gmmClustering(
     score = []
     for i in range(n_components):
         gmm = GaussianMixture(
-            n_components=i + 1, n_init=n_init, init_params="k-means++"
+            n_components=i + 1,
+            n_init=n_init,
+            init_params="k-means++",
+            random_state=random_state,
         ).fit(data)
 
         if score_type == "BIC":

@@ -142,6 +142,14 @@ def get_free_gpu():
     return idx
 
 
+def map_location():
+    """Function can be used for torch.load to set the device properly."""
+    if torch.cuda.is_available():
+        return f"cuda:{get_free_gpu()}"
+    else:
+        return "cpu"
+
+
 def get_normalisation_factors(data):
     mean_real = []
     mean_imag = []

@@ -8,6 +8,8 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 
 import click
+import pandas as pd
+import requests
 from astropy.io import fits
 from bs4 import BeautifulSoup
 from tqdm import tqdm
@@ -15,9 +17,9 @@ from tqdm import tqdm
 
 def download_mojave(save_path: str, download: bool = True, cleanup: bool = True):
     """Download all data from the MOJAVE dataset. Sources with no .icn.fits.gz file or
-    no redshift can be removed. The redshift and speed will be written into the header
-    of the fits file for faster access, if cleanup is True.
-    The download takes several hours (~8h) as well as the cleanup (~2h).
+    no redshift can be removed. The redshift and velocity (speed) will be written into
+    the header of the fits file for faster access, if cleanup is True.
+    The download takes several hours (~10h) as well as the cleanup (~2h).
 
     Parameters
     ----------
@@ -41,29 +43,35 @@ def download_mojave(save_path: str, download: bool = True, cleanup: bool = True)
         subprocess.run(
             [
                 "wget",
-                "-m",
-                "-q",
-                "-np",
-                "-e",
-                "robots=off",
-                "-A",
-                ".icn.fits.gz",
-                "-P",
+                "-r",
+                "-l",
+                "inf",
+                "-nc",
+                # "-m",  # --mirror equivalent to "-r -N -l inf --no-remove-listing"
+                "-q",  # --quiet no output
+                "-np",  # --no-parent don't download from parent directories
+                "-e",  # --execute (the following) command
+                "robots=off",  # robots.txt don't allow download (apparently)
+                "-A",  # --accept only accept the following pattern
+                ".icn.fits.gz",  # ending of the desired files
+                "-P",  # --directory-prefix directory to save data
                 save_path,
                 url,
             ]
         )
     click.echo(f"{current_time()} - Download finished \n")
 
-    if os.path.isdir(save_path + "www.cv.nrao.edu"):
-        click.echo(f"{current_time()} - Remove unnecessary parent folders \n")
-        shutil.copytree(
-            save_path + "www.cv.nrao.edu/2cmVLBA/data/", save_path, dirs_exist_ok=True
-        )
-        subprocess.run(["rm", "-r", save_path + "www.cv.nrao.edu"])
-
     if cleanup:
         click.echo(f"{current_time()} - Starting clean up \n")
+        if os.path.isdir(save_path + "www.cv.nrao.edu"):
+            click.echo(f"{current_time()} - Remove unnecessary parent folders \n")
+            shutil.copytree(
+                save_path + "www.cv.nrao.edu/2cmVLBA/data/",
+                save_path,
+                dirs_exist_ok=True,
+            )
+            subprocess.run(["rm", "-r", save_path + "www.cv.nrao.edu"])
+
         source_list = sorted(next(os.walk(save_path))[1])
 
         click.echo(f"{current_time()} - Removing folders which are not a source \n")
@@ -90,34 +98,33 @@ def download_mojave(save_path: str, download: bool = True, cleanup: bool = True)
                     f"{current_time()} - {len(data_files)} images for source {source}: Removed"
                 )
                 continue
-
-            redshift, speed, speed_unc, n_features = get_properties(source)
-            if redshift and speed and speed_unc:
+            redshift, vs, v_uncs = get_properties(source)
+            if redshift and vs and v_uncs:
                 for file in data_files:
                     with fits.open(file, mode="update") as hdul:
                         hdr = hdul[0].header
                         hdr.set(
                             "REDSHIFT", redshift, "Optical redshift", after="OBJECT"
                         )
-                        hdr.set("SPEED", speed, "Jet speed", after="REDSHIFT")
-                        hdr.set(
-                            "SPEEDUNC",
-                            speed_unc,
-                            "Jet speed uncertainty",
-                            after="SPEED",
-                        )
-                        hdr.set(
-                            "N_FEAT",
-                            n_features,
-                            "Velocity based on n moving features",
-                            after="SPEEDUNC",
-                        )
+                        for i, (v, v_unc) in enumerate(zip(vs, v_uncs)):
+                            hdr.set(
+                                f"V{i+1}",
+                                float(v),
+                                "Jet velocity (speed)",
+                                after="REDSHIFT",
+                            )
+                            hdr.set(
+                                f"V_UNC{i+1}",
+                                float(v_unc),
+                                "Jet velocity (speed) uncertainty",
+                                after=f"V{i+1}",
+                            )
                         hdul.close(output_verify="silentfix+ignore")
             else:
                 subprocess.run(["rm", "-r", source_path])
                 source_list.remove(source)
                 click.echo(
-                    f"{current_time()} - Scoure {source}: z = {redshift}, v = {speed} -> Removed"
+                    f"{current_time()} - Scoure {source}: z = {redshift}, v = {vs}, v_unc = {v_uncs} -> Removed"
                 )
                 continue
 
@@ -138,19 +145,17 @@ def get_properties(source: str):
     -------
     redshift: float
         Redshift of the object
-    speed: float
-        speed of the object
-    speed_unc: float
-        uncertainty of the speed of the object
-    n_features: int
-        velocity based on n moving features
+    v: list
+        list of velocity (speed) from all components
+    v_unc: list
+        list of velocity (speed) uncertainty from all components
     """
-    url = "https://www.cv.nrao.edu/MOJAVE/sourcepages/" + source + ".shtml"
+    url_redshift = "https://www.cv.nrao.edu/MOJAVE/sourcepages/" + source + ".shtml"
 
     try:
-        page = urlopen(url)
+        page = urlopen(url_redshift)
     except HTTPError:
-        return False, False, False, False
+        return False, False, False
 
     html_bytes = page.read()
     soup = BeautifulSoup(html_bytes, features="html.parser")
@@ -161,26 +166,16 @@ def get_properties(source: str):
     except ValueError:
         redshift = False
 
-    speed_str = soup.find("td", string="Jet Speed:").find_next_sibling("td").text
-    speed_list = speed_str.split()
+    url_table = "https://www.cv.nrao.edu/MOJAVE/velocitytableXVIII.html"
 
-    try:
-        c_exists = speed_list[9] == "c"
-    except IndexError:
-        c_exists = False
-    if c_exists:
-        speed = float(speed_list[6])
-        speed_unc = float(speed_list[8])
-    else:
-        speed, speed_unc = False, False
+    html = requests.get(url_table).content
+    df_list = pd.read_html(html)
 
-    try:
-        idx = speed_list.index("on") + 1
-        n_features = int(speed_list[idx])
-    except ValueError:
-        n_features = False
-
-    return redshift, speed, speed_unc, n_features
+    df = df_list[-1]
+    velocities = df[df["B1950 Name"] == source]["Speed (c)"].values
+    v = [v.split("&")[0] for v in velocities if type(v) == str]
+    v_unc = [v_unc.split("n")[1] for v_unc in velocities if type(v_unc) == str]
+    return redshift, v, v_unc
 
 
 def current_time():

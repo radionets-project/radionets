@@ -846,10 +846,11 @@ def evaluate_mojave(conf):
         )
     else:
         selected_sources = loader.source_list[5 : conf["num_images"] + 5]
-    selected_sources = ["1142+198", "0149+710", "0035+413"]
+    # selected_sources = ["1142+198", "0149+710", "0035+413"]
     # selected_sources = ["1142+198"]
     # selected_sources = ["0149+710"]
     # selected_sources = ["0035+413"]
+    # selected_sources = ["2342-161", "2230+114"]
     print("Evaluated sources:", selected_sources)
 
     # Informations about beam properties
@@ -991,29 +992,8 @@ def evaluate_mojave(conf):
             plot_yolo_velocity(df=df, out_path=out_path, name=source)
 
         # Compare velocities (fitted vs. MOJAVE (only max vel. stated))
-        v_max = df["v"].max()
-        v_argmax = df["v"].argmax()
-        v_unc_max = df["v_unc"].values[v_argmax]
-
-        # v_ncomps = (v == v_max).sum()
-        v_ref = df["v_ref"].values[v_argmax]
-        v_unc_ref = df["v_unc_ref"].values[v_argmax]
-        # v_ncomps_ref = df["n_feat"].values[v_argmax]
-
-        # print(rf"max velocity: {v_max:.2} \pm {v_unc_max:.2} by {v_ncomps} components")
-        # print(
-        #     rf"max velocity: {v_ref} \pm {v_unc_ref} by {int(v_ncomps_ref)} components"
-        # )
-        # print("v_max", v_max)
-
-        if v_max != 0:
-            v1.append(v_max)
-            v2.append(v_ref)
-            if v_unc_max != 0:
-                std_env = (v_ref - v_max) / v_unc_max  # v1 + n*s1 = v2
-                stds.append(std_env)
-                v1_unc.append(v_unc_max / v_max)
-                v2_unc.append(v_unc_ref / v_ref)
+        v1.extend(df["v"].abs().unique())
+        v2.extend(df.loc[:, df.columns.str.startswith("v_ref")].iloc[0].values)
 
         for i in range(len(img)):
             hdr = loader.get_header(i, source)
@@ -1038,7 +1018,7 @@ def evaluate_mojave(conf):
     v2 = np.array(v2)
     # if visualize:
     if v1.size != 0 and v2.size != 0:
-        plot_hist_velocity(v2 - v1, out_path=out_path)
+        plot_hist_velocity(v1, v2, out_path=out_path)
 
     v1_unc = np.array(v1_unc)
     v2_unc = np.array(v2_unc)
@@ -1048,13 +1028,14 @@ def evaluate_mojave(conf):
 
 
 def evaluate_counterjet(conf):
+    threshold_cj = 0.8
     if "MOJAVE" in conf["data_path"]:
         loader = MojaveDataset(
             data_path=conf["data_path"],
             crop_size=256,
             # scaling=partial(scaling_log10_noisecut, thres_adj=0.5),
             # scaling=partial(scaling_log10_noisecut, thres_adj=1),
-            scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=2),
+            scaling=partial(SymLogNorm, linthresh=1e-2, linthresh_rel=True, base=1.5),
         )
         print("Finished loading MOJAVE data")
 
@@ -1099,7 +1080,6 @@ def evaluate_counterjet(conf):
 
         preds = torch.tensor(preds)
 
-        threshold_cj = 0.9
         cj = (preds > threshold_cj).float().mean()
         ncj = (preds < 1 - threshold_cj).float().mean()
         unsure = 1 - cj - ncj
@@ -1163,7 +1143,6 @@ def evaluate_counterjet(conf):
 
         print(f"Accuracy of test dataset: {np.mean(np.array(acc)):.4}")
 
-        threshold_cj = 0.9
         cj = (preds > threshold_cj).float().mean()
         ncj = (preds < 1 - threshold_cj).float().mean()
         unsure = 1 - cj - ncj

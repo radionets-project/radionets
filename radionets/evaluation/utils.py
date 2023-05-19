@@ -792,9 +792,13 @@ def yolo_df(outputs: list, ds, source: str):
             pred_dict["date"] = pd.Timestamp(header["DATE-OBS"])
             pred_dict["idx_img"] = i
             pred_dict["redshift"] = header["REDSHIFT"]
-            pred_dict["v_ref"] = header["SPEED"]
-            pred_dict["v_unc_ref"] = header["SPEEDUNC"]
-            pred_dict["n_feat"] = header["N_FEAT"]
+            for j in range(100):
+                try:
+                    # print(j, header[f"V{j+1}"], header[f"V_UNC{j+1}"])
+                    pred_dict[f"v_ref{j+1}"] = header[f"V{j+1}"]
+                    pred_dict[f"v_unc_ref{j+1}"] = header[f"V_UNC{j+1}"]
+                except KeyError:
+                    break
             pred_dict["x"] = out[0]
             pred_dict["y"] = out[1]
             pred_dict["sx"] = out[2]

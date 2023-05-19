@@ -172,13 +172,13 @@ def yolo(x, y):
     loss: float
         loss for the batch
     """
-    w_box = 1
-    w_obj = 5
-    w_rot = 3
+    w_box = 0.5
+    w_obj = 2
+    w_rot = 1
 
     # how much the image got reduced, must match self.strides_head of architecture
-    strides_head = torch.tensor([2, 4, 8])
-    # strides_head = torch.tensor([4, 8, 16])
+    # strides_head = torch.tensor([2, 4, 8])
+    strides_head = torch.tensor([4, 8, 16])
     weighted_bce = True
 
     loss_box = 0
