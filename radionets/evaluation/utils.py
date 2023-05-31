@@ -204,7 +204,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar.set_label(r"$\sigma^2$ / a.u.")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label("Specific Intensity / a.u.")
+        cbar.set_label(r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$")
 
     if phase:
         # set ticks for colorbar
