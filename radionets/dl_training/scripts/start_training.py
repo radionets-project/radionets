@@ -131,6 +131,8 @@ def main(configuration_path, mode):
 
     if mode == "lr_find":
         click.echo("Start lr_find.\n")
+        if train_conf["normalize"] == "mean":
+            train_conf["norm_factors"] = get_normalisation_factors(data)
 
         # define_learner
         learn = define_learner(data, arch, train_conf, lr_find=True)

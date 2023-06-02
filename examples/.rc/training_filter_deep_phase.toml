@@ -11,7 +11,6 @@ gpu = true
 data_path = "./build/normal/"
 model_path = "./build/filter_deep_phase/filter_deep_phase.model"
 pre_model = "none"
-norm_path = "none"
 
 [general]
 fourier = true

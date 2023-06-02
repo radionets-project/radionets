@@ -1,0 +1,1 @@
+fixed sampling for images displayed in real and imaginary part

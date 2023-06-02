@@ -16,7 +16,6 @@ scale = true
 data_path = "./tests/build/data/"
 model_path = "./tests/build/test_training/test_training.model"
 pre_model = "none"
-norm_path = "none"
 
 [general]
 fourier = true

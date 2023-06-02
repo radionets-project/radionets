@@ -30,7 +30,6 @@ def read_config(config):
     train_conf["data_path"] = config["paths"]["data_path"]
     train_conf["model_path"] = config["paths"]["model_path"]
     train_conf["pre_model"] = config["paths"]["pre_model"]
-    train_conf["norm_path"] = config["paths"]["norm_path"]
 
     train_conf["quiet"] = config["mode"]["quiet"]
     train_conf["gpu"] = config["mode"]["gpu"]

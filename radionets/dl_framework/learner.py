@@ -91,7 +91,7 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             ]
         )
 
-    if not lr_find and not plot_loss and train_conf["normalize"] != "none":
+    if not plot_loss and train_conf["normalize"] != "none":
         cbfs.extend([Normalize(train_conf)])
     # get loss func
     if train_conf["loss_func"] == "feature_loss":

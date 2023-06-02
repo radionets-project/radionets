@@ -496,6 +496,59 @@ def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
     a = check_vmin_vmax(mean - ifft_truth)
     im4 = ax4.imshow(mean - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
 
+    ax1.text(
+        90,
+        110,
+        "Simulation",
+        ha="center",
+        size=9,
+        bbox=dict(
+            boxstyle="round",
+            fc="w",
+            ec="gray",
+            alpha=0.75,
+        ),
+    )
+    ax2.text(
+        90,
+        110,
+        "Prediction",
+        ha="center",
+        size=9,
+        bbox=dict(
+            boxstyle="round",
+            fc="w",
+            ec="gray",
+            alpha=0.75,
+        ),
+    )
+    ax3.text(
+        90,
+        110,
+        "Uncertainty",
+        ha="center",
+        size=9,
+        bbox=dict(
+            boxstyle="round",
+            fc="w",
+            ec="gray",
+            alpha=0.75,
+        ),
+    )
+    ax4.text(
+        90,
+        110,
+        "Difference",
+        ha="center",
+        size=9,
+        bbox=dict(
+            boxstyle="round",
+            fc="w",
+            ec="gray",
+            alpha=0.75,
+        ),
+    )
+
     make_axes_nice(fig, ax1, im1, r"Simulation")
     make_axes_nice(fig, ax2, im2, r"Prediction")
     make_axes_nice(fig, ax3, im3, r"Uncertainty")
@@ -719,9 +772,10 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     mean = np.mean(msssim)
     std = np.std(msssim, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    bins = np.arange(msssim.min(), 1 + 0.01, 0.01)
     ax1.hist(
         msssim,
-        80,
+        bins=bins,
         color="darkorange",
         linewidth=3,
         histtype="step",
@@ -730,14 +784,19 @@ def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     ax1.set_xlabel("ms ssim")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle(
-        (0, 0), 0.1, 0.1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
-    )
-    extra_2 = Rectangle(
-        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
-    )
-    ax1.legend(
-        [extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"), loc="upper center"
+    ax1.text(
+        0.1,
+        0.8,
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
+        horizontalalignment="left",
+        verticalalignment="center",
+        transform=ax1.transAxes,
+        bbox=dict(
+            boxstyle="round",
+            facecolor="white",
+            edgecolor="lightgray",
+            alpha=0.8,
+        ),
     )
     fig.tight_layout()
 
@@ -760,17 +819,23 @@ def histogram_sum_intensity(ratios_sum, out_path, plot_format="png"):
         alpha=0.75,
     )
     ax1.axvline(1, color="red", linestyle="dashed")
-    ax1.set_xlabel("Ratio of integrated intensity")
+    ax1.set_xlabel("Ratio of integrated flux densities")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle(
-        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    ax1.text(
+        0.1,
+        0.8,
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
+        horizontalalignment="left",
+        verticalalignment="center",
+        transform=ax1.transAxes,
+        bbox=dict(
+            boxstyle="round",
+            facecolor="white",
+            edgecolor="lightgray",
+            alpha=0.8,
+        ),
     )
-    extra_2 = Rectangle(
-        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
-    )
-    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
-    ax1.set_xlim(-0.5, 5)
 
     fig.tight_layout()
 
@@ -793,17 +858,23 @@ def histogram_peak_intensity(ratios_peak, out_path, plot_format="png"):
         alpha=0.75,
     )
     ax1.axvline(1, color="red", linestyle="dashed")
-    ax1.set_xlabel("Ratio of intensity peak flux")
+    ax1.set_xlabel("Ratio of peak flux densities")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle(
-        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    ax1.text(
+        0.1,
+        0.8,
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
+        horizontalalignment="left",
+        verticalalignment="center",
+        transform=ax1.transAxes,
+        bbox=dict(
+            boxstyle="round",
+            facecolor="white",
+            edgecolor="lightgray",
+            alpha=0.8,
+        ),
     )
-    extra_2 = Rectangle(
-        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
-    )
-    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
-    ax1.set_xlim(-0.5, 5)
 
     fig.tight_layout()
 
@@ -844,16 +915,23 @@ def histogram_area(vals, out_path, plot_format="png"):
         vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75
     )
     ax1.axvline(1, color="red", linestyle="dashed")
-    ax1.set_xlabel("ratio of areas")
+    ax1.set_xlabel("Ratio of areas")
     ax1.set_ylabel("Number of sources")
 
-    extra_1 = Rectangle(
-        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
+    ax1.text(
+        0.1,
+        0.8,
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
+        horizontalalignment="left",
+        verticalalignment="center",
+        transform=ax1.transAxes,
+        bbox=dict(
+            boxstyle="round",
+            facecolor="white",
+            edgecolor="lightgray",
+            alpha=0.8,
+        ),
     )
-    extra_2 = Rectangle(
-        (0, 0), 1, 1, fc="w", fill=False, edgecolor="darkorange", linewidth=1
-    )
-    ax1.legend([extra_1, extra_2], (f"Mean: {mean:.2f}", f"Std: {std:.2f}"))
 
     fig.tight_layout()
 

@@ -466,7 +466,7 @@ def evaluate_dynamic_range(conf):
 
 def evaluate_ms_ssim(conf):
     model, model_2, loader, norm_dict, out_path = preprocessing(conf)
-    vals = []
+    vals = np.array([])
 
     # iterate trough DataLoader
     for i, (img_test, img_true) in enumerate(tqdm(loader)):
@@ -481,7 +481,7 @@ def evaluate_ms_ssim(conf):
             win_size=7,
             size_average=False,
         )
-        vals.extend(val)
+        vals = np.append(vals, val)
 
     click.echo("\nCreating ms-ssim histogram.\n")
     histogram_ms_ssim(vals, out_path, plot_format=conf["format"])
