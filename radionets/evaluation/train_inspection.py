@@ -846,11 +846,9 @@ def evaluate_mojave(conf):
         )
     else:
         selected_sources = loader.source_list[5 : conf["num_images"] + 5]
-    # selected_sources = ["1142+198", "0149+710", "0035+413"]
+    # selected_sources = ["1142+198", "1606+106"]
     # selected_sources = ["1142+198"]
     # selected_sources = ["0149+710"]
-    # selected_sources = ["0035+413"]
-    # selected_sources = ["2342-161", "2230+114"]
     print("Evaluated sources:", selected_sources)
 
     # Informations about beam properties

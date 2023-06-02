@@ -271,7 +271,7 @@ class MojaveDataset:
             file_paths = [x for x in Path(data_path).glob("*/*/*")]
 
         data_files = [
-            path for path in file_paths if re.findall(".icn.fits.gz", path.name)
+            path for path in file_paths if re.findall(".icn.fits.gz$", path.name)
         ]
 
         print("Number of data files:", len(data_files))

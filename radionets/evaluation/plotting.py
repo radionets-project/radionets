@@ -1346,15 +1346,15 @@ def plot_yolo_eval(
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(3.6 * 2, 3 * 2))
 
     im1 = ax1.imshow(x[idx, 0], cmap="inferno")
-    im2 = plot_yolo_box(
-        ax2, x, y, pred, idx=idx, true_boxes=1, pred_boxes=1, pred_label=0
+    im2 = plot_yolo_obj_true(ax2, y, pred, strides, idx=idx, anchor_idx=anchor_idx)
+    im3 = plot_yolo_box(
+        ax3, x, y, pred, idx=idx, true_boxes=1, pred_boxes=1, pred_label=0
     )
-    im3 = plot_yolo_obj_true(ax3, y, pred, strides, idx=idx, anchor_idx=anchor_idx)
     im4 = plot_yolo_obj_pred(ax4, pred, idx=idx, anchor_idx=anchor_idx)
 
     make_axes_nice(fig, ax1, im1)
-    make_axes_nice(fig, ax2, im2)
-    make_axes_nice(fig, ax3, im3, objectness=True)
+    make_axes_nice(fig, ax2, im2, objectness=True)
+    make_axes_nice(fig, ax3, im3)
     make_axes_nice(fig, ax4, im4, objectness=True)
 
     ax1.set_xlabel("Pixel")
@@ -1614,7 +1614,8 @@ def plot_yolo_velocity(
                 y,
                 s=10,
                 c=f"C{i}",
-                label=rf"$v_{i} = \SI{{{v}({v_unc})}}{{\clight}}$",
+                label=f"$v_{i} = {v} ± {v_unc} c_0$",
+                # label=rf"$v_{i} = \SI{{{v}({v_unc})}}{{\clight}}$",
             )
 
     ax.set_xlabel("")
@@ -1903,7 +1904,7 @@ def plot_loss(
     """
     checkpoint = torch.load(model_path, map_location="cuda:0")
 
-    fig, ax1 = plt.subplots(figsize=(6.4 * 0.8, 4.8 * 0.8))
+    fig, ax1 = plt.subplots(figsize=(6.4 * 0.7, 4.8 * 0.7))
     ax2 = ax1.twinx()
     lns1 = ax1.plot(checkpoint["train_loss"], label="Training loss")
 
