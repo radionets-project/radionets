@@ -54,7 +54,6 @@ def main(configuration_path, mode):
         data_path=train_conf["data_path"],
         fourier=train_conf["fourier"],
         batch_size=train_conf["batch_size"],
-        source_list=train_conf["source_list"],
     )
 
     # get image size

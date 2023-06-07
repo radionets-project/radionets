@@ -1,13 +1,14 @@
-from torch.utils.data import DataLoader
-import torch
-import h5py
 import re
-import numpy as np
 from pathlib import Path
+
+import h5py
+import numpy as np
+import torch
+from torch.utils.data import DataLoader
 
 
 class h5_dataset:
-    def __init__(self, bundle_paths, tar_fourier, amp_phase=None, source_list=False):
+    def __init__(self, bundle_paths, tar_fourier):
         """
         Save the bundle paths and the number of bundles in one file.
         """
@@ -16,8 +17,6 @@ class h5_dataset:
         self.bundles = bundle_paths
         self.num_img = len(self.open_bundle(self.bundles[0], "x"))
         self.tar_fourier = tar_fourier
-        self.amp_phase = amp_phase
-        self.source_list = source_list
 
     def __call__(self):
         return print("This is the h5_dataset class.")
@@ -70,8 +69,6 @@ class h5_dataset:
 
         if data.shape[0] == 1:
             data = data.squeeze(0)
-
-        data = data[:, :65, :]
 
         return data.float()
 
@@ -184,7 +181,7 @@ def open_bundle_pack(path):
     return np.array(bundle_x), np.array(bundle_y), bundle_z
 
 
-def load_data(data_path, mode, fourier=False, source_list=False):
+def load_data(data_path, mode, fourier=False):
     """
     Load data set from a directory and return it as h5_dataset.
 
@@ -207,5 +204,5 @@ def load_data(data_path, mode, fourier=False, source_list=False):
         [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
     )
     data = sorted(data, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
-    ds = h5_dataset(data, tar_fourier=fourier, source_list=source_list)
+    ds = h5_dataset(data, tar_fourier=fourier)
     return ds

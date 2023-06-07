@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 from scipy.stats import truncnorm
 
 
@@ -14,6 +14,7 @@ def truncnorm_moments(mu, sig, a, b):
 class TestEvaluation:
     def test_get_images(self):
         import torch
+
         from radionets.dl_framework.data import load_data
         from radionets.evaluation.utils import get_images
 
@@ -21,7 +22,6 @@ class TestEvaluation:
             "./tests/build/data",
             mode="test",
             fourier=True,
-            source_list=False,
         )
 
         num_images = 10
@@ -46,12 +46,11 @@ class TestEvaluation:
 
     def test_get_prediction(self):
         from pathlib import Path
-        from radionets.evaluation.utils import (
-            read_config,
-            save_pred,
-        )
+
         import toml
+
         from radionets.evaluation.train_inspection import get_prediction
+        from radionets.evaluation.utils import read_config, save_pred
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
@@ -69,16 +68,11 @@ class TestEvaluation:
         save_pred(str(out_path) + "/predictions_model_eval.h5", img)
 
     def test_contour(self):
-        from radionets.evaluation.utils import (
-            read_config,
-            get_ifft,
-            read_pred,
-        )
-        from radionets.evaluation.contour import (
-            area_of_contour,
-        )
-        import toml
         import numpy as np
+        import toml
+
+        from radionets.evaluation.contour import area_of_contour
+        from radionets.evaluation.utils import get_ifft, read_config, read_pred
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
@@ -103,8 +97,8 @@ class TestEvaluation:
         assert val >= 0
 
     def test_im_to_array_value(self):
-        from radionets.evaluation.utils import read_pred
         from radionets.evaluation.jet_angle import im_to_array_value
+        from radionets.evaluation.utils import read_pred
 
         img = read_pred(
             "./tests/build/test_training/evaluation/predictions_model_eval.h5"
@@ -121,6 +115,7 @@ class TestEvaluation:
 
     def test_bmul(self):
         import torch
+
         from radionets.evaluation.jet_angle import bmul
 
         vec = torch.ones(1)
@@ -132,10 +127,11 @@ class TestEvaluation:
         assert cov.shape == (1, 2, 2)
 
     def test_pca(self):
-        import torch
         import toml
-        from radionets.evaluation.jet_angle import im_to_array_value, bmul, pca
-        from radionets.evaluation.utils import read_pred, get_ifft, read_config
+        import torch
+
+        from radionets.evaluation.jet_angle import bmul, im_to_array_value, pca
+        from radionets.evaluation.utils import get_ifft, read_config, read_pred
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
@@ -185,10 +181,11 @@ class TestEvaluation:
         assert len(psi_torch[psi_torch > 360]) == 0
 
     def test_calc_jet_angle(self):
-        import torch
         import toml
+        import torch
+
         from radionets.evaluation.jet_angle import calc_jet_angle
-        from radionets.evaluation.utils import read_config, read_pred, get_ifft
+        from radionets.evaluation.utils import get_ifft, read_config, read_pred
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
@@ -228,6 +225,7 @@ class TestEvaluation:
 
     def test_corners(self):
         import numpy as np
+
         from radionets.evaluation.blob_detection import corners
 
         r = np.random.randint(1, 10)
@@ -240,11 +238,12 @@ class TestEvaluation:
         assert (y_coord[0] - y_coord[1]) % 2 == 1
 
     def test_calc_blobs_and_crop_first_comp(self):
-        import torch
-        import toml
         import numpy as np
-        from radionets.evaluation.utils import read_config, get_ifft, read_pred
+        import toml
+        import torch
+
         from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
+        from radionets.evaluation.utils import get_ifft, read_config, read_pred
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
@@ -279,11 +278,12 @@ class TestEvaluation:
         assert flux_truth.all() > 0
 
     def test_gan_sources(self):
+        import numpy as np
         import toml
         import torch
-        import numpy as np
+
         from radionets.evaluation.train_inspection import evaluate_gan_sources
-        from radionets.evaluation.utils import read_config, get_ifft, read_pred
+        from radionets.evaluation.utils import get_ifft, read_config, read_pred
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
@@ -328,6 +328,7 @@ class TestEvaluation:
 
     def test_symmetry(self):
         import torch
+
         from radionets.dl_framework.model import symmetry
 
         x = torch.randint(0, 9, size=(1, 2, 4, 4))
@@ -353,12 +354,8 @@ class TestEvaluation:
         import numpy as np
         import torch
         import torch.nn.functional as F
-        from radionets.evaluation.utils import (
-            read_pred,
-            trunc_rvs,
-            get_ifft,
-            sym_new,
-        )
+
+        from radionets.evaluation.utils import get_ifft, read_pred, sym_new, trunc_rvs
 
         num_samples = 100
         num_img = 2
@@ -443,7 +440,8 @@ class TestEvaluation:
 
     def test_uncertainty_plots(self):
         import toml
-        from radionets.evaluation.utils import read_pred, sample_images, read_config
+
+        from radionets.evaluation.utils import read_config, read_pred, sample_images
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
@@ -456,9 +454,10 @@ class TestEvaluation:
 
     def test_analyse_intensity(self):
         import toml
-        from radionets.evaluation.utils import read_config, read_pred, get_ifft
         import torch
+
         from radionets.evaluation.contour import analyse_intensity
+        from radionets.evaluation.utils import get_ifft, read_config, read_pred
 
         config = toml.load("./tests/evaluate.toml")
         conf = read_config(config)
@@ -483,9 +482,11 @@ class TestEvaluation:
         assert peak_val > 0
 
     def test_evaluation(self):
-        import shutil
         import os
+        import shutil
+
         from click.testing import CliRunner
+
         from radionets.evaluation.scripts.start_evaluation import main
 
         runner = CliRunner()
