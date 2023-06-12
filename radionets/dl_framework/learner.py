@@ -1,19 +1,20 @@
 import torch.nn as nn
-from radionets.dl_framework.model import init_cnn
-from radionets.dl_framework.callbacks import (
-    SaveTempCallback,
-    DataAug,
-    AvgLossCallback,
-    SwitchLoss,
-    CudaCallback,
-    CometCallback,
-    Normalize,
-)
-from fastai.optimizer import Adam
-from fastai.learner import Learner
-from fastai.data.core import DataLoaders
 from fastai.callback.schedule import ParamScheduler, combined_cos
+from fastai.data.core import DataLoaders
+from fastai.learner import Learner
+from fastai.optimizer import Adam
+
 import radionets.dl_framework.loss_functions as loss_functions
+from radionets.dl_framework.callbacks import (
+    AvgLossCallback,
+    CometCallback,
+    CudaCallback,
+    DataAug,
+    Normalize,
+    SaveTempCallback,
+    SwitchLoss,
+)
+from radionets.dl_framework.model import init_cnn
 
 
 def get_learner(
@@ -78,7 +79,7 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             ]
         )
 
-    if not lr_find and not plot_loss and train_conf["normalize"] != "none":
+    if not plot_loss and train_conf["normalize"] != "none":
         cbfs.extend([Normalize(train_conf)])
     # get loss func
     if train_conf["loss_func"] == "feature_loss":

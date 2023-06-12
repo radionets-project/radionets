@@ -1,10 +1,12 @@
 import sys
+from pathlib import Path
+
+import click
 import torch
 from tqdm import tqdm
-import click
-from pathlib import Path
-from radionets.dl_framework.data import load_data, DataBunch, get_dls
+
 import radionets.dl_framework.architecture as architecture
+from radionets.dl_framework.data import DataBunch, get_dls, load_data
 from radionets.dl_framework.inspection import plot_loss
 from radionets.dl_framework.model import save_model
 from radionets.evaluation.train_inspection import create_inspection_plots
@@ -25,7 +27,6 @@ def read_config(config):
     train_conf["data_path"] = config["paths"]["data_path"]
     train_conf["model_path"] = config["paths"]["model_path"]
     train_conf["pre_model"] = config["paths"]["pre_model"]
-    train_conf["norm_path"] = config["paths"]["norm_path"]
 
     train_conf["quiet"] = config["mode"]["quiet"]
     train_conf["gpu"] = config["mode"]["gpu"]

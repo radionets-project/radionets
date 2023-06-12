@@ -1,0 +1,1 @@
+Remove unused `norm_path` from all instances
