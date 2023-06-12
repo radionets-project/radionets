@@ -1,10 +1,8 @@
 import torch
 from torch import nn
-from radionets.dl_framework.model import (
-    GeneralELU,
-    LocallyConnected2d,
-)
+
 from radionets.dl_framework.architectures.res_exp import SRResNet_16
+from radionets.dl_framework.model import GeneralELU, LocallyConnected2d
 
 
 class Uncertainty(nn.Module):
@@ -14,19 +12,19 @@ class Uncertainty(nn.Module):
         self.conv1 = nn.Sequential(
             nn.Conv2d(4, 16, 9, stride=1, padding=4, groups=2),
             nn.BatchNorm2d(16),
-            nn.PReLU(),
+            nn.ReLU(),
         )
 
         self.conv2 = nn.Sequential(
             nn.Conv2d(16, 32, 3, stride=1, padding=1),
             nn.BatchNorm2d(32),
-            nn.PReLU(),
+            nn.ReLU(),
         )
 
         self.conv3 = nn.Sequential(
             nn.Conv2d(32, 64, 9, stride=1, padding=4, groups=2),
             nn.BatchNorm2d(64),
-            nn.PReLU(),
+            nn.ReLU(),
         )
 
         self.final = nn.Sequential(
