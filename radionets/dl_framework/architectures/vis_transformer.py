@@ -43,17 +43,18 @@ class Attention(nn.Module):
         inner_dim = dim_head * heads
         self.inner_dim = dim_head * heads
         self.fast_attention = FastAttention()
+        # self.multihead_attention = nn.MultiheadAttention(embed_dim=self.dim, num_heads=1, dropout=0.5, batch_first=True)
         self.heads = heads
 
-        self.to_q = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias))
-        self.to_k = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias))
-        self.to_v = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias))
+        self.to_q = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias), nn.BatchNorm1d(2))
+        self.to_k = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias), nn.BatchNorm1d(2))
+        self.to_v = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias), nn.BatchNorm1d(2))
         self.to_out = nn.Linear(inner_dim, self.dim, bias = attn_out_bias)
         self.dropout = nn.Dropout(dropout)
+        self.batch_norm = nn.BatchNorm2d(2)
 
     def forward(self, x, **kwargs):
         b, n, H, W, h = *x.shape, self.heads
-        
         q, k, v = self.to_q(x.reshape(b, n, -1)), self.to_k(x.reshape(b, n, -1)), self.to_v(x.reshape(b, n, -1))
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), (q, k, v))
         attn_outs = []
@@ -64,7 +65,7 @@ class Attention(nn.Module):
         out = torch.cat(attn_outs, dim = 1)
         out = rearrange(out, 'b h n d -> b n (h d)')
         out =  self.to_out(out)
-        return self.dropout(out).reshape(b, n, H, W)
+        return self.batch_norm(self.dropout(out).reshape(b, n, H, W))
 
 
 class LAG(nn.Module):
@@ -73,8 +74,8 @@ class LAG(nn.Module):
         
         self.lin_attention = Attention(c_in, c_out, dim_h, dim_w)
         self.gating = nn.Sequential(
-            nn.Conv2d(c_in, c_in, 1, stride=1, bias=False), nn.GELU())
-        self.conv = nn.Sequential(nn.Conv2d(c_in, c_out, 1, stride=1, bias=False))
+                nn.Conv2d(c_in, c_in, 1, stride=1, bias=False), nn.GELU(), nn.BatchNorm2d(2))
+        self.conv = nn.Sequential(nn.Conv2d(c_in, c_out, 1, stride=1, bias=False), nn.BatchNorm2d(2))
 
     def forward(self, x):
         x = x + self.conv(torch.mul(self.lin_attention(x), self.gating(x)))
@@ -111,16 +112,16 @@ class TransformerBlock(nn.Module):
         self.lnorm2 = nn.LayerNorm([c_out, dim_h, dim_w])
 
     def forward(self, x):
-        x = self.ffn(self.lnorm2(self.lag(self.lnorm1(x))))
-        # x = self.ffn(self.lag(x))
+        x = self.lnorm2(self.ffn(self.lnorm1(self.lag(x))))
         return x
 
 
 class VisT_small(nn.Module):
     def __init__(self):
         super().__init__()
+        torch.cuda.set_device(1)
 
-        self.encoding = nn.Sequential(nn.Conv2d(2, 2, 7, stride=1, padding=3, bias=False))
+        self.encoding = nn.Sequential(nn.Conv2d(2, 2, 7, stride=1, padding=3, bias=False), nn.BatchNorm2d(2))
         self.tb = TransformerBlock(2, 2, 65, 128)
         self.decoding = nn.Sequential(nn.Conv2d(2, 2, 7, stride=1, padding=3, bias=False))
         
@@ -188,3 +189,46 @@ class VisibilityTFormer(nn.Module):
 
 #VisibilityTFormer = torch.compile(VisTFormer())
 
+
+
+class Attention_saver(nn.Module):
+    def __init__( 
+        self,
+        c_in,
+        c_out,
+        dim_h,
+        dim_w,
+        dropout = 0.,
+        heads=1,
+        qkv_bias = False,
+        attn_out_bias = True,
+    ):
+        super().__init__()
+        self.dim = dim_h * dim_w
+        dim_head = self.dim
+        inner_dim = dim_head * heads
+        self.inner_dim = dim_head * heads
+        # self.fast_attention = FastAttention()
+        self.multihead_attention = nn.MultiheadAttention(embed_dim=self.dim, num_heads=1, dropout=0.5, batch_first=True)
+        self.heads = heads
+
+        self.to_q = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias), nn.BatchNorm1d(2))
+        self.to_k = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias), nn.BatchNorm1d(2))
+        self.to_v = nn.Sequential(nn.Linear(self.dim, inner_dim, bias = qkv_bias), nn.BatchNorm1d(2))
+        self.to_out = nn.Linear(inner_dim, self.dim, bias = attn_out_bias)
+        self.dropout = nn.Dropout(dropout)
+        self.batch_norm = nn.BatchNorm2d(2)
+
+    def forward(self, x, **kwargs):
+        b, n, H, W, h = *x.shape, self.heads
+        q, k, v = self.to_q(x.reshape(b, n, -1)), self.to_k(x.reshape(b, n, -1)), self.to_v(x.reshape(b, n, -1))
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), (q, k, v))
+        attn_outs = []
+        if not empty(q):
+            out = self.multihead_attention(q.view(-1, 2, self.dim), k.view(-1, 2, self.dim), v.view(-1, 2, self.dim), need_weights=False)
+            attn_outs.append(out[0])
+
+        out = torch.cat(attn_outs, dim = 1)
+        # out = rearrange(out, 'b n h d -> b n (h d)')
+        out =  self.to_out(out)
+        return self.batch_norm(self.dropout(out).reshape(b, n, H, W))
