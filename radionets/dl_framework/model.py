@@ -1,9 +1,10 @@
-import torch
-from torch import nn
-import torch.nn.functional as F
-from torch.nn.modules.utils import _pair
-from pathlib import Path
 from math import pi
+from pathlib import Path
+
+import torch
+import torch.nn.functional as F
+from torch import nn
+from torch.nn.modules.utils import _pair
 
 
 class Lambda(nn.Module):
@@ -299,12 +300,12 @@ class SRBlock(nn.Module):
             nn.Conv2d(
                 ni, nf, 3, stride=stride, padding=1, bias=False, padding_mode="reflect"
             ),
-            nn.BatchNorm2d(nf),
+            nn.InstanceNorm2d(nf),
             nn.PReLU(),
             nn.Conv2d(
                 nf, nf, 3, stride=1, padding=1, bias=False, padding_mode="reflect"
             ),
-            nn.BatchNorm2d(nf),
+            nn.InstanceNorm2d(nf),
         )
 
 
