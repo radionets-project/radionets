@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 from einops import rearrange
-
+from math import sqrt
+from radionets.dl_framework.model import SRBlock
 
 def empty(tensor):
     return tensor.numel() == 0
@@ -18,10 +19,11 @@ class FastAttention(nn.Module):
         return out
     
 def linear_attention(q, k, v):
-    k_cumsum = k.sum(dim = -2)
-    D_inv = 1. / torch.einsum('...nd,...d->...n', q, k_cumsum.type_as(q))
-    context = torch.einsum('...nd,...ne->...de', k, v)
-    out = torch.einsum('...de,...nd,...n->...ne', context, q, D_inv)
+    #n = torch.tensor(k.shape[-2], device="cuda").repeat(25, 1, 1, 2)
+    #k_cumsum = k.sum(-2)
+    upper = (v + q @ (k.transpose(2, 3) @ v))
+    #lower = n + q * k_cumsum.view(25, 1, 1, 2)
+    out = upper# / lower
     return out
 
 
@@ -68,68 +70,107 @@ class Attention(nn.Module):
         return self.batch_norm(self.dropout(out).reshape(b, n, H, W))
 
 
+class SelfAttentionMultiHead(nn.Module):
+    def __init__(self, ni, nheads):
+        super().__init__()
+        self.nheads = nheads
+        self.scale = sqrt(ni / nheads)
+        self.norm = nn.BatchNorm2d(ni)
+        self.qkv = nn.Linear(ni, ni * 3)
+        self.proj = nn.Linear(ni, ni)
+        self.dropout = nn.Dropout(0.5)
+
+    def forward(self, inp):
+        n, c, h, w = inp.shape
+        x = self.norm(inp).view(n, c, -1).transpose(1, 2)
+        x = self.qkv(x)
+        x = rearrange(x, "n s (h d) -> (n h) s d", h=self.nheads)
+        q, k, v = torch.chunk(x, 3, dim=-1)
+        q, k, v = map(lambda t: rearrange(t, 'n s (h d) -> n h s d', h = self.nheads), (q, k, v))
+        x = linear_attention(q, k, v)
+        #s = (q@k.transpose(1, 2)) / self.scale
+        #x = self.dropout(s.softmax(dim=-1)) @ v
+        #x = rearrange(x, "(n h) s d -> n s (h d)", h=self.nheads)
+        x = rearrange(x, "n h s d -> n s (h d)", h=self.nheads)
+        x = self.dropout(self.proj(x)).transpose(1, 2).reshape(n, c, h, w)
+        return x + inp
+
+
 class LAG(nn.Module):
-    def __init__(self, c_in, c_out, dim_h, dim_w):
+    def __init__(self, ni, nheads):
         super().__init__()
         
-        self.lin_attention = Attention(c_in, c_out, dim_h, dim_w)
+        self.lin_attention = SelfAttentionMultiHead(ni, nheads)
         self.gating = nn.Sequential(
-                nn.Conv2d(c_in, c_in, 1, stride=1, bias=False), nn.GELU(), nn.BatchNorm2d(2))
-        self.conv = nn.Sequential(nn.Conv2d(c_in, c_out, 1, stride=1, bias=False), nn.BatchNorm2d(2))
+                nn.Conv2d(ni, ni, 1, stride=1, bias=False),
+                nn.BatchNorm2d(ni),
+                nn.GELU(),
+                )
+        self.conv = nn.Sequential(
+                nn.Conv2d(ni, ni, 1, stride=1, bias=False),
+                nn.BatchNorm2d(ni),
+                )
 
     def forward(self, x):
-        x = x + self.conv(torch.mul(self.lin_attention(x), self.gating(x)))
-        return x
+        return x + self.conv(torch.mul(self.lin_attention(x), self.gating(x)))
 
 
 class FFN(nn.Module):
-    def __init__(self, c_in, c_out):
+    def __init__(self, ni):
         super().__init__()
+        self.n_inner = 64
         
         self.upper = nn.Sequential(
-            nn.Conv2d(c_in, c_in, 1, stride=1, bias=False),
-             nn.Conv2d(c_in, c_in, kernel_size=3, padding=1, groups=c_in, bias=False),
+            nn.Conv2d(ni, self.n_inner, 1, stride=1, bias=False),
+            nn.BatchNorm2d(self.n_inner),
+            nn.Conv2d(self.n_inner, self.n_inner, kernel_size=3, padding=1, groups=ni, bias=False),
+            nn.BatchNorm2d(self.n_inner),
         )
         self.lower = nn.Sequential(
-            nn.Conv2d(c_in, c_in, 1, stride=1, bias=False),
-            nn.Conv2d(c_in, c_in, kernel_size=3, padding=1, groups=c_in, bias=False),
+            nn.Conv2d(ni, self.n_inner, 1, stride=1, bias=False),
+            nn.BatchNorm2d(self.n_inner),
+            nn.Conv2d(self.n_inner, self.n_inner, kernel_size=3, padding=1, groups=ni, bias=False),
+            nn.BatchNorm2d(self.n_inner),
             nn.GELU(),
         )
-        self.conv = nn.Conv2d(c_in, c_out, 1, stride=1, bias=False)
+        self.conv = nn.Conv2d(self.n_inner, ni, 1, stride=1, bias=False)
 
-    def forward(self, x):
+    def forward(self, x): 
         x = x + self.conv(torch.mul(self.upper(x), self.lower(x)))
         return x
 
 
 class TransformerBlock(nn.Module):
-    def __init__(self, c_in, c_out, dim_h, dim_w):
+     def __init__(self, ni, nheads):
         super().__init__()
         
-        self.lag = LAG(c_in, c_out, dim_h, dim_w)
-        self.ffn = FFN(c_out, c_out)
-        self.lnorm1 = nn.LayerNorm([c_in, dim_h, dim_w])
-        self.lnorm2 = nn.LayerNorm([c_out, dim_h, dim_w])
+        self.lag = LAG(ni, nheads)
+        self.ffn = FFN(ni)
+        self.norm1 = nn.LayerNorm([ni, 65, 128])
+        self.norm2 = nn.LayerNorm([ni, 65, 128])
 
-    def forward(self, x):
-        x = self.lnorm2(self.ffn(self.lnorm1(self.lag(x))))
+     def forward(self, x):
+        x = self.norm2(self.ffn(self.norm1(self.lag(x))))
         return x
 
 
 class VisT_small(nn.Module):
-    def __init__(self):
+    def __init__(self): 
         super().__init__()
-        torch.cuda.set_device(1)
+        #torch.cuda.set_device(1)
 
-        self.encoding = nn.Sequential(nn.Conv2d(2, 2, 7, stride=1, padding=3, bias=False), nn.BatchNorm2d(2))
-        self.tb = TransformerBlock(2, 2, 65, 128)
-        self.decoding = nn.Sequential(nn.Conv2d(2, 2, 7, stride=1, padding=3, bias=False))
+        self.encoding = nn.Sequential(
+                nn.Conv2d(2, 2, 7, stride=1, padding=3, bias=False),
+                nn.BatchNorm2d(2),
+                )
+        self.tb = TransformerBlock(2, 1)
+        self.decoding = nn.Sequential (nn.Conv2d(2, 2, 7, stride=1, padding=3, bias=False))
         
 
     def forward(self, x):
         x = self.tb(self.encoding(x))
         x = self.decoding(x)
-        return x
+        return x  
 
 
 class VisibilityTFormer(nn.Module):
@@ -190,6 +231,71 @@ class VisibilityTFormer(nn.Module):
 #VisibilityTFormer = torch.compile(VisTFormer())
 
 
+class SRResNet_attention(nn.Module):
+     def __init__(self):
+        super().__init__()
+
+        self.preBlock = nn.Sequential(
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+        )
+
+        # ResBlock 16
+        self.blocks = nn.Sequential(
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+            LAG(64, 1),
+            SRBlock(64, 64),
+        )
+
+        self.postBlock = nn.Sequential(
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
+        )
+
+        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2))
+
+
+     def forward(self, x):
+        s = x.shape[-1]
+
+        x = self.preBlock(x)
+
+        x = x + self.postBlock(self.blocks(x))
+
+        x = self.final(x)
+
+        x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
+        x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
+
+        return torch.cat([x0, x1], dim=1)
+
 
 class Attention_saver(nn.Module):
     def __init__( 
@@ -218,6 +324,7 @@ class Attention_saver(nn.Module):
         self.to_out = nn.Linear(inner_dim, self.dim, bias = attn_out_bias)
         self.dropout = nn.Dropout(dropout)
         self.batch_norm = nn.BatchNorm2d(2)
+
 
     def forward(self, x, **kwargs):
         b, n, H, W, h = *x.shape, self.heads
