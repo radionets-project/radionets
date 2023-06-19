@@ -5,6 +5,7 @@ from math import sqrt
 from radionets.dl_framework.model import SRBlock
 
 def empty(tensor):
+
     return tensor.numel() == 0
 
 
@@ -19,11 +20,12 @@ class FastAttention(nn.Module):
         return out
     
 def linear_attention(q, k, v):
-    #n = torch.tensor(k.shape[-2], device="cuda").repeat(25, 1, 1, 2)
+    #print(k.shape)
+    #n = torch.tensor(k.shape[-2], device="cuda").repeat(25, 1, 1, 64)
     #k_cumsum = k.sum(-2)
     upper = (v + q @ (k.transpose(2, 3) @ v))
-    #lower = n + q * k_cumsum.view(25, 1, 1, 2)
-    out = upper# / lower
+    #lower = 8320 + q * k_cumsum.view(25, 1, 1, 64)
+    out = upper #/ lower
     return out
 
 
@@ -234,6 +236,7 @@ class VisibilityTFormer(nn.Module):
 class SRResNet_attention(nn.Module):
      def __init__(self):
         super().__init__()
+        #torch.cuda.set_device(1)
 
         self.preBlock = nn.Sequential(
             nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
@@ -243,40 +246,25 @@ class SRResNet_attention(nn.Module):
         self.blocks = nn.Sequential(
             LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
-            LAG(64, 1),
             SRBlock(64, 64),
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
+            LAG(64, 1), nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False), nn.BatchNorm2d(64)
         )
 
         self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2))
