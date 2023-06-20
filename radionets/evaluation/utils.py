@@ -52,9 +52,7 @@ def create_databunch(data_path, fourier, source_list, batch_size):
         dataloader object
     """
     # Load data sets
-    test_ds = load_data(
-        data_path, mode="test", fourier=fourier, source_list=source_list
-    )
+    test_ds = load_data(data_path, mode="test", fourier=fourier)
 
     # Create databunch with defined batchsize and check for source_list
     if source_list:
@@ -204,7 +202,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar.set_label(r"$\sigma^2$ / a.u.")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label("Specific Intensity / a.u.")
+        cbar.set_label(r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$")
 
     if phase:
         # set ticks for colorbar
@@ -286,7 +284,7 @@ def get_images(test_ds, num_images, rand=False, indices=None):
     img_true: n 2d arrays
         truth images
     """
-    if hasattr(test_ds, "amp_phase"):
+    if hasattr(test_ds, "tar_fourier"):
         indices = torch.arange(num_images)
         if rand:
             indices = torch.randint(0, len(test_ds), size=(num_images,))

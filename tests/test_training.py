@@ -2,16 +2,15 @@ from click.testing import CliRunner
 
 
 def test_create_databunch():
-    from radionets.dl_framework.data import load_data, DataBunch, get_dls
+    from radionets.dl_framework.data import DataBunch, get_dls, load_data
 
     data_path = "./tests/build/data/"
-    source_list = False
     fourier = False
     batch_size = 64
 
     # Load data sets
-    train_ds = load_data(data_path, "train", source_list=source_list, fourier=fourier)
-    valid_ds = load_data(data_path, "valid", source_list=source_list, fourier=fourier)
+    train_ds = load_data(data_path, "train", fourier=fourier)
+    valid_ds = load_data(data_path, "valid", fourier=fourier)
 
     # Create databunch with defined batchsize
     data = DataBunch(*get_dls(train_ds, valid_ds, batch_size))
@@ -22,13 +21,14 @@ def test_create_databunch():
 
 
 def test_define_learner():
-    from radionets.dl_framework.learner import define_learner
     import toml
+
+    from radionets.dl_framework.learner import define_learner
     from radionets.dl_training.utils import (
-        read_config,
-        define_arch,
         create_databunch,
+        define_arch,
         get_normalisation_factors,
+        read_config,
     )
 
     config = toml.load("./tests/training.toml")
@@ -39,7 +39,6 @@ def test_define_learner():
         data_path=train_conf["data_path"],
         fourier=train_conf["fourier"],
         batch_size=train_conf["batch_size"],
-        source_list=train_conf["source_list"],
     )
     norm_factors = get_normalisation_factors(data)
     train_conf["norm_factors"] = norm_factors
@@ -60,8 +59,9 @@ def test_training():
 
 
 def test_save_model():
-    import torch
     from collections.abc import Mapping
+
+    import torch
 
     def check(x):
         if torch.is_tensor(x):
@@ -108,6 +108,7 @@ def test_save_model():
 
 def test_load_pretrained_model():
     import toml
+
     from radionets.dl_training.scripts.start_training import main
 
     config = toml.load("tests/training.toml")
