@@ -150,7 +150,7 @@ class SRResNet_16(nn.Module):
             nn.InstanceNorm2d(64),
         )
 
-        self.final = nn.Sequential(nn.Conv2d(64, 4, 9, stride=1, padding=4, groups=2))
+        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2))
 
     def forward(self, x):
         s = x.shape[-1]
