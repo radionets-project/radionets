@@ -204,7 +204,7 @@ class SRResNet_16_unc(nn.Module):
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
-        self.elu = GeneralELU(add=+(1 + 1e-3))
+        self.elu = GeneralELU(add=+(1 + 1e-7))
 
     def forward(self, x):
         s = x.shape[-1]

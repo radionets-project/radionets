@@ -1,24 +1,26 @@
 import click
-import toml
 import numpy as np
-from radionets.evaluation.utils import read_config, check_outpath
+import toml
+
 from radionets.dl_framework.callbacks import PredictionImageGradient
 from radionets.evaluation.train_inspection import (
-    create_inspection_plots,
-    create_source_plots,
     create_contour_plots,
-    evaluate_viewing_angle,
-    evaluate_dynamic_range,
-    evaluate_ms_ssim,
-    evaluate_mean_diff,
-    evaluate_area,
-    evaluate_point,
-    evaluate_intensity,
+    create_inspection_plots,
     create_predictions,
-    evaluate_gan_sources,
+    create_source_plots,
     create_uncertainty_plots,
+    evaluate_area_sampled,
+    evaluate_dynamic_range,
+    evaluate_gan_sources,
+    evaluate_intensity_sampled,
+    evaluate_mean_diff,
+    evaluate_ms_ssim,
+    evaluate_point,
+    evaluate_unc,
+    evaluate_viewing_angle,
     save_sampled,
 )
+from radionets.evaluation.utils import check_outpath, read_config
 
 
 @click.command()
@@ -56,6 +58,7 @@ def main(configuration_path):
                 break
 
     if eval_conf["unc"]:
+        evaluate_unc(eval_conf)
         create_uncertainty_plots(
             eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
         )
@@ -102,7 +105,7 @@ def main(configuration_path):
 
     if eval_conf["intensity"]:
         click.echo("\nStart evaluation of intensity.\n")
-        evaluate_intensity(eval_conf)
+        evaluate_intensity_sampled(eval_conf)
 
     if eval_conf["mean_diff"]:
         click.echo("\nStart evaluation of mean difference.\n")
@@ -110,7 +113,7 @@ def main(configuration_path):
 
     if eval_conf["area"]:
         click.echo("\nStart evaluation of the area.\n")
-        evaluate_area(eval_conf)
+        evaluate_area_sampled(eval_conf)
 
     if eval_conf["point"]:
         click.echo("\nStart evaluation of point sources.\n")
