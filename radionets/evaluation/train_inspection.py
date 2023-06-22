@@ -102,8 +102,8 @@ def get_prediction(conf, mode="test"):
     images = {"pred": pred, "inp": img_test, "true": img_true}
 
     if pred.shape[1] == 4:
-        unc_amp = pred[:, 1, :]
-        unc_phase = pred[:, 3, :]
+        unc_amp = torch.sqrt(pred[:, 1, :])
+        unc_phase = torch.sqrt(pred[:, 3, :])
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
