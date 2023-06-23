@@ -199,7 +199,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar.set_label("Phase / rad")
     elif unc:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label(r"$\sigma^2$ / a.u.")
+        cbar.set_label(r"$\sigma$ / a.u.")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
         cbar.set_label(r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$")

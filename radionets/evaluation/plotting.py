@@ -531,7 +531,7 @@ def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
 
     make_axes_nice(fig, ax1, im1, r"Simulation")
     make_axes_nice(fig, ax2, im2, r"Prediction")
-    make_axes_nice(fig, ax3, im3, r"Uncertainty")
+    make_axes_nice(fig, ax3, im3, r"Uncertainty", unc=True)
     make_axes_nice(fig, ax4, im4, r"Difference")
 
     ax1.set_ylabel(r"pixels")
