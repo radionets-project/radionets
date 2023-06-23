@@ -630,7 +630,7 @@ def evaluate_unc(conf):
     for i, (samp, std, img_true) in enumerate(tqdm(loader)):
         mask_pos = samp + std
         mask_neg = samp - std
-        cond = (img_true < mask_pos) & (img_true > mask_neg)
+        cond = (img_true <= mask_pos) & (img_true >= mask_neg)
         val = np.where(cond, 1, 0).sum(axis=-1).sum(axis=-1) / (128 * 128) * 100
         vals = np.append(vals, val)
 
