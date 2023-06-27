@@ -71,7 +71,7 @@ class h5_dataset:
             data = data.squeeze(0)
 
         if var == "y":
-            data[:, 1] = torch.round(data[:, 1], decimals=1)
+            data[1] = torch.round(data[1], decimals=1)
 
         return data.float()
 
