@@ -70,6 +70,9 @@ class h5_dataset:
         if data.shape[0] == 1:
             data = data.squeeze(0)
 
+        if var == "y":
+            data[:, 1] = torch.round(data[:, 1], decimals=1)
+
         return data.float()
 
 
