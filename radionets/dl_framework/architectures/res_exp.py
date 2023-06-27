@@ -150,21 +150,29 @@ class SRResNet_16(nn.Module):
             nn.InstanceNorm2d(64),
         )
 
-        self.final = nn.Sequential(nn.Conv2d(64, 4, 9, stride=1, padding=4, groups=2))
+        self.final = nn.Sequential(nn.Conv2d(64, 64, 9, stride=1, padding=4, groups=2))
+        self.hardtanh = nn.Hardtanh(-pi, pi)
+        self.relu = nn.ReLU()
+        self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
-        s = x.shape[-1]
+        # s = x.shape[-1]
 
         x = self.preBlock(x)
 
         x = x + self.postBlock(self.blocks(x))
 
         x = self.final(x)
+        x = x.reshape(x.shape[0], x.shape[2], x.shape[3], x.shape[1])
+        x = self.softmax(x)
 
-        x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
-        x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
+        # print("\nx: ", x[0, 0, 0], x[0, 0, 0].sum())
+        # x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
+        # x0 = self.relu(x0)
+        # x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
+        # x1 = self.hardtanh(x1)
 
-        return torch.cat([x0, x1], dim=1)
+        return x
 
 
 class SRResNet_16_unc(nn.Module):

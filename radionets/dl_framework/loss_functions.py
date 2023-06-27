@@ -1,8 +1,9 @@
-import torch
 import numpy as np
-from torch import nn
-from radionets.dl_framework.utils import get_ifft_torch
+import torch
 from pytorch_msssim import MS_SSIM
+from torch import nn
+
+from radionets.dl_framework.utils import get_ifft_torch
 
 
 def l1(x, y):
@@ -157,3 +158,20 @@ def jet_seg(x, y):
         loss_l1_weighted += l1(x[:, i], y[:, i]) * (i + 1)
 
     return loss_l1_weighted
+
+
+def categorical_cross_entropy(x, y):
+    tar_phase = y[:, 1, :]
+
+    # convert to unsigned values and cerate one-hot vector
+    tar_phase = torch.round(tar_phase, decimals=1)
+    tar_phase += 3.2
+    tar_phase *= 10
+    one_hot = torch.nn.functional.one_hot(tar_phase.long(), num_classes=64)
+
+    a = -one_hot * torch.log(x)
+    a = a.sum(dim=-1)
+    # print("\nnan: ", torch.isnan(a).sum())
+    # print("\ncross: ", one_hot[0, 0, 0], x[0, 0, 0], a.sum())
+
+    return a.mean()
