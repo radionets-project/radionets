@@ -163,7 +163,7 @@ def jet_seg(x, y):
 def categorical_cross_entropy(x, y):
     tar_phase = y[:, 1, :]
 
-    # convert to unsigned values and cerate one-hot vector
+    # convert to unsigned values and create one-hot vector
     tar_phase = torch.round(tar_phase, decimals=1)
     tar_phase += 3.2
     tar_phase *= 10
