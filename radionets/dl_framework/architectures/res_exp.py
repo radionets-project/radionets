@@ -58,7 +58,7 @@ class SRResNet_16(nn.Module):
         super().__init__()
 
         self.preBlock = nn.Sequential(
-            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+            nn.Conv2d(1, 64, 9, stride=1, padding=4, groups=1), nn.PReLU()
         )
 
         # ResBlock 16
@@ -86,13 +86,14 @@ class SRResNet_16(nn.Module):
             nn.InstanceNorm2d(64),
         )
 
-        self.final = nn.Sequential(nn.Conv2d(64, 64, 9, stride=1, padding=4, groups=2))
+        self.final = nn.Sequential(nn.Conv2d(64, 64, 9, stride=1, padding=4, groups=1))
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
         # s = x.shape[-1]
+        x = x[:, 1].unsqueeze(1)
 
         x = self.preBlock(x)
 
