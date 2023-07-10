@@ -170,8 +170,7 @@ def categorical_cross_entropy(x, y):
     one_hot = torch.nn.functional.one_hot(tar_phase.long(), num_classes=64)
 
     a = -one_hot * torch.log(x)
+
     a = a.sum(dim=-1)
-    # print("\nnan: ", torch.isnan(a).sum())
-    # print("\ncross: ", one_hot[0, 0, 0], x[0, 0, 0], a.sum())
 
     return a.mean()
