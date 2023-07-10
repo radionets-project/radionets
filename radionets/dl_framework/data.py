@@ -72,7 +72,8 @@ class h5_dataset:
             data = data.squeeze(0)
 
         data = data[:, :65, :]
-
+        if var=="x":
+            data += torch.normal(mean=torch.ones(data.shape)*1e-10, std=1e-10)
         return data.float()
 
 

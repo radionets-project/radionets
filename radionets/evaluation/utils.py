@@ -518,9 +518,14 @@ def apply_symmetry(img_dict):
         if key != "indices":
             if isinstance(img_dict[key], np.ndarray):
                 img_dict[key] = torch.tensor(img_dict[key])
-            output = F.pad(
-                input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
-            )
+            if key == "pred":
+                output = F.pad(
+                    input=img_dict[key], pad=(0, 0, 1, 63), mode="constant", value=0
+                )
+            else:
+                output = F.pad(
+                    input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
+                )
             output = sym_new(output, key)
             img_dict[key] = output
 
