@@ -300,12 +300,12 @@ class SRBlock(nn.Module):
             nn.Conv2d(
                 ni, nf, 3, stride=stride, padding=1, bias=False, padding_mode="reflect"
             ),
-            nn.InstanceNorm2d(nf),
+            nn.BatchNorm2d(nf),
             nn.PReLU(),
             nn.Conv2d(
                 nf, nf, 3, stride=1, padding=1, bias=False, padding_mode="reflect"
             ),
-            nn.InstanceNorm2d(nf),
+            nn.BatchNorm2d(nf),
         )
 
 

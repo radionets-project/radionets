@@ -147,7 +147,7 @@ class SRResNet_16(nn.Module):
 
         self.postBlock = nn.Sequential(
             nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False),
-            nn.InstanceNorm2d(64),
+            nn.BatchNorm2d(64),
         )
 
         self.final = nn.Sequential(nn.Conv2d(64, 4, 9, stride=1, padding=4, groups=2))
