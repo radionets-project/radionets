@@ -9,9 +9,11 @@ from radionets.evaluation.train_inspection import (
     create_predictions,
     create_source_plots,
     create_uncertainty_plots,
+    evaluate_area,
     evaluate_area_sampled,
     evaluate_dynamic_range,
     evaluate_gan_sources,
+    evaluate_intensity,
     evaluate_intensity_sampled,
     evaluate_mean_diff,
     evaluate_ms_ssim,
@@ -20,7 +22,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_viewing_angle,
     save_sampled,
 )
-from radionets.evaluation.utils import check_outpath, read_config
+from radionets.evaluation.utils import check_outpath, check_samp_file, read_config
 
 
 @click.command()
@@ -105,7 +107,11 @@ def main(configuration_path):
 
     if eval_conf["intensity"]:
         click.echo("\nStart evaluation of intensity.\n")
-        evaluate_intensity_sampled(eval_conf)
+        samp_file = check_samp_file(eval_conf)
+        if samp_file:
+            evaluate_intensity_sampled(eval_conf)
+        else:
+            evaluate_intensity(eval_conf)
 
     if eval_conf["mean_diff"]:
         click.echo("\nStart evaluation of mean difference.\n")
@@ -113,7 +119,11 @@ def main(configuration_path):
 
     if eval_conf["area"]:
         click.echo("\nStart evaluation of the area.\n")
-        evaluate_area_sampled(eval_conf)
+        samp_file = check_samp_file(eval_conf)
+        if samp_file:
+            evaluate_area_sampled(eval_conf)
+        else:
+            evaluate_area(eval_conf)
 
     if eval_conf["point"]:
         click.echo("\nStart evaluation of point sources.\n")
