@@ -87,8 +87,6 @@ class SRResNet_16(nn.Module):
         )
 
         self.final = nn.Sequential(nn.Conv2d(64, 64, 9, stride=1, padding=4, groups=1))
-        self.hardtanh = nn.Hardtanh(-pi, pi)
-        self.relu = nn.ReLU()
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
@@ -153,7 +151,7 @@ class SRResNet_16_unc(nn.Module):
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
-        self.elu = GeneralELU(add=+(1 + 1e-3))
+        self.elu = GeneralELU(add=+(1 + 1e-7))
 
     def forward(self, x):
         s = x.shape[-1]
