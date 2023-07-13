@@ -564,7 +564,7 @@ def tn_numba_vec_parallel(mu, sig, a, b):
     return rv
 
 
-def trunc_rvs(mu, sig, num_samples, mode, target="parallel", nthreads=49):
+def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
     if mode == "amp":
         a = 0
         b = np.inf
