@@ -22,6 +22,7 @@ from radionets.evaluation.plotting import (
     histogram_ms_ssim,
     histogram_peak_intensity,
     histogram_sum_intensity,
+    histogram_unc,
     plot_contour,
     plot_length_point,
     plot_results,
@@ -101,8 +102,8 @@ def get_prediction(conf, mode="test"):
     images = {"pred": pred, "inp": img_test, "true": img_true}
 
     if pred.shape[1] == 4:
-        unc_amp = pred[:, 1, :]
-        unc_phase = pred[:, 3, :]
+        unc_amp = torch.sqrt(pred[:, 1, :])
+        unc_phase = torch.sqrt(pred[:, 3, :])
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
@@ -524,8 +525,8 @@ def save_sampled(conf):
 
         img = {"pred": pred, "inp": img_test, "true": img_true}
         # separate prediction and uncertainty
-        unc_amp = pred[:, 1, :]
-        unc_phase = pred[:, 3, :]
+        unc_amp = torch.sqrt(pred[:, 1, :])
+        unc_phase = torch.sqrt(pred[:, 3, :])
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
@@ -613,6 +614,53 @@ def evaluate_area_sampled(conf):
         out = Path(conf["save_path"])
         out.mkdir(parents=True, exist_ok=True)
         np.savetxt(out / "area_ratios.txt", vals)
+
+
+def evaluate_unc(conf):
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    name_model = Path(model_path).stem
+    data_path = str(out_path) + f"/sampled_imgs_{name_model}.h5"
+    loader = create_sampled_databunch(data_path, conf["batch_size"])
+    vals = np.array([])
+
+    # iterate trough DataLoader
+    for i, (samp, std, img_true) in enumerate(tqdm(loader)):
+        mask_pos = samp + std
+        mask_neg = samp - std
+        cond = (img_true <= mask_pos) & (img_true >= mask_neg)
+        val = np.where(cond, 1, 0).sum(axis=-1).sum(axis=-1) / (128 * 128) * 100
+        vals = np.append(vals, val)
+
+    histogram_unc(vals, out_path, plot_format=conf["format"])
+
+
+def evaluate_intensity_sampled(conf):
+    model_path = conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    name_model = Path(model_path).stem
+    data_path = str(out_path) + f"/sampled_imgs_{name_model}.h5"
+    loader = create_sampled_databunch(data_path, conf["batch_size"])
+    ratios_sum = np.array([])
+    ratios_peak = np.array([])
+
+    # iterate trough DataLoader
+    for i, (samp, std, img_true) in enumerate(tqdm(loader)):
+        samp = samp.numpy()
+        img_true = img_true.numpy()
+        ratio_sum, ratio_peak = analyse_intensity(samp, img_true)
+        ratios_sum = np.append(ratios_sum, ratio_sum)
+        ratios_peak = np.append(ratios_peak, ratio_peak)
+
+    click.echo("\nCreating eval_intensity histogram.\n")
+    histogram_sum_intensity(ratios_sum, out_path, plot_format=conf["format"])
+    histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
+
+    click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
 
 
 def evaluate_intensity(conf):

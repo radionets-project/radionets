@@ -531,7 +531,7 @@ def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
 
     make_axes_nice(fig, ax1, im1, r"Simulation")
     make_axes_nice(fig, ax2, im2, r"Prediction")
-    make_axes_nice(fig, ax3, im3, r"Uncertainty")
+    make_axes_nice(fig, ax3, im3, r"Uncertainty", unc=True)
     make_axes_nice(fig, ax4, im4, r"Difference")
 
     ax1.set_ylabel(r"pixels")
@@ -1293,4 +1293,36 @@ def histogram_gan_sources(
     plt.tight_layout()
 
     outpath = str(out_path) + f"/above_below.{plot_format}"
+    plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)
+
+
+def histogram_unc(vals, out_path, plot_format="png"):
+    mean = np.mean(vals)
+    std = np.std(vals, ddof=1)
+    bins = np.arange(0, 105, 5)
+    fig, (ax1) = plt.subplots(1, figsize=(6, 4))
+    ax1.hist(
+        vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75
+    )
+    ax1.set_xlabel("Percentage of matching pixels")
+    ax1.set_ylabel("Number of sources")
+
+    ax1.text(
+        0.1,
+        0.8,
+        f"Mean: {mean:.2f}\nStd: {std:.2f}",
+        horizontalalignment="left",
+        verticalalignment="center",
+        transform=ax1.transAxes,
+        bbox=dict(
+            boxstyle="round",
+            facecolor="white",
+            edgecolor="lightgray",
+            alpha=0.8,
+        ),
+    )
+
+    fig.tight_layout()
+
+    outpath = str(out_path) + f"/hist_unc.{plot_format}"
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.01, dpi=150)

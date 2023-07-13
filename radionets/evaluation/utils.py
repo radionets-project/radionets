@@ -199,7 +199,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar.set_label("Phase / rad")
     elif unc:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label(r"$\sigma^2$ / a.u.")
+        cbar.set_label(r"$\sigma$ / $\mathrm{Jy \cdot px^{-1}}$")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
         cbar.set_label(r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$")
@@ -872,3 +872,26 @@ def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
     ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
 
     return ifft_pred, ifft_truth
+
+
+def check_samp_file(eval_conf):
+    """
+    Checks if a file with sampled images is located in the evaluation folder
+
+    Parameters
+    ----------
+    eval_conf : dict
+        contains the evaluation parameters
+
+    Returns
+    -------
+    bool
+        true if file exists, otherwise false
+    """
+    model_path = eval_conf["model_path"]
+    out_path = Path(model_path).parent / "evaluation"
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    name_model = Path(model_path).stem
+    data_path = out_path / f"sampled_imgs_{name_model}.h5"
+    return data_path.is_file()
