@@ -1,8 +1,9 @@
-import torch
 import numpy as np
-from torch import nn
-from radionets.dl_framework.utils import get_ifft_torch
+import torch
 from pytorch_msssim import MS_SSIM
+from torch import nn
+
+from radionets.dl_framework.utils import get_ifft_torch
 
 
 def l1(x, y):
@@ -86,10 +87,17 @@ def splitted_L1(x, y):
     tar_phase = y[:, 1, :]
 
     l1 = nn.L1Loss()
-    loss_amp = l1(inp_amp, tar_amp)
-    loss_phase = l1(inp_phase, tar_phase)
+    loss_amp = l1(symlog(inp_amp), symlog(tar_amp))
+    loss_phase = l1(symlog(inp_phase), symlog(tar_phase))
     loss = loss_amp + loss_phase
     return loss
+
+
+def symlog(img):
+    image = img.clone()
+    image[image < 0] = -torch.log10(-image[image < 0])
+    image[image > 0] = torch.log10(image[image > 0])
+    return image
 
 
 def beta_nll_loss(x, y, beta=0.5):
