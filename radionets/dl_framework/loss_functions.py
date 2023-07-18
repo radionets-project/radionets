@@ -94,6 +94,19 @@ def splitted_L1(x, y):
 
 
 def symlog(img):
+    """
+    Compute the logarithm on an image, also for the negative parts of the image
+
+    Parameters
+    ----------
+    img : torch.tensor
+        input image
+
+    Returns
+    -------
+    torch.tensor
+        logarithmic image
+    """
     image = img.clone()
     image[image < 0] = -torch.log10(-image[image < 0])
     image[image > 0] = torch.log10(image[image > 0])
