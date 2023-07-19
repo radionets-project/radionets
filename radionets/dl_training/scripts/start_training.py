@@ -94,6 +94,8 @@ def main(configuration_path, mode):
 
         if not learn.stop_nan.abort:
             end_training(learn, train_conf)
+        else:
+            click.echo("\nTraining failed because of NaNs!")
 
         if train_conf["inspection"]:
             after_training_plots(train_conf, rand=True)
