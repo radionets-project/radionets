@@ -100,16 +100,7 @@ class SRResNet_16(nn.Module):
         x = self.final(x)
         x = x.reshape(x.shape[0], x.shape[2], x.shape[3], x.shape[1])
 
-        if torch.isnan(x).sum() > 0:
-            print("\nx nan: ", (torch.isnan(x).sum() / (100 * 65 * 128 * 64)).item())
-
         x = self.softmax(x)
-
-        # print("\nx: ", x[0, 0, 0], x[0, 0, 0].sum())
-        # x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
-        # x0 = self.relu(x0)
-        # x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
-        # x1 = self.hardtanh(x1)
 
         return x
 
