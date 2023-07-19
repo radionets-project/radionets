@@ -92,7 +92,8 @@ def main(configuration_path, mode):
         except KeyboardInterrupt:
             pop_interrupt(learn, train_conf)
 
-        end_training(learn, train_conf)
+        if not learn.stop_nan.abort:
+            end_training(learn, train_conf)
 
         if train_conf["inspection"]:
             after_training_plots(train_conf, rand=True)

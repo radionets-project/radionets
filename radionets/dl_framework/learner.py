@@ -12,6 +12,7 @@ from radionets.dl_framework.callbacks import (
     DataAug,
     Normalize,
     SaveTempCallback,
+    StopNan,
     SwitchLoss,
 )
 from radionets.dl_framework.model import init_cnn
@@ -52,6 +53,7 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             SaveTempCallback(model_path=model_path),
             AvgLossCallback,
             DataAug,
+            StopNan,
         ]
     )
 

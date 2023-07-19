@@ -4,7 +4,7 @@ import kornia as K
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from fastai.callback.core import Callback, CancelBackwardException
+from fastai.callback.core import Callback, CancelBackwardException, CancelFitException
 
 from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item, get_ifft_torch
@@ -307,6 +307,16 @@ class GradientCallback(Callback):
         np.savetxt(
             phase_names.format(i=self.epoch), output[0][1].cpu().numpy(), delimiter=","
         )
+
+
+class StopNan(Callback):
+    def __init__(self):
+        self.abort = False
+
+    def after_batch(self):
+        if torch.isnan(self.pred).sum() > 0:
+            self.abort = True
+            raise CancelFitException
 
 
 class PredictionImageGradient(Callback):
