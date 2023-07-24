@@ -314,7 +314,8 @@ class StopNan(Callback):
         self.abort = False
 
     def after_batch(self):
-        if torch.isnan(self.pred).sum() > 0:
+        percentage = torch.isnan(self.pred).sum() / (self.pred.reshape(-1).shape[0])
+        if percentage.item() == 1:
             self.abort = True
             raise CancelFitException
 
