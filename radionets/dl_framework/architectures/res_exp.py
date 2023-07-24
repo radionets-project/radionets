@@ -58,7 +58,7 @@ class SRResNet_16(nn.Module):
         super().__init__()
 
         self.preBlock = nn.Sequential(
-            nn.Conv2d(1, 64, 9, stride=1, padding=4, groups=1), nn.PReLU()
+            nn.Conv2d(1, 64, 9, stride=1, padding=4, groups=1), nn.ReLU()
         )
 
         # ResBlock 16
@@ -91,9 +91,11 @@ class SRResNet_16(nn.Module):
 
     def forward(self, x):
         # s = x.shape[-1]
+        print("\nAnfang", (torch.isnan(x).sum() / x.reshape(-1).shape[0]).item())
         x = x[:, 1].unsqueeze(1)
 
         x = self.preBlock(x)
+        print("\nPre Block", (torch.isnan(x).sum() / x.reshape(-1).shape[0]).item())
 
         x = x + self.postBlock(self.blocks(x))
 
