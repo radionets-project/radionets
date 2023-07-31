@@ -86,10 +86,31 @@ def splitted_L1(x, y):
     tar_amp = y[:, 0, :]
     tar_phase = y[:, 1, :]
 
-    l1 = nn.L1Loss()
-    loss_amp = l1(symlog(inp_amp), symlog(tar_amp))
-    loss_phase = l1(symlog(inp_phase), symlog(tar_phase))
-    loss = loss_amp + loss_phase
+    # create meshgrid
+    grid_x, grid_y = torch.meshgrid(torch.arange(65), torch.arange(128), indexing="ij")
+
+    # compute distance to designated pixel (64, 63)
+    a = grid_x - torch.tensor(64).unsqueeze(0)
+    b = grid_y - torch.tensor(63).unsqueeze(0)
+
+    # compute radius
+    weights = torch.sqrt(a**2 + b**2)
+
+    # set the weight for (64, 63) to 1 instead of 0
+    weights[weights == 0] = 1
+
+    # put weights on cuda
+    weights = weights.cuda()
+
+    l1 = nn.L1Loss(reduction="none")
+
+    loss_amp = l1(inp_amp, tar_amp)
+    loss_amp = loss_amp * weights.unsqueeze(0)
+
+    loss_phase = l1(inp_phase, tar_phase)
+    loss_phase = loss_phase * weights.unsqueeze(0)
+
+    loss = loss_amp.mean() + loss_phase.mean()
     return loss
 
 
