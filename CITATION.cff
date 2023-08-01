@@ -12,7 +12,7 @@ keywords:
 version: "v1.0.0"
 date-released: 2020-11-11
 repository-code: "https://github.com/radionets-project/radionets"
-license: "MIT License"
+license: "MIT"
 authors:
 - family-names: Schmidt
   given-names: Kevin
