@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="radionets",
@@ -34,8 +34,7 @@ setup(
     zip_safe=False,
     entry_points={
         "console_scripts": [
-            "radionets_simulations = radionets.simulations.scripts.simulate_images\
-            :main",
+            "radionets_simulations = radionets.simulations.scripts.simulate_images:main",
             "radionets_training = radionets.dl_training.scripts.start_training:main",
             "radionets_evaluation = radionets.evaluation.scripts.start_evaluation:main",
         ],
