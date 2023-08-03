@@ -73,6 +73,7 @@ jobs:
           py.test --cov radionets --cov-report=xml
 
       - uses: codecov/codecov-action@v3
+        if: contains(matrix.extra-args, 'codecov')
 
   docs:
     runs-on: ubuntu-latest
