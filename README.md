@@ -1,4 +1,6 @@
-# radionets [![Actions Status](https://github.com/radionets-project/radionets/workflows/CI/badge.svg)](https://github.com/radionets-project/radionets/actions) [![codecov](https://codecov.io/gh/radionets-project/radionets/branch/main/graph/badge.svg)](https://codecov.io/gh/radionets-project/radionets)
+# radionets [![Actions Status](https://github.com/radionets-project/radionets/workflows/CI/badge.svg)](https://github.com/radionets-project/radionets/actions) [![codecov](https://codecov.io/gh/radionets-project/radionets/branch/main/graph/badge.svg)](https://codecov.io/gh/radionets-project/radionets) [![DOI](https://zenodo.org/badge/205111370.svg)](https://zenodo.org/badge/latestdoi/205111370)
+
+
 
 
 

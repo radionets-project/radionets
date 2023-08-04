@@ -1,6 +1,6 @@
-import numpy as np
 from pathlib import Path
 
+import numpy as np
 
 file_dir = Path(__file__).parent.resolve()
 
