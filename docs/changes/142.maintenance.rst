@@ -1,1 +1,0 @@
-consistent use of batch_size
