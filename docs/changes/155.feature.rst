@@ -1,0 +1,1 @@
+- added eval methods for sampled images
