@@ -6,8 +6,8 @@ channels:
     - defaults
     - conda-forge
 dependencies:
-  - python>=3.6
-  - pytorch>=1.6
+  - python
+  - pytorch
   - cudatoolkit
   - cartopy
   - numpy
