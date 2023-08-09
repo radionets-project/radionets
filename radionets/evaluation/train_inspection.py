@@ -684,6 +684,13 @@ def evaluate_intensity(conf):
 
     click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
 
+    if conf["save_vals"]:
+        click.echo("\nSaving intensity ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "sum_ratios.txt", ratios_sum)
+        np.savetxt(out / "peak_ratios.txt", ratios_peak)
+
 
 def evaluate_area(conf):
     model, model_2, loader, norm_dict, out_path = preprocessing(conf)
