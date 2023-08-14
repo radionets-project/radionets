@@ -355,7 +355,7 @@ class TestEvaluation:
         import torch
         import torch.nn.functional as F
 
-        from radionets.evaluation.utils import get_ifft, read_pred, sym_new, trunc_rvs
+        from radionets.evaluation.utils import get_ifft, read_pred, symmetry, trunc_rvs
 
         num_samples = 100
         num_img = 2
@@ -425,7 +425,7 @@ class TestEvaluation:
             mode="constant",
             value=0,
         )
-        sampled_gauss_symmetry = sym_new(sampled_gauss, None)
+        sampled_gauss_symmetry = symmetry(sampled_gauss, None)
 
         fft_sampled_symmetry = get_ifft(
             sampled_gauss_symmetry, amp_phase=True, scale=False

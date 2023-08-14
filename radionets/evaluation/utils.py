@@ -373,49 +373,6 @@ def get_ifft(array, amp_phase=False, scale=False):
     return np.abs(np.fft.ifftshift(np.fft.ifft2(np.fft.fftshift(compl))))
 
 
-def fft_pred(pred, truth, amp_phase=True):
-    """
-    Transform predicted image and true image to local domain.
-
-    Parameters
-    ----------
-    pred: 4D array [1, channel, height, width]
-        prediction from eval_model
-    truth: 3D array [channel, height, width]
-        true image
-    amp_phase: Bool
-        trained on Amp/Phase or Re/Im
-
-    Returns
-    -------
-    ifft_pred, ifft_true: two 2D arrays [height, width]
-        predicted and true image in local domain
-    """
-    a = pred[:, 0, :, :]
-    b = pred[:, 1, :, :]
-
-    a_true = truth[0, :, :]
-    b_true = truth[1, :, :]
-
-    if amp_phase:
-        amp_pred_rescaled = (10 ** (10 * a) - 1) / 10**10
-        phase_pred = b
-
-        amp_true_rescaled = (10 ** (10 * a_true) - 1) / 10**10
-        phase_true = b_true
-
-        compl_pred = amp_pred_rescaled * np.exp(1j * phase_pred)
-        compl_true = amp_true_rescaled * np.exp(1j * phase_true)
-    else:
-        compl_pred = a + 1j * b
-        compl_true = a_true + 1j * b_true
-
-    ifft_pred = np.fft.ifft2(compl_pred)
-    ifft_true = np.fft.ifft2(compl_true)
-
-    return np.absolute(ifft_pred)[0], np.absolute(ifft_true)
-
-
 def save_pred(path, img):
     """
     write test data and predictions to h5 file
@@ -464,7 +421,7 @@ def check_outpath(model_path):
     return exists
 
 
-def sym_new(image, key):
+def symmetry(image, key):
     """
     Symmetry function to complete the images
 
@@ -519,27 +476,10 @@ def apply_symmetry(img_dict):
             output = F.pad(
                 input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
             )
-            output = sym_new(output, key)
+            output = symmetry(output, key)
             img_dict[key] = output
 
     return img_dict
-
-
-def even_better_symmetry(x):
-    upper_half = x[:, :, 0 : x.shape[2] // 2, :].copy()
-    upper_left = upper_half[:, :, :, 0 : upper_half.shape[3] // 2].copy()
-    upper_right = upper_half[:, :, :, upper_half.shape[3] // 2 :].copy()
-    a = np.flip(upper_left, axis=2)
-    b = np.flip(upper_right, axis=2)
-    a = np.flip(a, axis=3)
-    b = np.flip(b, axis=3)
-
-    upper_half[:, :, :, 0 : upper_half.shape[3] // 2] = b
-    upper_half[:, :, :, upper_half.shape[3] // 2 :] = a
-
-    x[:, 0, x.shape[2] // 2 :, :] = upper_half[:, 0]
-    x[:, 1, x.shape[2] // 2 :, :] = -upper_half[:, 1]
-    return x
 
 
 @vectorize(["float64(float64, float64, float64, float64)"], target="cpu")
@@ -660,7 +600,7 @@ def sample_images(mean, std, num_samples, conf):
     sampled_gauss = F.pad(
         input=torch.tensor(sampled_gauss), pad=(0, 0, 0, 63), mode="constant", value=0
     )
-    sampled_gauss_symmetry = sym_new(sampled_gauss, None)
+    sampled_gauss_symmetry = symmetry(sampled_gauss, None)
 
     fft_sampled_symmetry = get_ifft(
         sampled_gauss_symmetry, amp_phase=conf["amp_phase"], scale=False
