@@ -628,21 +628,6 @@ def plot_box(ax, num_boxes, corners):
         )
 
 
-def plot_blobs(blobs_log, ax):
-    """Plot the blobs created in sklearn.blob_log
-    Parameters
-    ----------
-    blobs_log : ndarray
-        return values of blob_log
-    ax : axis object
-        plotting axis
-    """
-    for blob in blobs_log:
-        y, x, r = blob
-        c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
-        ax.add_patch(c)
-
-
 def histogram_ms_ssim(msssim, out_path, plot_format="png"):
     mean = np.mean(msssim)
     std = np.std(msssim, ddof=1)
