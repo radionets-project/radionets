@@ -15,18 +15,6 @@ from radionets.evaluation.contour import compute_area_ratio
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.utils import check_vmin_vmax, make_axes_nice, reshape_2d
 
-# make nice Latex friendly plots
-# mpl.use("pgf")
-# mpl.rcParams.update(
-#     {
-#         "font.size": 12,
-#         "font.family": "sans-serif",
-#         "text.usetex": True,
-#         "pgf.rcfonts": False,
-#         "pgf.texsystem": "lualatex",
-#     }
-# )
-
 
 def create_OrBu():
     def colorFader(
