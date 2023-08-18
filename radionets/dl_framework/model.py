@@ -83,8 +83,7 @@ def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
 
     if visualize:
         learn.load_state_dict(checkpoint["model"])
-        if "norm_dict" in checkpoint:
-            return checkpoint["norm_dict"]
+        return checkpoint["norm_dict"]
     elif plot_loss:
         learn.avg_loss.loss_train = checkpoint["train_loss"]
         learn.avg_loss.loss_valid = checkpoint["valid_loss"]
