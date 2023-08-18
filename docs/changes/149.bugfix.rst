@@ -1,2 +1,0 @@
-- calculate nomalization only on non-zero pixels
-- fix typo in rescaling operation

@@ -1,4 +1,0 @@
-- Add normalization callback with two different techniques
-- Update plotting routines for real/imag images
-- Update evaluate_area and evaluate_ms_ssim for half images
-- Add evaluate_ms_ssim for sampled images

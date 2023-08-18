@@ -1,5 +1,0 @@
-- Add the model name to predictions and sampling file
-- Delete unnecessary pad_unsqueeze function
-- Add amp_phase keyword to sample_images
-- Fix deprecation warning in sampling.py
-- Add image size to test_evaluation.py routines

@@ -1,1 +1,0 @@
-enabled training and evaluation of half sized images (for 128 pixel images)

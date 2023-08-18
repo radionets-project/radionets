@@ -1,2 +1,0 @@
-- centered bin on 1 for histogram evaluation plots
-- added color to legend
