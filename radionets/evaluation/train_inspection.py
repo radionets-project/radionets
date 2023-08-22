@@ -525,8 +525,16 @@ def save_sampled(conf):
 
         img = {"pred": pred, "inp": img_test, "true": img_true}
         # separate prediction and uncertainty
-        unc_amp = torch.sqrt(pred[:, 1, :])
-        unc_phase = torch.sqrt(pred[:, 3, :])
+        unc_amp = pred[:, 1]
+        unc_phase = pred[:, 3]
+        unc_amp[unc_amp > 0] = np.sqrt(unc_amp[unc_amp > 0])
+        unc_phase[unc_phase > 0] = np.sqrt(unc_phase[unc_phase > 0])
+
+        # unc_amp = unc_amp * norm_dict["std_real"] + norm_dict["mean_real"]
+        # unc_phase = unc_phase * norm_dict["std_imag"] + norm_dict["mean_imag"]
+
+        # unc_amp = torch.sqrt(pred[:, 1, :])
+        # unc_phase = torch.sqrt(pred[:, 3, :])
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
@@ -534,7 +542,7 @@ def save_sampled(conf):
         img["unc"] = unc
         img["pred"] = pred
 
-        result = sample_images(img["pred"], img["unc"], 1000, conf)
+        result = sample_images(img["pred"], img["unc"], 100, conf)
 
         # pad true image
         output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
@@ -628,11 +636,21 @@ def evaluate_unc(conf):
 
     # iterate trough DataLoader
     for i, (samp, std, img_true) in enumerate(tqdm(loader)):
-        mask_pos = samp + std
-        mask_neg = samp - std
-        cond = (img_true <= mask_pos) & (img_true >= mask_neg)
-        val = np.where(cond, 1, 0).sum(axis=-1).sum(axis=-1) / (128 * 128) * 100
-        vals = np.append(vals, val)
+        threshold = (img_true.max(-1)[0].max(-1)[0] * 0.01).reshape(
+            img_true.shape[0], 1, 1
+        )
+        mask = img_true >= threshold
+        mask_pos = samp[mask] + std[mask]
+        mask_neg = samp[mask] - std[mask]
+        cond = (img_true[mask] <= mask_pos) & (img_true[mask] >= mask_neg)
+        for i in range(samp.shape[0]):
+            cond = (
+                img_true[i][mask[i]]
+                <= mask_pos[i] & img_true[i][mask[i]]
+                >= mask_neg[i]
+            )
+            val = np.where(cond, 1, 0).sum() / img_true[i][mask[i]].shape * 100
+            vals = np.append(vals, val)
 
     histogram_unc(vals, out_path, plot_format=conf["format"])
 
