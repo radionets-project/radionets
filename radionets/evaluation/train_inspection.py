@@ -644,10 +644,8 @@ def evaluate_unc(conf):
         mask_neg = samp[mask] - std[mask]
         cond = (img_true[mask] <= mask_pos) & (img_true[mask] >= mask_neg)
         for i in range(samp.shape[0]):
-            cond = (
-                img_true[i][mask[i]]
-                <= mask_pos[i] & img_true[i][mask[i]]
-                >= mask_neg[i]
+            cond = (img_true[i][mask[i]] <= mask_pos[i]) & (
+                img_true[i][mask[i]] >= mask_neg[i]
             )
             val = np.where(cond, 1, 0).sum() / img_true[i][mask[i]].shape * 100
             vals = np.append(vals, val)
