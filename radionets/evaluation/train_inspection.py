@@ -530,11 +530,11 @@ def save_sampled(conf):
         unc_amp[unc_amp > 0] = np.sqrt(unc_amp[unc_amp > 0])
         unc_phase[unc_phase > 0] = np.sqrt(unc_phase[unc_phase > 0])
 
-        # unc_amp = unc_amp * norm_dict["std_real"] + norm_dict["mean_real"]
-        # unc_phase = unc_phase * norm_dict["std_imag"] + norm_dict["mean_imag"]
+        unc_amp = unc_amp * norm_dict["std_real"] + norm_dict["mean_real"]
+        unc_phase = unc_phase * norm_dict["std_imag"] + norm_dict["mean_imag"]
 
-        # unc_amp = torch.sqrt(pred[:, 1, :])
-        # unc_phase = torch.sqrt(pred[:, 3, :])
+        unc_amp = torch.sqrt(pred[:, 1, :])
+        unc_phase = torch.sqrt(pred[:, 3, :])
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
@@ -636,7 +636,7 @@ def evaluate_unc(conf):
 
     # iterate trough DataLoader
     for i, (samp, std, img_true) in enumerate(tqdm(loader)):
-        threshold = (img_true.max(-1)[0].max(-1)[0] * 0.01).reshape(
+        threshold = (img_true.max(-1)[0].max(-1)[0] * 0.8).reshape(
             img_true.shape[0], 1, 1
         )
         mask = img_true >= threshold
