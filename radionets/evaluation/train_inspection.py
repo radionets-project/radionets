@@ -636,7 +636,7 @@ def evaluate_unc(conf):
 
     # iterate trough DataLoader
     for i, (samp, std, img_true) in enumerate(tqdm(loader)):
-        threshold = (img_true.max(-1)[0].max(-1)[0] * 0.8).reshape(
+        threshold = (img_true.max(-1)[0].max(-1)[0] * 0.01).reshape(
             img_true.shape[0], 1, 1
         )
         mask = img_true >= threshold
