@@ -36,6 +36,7 @@ from radionets.evaluation.pointsources import flux_comparison
 from radionets.evaluation.utils import (
     apply_normalization,
     apply_symmetry,
+    check_samp_file,
     create_databunch,
     create_sampled_databunch,
     eval_model,
@@ -502,6 +503,11 @@ def save_sampled(conf):
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
+    samp_file = check_samp_file(conf)
+    if samp_file:
+        if click.confirm("Existing sampling file found. Overwrite?", abort=True):
+            click.echo("Overwriting sampling file!")
+
     img_size = loader.dataset[0][0][0].shape[-1]
     num_img = len(loader) * conf["batch_size"]
     model, norm_dict = load_pretrained_model(
@@ -530,11 +536,10 @@ def save_sampled(conf):
         unc_amp[unc_amp > 0] = np.sqrt(unc_amp[unc_amp > 0])
         unc_phase[unc_phase > 0] = np.sqrt(unc_phase[unc_phase > 0])
 
-        unc_amp = unc_amp * norm_dict["std_real"] + norm_dict["mean_real"]
-        unc_phase = unc_phase * norm_dict["std_imag"] + norm_dict["mean_imag"]
+        if "std_real" in norm_dict:
+            unc_amp = unc_amp * norm_dict["std_real"] + norm_dict["mean_real"]
+            unc_phase = unc_phase * norm_dict["std_imag"] + norm_dict["mean_imag"]
 
-        unc_amp = torch.sqrt(pred[:, 1, :])
-        unc_phase = torch.sqrt(pred[:, 3, :])
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
