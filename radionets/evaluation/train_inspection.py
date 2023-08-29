@@ -530,15 +530,19 @@ def save_sampled(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         img = {"pred": pred, "inp": img_test, "true": img_true}
+
         # separate prediction and uncertainty
         unc_amp = pred[:, 1]
         unc_phase = pred[:, 3]
-        unc_amp[unc_amp > 0] = np.sqrt(unc_amp[unc_amp > 0])
-        unc_phase[unc_phase > 0] = np.sqrt(unc_phase[unc_phase > 0])
 
+        # convert from variance to standard deviation
+        unc_amp[unc_amp > 0] = torch.sqrt(unc_amp[unc_amp > 0])
+        unc_phase[unc_phase > 0] = torch.sqrt(unc_phase[unc_phase > 0])
+
+        # if a normalization was done, propagate the errors
         if "std_real" in norm_dict:
-            unc_amp = unc_amp * norm_dict["std_real"] + norm_dict["mean_real"]
-            unc_phase = unc_phase * norm_dict["std_imag"] + norm_dict["mean_imag"]
+            unc_amp = unc_amp * norm_dict["std_real"]
+            unc_phase = unc_phase * norm_dict["std_imag"]
 
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
@@ -547,7 +551,7 @@ def save_sampled(conf):
         img["unc"] = unc
         img["pred"] = pred
 
-        result = sample_images(img["pred"], img["unc"], 100, conf)
+        result = sample_images(img["pred"], img["unc"], 1000, conf)
 
         # pad true image
         output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
