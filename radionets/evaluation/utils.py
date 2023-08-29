@@ -771,7 +771,10 @@ def rescale_normalization(pred, norm_dict):
     """
     if norm_dict and "mean_real" in norm_dict:
         pred[:, 0] = pred[:, 0] * norm_dict["std_real"] + norm_dict["mean_real"]
-        pred[:, 1] = pred[:, 1] * norm_dict["std_imag"] + norm_dict["mean_imag"]
+        if pred.shape[1] == 4:
+            pred[:, 2] = pred[:, 2] * norm_dict["std_imag"] + norm_dict["mean_imag"]
+        else:
+            pred[:, 1] = pred[:, 1] * norm_dict["std_imag"] + norm_dict["mean_imag"]
 
     elif norm_dict and "max_scaling" in norm_dict:
         pred[:, 0] *= norm_dict["max_factors_real"]
