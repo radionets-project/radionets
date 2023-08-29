@@ -750,6 +750,21 @@ def apply_normalization(img_test, norm_dict):
         norm_dict["max_factors_real"] = max_factors_real
         norm_dict["max_factors_imag"] = max_factors_imag
 
+    elif norm_dict and "all" in norm_dict:
+        means = (
+            img_test.mean(axis=-1)
+            .mean(axis=-1)
+            .reshape(img_test.shape[0], img_test.shape[1], 1, 1)
+        )
+        stds = (
+            img_test.std(axis=-1)
+            .std(axis=-1)
+            .reshape(img_test.shape[0], img_test.shape[1], 1, 1)
+        )
+        img_test = (img_test - means) / stds
+        norm_dict["means"] = means
+        norm_dict["stds"] = stds
+
     return img_test, norm_dict
 
 
@@ -776,6 +791,8 @@ def rescale_normalization(pred, norm_dict):
     elif norm_dict and "max_scaling" in norm_dict:
         pred[:, 0] *= norm_dict["max_factors_real"]
         pred[:, 1] *= norm_dict["max_factors_imag"]
+    elif norm_dict and "all" in norm_dict:
+        pred = pred * norm_dict["stds"] + norm_dict["means"]
 
     return pred
 

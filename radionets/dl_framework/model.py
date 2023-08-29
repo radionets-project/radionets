@@ -175,15 +175,19 @@ def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
 
 def save_model(learn, model_path):
     if hasattr(learn, "normalize"):
-        if hasattr(learn.normalize, "mean_real"):
+        if learn.normalize.mode == "mean":
             norm_dict = {
                 "mean_real": learn.normalize.mean_real,
                 "mean_imag": learn.normalize.mean_imag,
                 "std_real": learn.normalize.std_real,
                 "std_imag": learn.normalize.std_imag,
             }
-        else:
+        elif learn.normalize.mode == "max":
             norm_dict = {"max_scaling": 0}
+        elif learn.normalize.mode == "all":
+            norm_dict = {"all": 0}
+        else:
+            raise ValueError(f"Undefined mode {learn.normalize.mode}, check for typos")
     else:
         norm_dict = {}
 
