@@ -36,6 +36,7 @@ from radionets.evaluation.pointsources import flux_comparison
 from radionets.evaluation.utils import (
     apply_normalization,
     apply_symmetry,
+    check_samp_file,
     create_databunch,
     create_sampled_databunch,
     eval_model,
@@ -502,6 +503,11 @@ def save_sampled(conf):
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
+    samp_file = check_samp_file(conf)
+    if samp_file:
+        if click.confirm("Existing sampling file found. Overwrite?", abort=True):
+            click.echo("Overwriting sampling file!")
+
     img_size = loader.dataset[0][0][0].shape[-1]
     num_img = len(loader) * conf["batch_size"]
     model, norm_dict = load_pretrained_model(
@@ -524,9 +530,20 @@ def save_sampled(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         img = {"pred": pred, "inp": img_test, "true": img_true}
+
         # separate prediction and uncertainty
-        unc_amp = torch.sqrt(pred[:, 1, :])
-        unc_phase = torch.sqrt(pred[:, 3, :])
+        unc_amp = pred[:, 1]
+        unc_phase = pred[:, 3]
+
+        # convert from variance to standard deviation
+        unc_amp[unc_amp > 0] = torch.sqrt(unc_amp[unc_amp > 0])
+        unc_phase[unc_phase > 0] = torch.sqrt(unc_phase[unc_phase > 0])
+
+        # if a normalization was done, propagate the errors
+        if "std_real" in norm_dict:
+            unc_amp = unc_amp * norm_dict["std_real"]
+            unc_phase = unc_phase * norm_dict["std_imag"]
+
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
@@ -628,11 +645,22 @@ def evaluate_unc(conf):
 
     # iterate trough DataLoader
     for i, (samp, std, img_true) in enumerate(tqdm(loader)):
-        mask_pos = samp + std
-        mask_neg = samp - std
-        cond = (img_true <= mask_pos) & (img_true >= mask_neg)
-        val = np.where(cond, 1, 0).sum(axis=-1).sum(axis=-1) / (128 * 128) * 100
-        vals = np.append(vals, val)
+        threshold = (img_true.max(-1)[0].max(-1)[0] * 0.01).reshape(
+            img_true.shape[0], 1, 1
+        )
+        mask = img_true >= threshold
+
+        # calculate on one image at a time
+        for i in range(samp.shape[0]):
+            mask_pos = samp[i][mask[i]] + std[i][mask[i]]
+            mask_neg = samp[i][mask[i]] - std[i][mask[i]]
+
+            cond = (img_true[i][mask[i]] <= mask_pos) & (
+                img_true[i][mask[i]] >= mask_neg
+            )
+
+            val = np.where(cond, 1, 0).sum() / img_true[i][mask[i]].shape * 100
+            vals = np.append(vals, val)
 
     histogram_unc(vals, out_path, plot_format=conf["format"])
 
