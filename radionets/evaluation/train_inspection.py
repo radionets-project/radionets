@@ -692,6 +692,12 @@ def evaluate_intensity_sampled(conf):
     histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
+    if conf["save_vals"]:
+        click.echo("\nSaving intensity ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "sum_ratios.txt", ratios_sum)
+        np.savetxt(out / "peak_ratios.txt", ratios_peak)
 
 
 def evaluate_intensity(conf):
