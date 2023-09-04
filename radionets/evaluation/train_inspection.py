@@ -666,6 +666,11 @@ def evaluate_unc(conf):
             vals = np.append(vals, val)
 
     histogram_unc(vals, out_path, plot_format=conf["format"])
+    if conf["save_vals"]:
+        click.echo("\nSaving unc ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "unc_ratios.txt", vals)
 
 
 def evaluate_intensity_sampled(conf):
