@@ -729,6 +729,7 @@ def apply_normalization(img_test, norm_dict):
     norm_dict : dictionary
         updated dictionary
     """
+    # normalize using mean and std for whole dataset
     if norm_dict and "mean_real" in norm_dict:
         img_test[:, 0][img_test[:, 0] != 0] = (
             img_test[:, 0][img_test[:, 0] != 0] - norm_dict["mean_real"]
@@ -738,6 +739,7 @@ def apply_normalization(img_test, norm_dict):
             img_test[:, 1][img_test[:, 1] != 0] - norm_dict["mean_imag"]
         ) / norm_dict["std_imag"]
 
+    # scale with the maximum value of each image
     elif norm_dict and "max_scaling" in norm_dict:
         max_factors_real = torch.amax(img_test[:, 0], dim=(-2, -1), keepdim=True)
         max_factors_imag = torch.amax(
@@ -750,6 +752,7 @@ def apply_normalization(img_test, norm_dict):
         norm_dict["max_factors_real"] = max_factors_real
         norm_dict["max_factors_imag"] = max_factors_imag
 
+    # normalize each image to mean=0 and std=1
     elif norm_dict and "all" in norm_dict:
         means = (
             img_test.mean(axis=-1)
@@ -794,6 +797,7 @@ def rescale_normalization(pred, norm_dict):
     elif norm_dict and "max_scaling" in norm_dict:
         pred[:, 0] *= norm_dict["max_factors_real"]
         pred[:, 1] *= norm_dict["max_factors_imag"]
+
     elif norm_dict and "all" in norm_dict:
         pred[:, 0] = pred[:, 0] * norm_dict["stds"][:, 0] + norm_dict["means"][:, 0]
         if pred.shape[1] == 4:
