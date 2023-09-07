@@ -481,6 +481,48 @@ class TestEvaluation:
         assert sum_val > 0
         assert peak_val > 0
 
+    def test_normalization(self):
+        import numpy as np
+
+        from radionets.evaluation.utils import (
+            apply_normalization,
+            read_pred,
+            rescale_normalization,
+        )
+
+        img = read_pred(
+            "./tests/build/test_training/evaluation/predictions_model_eval.h5"
+        )
+        norm_dict = {"all": 0}
+        pred, norm_dict = apply_normalization(img["pred"], norm_dict)
+        zeros = np.zeros(10)
+        ones = np.ones(10)
+
+        assert np.allclose(
+            pred[:, 0].mean(axis=-1).mean(axis=-1), zeros, rtol=1e-4, atol=1e-5
+        )
+        assert np.allclose(
+            pred[:, 1].mean(axis=-1).mean(axis=-1), zeros, rtol=1e-4, atol=1e-5
+        )
+        assert np.allclose(
+            pred[:, 0].std(axis=-1).std(axis=-1), ones, rtol=1e-4, atol=1e-5
+        )
+        assert np.allclose(
+            pred[:, 1].std(axis=-1).std(axis=-1), ones, rtol=1e-4, atol=1e-5
+        )
+
+        assert "means" in norm_dict
+        assert "stds" in norm_dict
+
+        pred = rescale_normalization(pred, norm_dict)
+
+        assert np.allclose(
+            pred[:, 0] - img["pred"][:, 0], np.zeros((128, 128)), rtol=1e-4, atol=1e-5
+        )
+        assert np.allclose(
+            pred[:, 1] - img["pred"][:, 1], np.zeros((128, 128)), rtol=1e-4, atol=1e-5
+        )
+
     def test_evaluation(self):
         import os
         import shutil

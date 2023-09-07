@@ -1,0 +1,2 @@
+- add new normalizing method which normalizes every image
+- add saving options for more evaluation methods

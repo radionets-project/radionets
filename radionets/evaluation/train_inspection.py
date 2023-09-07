@@ -543,6 +543,9 @@ def save_sampled(conf):
         if "std_real" in norm_dict:
             unc_amp = unc_amp * norm_dict["std_real"]
             unc_phase = unc_phase * norm_dict["std_imag"]
+        elif "stds" in norm_dict:
+            unc_amp *= norm_dict["stds"][:, 0]
+            unc_phase *= norm_dict["stds"][:, 1]
 
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
@@ -551,7 +554,7 @@ def save_sampled(conf):
         img["unc"] = unc
         img["pred"] = pred
 
-        result = sample_images(img["pred"], img["unc"], 1000, conf)
+        result = sample_images(img["pred"], img["unc"], 100, conf)
 
         # pad true image
         output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
@@ -663,6 +666,11 @@ def evaluate_unc(conf):
             vals = np.append(vals, val)
 
     histogram_unc(vals, out_path, plot_format=conf["format"])
+    if conf["save_vals"]:
+        click.echo("\nSaving unc ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "unc_ratios.txt", vals)
 
 
 def evaluate_intensity_sampled(conf):
@@ -689,6 +697,12 @@ def evaluate_intensity_sampled(conf):
     histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
+    if conf["save_vals"]:
+        click.echo("\nSaving intensity ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "sum_ratios.txt", ratios_sum)
+        np.savetxt(out / "peak_ratios.txt", ratios_peak)
 
 
 def evaluate_intensity(conf):
@@ -711,6 +725,12 @@ def evaluate_intensity(conf):
     histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
+    if conf["save_vals"]:
+        click.echo("\nSaving intensity ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "sum_ratios.txt", ratios_sum)
+        np.savetxt(out / "peak_ratios.txt", ratios_peak)
 
 
 def evaluate_area(conf):

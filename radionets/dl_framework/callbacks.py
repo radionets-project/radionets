@@ -231,6 +231,13 @@ class Normalize(Callback):
             y[:, 0] = self.normalize(y[:, 0], self.mean_real, self.std_real)
             y[:, 1] = self.normalize(y[:, 1], self.mean_imag, self.std_imag)
 
+        elif self.mode == "all":
+            # normalize each image so that mean=0 and std=1
+            means = x.mean(axis=-1).mean(axis=-1).reshape(x.shape[0], x.shape[1], 1, 1)
+            stds = x.std(axis=-1).std(axis=-1).reshape(x.shape[0], x.shape[1], 1, 1)
+            x = self.normalize(x, means, stds)
+            y = self.normalize(y, means, stds)
+
         self.learn.xb = [x]
         self.learn.yb = [y]
 
