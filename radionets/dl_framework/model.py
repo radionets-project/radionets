@@ -1,4 +1,3 @@
-from math import pi
 from pathlib import Path
 
 import torch
@@ -69,78 +68,6 @@ def conv(ni, nc, ks, stride, padding):
     return layers
 
 
-def conv_amp(ni, nc, ks, stride, padding, dilation):
-    """Create a convolutional layer for the amplitude reconstruction.
-    The activation function ist ReLU with a 2d Batch normalization.
-
-    Parameters
-    ----------
-    ni : int
-        Number of input channels
-    nc : int
-        Number of output channels
-    ks : tuple
-        Size of the kernel
-    stride : int
-        Stepsize between use of kernel
-    padding : int
-        Number of pixels added to edges of picture
-    dilation : int
-        Factor for spreading the receptive field
-
-    Returns
-    -------
-    list
-        list of convolutional layer, 2d Batch Normalisation and Activation function.
-    """
-    conv = (
-        nn.Conv2d(
-            ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"
-        ),
-    )
-    bn = (nn.BatchNorm2d(nc),)
-    act = nn.ReLU()
-    layers = [*conv, *bn, act]
-    return layers
-
-
-def conv_phase(ni, nc, ks, stride, padding, dilation, add):
-    """Create a convolutional layer for the amplitude reconstruction.
-    The activation function ist GeneralELU with a 2d Batch normalization.
-
-    Parameters
-    ----------
-    ni : int
-        Number of input channels
-    nc : int
-        Number of output channels
-    ks : tuple
-        Size of the kernel
-    stride : int
-        Stepsize between use of kernel
-    padding : int
-        Number of pixels added to edges of picture
-    dilation : int
-        Factor for spreading the receptive field
-    add : int
-        Number which is added to GeneralELU
-
-    Returns
-    -------
-    list
-        list of convolutional layer, 2d Batch Normalisation and Activation function.
-    """
-    conv = (
-        nn.Conv2d(
-            ni, nc, ks, stride, padding, dilation, bias=False, padding_mode="replicate"
-        ),
-    )
-    bn = (nn.BatchNorm2d(nc),)
-    act = GeneralELU(add)
-    layers = [*conv, *bn, act]
-    return layers
-
-
 def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
     """
     :param learn:       object of type learner
@@ -156,8 +83,7 @@ def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
 
     if visualize:
         learn.load_state_dict(checkpoint["model"])
-        if "norm_dict" in checkpoint:
-            return checkpoint["norm_dict"]
+        return checkpoint["norm_dict"]
     elif plot_loss:
         learn.avg_loss.loss_train = checkpoint["train_loss"]
         learn.avg_loss.loss_valid = checkpoint["valid_loss"]
@@ -242,49 +168,6 @@ class LocallyConnected2d(nn.Module):
         if self.bias is not None:
             out += self.bias
         return out
-
-
-class ResBlock_amp(nn.Module):
-    def __init__(self, ni, nf, stride=1):
-        super().__init__()
-        self.convs = self._conv_block(ni, nf, stride)
-        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
-        self.pool = (
-            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
-        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
-
-    def forward(self, x):
-        return F.relu(self.convs(x) + self.idconv(self.pool(x)))
-
-    def _conv_block(self, ni, nf, stride):
-        return nn.Sequential(
-            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
-            nn.BatchNorm2d(nf),
-            nn.ReLU(),
-            nn.Conv2d(nf, nf, 3, stride=1, padding=1),
-            nn.BatchNorm2d(nf),
-        )
-
-
-class ResBlock_phase(nn.Module):
-    def __init__(self, ni, nf, stride=1):
-        super().__init__()
-        self.convs = self._conv_block(ni, nf, stride)
-        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
-        self.pool = nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
-        self.relu = GeneralELU(1 - pi)
-
-    def forward(self, x):
-        return self.relu(self.convs(x) + self.idconv(self.pool(x)))
-
-    def _conv_block(self, ni, nf, stride):
-        return nn.Sequential(
-            nn.Conv2d(ni, nf, 3, stride=stride, padding=1),
-            nn.BatchNorm2d(nf),
-            GeneralELU(1 - pi),
-            nn.Conv2d(nf, nf, 3, stride=1, padding=1),
-            nn.BatchNorm2d(nf),
-        )
 
 
 class SRBlock(nn.Module):

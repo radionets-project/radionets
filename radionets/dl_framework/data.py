@@ -73,10 +73,6 @@ class h5_dataset:
         return data.float()
 
 
-def combine_and_swap_axes(array1, array2):
-    return np.swapaxes(np.dstack((array1, array2)), 2, 0)
-
-
 def split_real_imag(array):
     """
     takes a complex array and returns the real and the imaginary part
@@ -119,9 +115,6 @@ def save_bundle(path, bundle, counter, name="gs_bundle"):
     with h5py.File(str(path) + str(counter) + ".h5", "w") as hf:
         hf.create_dataset(name, data=bundle)
         hf.close()
-
-
-# open and save functions should be generalized in future versions
 
 
 def open_bundle(path):

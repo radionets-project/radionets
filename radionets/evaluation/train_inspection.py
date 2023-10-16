@@ -25,7 +25,6 @@ from radionets.evaluation.plotting import (
     histogram_unc,
     plot_contour,
     plot_length_point,
-    plot_results,
     visualize_sampled_unc,
     visualize_source_reconstruction,
     visualize_uncertainty,
@@ -48,11 +47,10 @@ from radionets.evaluation.utils import (
     process_prediction,
     read_pred,
     rescale_normalization,
-    reshape_2d,
     sample_images,
     sampled_dataset,
     save_pred,
-    sym_new,
+    symmetry,
 )
 
 
@@ -203,15 +201,6 @@ def create_inspection_plots(conf, num_images=3, rand=False):
                     out_path=out_path,
                     plot_format=conf["format"],
                 )
-    else:
-        plot_results(
-            # img_test.cpu(),
-            # reshape_2d(pred.cpu()),
-            # reshape_2d(img_true),
-            out_path,
-            save=True,
-            plot_format=conf["format"],
-        )
 
 
 def after_training_plots(conf, num_images=3, rand=False, diff=True):
@@ -259,15 +248,6 @@ def after_training_plots(conf, num_images=3, rand=False, diff=True):
                     out_path=out_path,
                     plot_format=conf["format"],
                 )
-    else:
-        plot_results(
-            img_test.cpu(),
-            reshape_2d(pred.cpu()),
-            reshape_2d(img_true),
-            out_path,
-            save=True,
-            plot_format=conf["format"],
-        )
 
 
 def create_source_plots(conf, num_images=3, rand=False):
@@ -558,7 +538,7 @@ def save_sampled(conf):
 
         # pad true image
         output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
-        img["true"] = sym_new(output, None)
+        img["true"] = symmetry(output, None)
         ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
         # add images to dict
