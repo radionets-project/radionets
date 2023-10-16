@@ -25,7 +25,6 @@ from radionets.evaluation.plotting import (
     histogram_unc,
     plot_contour,
     plot_length_point,
-    plot_results,
     visualize_sampled_unc,
     visualize_source_reconstruction,
     visualize_uncertainty,
@@ -36,6 +35,7 @@ from radionets.evaluation.pointsources import flux_comparison
 from radionets.evaluation.utils import (
     apply_normalization,
     apply_symmetry,
+    check_samp_file,
     create_databunch,
     create_sampled_databunch,
     eval_model,
@@ -47,11 +47,10 @@ from radionets.evaluation.utils import (
     process_prediction,
     read_pred,
     rescale_normalization,
-    reshape_2d,
     sample_images,
     sampled_dataset,
     save_pred,
-    sym_new,
+    symmetry,
 )
 
 
@@ -202,15 +201,6 @@ def create_inspection_plots(conf, num_images=3, rand=False):
                     out_path=out_path,
                     plot_format=conf["format"],
                 )
-    else:
-        plot_results(
-            # img_test.cpu(),
-            # reshape_2d(pred.cpu()),
-            # reshape_2d(img_true),
-            out_path,
-            save=True,
-            plot_format=conf["format"],
-        )
 
 
 def after_training_plots(conf, num_images=3, rand=False, diff=True):
@@ -258,15 +248,6 @@ def after_training_plots(conf, num_images=3, rand=False, diff=True):
                     out_path=out_path,
                     plot_format=conf["format"],
                 )
-    else:
-        plot_results(
-            img_test.cpu(),
-            reshape_2d(pred.cpu()),
-            reshape_2d(img_true),
-            out_path,
-            save=True,
-            plot_format=conf["format"],
-        )
 
 
 def create_source_plots(conf, num_images=3, rand=False):
@@ -502,6 +483,11 @@ def save_sampled(conf):
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
+    samp_file = check_samp_file(conf)
+    if samp_file:
+        if click.confirm("Existing sampling file found. Overwrite?", abort=True):
+            click.echo("Overwriting sampling file!")
+
     img_size = loader.dataset[0][0][0].shape[-1]
     num_img = len(loader) * conf["batch_size"]
     model, norm_dict = load_pretrained_model(
@@ -524,9 +510,23 @@ def save_sampled(conf):
             pred = torch.cat((pred, pred_2), dim=1)
 
         img = {"pred": pred, "inp": img_test, "true": img_true}
+
         # separate prediction and uncertainty
-        unc_amp = torch.sqrt(pred[:, 1, :])
-        unc_phase = torch.sqrt(pred[:, 3, :])
+        unc_amp = pred[:, 1]
+        unc_phase = pred[:, 3]
+
+        # convert from variance to standard deviation
+        unc_amp[unc_amp > 0] = torch.sqrt(unc_amp[unc_amp > 0])
+        unc_phase[unc_phase > 0] = torch.sqrt(unc_phase[unc_phase > 0])
+
+        # if a normalization was done, propagate the errors
+        if "std_real" in norm_dict:
+            unc_amp = unc_amp * norm_dict["std_real"]
+            unc_phase = unc_phase * norm_dict["std_imag"]
+        elif "stds" in norm_dict:
+            unc_amp *= norm_dict["stds"][:, 0]
+            unc_phase *= norm_dict["stds"][:, 1]
+
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
@@ -534,11 +534,11 @@ def save_sampled(conf):
         img["unc"] = unc
         img["pred"] = pred
 
-        result = sample_images(img["pred"], img["unc"], 1000, conf)
+        result = sample_images(img["pred"], img["unc"], 100, conf)
 
         # pad true image
         output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
-        img["true"] = sym_new(output, None)
+        img["true"] = symmetry(output, None)
         ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
         # add images to dict
@@ -628,13 +628,29 @@ def evaluate_unc(conf):
 
     # iterate trough DataLoader
     for i, (samp, std, img_true) in enumerate(tqdm(loader)):
-        mask_pos = samp + std
-        mask_neg = samp - std
-        cond = (img_true <= mask_pos) & (img_true >= mask_neg)
-        val = np.where(cond, 1, 0).sum(axis=-1).sum(axis=-1) / (128 * 128) * 100
-        vals = np.append(vals, val)
+        threshold = (img_true.max(-1)[0].max(-1)[0] * 0.01).reshape(
+            img_true.shape[0], 1, 1
+        )
+        mask = img_true >= threshold
+
+        # calculate on one image at a time
+        for i in range(samp.shape[0]):
+            mask_pos = samp[i][mask[i]] + std[i][mask[i]]
+            mask_neg = samp[i][mask[i]] - std[i][mask[i]]
+
+            cond = (img_true[i][mask[i]] <= mask_pos) & (
+                img_true[i][mask[i]] >= mask_neg
+            )
+
+            val = np.where(cond, 1, 0).sum() / img_true[i][mask[i]].shape * 100
+            vals = np.append(vals, val)
 
     histogram_unc(vals, out_path, plot_format=conf["format"])
+    if conf["save_vals"]:
+        click.echo("\nSaving unc ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "unc_ratios.txt", vals)
 
 
 def evaluate_intensity_sampled(conf):
@@ -661,6 +677,12 @@ def evaluate_intensity_sampled(conf):
     histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
+    if conf["save_vals"]:
+        click.echo("\nSaving intensity ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "sum_ratios.txt", ratios_sum)
+        np.savetxt(out / "peak_ratios.txt", ratios_peak)
 
 
 def evaluate_intensity(conf):
@@ -683,6 +705,12 @@ def evaluate_intensity(conf):
     histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
+    if conf["save_vals"]:
+        click.echo("\nSaving intensity ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "sum_ratios.txt", ratios_sum)
+        np.savetxt(out / "peak_ratios.txt", ratios_peak)
 
 
 def evaluate_area(conf):
