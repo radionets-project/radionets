@@ -14,19 +14,6 @@ from tqdm import tqdm
 from radionets.evaluation.contour import compute_area_ratio
 from radionets.evaluation.dynamic_range import calc_dr, get_boxsize
 from radionets.evaluation.utils import check_vmin_vmax, make_axes_nice, reshape_2d
-from radionets.simulations.utils import adjust_outpath
-
-# make nice Latex friendly plots
-# mpl.use("pgf")
-# mpl.rcParams.update(
-#     {
-#         "font.size": 12,
-#         "font.family": "sans-serif",
-#         "text.usetex": True,
-#         "pgf.rcfonts": False,
-#         "pgf.texsystem": "lualatex",
-#     }
-# )
 
 
 def create_OrBu():
@@ -131,59 +118,6 @@ def plot_inp_tar(h5_dataset, fourier=False, amp_phase=False):
             make_axes_nice(fig, ax4, im4, "Target: phase")
 
     fig.tight_layout()
-
-
-def plot_results(inp, pred, truth, model_path, save=False, plot_format="png"):
-    """
-    Plot input images, prediction and true image.
-    Parameters
-    ----------
-    inp: n 2d arrays with 2 channel
-        input images
-    pred: n 2d arrays
-        predicted images
-    truth:n 2d arrays
-        true images
-    """
-    for i in tqdm(range(len(inp))):
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(10, 8))
-
-        real = inp[i][0]
-        im1 = ax1.imshow(real, cmap="RdBu", vmin=-real.max(), vmax=real.max())
-        divider = make_axes_locatable(ax1)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax1.set_title(r"Real Input")
-        fig.colorbar(im1, cax=cax, orientation="vertical")
-
-        imag = inp[i][1]
-        im2 = ax2.imshow(imag, cmap="RdBu", vmin=-imag.max(), vmax=imag.max())
-        divider = make_axes_locatable(ax2)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax2.set_title(r"Imag Input")
-        fig.colorbar(im2, cax=cax, orientation="vertical")
-
-        pre = pred[i]
-        im3 = ax3.imshow(pre, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
-        divider = make_axes_locatable(ax3)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax3.set_title(r"Prediction")
-        fig.colorbar(im3, cax=cax, orientation="vertical")
-
-        true = truth[i]
-        im4 = ax4.imshow(true, cmap="RdBu", vmin=-pre.max(), vmax=pre.max())
-        divider = make_axes_locatable(ax4)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        ax4.set_title(r"Truth")
-        fig.colorbar(im4, cax=cax, orientation="vertical")
-
-        plt.tight_layout()
-
-        if save:
-            out = model_path / "predictions/"
-            out.mkdir(parents=True, exist_ok=True)
-
-            out_path = adjust_outpath(out, "/prediction", form=plot_format)
-            plt.savefig(out_path, bbox_inches="tight", pad_inches=0.01)
 
 
 def visualize_with_fourier(
@@ -692,21 +626,6 @@ def plot_box(ax, num_boxes, corners):
             color="red",
             fill=False,
         )
-
-
-def plot_blobs(blobs_log, ax):
-    """Plot the blobs created in sklearn.blob_log
-    Parameters
-    ----------
-    blobs_log : ndarray
-        return values of blob_log
-    ax : axis object
-        plotting axis
-    """
-    for blob in blobs_log:
-        y, x, r = blob
-        c = plt.Circle((x, y), r, color="red", linewidth=2, fill=False)
-        ax.add_patch(c)
 
 
 def histogram_ms_ssim(msssim, out_path, plot_format="png"):

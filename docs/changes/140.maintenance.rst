@@ -1,2 +1,0 @@
-Deleted unusable functions for new source types
-Deleted unused hardcoded scaling

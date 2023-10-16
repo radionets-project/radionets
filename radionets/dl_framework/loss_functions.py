@@ -1,26 +1,11 @@
 import numpy as np
 import torch
-from pytorch_msssim import MS_SSIM
 from torch import nn
-
-from radionets.dl_framework.utils import get_ifft_torch
 
 
 def l1(x, y):
     l1 = nn.L1Loss()
     loss = l1(x, y)
-    return loss
-
-
-def l1_amp(x, y):
-    l1 = nn.L1Loss()
-    loss = l1(x, y[:, 0].unsqueeze(1))
-    return loss
-
-
-def l1_phase(x, y):
-    l1 = nn.L1Loss()
-    loss = l1(x, y[:, 1].unsqueeze(1))
     return loss
 
 
@@ -55,27 +40,6 @@ def splitted_L1_masked(x, y):
     loss_amp = l1(inp_amp, tar_amp)
     loss_phase = l1(inp_phase, tar_phase)
     loss = loss_amp + loss_phase
-    return loss
-
-
-def fft_L1(x, y):
-    ifft_pred = get_ifft_torch(x.clamp(0, 2), amp_phase=True, scale=True)
-    ifft_truth = get_ifft_torch(y, amp_phase=True, scale=True)
-
-    ifft_pred[torch.isnan(ifft_pred)] = 1
-    ifft_pred[torch.isinf(ifft_pred)] = 1
-
-    inp_amp = x[:, 0, :]
-    inp_phase = x[:, 1, :]
-
-    tar_amp = y[:, 0, :]
-    tar_phase = y[:, 1, :]
-
-    l1 = nn.L1Loss()
-    loss_amp = l1(inp_amp, tar_amp)
-    loss_phase = l1(inp_phase, tar_phase)
-    loss_fft = l1(ifft_pred[ifft_truth > 0], ifft_truth[ifft_truth > 0])
-    loss = loss_amp + 10 * loss_phase + loss_fft
     return loss
 
 
@@ -168,27 +132,6 @@ def beta_nll_loss(x, y, beta=0.5):
 def mse(x, y):
     mse = nn.MSELoss()
     loss = mse(x, y)
-    return loss
-
-
-def mse_amp(x, y):
-    tar = y[:, 0, :].unsqueeze(1)
-    mse = nn.MSELoss()
-    loss = mse(x, tar)
-    return loss
-
-
-def mse_phase(x, y):
-    tar = y[:, 1, :].unsqueeze(1)
-    mse = nn.MSELoss()
-    loss = mse(x, tar)
-    return loss
-
-
-def loss_new_msssim(x, y):
-    msssim_loss = MS_SSIM(data_range=10, channel=2)
-    loss = 1 - msssim_loss(x, y)
-
     return loss
 
 
