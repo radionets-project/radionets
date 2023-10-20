@@ -40,6 +40,7 @@ evaluate_ms_ssim = false
 evaluate_intensity = true
 evaluate_mean_diff = true
 evaluate_area = true
+evaluate_uncertainty = false
 evaluate_point = false
 predict_grad = false 
 evaluate_gan = true

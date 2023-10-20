@@ -121,7 +121,7 @@ def read_config(config):
     eval_conf["vis_pred"] = config["inspection"]["visualize_prediction"]
     eval_conf["vis_source"] = config["inspection"]["visualize_source_reconstruction"]
     eval_conf["sample_unc"] = config["inspection"]["sample_uncertainty"]
-    eval_conf["unc"] = config["inspection"]["visualize_uncertainty"]
+    eval_conf["vis_unc"] = config["inspection"]["visualize_uncertainty"]
     eval_conf["plot_contour"] = config["inspection"]["visualize_contour"]
     eval_conf["vis_dr"] = config["inspection"]["visualize_dynamic_range"]
     eval_conf["vis_ms_ssim"] = config["inspection"]["visualize_ms_ssim"]
@@ -134,6 +134,7 @@ def read_config(config):
     eval_conf["intensity"] = config["eval"]["evaluate_intensity"]
     eval_conf["mean_diff"] = config["eval"]["evaluate_mean_diff"]
     eval_conf["area"] = config["eval"]["evaluate_area"]
+    eval_conf["unc"] = config["eval"]["evaluate_uncertainty"]
     eval_conf["batch_size"] = config["eval"]["batch_size"]
     eval_conf["point"] = config["eval"]["evaluate_point"]
     eval_conf["predict_grad"] = config["eval"]["predict_grad"]
@@ -504,7 +505,7 @@ def tn_numba_vec_parallel(mu, sig, a, b):
     return rv
 
 
-def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
+def trunc_rvs(mu, sig, num_samples, mode, target="parallel", nthreads=20):
     if mode == "amp":
         a = 0
         b = np.inf
