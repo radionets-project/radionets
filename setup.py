@@ -27,6 +27,7 @@ setup(
         "pytest-cov",
         "pytest-order",
         "comet_ml",
+        "matplotlib",
         "pre-commit",
     ],
     setup_requires=["pytest-runner"],
