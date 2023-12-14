@@ -48,7 +48,7 @@ jobs:
 
       - name: mamba setup
         if: matrix.install-method == 'mamba'
-        uses: mamba-org/provision-with-micromamba@v14
+        uses: mamba-org/setup-micromamba@v1
 
       - name: Python setup
         if: matrix.install-method == 'pip'
