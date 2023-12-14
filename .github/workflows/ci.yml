@@ -61,7 +61,7 @@ jobs:
         run: |
           python --version | grep "Python ${PYTHON_VERSION}"
           pip install pytest-cov restructuredtext-lint pytest-xdist 'coverage!=6.3.0'
-          pip install -e .[all]
+          pip install .[all]
           pip freeze
 
       - name: List installed package versions (conda)
