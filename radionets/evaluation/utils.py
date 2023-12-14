@@ -356,7 +356,10 @@ def get_ifft(array, amp_phase=False, scale=False):
         image(s) in image space
     """
     if len(array.shape) == 3:
-        array = array.unsqueeze(0)
+        if hasattr(array, "numpy"):
+            array = array.unsqueeze(0)
+        else:
+            array = array[np.newaxis, :]
     if amp_phase:
         if scale:
             amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
@@ -439,9 +442,10 @@ def symmetry(image, key):
         image = torch.tensor(image)
     if len(image.shape) == 3:
         image = image.view(1, image.shape[0], image.shape[1], image.shape[2])
-    half_image = image.shape[3] // 2
+    half_image = image.shape[-1] // 2
     upper_half = image[:, :, :half_image, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
+    print("half image: ", half_image)
 
     image[:, 0, half_image + 1 :, 1:] = a[:, 0, :-1, :-1]
     image[:, 0, half_image + 1 :, 0] = a[:, 0, :-1, -1]
@@ -474,7 +478,7 @@ def apply_symmetry(img_dict):
         if key != "indices":
             if isinstance(img_dict[key], np.ndarray):
                 img_dict[key] = torch.tensor(img_dict[key])
-            half_image = img_dict[key].shape[2] // 2
+            half_image = img_dict[key].shape[-1] // 2
             output = F.pad(
                 input=img_dict[key],
                 pad=(0, 0, 0, half_image - 1),
