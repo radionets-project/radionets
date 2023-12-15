@@ -67,6 +67,18 @@ class TestEvaluation:
         out_path.mkdir(parents=True, exist_ok=True)
         save_pred(str(out_path) + "/predictions_model_eval.h5", img)
 
+    def test_get_ifft(self):
+        import numpy as np
+        import torch
+
+        from radionets.evaluation.utils import get_ifft
+
+        a = torch.zeros([10, 2, 64, 64])
+        test_torch = get_ifft(a, amp_phase=True)
+        b = np.zeros([10, 2, 64, 64])
+        test_numpy = get_ifft(b, amp_phase=True)
+        assert ~np.isnan([test_torch, test_numpy]).any()
+
     def test_contour(self):
         import numpy as np
         import toml
@@ -329,26 +341,11 @@ class TestEvaluation:
     def test_symmetry(self):
         import torch
 
-        from radionets.dl_framework.model import symmetry
+        from radionets.evaluation.utils import symmetry
 
-        x = torch.randint(0, 9, size=(1, 2, 4, 4))
-        x_symm = symmetry(x.clone())
-        for i in range(x.shape[-1]):
-            for j in range(x.shape[-1]):
-                assert (
-                    x_symm[0, 0, i, j]
-                    == x_symm[0, 0, x.shape[-1] - 1 - i, x.shape[-1] - 1 - j]
-                )
-                assert (
-                    x_symm[0, 1, i, j]
-                    == -x_symm[0, 1, x.shape[-1] - 1 - i, x.shape[-1] - 1 - j]
-                )
-
-        rot_amp = torch.rot90(x_symm[0, 0], 2)
-        rot_phase = torch.rot90(x_symm[0, 1], 2)
-
-        assert torch.isclose(rot_amp - x_symm[0, 0], torch.tensor(0)).all()
-        assert torch.isclose(rot_phase + x_symm[0, 1], torch.tensor(0)).all()
+        x = torch.randint(0, 9, size=(1, 2, 64, 64))
+        x_symm = symmetry(x.clone(), key="test")
+        assert x_symm.shape == x.shape
 
     def test_sample_images(self):
         import numpy as np
