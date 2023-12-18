@@ -75,9 +75,12 @@ class TestEvaluation:
 
         a = torch.zeros([10, 2, 64, 64])
         test_torch = get_ifft(a, amp_phase=True)
-        b = np.zeros([10, 2, 64, 64])
+        b = np.zeros([2, 64, 64])
         test_numpy = get_ifft(b, amp_phase=True)
-        assert ~np.isnan([test_torch, test_numpy]).any()
+        print(test_numpy.shape)
+        assert ~np.isnan([test_torch]).any()
+        assert ~np.isnan([test_numpy]).any()
+        assert len(test_torch.shape) == len(test_numpy.shape) + 1
 
     def test_contour(self):
         import numpy as np
