@@ -344,7 +344,7 @@ class TestEvaluation:
         from radionets.evaluation.utils import symmetry
 
         x = torch.randint(0, 9, size=(1, 2, 64, 64))
-        x_symm = symmetry(x.clone(), key="test")
+        x_symm = symmetry(x.clone(), key="unc")
         assert x_symm.shape == x.shape
 
     def test_sample_images(self):
