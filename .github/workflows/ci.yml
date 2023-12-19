@@ -49,6 +49,9 @@ jobs:
       - name: mamba setup
         if: matrix.install-method == 'mamba'
         uses: mamba-org/setup-micromamba@v1
+        with:
+          environment-file: environment.yml
+          cache-downloads: true
 
       - name: Python setup
         if: matrix.install-method == 'pip'
@@ -58,10 +61,12 @@ jobs:
           check-latest: true
 
       - name: Install dependencies
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
-          python --version | grep "Python ${PYTHON_VERSION}"
-          pip install pytest-cov restructuredtext-lint pytest-xdist 'coverage!=6.3.0'
-          pip install .[all]
+          python --version
+          pip install pytest-cov pytest-xdist 'coverage!=6.3.0'
+          pip install -e .[all]
           pip freeze
 
       - name: List installed package versions (conda)

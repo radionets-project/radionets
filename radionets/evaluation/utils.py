@@ -445,7 +445,6 @@ def symmetry(image, key):
     half_image = image.shape[-1] // 2
     upper_half = image[:, :, :half_image, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
-    print("half image: ", half_image)
 
     image[:, 0, half_image + 1 :, 1:] = a[:, 0, :-1, :-1]
     image[:, 0, half_image + 1 :, 0] = a[:, 0, :-1, -1]
