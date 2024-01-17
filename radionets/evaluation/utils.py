@@ -301,8 +301,6 @@ def get_images(test_ds, num_images, rand=False, indices=None):
 
         img_test = test_ds[indices][0]
         img_true = test_ds[indices][1]
-        img_test = img_test[:, :, :65, :]
-        img_true = img_true[:, :, :65, :]
         return img_test, img_true, indices
     else:
         mean = test_ds[indices][0]
