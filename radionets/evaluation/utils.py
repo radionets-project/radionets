@@ -302,8 +302,6 @@ def get_images(test_ds, num_images, rand=False, indices=None):
 
         img_test = test_ds[indices][0]
         img_true = test_ds[indices][1]
-        img_test = img_test[:, :, :65, :]
-        img_true = img_true[:, :, :65, :]
         return img_test, img_true, indices
     else:
         mean = test_ds[indices][0]
@@ -357,7 +355,10 @@ def get_ifft(array, amp_phase=False, scale=False):
         image(s) in image space
     """
     if len(array.shape) == 3:
-        array = array.unsqueeze(0)
+        if hasattr(array, "numpy"):
+            array = array.unsqueeze(0)
+        else:
+            array = array[np.newaxis, :]
     if amp_phase:
         if scale:
             amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
@@ -440,18 +441,19 @@ def symmetry(image, key):
         image = torch.tensor(image)
     if len(image.shape) == 3:
         image = image.view(1, image.shape[0], image.shape[1], image.shape[2])
-    upper_half = image[:, :, :64, :].clone()
+    half_image = image.shape[-1] // 2
+    upper_half = image[:, :, :half_image, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
 
-    image[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
-    image[:, 0, 65:, 0] = a[:, 0, :-1, -1]
+    image[:, 0, half_image + 1 :, 1:] = a[:, 0, :-1, :-1]
+    image[:, 0, half_image + 1 :, 0] = a[:, 0, :-1, -1]
 
     if key == "unc":
-        image[:, 1, 65:, 1:] = a[:, 1, :-1, :-1]
-        image[:, 1, 65:, 0] = a[:, 1, :-1, -1]
+        image[:, 1, half_image + 1 :, 1:] = a[:, 1, :-1, :-1]
+        image[:, 1, half_image + 1 :, 0] = a[:, 1, :-1, -1]
     else:
-        image[:, 1, 65:, 1:] = -a[:, 1, :-1, :-1]
-        image[:, 1, 65:, 0] = -a[:, 1, :-1, -1]
+        image[:, 1, half_image + 1 :, 1:] = -a[:, 1, :-1, :-1]
+        image[:, 1, half_image + 1 :, 0] = -a[:, 1, :-1, -1]
 
     return image
 
@@ -474,8 +476,12 @@ def apply_symmetry(img_dict):
         if key != "indices":
             if isinstance(img_dict[key], np.ndarray):
                 img_dict[key] = torch.tensor(img_dict[key])
+            half_image = img_dict[key].shape[-1] // 2
             output = F.pad(
-                input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
+                input=img_dict[key],
+                pad=(0, 0, 0, half_image - 1),
+                mode="constant",
+                value=0,
             )
             output = symmetry(output, key)
             img_dict[key] = output
