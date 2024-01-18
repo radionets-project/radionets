@@ -111,7 +111,7 @@ def get_prediction(conf, mode="test"):
         images["pred"] = pred
         images["indices"] = indices
 
-    if images["pred"].shape[-1] == 128:
+    if images["pred"].shape[-2] < images["pred"].shape[-1]:
         images = apply_symmetry(images)
 
     return images
