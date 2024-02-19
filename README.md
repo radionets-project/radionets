@@ -1,7 +1,10 @@
 # radionets [![Actions Status](https://github.com/radionets-project/radionets/workflows/CI/badge.svg)](https://github.com/radionets-project/radionets/actions) [![codecov](https://codecov.io/gh/radionets-project/radionets/branch/main/graph/badge.svg)](https://codecov.io/gh/radionets-project/radionets) [![DOI](https://zenodo.org/badge/205111370.svg)](https://zenodo.org/badge/latestdoi/205111370)
 
 
-
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./resources/radionets_large_subtitle_dark.png">
+  <img alt="Radionets logo. Deep-learning based imaging in radio interferometry." src="./resources/radionets_large_subtitle.png">
+</picture>
 
 
 ## Imaging Radio Interferometric Data with Neural Networks

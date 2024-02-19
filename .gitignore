@@ -28,6 +28,8 @@ __pycache__/
 *.pdf
 *.gif
 *.png
+!resources/radionets_large_subtitle.png
+!resources/radionets_large_subtitle_dark.png
 
 # make
 *_done
