@@ -836,7 +836,7 @@ def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
         pred = torch.cat((pred, pred_2), dim=1)
 
     # apply symmetry
-    if pred.shape[-1] == 128:
+    if pred.shape[-2] < pred.shape[-1]:
         img_dict = {"truth": img_true, "pred": pred}
         img_dict = apply_symmetry(img_dict)
         img_true = img_dict["truth"]
