@@ -178,7 +178,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cax = divider.append_axes("top", size="5%", pad=0.05)
     ax.set_title(title)
 
     if phase:
@@ -201,7 +201,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar = fig.colorbar(im, cax=cax, orientation="vertical")
         cbar.set_label(r"$\sigma$ / $\mathrm{Jy \cdot px^{-1}}$")
     else:
-        cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar = fig.colorbar(im, cax=cax, orientation="horizontal", location="top")
         cbar.set_label(r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$")
 
     if phase:
