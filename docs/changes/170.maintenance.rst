@@ -1,2 +1,3 @@
 - fix `comet_ml` callback
 - update `process_prediction` with better if statement
+- change hardcoded values for sampling
