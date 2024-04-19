@@ -510,7 +510,7 @@ def tn_numba_vec_parallel(mu, sig, a, b):
     return rv
 
 
-def trunc_rvs(mu, sig, num_samples, mode, target="cpu", nthreads=1):
+def trunc_rvs(mu, sig, num_samples, mode, target="parallel", nthreads=20):
     if mode == "amp":
         a = 0
         b = np.inf
@@ -580,7 +580,7 @@ def sample_images(mean, std, num_samples, conf):
         sig=std_amp,
         mode=mode[0],
         num_samples=num_samples,
-    ).reshape(num_img * num_samples, 65, 128)
+    ).reshape(num_img * num_samples, mean_amp.shape[-2], mean_amp.shape[-1])
 
     # phase
     sampled_gauss_phase = trunc_rvs(
@@ -588,7 +588,7 @@ def sample_images(mean, std, num_samples, conf):
         sig=std_phase,
         mode=mode[1],
         num_samples=num_samples,
-    ).reshape(num_img * num_samples, 65, 128)
+    ).reshape(num_img * num_samples, mean_phase.shape[-2], mean_phase.shape[-1])
 
     # masks
     if conf["amp_phase"]:
@@ -604,13 +604,17 @@ def sample_images(mean, std, num_samples, conf):
 
     # pad resulting images and utilize symmetry
     sampled_gauss = F.pad(
-        input=torch.tensor(sampled_gauss), pad=(0, 0, 0, 63), mode="constant", value=0
+        input=torch.tensor(sampled_gauss),
+        pad=(0, 0, 0, mean_amp.shape[-2] - 2),
+        mode="constant",
+        value=0,
     )
     sampled_gauss_symmetry = symmetry(sampled_gauss, None)
+    print(sampled_gauss_symmetry.shape)
 
     fft_sampled_symmetry = get_ifft(
         sampled_gauss_symmetry, amp_phase=conf["amp_phase"], scale=False
-    ).reshape(num_img, num_samples, 128, 128)
+    ).reshape(num_img, num_samples, mean_amp.shape[-1], mean_amp.shape[-1])
 
     results = {
         "mean": fft_sampled_symmetry.mean(axis=1),

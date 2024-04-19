@@ -537,7 +537,12 @@ def save_sampled(conf):
         result = sample_images(img["pred"], img["unc"], 100, conf)
 
         # pad true image
-        output = F.pad(input=img["true"], pad=(0, 0, 0, 63), mode="constant", value=0)
+        output = F.pad(
+            input=img["true"],
+            pad=(0, 0, 0, img_size // 2 - 1),
+            mode="constant",
+            value=0,
+        )
         img["true"] = symmetry(output, None)
         ifft_truth = get_ifft(img["true"], amp_phase=conf["amp_phase"])
 
