@@ -610,7 +610,6 @@ def sample_images(mean, std, num_samples, conf):
         value=0,
     )
     sampled_gauss_symmetry = symmetry(sampled_gauss, None)
-    print(sampled_gauss_symmetry.shape)
 
     fft_sampled_symmetry = get_ifft(
         sampled_gauss_symmetry, amp_phase=conf["amp_phase"], scale=False
