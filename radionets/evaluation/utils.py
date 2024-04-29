@@ -422,7 +422,7 @@ def check_outpath(model_path):
     return exists
 
 
-def symmetry(image, key):
+def symmetry(image, key, new):
     """
     Symmetry function to complete the images
 
@@ -444,20 +444,23 @@ def symmetry(image, key):
     upper_half = image[:, :, :half_image, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
 
-    image[:, 0, half_image + 1 :, 1:] = a[:, 0, :-1, :-1]
-    image[:, 0, half_image + 1 :, 0] = a[:, 0, :-1, -1]
+    if new:
+        image[:, 0, half_image:, :] = a[:, 0, :, :]
+    else:
+        image[:, 0, half_image + 1 :, 1:] = a[:, 0, :-1, :-1]
+        image[:, 0, half_image + 1 :, 0] = a[:, 0, :-1, -1]
 
     if key == "unc":
         image[:, 1, half_image + 1 :, 1:] = a[:, 1, :-1, :-1]
         image[:, 1, half_image + 1 :, 0] = a[:, 1, :-1, -1]
     else:
-        image[:, 1, half_image + 1 :, 1:] = -a[:, 1, :-1, :-1]
-        image[:, 1, half_image + 1 :, 0] = -a[:, 1, :-1, -1]
+        image[:, 1, half_image:, :] = -a[:, 1, :, :]
+        # image[:, 1, half_image + 1 :, 0] = -a[:, 1, :-1, -1]
 
     return image
 
 
-def apply_symmetry(img_dict):
+def apply_symmetry(img_dict, new):
     """
     Pads and applies symmetry to half images. Takes a dict as input
 
@@ -476,13 +479,21 @@ def apply_symmetry(img_dict):
             if isinstance(img_dict[key], np.ndarray):
                 img_dict[key] = torch.tensor(img_dict[key])
             half_image = img_dict[key].shape[-1] // 2
-            output = F.pad(
-                input=img_dict[key],
-                pad=(0, 0, 0, half_image - 1),
-                mode="constant",
-                value=0,
-            )
-            output = symmetry(output, key)
+            if new:
+                output = F.pad(
+                    input=img_dict[key],
+                    pad=(0, 0, 0, half_image),
+                    mode="constant",
+                    value=0,
+                )
+            else:
+                output = F.pad(
+                    input=img_dict[key],
+                    pad=(0, 0, 0, half_image - 1),
+                    mode="constant",
+                    value=0,
+                )
+            output = symmetry(output, key, new)
             img_dict[key] = output
 
     return img_dict
