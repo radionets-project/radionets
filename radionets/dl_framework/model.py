@@ -196,6 +196,32 @@ class SRBlock(nn.Module):
         )
 
 
+class SRBlock_BatchNorm(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni, nf, stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(
+                ni, nf, 3, stride=stride, padding=1, bias=False, padding_mode="reflect"
+            ),
+            nn.BatchNorm2d(nf),
+            nn.PReLU(),
+            nn.Conv2d(
+                nf, nf, 3, stride=1, padding=1, bias=False, padding_mode="reflect"
+            ),
+            nn.BatchNorm2d(nf),
+        )
+
+
 def symmetry(x):
     if x.shape[-1] % 2 != 0:
         raise ValueError("The symmetry function only works for even image sizes.")
