@@ -261,7 +261,7 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     return arch, norm_dict
 
 
-def get_images(test_ds, num_images, rand=False, indices=None):
+def get_images(test_ds, num_images, rand=False, indices=None, index=None):
     """
     Get n random test and truth images or mean, standard deviation and
     true images from an already sampled dataset.
@@ -285,6 +285,11 @@ def get_images(test_ds, num_images, rand=False, indices=None):
         truth images
     """
     if hasattr(test_ds, "tar_fourier"):
+        if index is not None:
+            img_test = test_ds[index][0]
+            img_true = test_ds[index][1]
+            return img_test.unsqueeze(0), img_true.unsqueeze(0), index
+
         indices = torch.arange(num_images)
         if rand:
             indices = torch.randint(0, len(test_ds), size=(num_images,))
@@ -460,7 +465,7 @@ def symmetry(image, key, new):
     return image
 
 
-def apply_symmetry(img_dict, new):
+def apply_symmetry(img_dict, new=False):
     """
     Pads and applies symmetry to half images. Takes a dict as input
 

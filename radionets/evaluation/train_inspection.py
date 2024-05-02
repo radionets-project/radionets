@@ -73,7 +73,7 @@ def create_predictions(conf):
     save_pred(out_path, img)
 
 
-def get_prediction(conf, mode="test"):
+def get_prediction(conf, mode="test", index=None):
     test_ds = load_data(
         conf["data_path"],
         mode=mode,
@@ -86,7 +86,9 @@ def get_prediction(conf, mode="test"):
     if num_images is None:
         num_images = len(test_ds)
 
-    img_test, img_true, indices = get_images(test_ds, num_images, rand=rand)
+    img_test, img_true, indices = get_images(
+        test_ds, num_images, rand=rand, index=index
+    )
 
     img_size = img_test.shape[-1]
     model, norm_dict = load_pretrained_model(
