@@ -3,7 +3,7 @@ from math import pi
 import torch
 from torch import nn
 
-from radionets.dl_framework.model import GeneralELU, SRBlock
+from radionets.dl_framework.model import GeneralRelu, SRBlock
 
 
 class SRResNet(nn.Module):
@@ -140,7 +140,7 @@ class SRResNet_16_unc(nn.Module):
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
-        self.elu = GeneralELU(add=+(1 + 1e-7))
+        self.elu = GeneralRelu(sub=-1e-10)
 
     def forward(self, x):
         s = x.shape[-1]
