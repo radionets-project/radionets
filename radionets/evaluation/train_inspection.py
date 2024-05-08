@@ -443,10 +443,15 @@ def evaluate_ms_ssim(conf):
         )
         vals = np.append(vals, val)
 
-    click.echo("\nCreating ms-ssim histogram.\n")
-    histogram_ms_ssim(vals, out_path, plot_format=conf["format"])
+    # click.echo("\nCreating ms-ssim histogram.\n")
+    # histogram_ms_ssim(vals, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean ms-ssim value is {np.mean(vals)}.\n")
+    if conf["save_vals"]:
+        click.echo("\nSaving ms-ssim ratios.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(out / "msssim_ratios.txt", vals)
 
 
 def evaluate_mean_diff(conf):
@@ -702,9 +707,9 @@ def evaluate_intensity(conf):
         ratios_sum = np.append(ratios_sum, ratio_sum)
         ratios_peak = np.append(ratios_peak, ratio_peak)
 
-    click.echo("\nCreating eval_intensity histogram.\n")
-    histogram_sum_intensity(ratios_sum, out_path, plot_format=conf["format"])
-    histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
+    # click.echo("\nCreating eval_intensity histogram.\n")
+    # histogram_sum_intensity(ratios_sum, out_path, plot_format=conf["format"])
+    # histogram_peak_intensity(ratios_peak, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean intensity ratio is {ratios_sum.mean()}.\n")
     if conf["save_vals"]:
@@ -729,9 +734,9 @@ def evaluate_area(conf):
             val = area_of_contour(pred, truth)
             vals.extend([val])
 
-    click.echo("\nCreating eval_area histogram.\n")
+    # click.echo("\nCreating eval_area histogram.\n")
     vals = torch.tensor(vals)
-    histogram_area(vals, out_path, plot_format=conf["format"])
+    # histogram_area(vals, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean area ratio is {vals.mean()}.\n")
 
