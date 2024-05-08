@@ -596,7 +596,7 @@ def sample_images(mean, std, num_samples, conf):
         sig=std_amp,
         mode=mode[0],
         num_samples=num_samples,
-    ).reshape(num_img * num_samples, 65, 128)
+    ).reshape(num_img * num_samples, mean_amp.shape[-2], mean_amp.shape[-1])
 
     # phase
     sampled_gauss_phase = trunc_rvs(
@@ -604,7 +604,7 @@ def sample_images(mean, std, num_samples, conf):
         sig=std_phase,
         mode=mode[1],
         num_samples=num_samples,
-    ).reshape(num_img * num_samples, 65, 128)
+    ).reshape(num_img * num_samples, mean_phase.shape[-2], mean_phase.shape[-1])
 
     # masks
     if conf["amp_phase"]:
@@ -620,13 +620,16 @@ def sample_images(mean, std, num_samples, conf):
 
     # pad resulting images and utilize symmetry
     sampled_gauss = F.pad(
-        input=torch.tensor(sampled_gauss), pad=(0, 0, 0, 63), mode="constant", value=0
+        input=torch.tensor(sampled_gauss),
+        pad=(0, 0, 0, mean_amp.shape[-2] - 2),
+        mode="constant",
+        value=0,
     )
     sampled_gauss_symmetry = symmetry(sampled_gauss, None)
 
     fft_sampled_symmetry = get_ifft(
         sampled_gauss_symmetry, amp_phase=conf["amp_phase"], scale=False
-    ).reshape(num_img, num_samples, 128, 128)
+    ).reshape(num_img, num_samples, mean_amp.shape[-1], mean_amp.shape[-1])
 
     results = {
         "mean": fft_sampled_symmetry.mean(axis=1),
@@ -852,7 +855,7 @@ def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
         pred = torch.cat((pred, pred_2), dim=1)
 
     # apply symmetry
-    if pred.shape[-1] == 128:
+    if pred.shape[-2] < pred.shape[-1]:
         img_dict = {"truth": img_true, "pred": pred}
         img_dict = apply_symmetry(img_dict)
         img_true = img_dict["truth"]

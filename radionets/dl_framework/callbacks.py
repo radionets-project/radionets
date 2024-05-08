@@ -10,6 +10,8 @@ from radionets.dl_framework.model import save_model
 from radionets.dl_framework.utils import _maybe_item, get_ifft_torch
 from radionets.evaluation.plotting import create_OrBu
 from radionets.evaluation.utils import (
+    apply_normalization,
+    apply_symmetry,
     check_vmin_vmax,
     eval_model,
     get_ifft,
@@ -17,6 +19,7 @@ from radionets.evaluation.utils import (
     load_data,
     load_pretrained_model,
     make_axes_nice,
+    rescale_normalization,
 )
 
 OrBu = create_OrBu()
@@ -29,9 +32,7 @@ class CometCallback(Callback):
         self.experiment = Experiment(project_name=name)
         self.data_path = test_data
         self.plot_epoch = plot_n_epochs
-        self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False
-        )
+        self.test_ds = load_data(self.data_path, mode="test", fourier=True)
         self.amp_phase = amp_phase
         self.scale = scale
         self.uncertainty = False
@@ -51,27 +52,36 @@ class CometCallback(Callback):
         )
 
     def plot_test_pred(self):
-        img_test, img_true = get_images(self.test_ds, 1, rand=False)
+        img_test, img_true, _ = get_images(self.test_ds, 1, rand=False)
+        img_test = img_test.unsqueeze(0)
+        img_true = img_true.unsqueeze(0)
         model = self.model
+        if self.learn.normalize.mode == "all":
+            norm_dict = {"all": 0}
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
+
         with self.experiment.test():
             with torch.no_grad():
                 pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
         if pred.shape[1] == 4:
             self.uncertainty = True
+            pred = torch.stack((pred[:, 0, :], pred[:, 2, :]), dim=1)
+        images = {"pred": pred, "truth": img_true}
+        images = apply_symmetry(images)
+        pred = images["pred"]
+        img_true = images["truth"]
 
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
-        lim_phase = check_vmin_vmax(img_true[1])
+        lim_phase = check_vmin_vmax(img_true[0, 1])
         im1 = ax1.imshow(pred[0, 0], cmap="inferno")
-        if self.uncertainty:
-            im2 = ax2.imshow(pred[0, 2], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
-        else:
-            im2 = ax2.imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
-        im3 = ax3.imshow(img_true[0], cmap="inferno")
-        im4 = ax4.imshow(img_true[1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
-        make_axes_nice(fig, ax1, im1, "Amplitude")
-        make_axes_nice(fig, ax2, im2, "Phase", phase=True)
-        make_axes_nice(fig, ax3, im3, "Org. Amplitude")
-        make_axes_nice(fig, ax4, im4, "Org. Phase", phase=True)
+        im2 = ax2.imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        im3 = ax3.imshow(img_true[0, 0], cmap="inferno")
+        im4 = ax4.imshow(img_true[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        make_axes_nice(fig, ax1, im1, "Real")
+        make_axes_nice(fig, ax2, im2, "Imaginary")
+        make_axes_nice(fig, ax3, im3, "Org. Real")
+        make_axes_nice(fig, ax4, im4, "Org. Imaginary")
         fig.tight_layout(pad=0.1)
         self.experiment.log_figure(
             figure=fig, figure_name=f"{self.epoch + 1}_pred_epoch"
@@ -79,11 +89,24 @@ class CometCallback(Callback):
         plt.close("all")
 
     def plot_test_fft(self):
-        img_test, img_true = get_images(self.test_ds, 1, rand=False)
+        img_test, img_true, _ = get_images(self.test_ds, 1, rand=False)
+        img_test = img_test.unsqueeze(0)
+        img_true = img_true.unsqueeze(0)
         model = self.model
+        if self.learn.normalize.mode == "all":
+            norm_dict = {"all": 0}
+        img_test, norm_dict = apply_normalization(img_test, norm_dict)
+
         with self.experiment.test():
             with torch.no_grad():
                 pred = eval_model(img_test, model)
+        pred = rescale_normalization(pred, norm_dict)
+        if self.uncertainty:
+            pred = torch.stack((pred[:, 0, :], pred[:, 2, :]), dim=1)
+        images = {"pred": pred, "truth": img_true}
+        images = apply_symmetry(images)
+        pred = images["pred"]
+        img_true = images["truth"]
 
         ifft_pred = get_ifft_torch(
             pred,
@@ -150,8 +173,15 @@ class AvgLossCallback(Callback):
         self.lrs.append(self.opt.hypers[-1]["lr"])
 
     def plot_loss(self):
+        min_epoch = np.argmin(self.loss_valid)
         plt.plot(self.loss_train, label="Training loss")
         plt.plot(self.loss_valid, label="Validation loss")
+        plt.axvline(
+            min_epoch,
+            color="black",
+            linestyle="dashed",
+            label=f"Minimum at Epoch {min_epoch}",
+        )
         plt.xlabel(r"Number of Epochs")
         plt.ylabel(r"Loss")
         plt.legend()
