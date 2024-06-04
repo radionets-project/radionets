@@ -22,6 +22,8 @@ diff = false
 [inspection]
 visualize_prediction = true
 visualize_source_reconstruction = true
+sample_uncertainty = false
+visualize_uncertainty = false
 visualize_contour = true
 visualize_dynamic_range = false
 visualize_ms_ssim = false
@@ -37,6 +39,8 @@ evaluate_dynamic_range = true
 evaluate_ms_ssim = true
 evaluate_mean_diff = true
 evaluate_area = true
+evaluate_uncertainty = false
+evaluate_intensity = false
 evaluate_point = false
 predict_grad = false
 evaluate_gan = false
