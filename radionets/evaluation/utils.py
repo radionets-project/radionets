@@ -427,7 +427,7 @@ def check_outpath(model_path):
     return exists
 
 
-def symmetry(image, key, new):
+def symmetry(image, key, new=False):
     """
     Symmetry function to complete the images
 
