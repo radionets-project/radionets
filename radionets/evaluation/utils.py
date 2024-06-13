@@ -459,8 +459,8 @@ def symmetry(image, key, new=False):
         image[:, 1, half_image + 1 :, 1:] = a[:, 1, :-1, :-1]
         image[:, 1, half_image + 1 :, 0] = a[:, 1, :-1, -1]
     else:
-        image[:, 1, half_image:, :] = -a[:, 1, :, :]
-        # image[:, 1, half_image + 1 :, 0] = -a[:, 1, :-1, -1]
+        image[:, 1, half_image + 1 :, 1:] = -a[:, 1, :-1, :-1]
+        image[:, 1, half_image + 1 :, 0] = -a[:, 1, :-1, -1]
 
     return image
 
