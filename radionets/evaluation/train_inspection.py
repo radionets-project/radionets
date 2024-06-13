@@ -105,6 +105,15 @@ def get_prediction(conf, mode="test", index=None):
     if pred.shape[1] == 4:
         unc_amp = torch.sqrt(pred[:, 1, :])
         unc_phase = torch.sqrt(pred[:, 3, :])
+
+        # propagate errors
+        if "std_real" in norm_dict:
+            unc_amp = unc_amp * norm_dict["std_real"]
+            unc_phase = unc_phase * norm_dict["std_imag"]
+        elif "stds" in norm_dict:
+            unc_amp *= norm_dict["stds"][:, 0]
+            unc_phase *= norm_dict["stds"][:, 1]
+
         unc = torch.stack([unc_amp, unc_phase], dim=1)
         pred_1 = pred[:, 0, :]
         pred_2 = pred[:, 2, :]
