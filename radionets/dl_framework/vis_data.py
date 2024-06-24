@@ -22,19 +22,36 @@ class VisDataset(Dataset):
         super().__init__()
         self.obs = obs
         self.bundles = bundle_paths
+        self.num_img = len(self.open_bundle(self.bundles[0], "y"))
+        self.tar_fourier = True
 
     def __len__(self):
-        return len(self.images)
+        """
+        Returns the total number of pictures in this dataset
+        """
+        return len(self.bundles) * self.num_img
+
+    def open_bundle(self, bundle_path, var):
+        bundle = h5py.File(bundle_path, "r")
+        data = bundle[var]
+        return data
 
     def __getitem__(self, i):
         img = self.open_image("y", i)
-        uv_coords, vis_sparse = self._prepare_vis(img, self.obs)
+        with torch.no_grad():
+            uv_coords, vis_sparse = self._prepare_vis(img, self.obs)
         vis_sparse = torch.stack((vis_sparse.real, vis_sparse.imag), dim=-1)
         self.obs.calc_dense_baselines()
         bas_dense = self.obs.dense_baselines_gpu
         uv_dense = torch.stack((bas_dense[2].cpu(), bas_dense[5].cpu()), dim=-1)
-        visibilities = self._get_cmpl_true(self.images[i], uv_dense)
+        visibilities = self._get_cmpl_true(img, uv_dense)
         return (
+            scale_uv(uv_coords.float(), max_val=uv_dense.max()),
+            scale_uv(uv_dense.float(), max_val=uv_dense.max()),
+            vis_sparse.float(),
+            visibilities.flatten(),
+            img,
+        ), (
             scale_uv(uv_coords.float(), max_val=uv_dense.max()),
             scale_uv(uv_dense.float(), max_val=uv_dense.max()),
             vis_sparse.float(),
@@ -52,9 +69,9 @@ class VisDataset(Dataset):
         stokes = torch.zeros((img.shape[0], img.shape[1], 4), dtype=torch.cdouble)
         stokes[..., 0] = img[..., 0]
 
-        B = torch.zeros((img.shape[0], img.shape[1], 2, 2), dtype=torch.cdouble).to(
-            torch.device(obs.device)
-        )
+        B = torch.zeros((img.shape[0], img.shape[1], 2, 2), dtype=torch.cdouble)  # .to(
+        #    torch.device(obs.device)
+        # )
 
         B[:, :, 0, 0] = stokes[:, :, 0] + stokes[:, :, 1]
         B[:, :, 0, 1] = stokes[:, :, 2] + 1j * stokes[:, :, 3]
@@ -78,7 +95,7 @@ class VisDataset(Dataset):
                     obs.waves_high[0],
                     corrupted=obs.corrupted,
                 )(B)
-                for p in torch.arange(bas[:].shape[1]).split(1000)
+                for p in torch.arange(bas[:].shape[1]).split(3000)
             ]
         )
         vis_spares = torch.cat(
@@ -155,7 +172,7 @@ def load_data(data_path, mode, fourier=False):
     """
     bundle_paths = get_bundles(data_path)
     data = np.sort(
-        [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
+        [path for path in bundle_paths if re.findall("skies_" + mode, path.name)]
     )
     data = sorted(data, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
 
