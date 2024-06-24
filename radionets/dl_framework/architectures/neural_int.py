@@ -1,6 +1,6 @@
-import torch 
-from torch import nn, einsum
-from einops import rearrange, repeat
+import torch
+from einops import rearrange
+from torch import einsum, nn
 
 
 class ImplicitAstro_Trans(nn.Module):
@@ -8,29 +8,29 @@ class ImplicitAstro_Trans(nn.Module):
         super().__init__()
 
         self.cond_mlp = PosEncodedMLP_FiLM(
-            context_dim=128, 
+            context_dim=128,
             input_size=2,
-            output_size=2, 
-            hidden_dims=[128, 128, 128], 
-            L_embed=5, # 5
-            embed_type="fourier", 
-            activation=nn.PReLU, 
-            sigma=20, # 2.5
-            context_type='Transformer',
+            output_size=2,
+            hidden_dims=[128, 128, 128],
+            L_embed=5,  # 5
+            embed_type="fourier",
+            activation=nn.PReLU,
+            sigma=20,  # 2.5
+            context_type="Transformer",
         )
 
         self.context_encoder = VisibilityTransformer(
-            input_dim=2,  # value dim 
+            input_dim=2,  # value dim
             # PE dim for MLP, we are going to use the same PE as the MLP
-            pe_dim=self.cond_mlp.input_size, 
+            pe_dim=self.cond_mlp.input_size,
             dim=128,
             depth=4,
-            heads=16, 
-            dim_head=128//16, 
+            heads=16,
+            dim_head=128 // 16,
             output_dim=128,  # latent_dim,
-            dropout=.1,
-            emb_dropout=0., 
-            mlp_dim=128, 
+            dropout=0.1,
+            emb_dropout=0.0,
+            mlp_dim=128,
             output_tokens=4,  # args.mlp_layers,
             has_global_token=False,
         )
@@ -60,8 +60,10 @@ def fourierfeat_enc(x, B):
             torch.cos(2 * 3.14159265 * (x @ B.T)),
             torch.sin(2 * 3.14159265 * (x @ B.T)),
         ],
-    -1)
+        -1,
+    )
     return feat
+
 
 class PE_Module(torch.nn.Module):
     def __init__(self, type, embed_L):
@@ -74,14 +76,14 @@ class PE_Module(torch.nn.Module):
         return fourierfeat_enc(x, B=self.embed_L)
 
 
-class FiLMLinear(pl.LightningModule):
+class FiLMLinear(nn.Module):
     def __init__(
         self,
         in_dim,
         out_dim,
         context_dim=64,
         residual=False,
-        ):
+    ):
         super().__init__()
 
         self.linear = nn.Linear(in_dim, out_dim)
@@ -101,18 +103,19 @@ class FiLMLinear(pl.LightningModule):
         return out
 
 
-class PosEncodedMLP_FiLM(pl.LightningModule):
-    def __init__(self,
-                 context_dim=64,
-                 input_size=2,
-                 output_size=2,
-                 hidden_dims=[256, 256],
-                 L_embed=5,
-                 embed_type="fourier",
-                 activation=nn.ReLU,
-                 sigma=2.5,
-                 context_type="Transformer",
-                ):
+class PosEncodedMLP_FiLM(nn.Module):
+    def __init__(
+        self,
+        context_dim=64,
+        input_size=2,
+        output_size=2,
+        hidden_dims=[256, 256],
+        L_embed=5,
+        embed_type="fourier",
+        activation=nn.ReLU,
+        sigma=2.5,
+        context_type="Transformer",
+    ):
         super().__init__()
 
         self.context_type = context_type
@@ -126,7 +129,7 @@ class PosEncodedMLP_FiLM(pl.LightningModule):
         # positional embed function
         self.embed_fun = PE_Module(type="fourier", embed_L=self.B)
 
-        self.layers =[]
+        self.layers = []
         self.activations = []
         dim_prev = self.input_size
         for h_dim in hidden_dims:
@@ -136,12 +139,14 @@ class PosEncodedMLP_FiLM(pl.LightningModule):
 
         self.layers = nn.ModuleList(self.layers)
         self.activations = nn.ModuleList(self.activations)
-        self.final_layer = layer(hidden_dims[-1], output_size, context_dim=self.context_dim)
+        self.final_layer = layer(
+            hidden_dims[-1], output_size, context_dim=self.context_dim
+        )
 
     def forward(self, x_in, context):
-        '''
+        """
         B x L x ndim for Transformer (assuming L layers in MLP)
-        '''
+        """
         x_embed = self.embed_fun(x_in)
 
         x_tmp = x_embed
@@ -155,10 +160,11 @@ class PosEncodedMLP_FiLM(pl.LightningModule):
 
 
 class PreNorm(nn.Module):
-    def __init__(self,
-                 dim,
-                 fn,
-                ):
+    def __init__(
+        self,
+        dim,
+        fn,
+    ):
         super().__init__()
 
         self.norm = nn.LayerNorm(dim)
@@ -169,11 +175,12 @@ class PreNorm(nn.Module):
 
 
 class FeedForward(nn.Module):
-    def __init__(self,
-                 dim,
-                 hidden_dim,
-                 dropout=0.,
-                ):
+    def __init__(
+        self,
+        dim,
+        hidden_dim,
+        dropout=0.0,
+    ):
         super().__init__()
 
         self.net = nn.Sequential(
@@ -188,32 +195,36 @@ class FeedForward(nn.Module):
         return self.net(x)
 
 
-
 class Attention(nn.Module):
-    def __init__(self,
-                 dim,
-                 heads=8,
-                 dim_head=64,
-                 dropout=0.,
-                ):
+    def __init__(
+        self,
+        dim,
+        heads=8,
+        dim_head=64,
+        dropout=0.0,
+    ):
         super().__init__()
 
         inner_dim = dim_head * heads
         project_out = not (heads == 1 and dim_head == dim)
 
         self.heads = heads
-        self.scale = dim_head**(-0.5)
+        self.scale = dim_head ** (-0.5)
 
         self.attend = nn.Softmax(dim=-1)
-        self.to_qkv = nn.Linear(dim, inner_dim*3, bias=False)
+        self.to_qkv = nn.Linear(dim, inner_dim * 3, bias=False)
 
-        self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, dim),
-            nn.Dropout(dropout),
-        ) if project_out else nn.Identity()
+        self.to_out = (
+            nn.Sequential(
+                nn.Linear(inner_dim, dim),
+                nn.Dropout(dropout),
+            )
+            if project_out
+            else nn.Identity()
+        )
 
     def forward(self, x):
-        b, n, _, h = *x.shape, self.heads
+        _, _, _, h = *x.shape, self.heads
         qkv = self.to_qkv(x).chunk(3, dim=-1)
         q, k, v = map(lambda t: rearrange(t, "b n (h d) -> b h n d", h=h), qkv)
 
@@ -224,17 +235,17 @@ class Attention(nn.Module):
         return self.to_out(out)
 
 
-
 class Transformer(nn.Module):
-    def __init__(self,
-                 dim,
-                 depth,
-                 heads,
-                 dim_head,
-                 mlp_dim,
-                 dropout=0,
-                 has_global_token=False,
-                ):
+    def __init__(
+        self,
+        dim,
+        depth,
+        heads,
+        dim_head,
+        mlp_dim,
+        dropout=0,
+        has_global_token=False,
+    ):
         super().__init__()
 
         self.layers = nn.ModuleList()
@@ -242,7 +253,12 @@ class Transformer(nn.Module):
             self.layers.append(
                 nn.ModuleList(
                     [
-                        PreNorm(dim, Attention(dim, heads=heads, dim_head=dim_head, dropout=dropout)),
+                        PreNorm(
+                            dim,
+                            Attention(
+                                dim, heads=heads, dim_head=dim_head, dropout=dropout
+                            ),
+                        ),
                         PreNorm(dim, FeedForward(dim, mlp_dim, dropout=dropout)),
                     ]
                 )
@@ -255,22 +271,23 @@ class Transformer(nn.Module):
         return x
 
 
-
 class VisibilityTransformer(nn.Module):
-    def __init__(self, *,
-                 input_dim, 
-                 pe_dim,
-                 dim,
-                 depth,
-                 heads,
-                 mlp_dim,
-                 dim_head,
-                 dropout,
-                 emb_dropout,
-                 output_dim,
-                 output_tokens,
-                 has_global_token,
-                ):
+    def __init__(
+        self,
+        *,
+        input_dim,
+        pe_dim,
+        dim,
+        depth,
+        heads,
+        mlp_dim,
+        dim_head,
+        dropout,
+        emb_dropout,
+        output_dim,
+        output_tokens,
+        has_global_token,
+    ):
         super().__init__()
         """
         dim_value_embedding = dim - pe_dim
@@ -279,7 +296,9 @@ class VisibilityTransformer(nn.Module):
         assert output_tokens > 0
         assert dim > pe_dim
 
-        self.input_dim = input_dim  # input value dimension (e.g. =2 visibility map - real and imag)
+        self.input_dim = (
+            input_dim  # input value dimension (e.g. =2 visibility map - real and imag)
+        )
         self.pe_dim = pe_dim  # postional-encoding dim
         self.dim = dim  # feature embedding dim
 
@@ -314,7 +333,8 @@ class VisibilityTransformer(nn.Module):
             nn.Sequential(
                 nn.LayerNorm(self.dim),
                 nn.Linear(self.dim, self.output_dim),
-            ) for _ in range(int(self.output_tokens))
+            )
+            for _ in range(int(self.output_tokens))
         ]
 
         self.output_token_heads = nn.ModuleList(self.output_token_heads)
@@ -322,14 +342,19 @@ class VisibilityTransformer(nn.Module):
     def forward(self, tokens):
         """
         inputs
-        tokens - b x n_token x dim_token_feature (input_dim), input : [pose_embed, values]
+        tokens - b x n_token x dim_token_feature (input_dim),
+        input : [pose_embed, values]
 
         outputs
         output_tokens - b x n_out_tokens x dim_out_tokens
         """
 
-        emb_val = self.feat_embedding(tokens[..., self.pe_dim:])  # b x n_token x self.dim - self.pe_dim
-        emb_token = torch.cat([tokens[..., :self.pe_dim], emb_val], dim=-1)  # b x n_token x self.dim
+        emb_val = self.feat_embedding(
+            tokens[..., self.pe_dim :]
+        )  # b x n_token x self.dim - self.pe_dim
+        emb_token = torch.cat(
+            [tokens[..., : self.pe_dim], emb_val], dim=-1
+        )  # b x n_token x self.dim
 
         b, n_token, _ = emb_token.shape
 
@@ -339,32 +364,39 @@ class VisibilityTransformer(nn.Module):
         emb_token = self.emb_dropout(emb_token)
         transformed_token = self.transformer(emb_token)
 
-        transformed_token_reduced = transformed_token[:, :self.output_tokens, ...]
+        transformed_token_reduced = transformed_token[:, : self.output_tokens, ...]
 
         out_tokens = []
         for idx_token in range(self.output_tokens):
-            out_tokens.append(self.output_token_heads[idx_token](
-                transformed_token_reduced[:, idx_token, ...].unsqueeze(1)
-            ))
+            out_tokens.append(
+                self.output_token_heads[idx_token](
+                    transformed_token_reduced[:, idx_token, ...].unsqueeze(1)
+                )
+            )
         output_tokens = torch.cat(out_tokens, dim=1)
 
         return output_tokens
 
 
 def get_halfspace(uv_coords):
-    left_halfspace = torch.logical_and(torch.logical_or(
-        uv_coords[:,:,0] < 0, 
-        torch.logical_and(uv_coords[:,:,0] == 0, uv_coords[:,:,1] > 0)),
-        ~torch.logical_and(uv_coords[:,:,0] == -.5, uv_coords[:,:,1] > 0))
+    left_halfspace = torch.logical_and(
+        torch.logical_or(
+            uv_coords[:, :, 0] < 0,
+            torch.logical_and(uv_coords[:, :, 0] == 0, uv_coords[:, :, 1] > 0),
+        ),
+        ~torch.logical_and(uv_coords[:, :, 0] == -0.5, uv_coords[:, :, 1] > 0),
+    )
     return left_halfspace
 
-def flip_uv(uv_coords, halfspace):    
+
+def flip_uv(uv_coords, halfspace):
     halfspace_2d = torch.stack((halfspace, halfspace), axis=-1)
     uv_coords_flipped = torch.where(halfspace_2d, f(-uv_coords), uv_coords)
     return uv_coords_flipped
 
+
 def f(x):
-    return ((x+0.5)%1)-0.5
+    return ((x + 0.5) % 1) - 0.5
 
 
 def conjugate_vis(vis, halfspace):
