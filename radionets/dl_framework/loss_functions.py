@@ -2,6 +2,8 @@ import numpy as np
 import torch
 from torch import nn
 
+from radionets.dl_framework.architectures.neural_int import conjugate_vis, get_halfspace
+
 
 def l1(x, y):
     l1 = nn.L1Loss()
@@ -101,3 +103,25 @@ def jet_seg(x, y):
         loss_l1_weighted += l1(x[:, i], y[:, i]) * (i + 1)
 
     return loss_l1_weighted
+
+
+def vis_data_loss(x, y):
+    _, uv_dense, _, visibilities, img = y
+    halfspace = get_halfspace(uv_dense)
+    vis_conj = conjugate_vis(visibilities, halfspace)
+    vis_real = vis_conj.real.float()
+    vis_imag = vis_conj.imag.float()
+    x_reshaped = x.reshape(-1, 512, 512, 2)
+    ifft_img = torch.abs(
+        torch.fft.fftshift(
+            torch.fft.ifft2(
+                torch.fft.fftshift(x_reshaped[..., 0] + 1j * x_reshaped[..., 1])
+            )
+        )
+    )
+
+    l1 = nn.L1Loss()
+    real_loss = l1(vis_real, x[:, :, 0])
+    imaginary_loss = l1(vis_imag, x[:, :, 1])
+    img_loss = l1(ifft_img, img)
+    return real_loss + imaginary_loss + img_loss
