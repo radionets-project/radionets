@@ -50,7 +50,7 @@ class h5_dataset:
             h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
         ]
         bundle_paths_str = list(map(str, bundle_paths))
-        data = torch.tensor(
+        data = torch.from_numpy(
             np.array(
                 [
                     bund[var][img]

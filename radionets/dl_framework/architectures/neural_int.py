@@ -36,7 +36,7 @@ class ImplicitAstro_Trans(nn.Module):
         )
 
     def forward(self, x):
-        uv_coords, vis_sparse, uv_dense = x
+        uv_coords, uv_dense, vis_sparse, _, _ = x
         pe_encoder = self.cond_mlp.embed_fun
         pe_uv = pe_encoder(uv_coords)
         inputs_encoder = torch.cat([pe_uv, vis_sparse], dim=-1)
