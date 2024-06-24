@@ -57,7 +57,7 @@ def main(configuration_path, mode):
     )
 
     # get image size
-    train_conf["image_size"] = data.train_ds[0][0][0].shape[1]
+    train_conf["image_size"] = 512  # data.train_ds[0][0][0].shape[1]
 
     # define architecture
     arch = define_arch(
