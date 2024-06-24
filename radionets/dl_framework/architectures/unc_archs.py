@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from radionets.dl_framework.architectures.res_exp import SRResNet_16
+from radionets.dl_framework.architectures.res_exp import SRResNet
 from radionets.dl_framework.model import GeneralELU, LocallyConnected2d
 
 

@@ -73,6 +73,78 @@ class h5_dataset:
         return data.float()
 
 
+class encoder_dataset:
+    def __init__(self, bundle_paths, tar_fourier, encoder_mode="amplitude"):
+        """
+        Save the bundle paths and the number of bundles in one file.
+        """
+        if len(bundle_paths) == 0:
+            raise ValueError("No bundles found! Please check the names of your files.")
+        self.bundles = bundle_paths  # np.repeat(bundle_paths, 2)
+        self.num_img = len(self.open_bundle(self.bundles[0], "x"))
+        self.tar_fourier = tar_fourier
+        self.encoder_mode = encoder_mode 
+
+    def __call__(self):
+        return print("This is the encoder_dataset class.")
+
+    def __len__(self):
+        """
+        Returns the total number of pictures in this dataset
+        """
+        return len(self.bundles) * self.num_img
+
+    def __getitem__(self, i):
+        img = self.open_image("y", i)
+        #img = torch.cat([torch.abs(img[0] + 1j * img[1])[None], torch.angle(img[0] + 1j * img[1])[None]])
+        # img = img[..., :512, :]
+        #if self.encoder_mode == "amplitude":
+        #    img = torch.log10(img[0]).unsqueeze(0)
+        #if self.encoder_mode == "phase":
+        #    img = img[1].unsqueeze(0)
+        return img, img
+
+    def open_bundle(self, bundle_path, var):
+        bundle = h5py.File(bundle_path, "r")
+        data = bundle[var]
+        return data
+
+    def open_image(self, var, i):
+        if isinstance(i, int):
+            i = torch.tensor([i])
+        elif isinstance(i, np.ndarray):
+            i = torch.tensor(i)
+        indices, _ = torch.sort(i)
+        bundle = torch.div(indices, self.num_img, rounding_mode="floor")
+        image = indices - bundle * self.num_img
+        bundle_unique = torch.unique(bundle)
+        bundle_paths = [
+            h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
+        ]
+        bundle_paths_str = list(map(str, bundle_paths))
+        data = torch.tensor(
+            np.array(
+                [
+                    bund[var][img]
+                    for bund, bund_str in zip(bundle_paths, bundle_paths_str)
+                    for img in image[
+                        bundle == bundle_unique[bundle_paths_str.index(bund_str)]
+                    ]
+                ]
+            )
+        )
+        if self.tar_fourier is False and data.shape[1] == 2:
+            raise ValueError(
+                "Two channeled data is used despite Fourier being False.\
+                    Set Fourier to True!"
+            )
+
+        if data.shape[0] == 1:
+            data = data.squeeze(0)
+
+        return data.float()
+
+
 def split_real_imag(array):
     """
     takes a complex array and returns the real and the imaginary part
@@ -174,7 +246,7 @@ def open_bundle_pack(path):
     return np.array(bundle_x), np.array(bundle_y), bundle_z
 
 
-def load_data(data_path, mode, fourier=False):
+def load_data(data_path, mode, fourier=False, encoder=False, encoder_mode="amplitude"):
     """
     Load data set from a directory and return it as h5_dataset.
 
@@ -197,5 +269,8 @@ def load_data(data_path, mode, fourier=False):
         [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
     )
     data = sorted(data, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
-    ds = h5_dataset(data, tar_fourier=fourier)
+    if encoder:
+        ds = encoder_dataset(data, tar_fourier=fourier, encoder_mode=encoder_mode)
+    else:
+        ds = h5_dataset(data, tar_fourier=fourier)
     return ds

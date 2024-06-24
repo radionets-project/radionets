@@ -137,17 +137,21 @@ class AvgLossCallback(Callback):
             self.loss_train = []
         if not hasattr(self, "loss_valid"):
             self.loss_valid = []
-        if not hasattr(self, "lrs"):
-            self.lrs = []
 
-    def after_train(self):
-        self.loss_train.append(self.recorder._train_mets.map(_maybe_item))
-
-    def after_validate(self):
-        self.loss_valid.append(self.recorder._valid_mets.map(_maybe_item))
+    def after_loss(self):
+        if not hasattr(self, "loss_train"):
+            self.loss_train = []
+        if not hasattr(self, "loss_valid"):
+            self.loss_valid = []
+        if self.training:
+            self.loss_train.append(self.loss.detach().cpu())
+        else:
+            self.loss_valid.append(self.loss.detach().cpu())
 
     def after_batch(self):
-        self.lrs.append(self.opt.hypers[-1]["lr"])
+        if not hasattr(self, "lrs"):
+            self.lrs = []
+        self.lrs.append(self.opt.param_groups[0]["lr"])
 
     def plot_loss(self):
         plt.plot(self.loss_train, label="Training loss")
@@ -195,6 +199,14 @@ class DataAug(Callback):
         self.learn.yb = [y]
 
 
+class AddNoise(Callback):
+    _order=3
+
+    def before_batch(self):
+        x = self.xb[0].clone()
+        y = self.yb[0].clone()
+ 
+
 class Normalize(Callback):
     _order = 4
 
@@ -209,9 +221,9 @@ class Normalize(Callback):
     def normalize(self, x, m, s):
         return (x - m) / s
 
-    def before_batch(self):
-        x = self.xb[0].clone()
-        y = self.yb[0].clone()
+    def before_batch(self, learn):
+        x = learn.batch[0]
+        y = learn.batch[1]
 
         if self.mode == "max":
             x[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
@@ -238,8 +250,7 @@ class Normalize(Callback):
             x = self.normalize(x, means, stds)
             y = self.normalize(y, means, stds)
 
-        self.learn.xb = [x]
-        self.learn.yb = [y]
+        learn.batch = (x, y)
 
 
 class SaveTempCallback(Callback):
@@ -248,13 +259,14 @@ class SaveTempCallback(Callback):
     def __init__(self, model_path):
         self.model_path = model_path
 
-    def after_epoch(self):
-        p = Path(self.model_path).parent
-        p.mkdir(parents=True, exist_ok=True)
-        if (self.epoch + 1) % 10 == 0:
-            out = p / f"temp_{self.epoch + 1}.model"
-            save_model(self, out)
-            print(f"\nFinished Epoch {self.epoch + 1}, model saved.\n")
+    def after_epoch(self, learn):
+        if not learn.training:
+            p = Path(self.model_path).parent
+            p.mkdir(parents=True, exist_ok=True)
+            if (learn.epoch + 1) % 2 == 0:
+                out = p / f"temp_{learn.epoch + 1}.model"
+                save_model(learn, out)
+                print(f"\nFinished Epoch {learn.epoch + 1}, model saved.\n")
 
 
 class SwitchLoss(Callback):
@@ -346,3 +358,22 @@ class PredictionImageGradient(Callback):
         # grads_y = gradient[:, :, 1]
 
         return grads_x, grads_y
+
+
+class MixedPrecision(Callback):
+    order = 10
+
+    def before_fit(self): self.scaler = torch.cuda.amp.GradScaler()
+
+    def before_batch(self):
+        self.autocast = torch.autocast("cuda", dtype=torch.float16)
+        self.autocast.__enter__()
+
+    def after_loss(self): self.autocast.__exit__(None, None, None)
+
+    def backward(self): self.scaler.scale(learn.loss).backward()
+
+    def step(self):
+        self.scaler.step(self.learn.opt)
+        self.scaler.update()
+

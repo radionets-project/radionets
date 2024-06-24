@@ -26,8 +26,8 @@ def create_OrBu():
 
     c1 = "#3B0963"  # lila
     c2 = "#F88410"  # orange
-    c3 = "#ebe6ef"
-    c4 = "#fef3e7"
+    c3 = "#fbfafc"  # "#ebe6ef"
+    c4 = "#fffdfa"  # "#fef3e7"
     n = 256
 
     fader_lila = [colorFader(c1, c3, x / n) for x in range(n + 1)]
@@ -286,10 +286,10 @@ def visualize_source_reconstruction(
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
 
     # Plot prediction
-    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
+    im1 = ax1.imshow(np.log2(ifft_pred), cmap="inferno")
 
     # Plot truth
-    im2 = ax2.imshow(ifft_truth, cmap="inferno")
+    im2 = ax2.imshow(np.log2(ifft_truth), cmap="inferno")
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
     im3 = ax3.imshow(ifft_pred - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)

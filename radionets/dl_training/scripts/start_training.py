@@ -54,6 +54,8 @@ def main(configuration_path, mode):
         data_path=train_conf["data_path"],
         fourier=train_conf["fourier"],
         batch_size=train_conf["batch_size"],
+        encoder=train_conf["encoder"],
+        encoder_mode=train_conf["encoder_mode"],
     )
 
     # get image size

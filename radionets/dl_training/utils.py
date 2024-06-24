@@ -12,10 +12,10 @@ from radionets.dl_framework.model import save_model
 from radionets.evaluation.train_inspection import create_inspection_plots
 
 
-def create_databunch(data_path, fourier, batch_size):
+def create_databunch(data_path, fourier, batch_size, encoder, encoder_mode="amplitude"):
     # Load data sets
-    train_ds = load_data(data_path, "train", fourier=fourier)
-    valid_ds = load_data(data_path, "valid", fourier=fourier)
+    train_ds = load_data(data_path, "train", fourier=fourier, encoder=encoder, encoder_mode=encoder_mode)
+    valid_ds = load_data(data_path, "valid", fourier=fourier, encoder=encoder, encoder_mode=encoder_mode)
 
     # Create databunch with defined batchsize
     data = DataBunch(*get_dls(train_ds, valid_ds, batch_size))
@@ -41,6 +41,8 @@ def read_config(config):
 
     train_conf["fourier"] = config["general"]["fourier"]
     train_conf["amp_phase"] = config["general"]["amp_phase"]
+    train_conf["encoder"] = config["general"]["encoder"]
+    train_conf["encoder_mode"] = config["general"]["encoder_mode"]
     train_conf["normalize"] = config["general"]["normalize"]
     train_conf["arch_name"] = config["general"]["arch_name"]
     train_conf["loss_func"] = config["general"]["loss_func"]

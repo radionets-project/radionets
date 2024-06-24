@@ -301,8 +301,9 @@ def get_images(test_ds, num_images, rand=False, indices=None):
 
         img_test = test_ds[indices][0]
         img_true = test_ds[indices][1]
-        img_test = img_test[:, :, :65, :]
-        img_true = img_true[:, :, :65, :]
+        print("img test shape", img_test.shape)
+        img_test = img_test[:, :, :img_test.shape[-1] // 2 + 1, :]
+        img_true = img_true[:, :, :img_test.shape[-1] // 2 + 1, :]
         return img_test, img_true, indices
     else:
         mean = test_ds[indices][0]
@@ -361,7 +362,7 @@ def get_ifft(array, amp_phase=False, scale=False):
         if scale:
             amp = 10 ** (10 * array[:, 0] - 10) - 1e-10
         else:
-            amp = array[:, 0]
+            amp = 10**array[:, 0]
 
         a = amp * np.cos(array[:, 1])
         b = amp * np.sin(array[:, 1])
@@ -439,18 +440,19 @@ def symmetry(image, key):
         image = torch.tensor(image)
     if len(image.shape) == 3:
         image = image.view(1, image.shape[0], image.shape[1], image.shape[2])
-    upper_half = image[:, :, :64, :].clone()
+    half_image = image.shape[-1] // 2
+    upper_half = image[:, :, :half_image, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
 
-    image[:, 0, 65:, 1:] = a[:, 0, :-1, :-1]
-    image[:, 0, 65:, 0] = a[:, 0, :-1, -1]
+    image[:, 0, half_image + 1 :, 1:] = a[:, 0, :-1, :-1]
+    image[:, 0, half_image + 1 :, 0] = a[:, 0, :-1, -1]
 
     if key == "unc":
-        image[:, 1, 65:, 1:] = a[:, 1, :-1, :-1]
-        image[:, 1, 65:, 0] = a[:, 1, :-1, -1]
+        image[:, 1, half_image + 1 :, 1:] = a[:, 1, :-1, :-1]
+        image[:, 1, half_image + 1 :, 0] = a[:, 1, :-1, -1]
     else:
-        image[:, 1, 65:, 1:] = -a[:, 1, :-1, :-1]
-        image[:, 1, 65:, 0] = -a[:, 1, :-1, -1]
+        image[:, 1, half_image + 1 :, 1:] = -a[:, 1, :-1, :-1]
+        image[:, 1, half_image + 1 :, 0] = -a[:, 1, :-1, -1]
 
     return image
 
@@ -472,9 +474,10 @@ def apply_symmetry(img_dict):
     for key in img_dict:
         if key != "indices":
             if isinstance(img_dict[key], np.ndarray):
-                img_dict[key] = torch.tensor(img_dict[key])
+                img_dict[key] = torch.from_numpy(img_dict[key]).double()
+            half_image = img_dict[key].shape[-1] // 2
             output = F.pad(
-                input=img_dict[key], pad=(0, 0, 0, 63), mode="constant", value=0
+                input=img_dict[key], pad=(0, 0, 0, half_image-1), mode="constant", value=0
             )
             output = symmetry(output, key)
             img_dict[key] = output
@@ -829,8 +832,12 @@ def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
         pred_2 = rescale_normalization(pred_2, norm_dict)
         pred = torch.cat((pred, pred_2), dim=1)
 
+    print("1", pred.shape)
+
     # apply symmetry
-    if pred.shape[-1] == 128:
+    print("shape", pred.shape)
+    if pred.shape[-1] == 1000:
+        print("yes")
         img_dict = {"truth": img_true, "pred": pred}
         img_dict = apply_symmetry(img_dict)
         img_true = img_dict["truth"]
@@ -838,6 +845,7 @@ def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
 
     ifft_truth = get_ifft(img_true, amp_phase=conf["amp_phase"])
     ifft_pred = get_ifft(pred, amp_phase=conf["amp_phase"])
+    print("2", ifft_pred.shape)
 
     return ifft_pred, ifft_truth
 

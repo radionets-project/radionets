@@ -1,8 +1,11 @@
+import torch
 import torch.nn as nn
 from fastai.callback.schedule import ParamScheduler, combined_cos
 from fastai.data.core import DataLoaders
-from fastai.learner import Learner
+from miniai.learner import Learner, MetricsCB, TrainCB, DeviceCB, ProgressCB
 from fastai.optimizer import Adam
+from functools import partial
+from miniai.sgd import BatchSchedCB
 
 import radionets.dl_framework.loss_functions as loss_functions
 from radionets.dl_framework.callbacks import (
@@ -13,25 +16,32 @@ from radionets.dl_framework.callbacks import (
     Normalize,
     SaveTempCallback,
     SwitchLoss,
+    MixedPrecision,
 )
 from radionets.dl_framework.model import init_cnn
+from functools import partial
 
 
 def get_learner(
-    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=Adam, **kwargs
+    data, arch, lr, loss_func=nn.MSELoss(), cb_funcs=None, opt_func=partial(torch.optim.AdamW, eps=1e-4), **kwargs
 ):
     init_cnn(arch)
     dls = DataLoaders.from_dsets(
         data.train_ds, data.valid_ds, bs=data.train_dl.batch_size
     )
-    return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
+    return Learner(arch, dls, loss_func=loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
 
 
 def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
-    cbfs = []
+    cbfs = [
+        TrainCB(),
+        DeviceCB(),
+        MetricsCB(),
+        ProgressCB(plot=False),
+    ]
     model_path = train_conf["model_path"]
     lr = train_conf["lr"]
-    opt_func = Adam
+    opt_func = partial(torch.optim.AdamW, eps=1e-4)
 
     if train_conf["param_scheduling"]:
         sched = {
@@ -42,7 +52,12 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
                 train_conf["lr_stop"],
             )
         }
-        cbfs.extend([ParamScheduler(sched)])
+        tmax = train_conf["num_epochs"] * len(data.train_ds)
+        sched = partial(torch.optim.lr_scheduler.OneCycleLR,
+            max_lr=train_conf["lr_max"],
+            total_steps=tmax,
+        )
+        cbfs.extend([BatchSchedCB(sched)])
 
     if train_conf["gpu"]:
         cbfs.extend([CudaCallback])
@@ -51,7 +66,8 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
         [
             SaveTempCallback(model_path=model_path),
             AvgLossCallback,
-            DataAug,
+            # DataAug,
+            # MixedPrecision(),
         ]
     )
 
@@ -79,8 +95,8 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
             ]
         )
 
-    if not plot_loss and train_conf["normalize"] != "none":
-        cbfs.extend([Normalize(train_conf)])
+    #if not plot_loss and train_conf["normalize"] != "none":
+    #    cbfs.extend([Normalize(train_conf)])
     # get loss func
     if train_conf["loss_func"] == "feature_loss":
         loss_func = loss_functions.init_feature_loss()

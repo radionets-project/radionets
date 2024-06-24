@@ -85,18 +85,18 @@ def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
         learn.load_state_dict(checkpoint["model"])
         return checkpoint["norm_dict"]
     elif plot_loss:
-        learn.avg_loss.loss_train = checkpoint["train_loss"]
-        learn.avg_loss.loss_valid = checkpoint["valid_loss"]
-        learn.avg_loss.lrs = checkpoint["lrs"]
+        learn.loss_train = checkpoint["train_loss"]
+        learn.loss_valid = checkpoint["valid_loss"]
+        learn.lrs = checkpoint["lrs"]
     else:
         learn.model.load_state_dict(checkpoint["model"])
         learn.opt.load_state_dict(checkpoint["opt"])
         learn.epoch = checkpoint["epoch"]
-        learn.avg_loss.loss_train = checkpoint["train_loss"]
-        learn.avg_loss.loss_valid = checkpoint["valid_loss"]
-        learn.avg_loss.lrs = checkpoint["lrs"]
-        learn.recorder.iters = checkpoint["iters"]
-        learn.recorder.values = checkpoint["vals"]
+        learn.loss_train = checkpoint["train_loss"]
+        learn.loss_valid = checkpoint["valid_loss"]
+        learn.lrs = checkpoint["lrs"]
+        # learn.recorder.iters = checkpoint["iters"]
+        # learn.recorder.values = checkpoint["vals"]
 
 
 def save_model(learn, model_path):
@@ -122,11 +122,11 @@ def save_model(learn, model_path):
             "model": learn.model.state_dict(),
             "opt": learn.opt.state_dict(),
             "epoch": learn.epoch,
-            "iters": learn.recorder.iters,
-            "vals": learn.recorder.values,
-            "train_loss": learn.avg_loss.loss_train,
-            "valid_loss": learn.avg_loss.loss_valid,
-            "lrs": learn.avg_loss.lrs,
+            #"iters": learn.recorder.iters,
+            #"vals": learn.recorder.values,
+            "train_loss": learn.loss_train,
+            "valid_loss": learn.loss_valid,
+            "lrs": learn.lrs,
             "norm_dict": norm_dict,
         },
         model_path,
@@ -195,6 +195,107 @@ class SRBlock(nn.Module):
             nn.InstanceNorm2d(nf),
         )
 
+
+class SRBlock13(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni, nf, stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(
+                ni, nf, 5, stride=stride, padding=2, bias=True, padding_mode="reflect"
+            ),
+            nn.InstanceNorm2d(nf),
+            nn.PReLU(),
+            nn.Conv2d(
+                nf, nf, 5, stride=1, padding=2, bias=True, padding_mode="reflect"
+            ),
+            nn.InstanceNorm2d(nf),
+        )
+
+class SRBlock21(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni, nf, stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(
+                ni, nf, 11, stride=stride, padding=5, bias=True, padding_mode="reflect"
+            ),
+            nn.InstanceNorm2d(nf),
+            nn.PReLU(),
+            nn.Conv2d(
+                nf, nf, 11, stride=1, padding=5, bias=True, padding_mode="reflect"
+            ),
+            nn.InstanceNorm2d(nf),
+        )
+
+
+class SRBlock29(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni, nf, stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(
+                ni, nf, 15, stride=stride, padding=7, bias=True, padding_mode="reflect"
+            ),
+            nn.InstanceNorm2d(nf),
+            nn.PReLU(),
+            nn.Conv2d(
+                nf, nf, 15, stride=1, padding=7, bias=True, padding_mode="reflect"
+            ),
+            nn.InstanceNorm2d(nf),
+        )
+
+class SRBlock37(nn.Module):
+    def __init__(self, ni, nf, stride=1):
+        super().__init__()
+        self.convs = self._conv_block(ni, nf, stride)
+        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
+        self.pool = (
+            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
+        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
+
+    def forward(self, x):
+        return self.convs(x) + self.idconv(self.pool(x))
+
+    def _conv_block(self, ni, nf, stride):
+        return nn.Sequential(
+            nn.Conv2d(
+                ni, nf, 21, stride=stride, padding=10, bias=True, padding_mode="reflect"
+            ),
+            nn.InstanceNorm2d(nf),
+            nn.PReLU(),
+            nn.Conv2d(
+                nf, nf, 21, stride=1, padding=10, bias=True, padding_mode="reflect"
+            ),
+            nn.InstanceNorm2d(nf),
+        )
 
 def symmetry(x):
     if x.shape[-1] % 2 != 0:
