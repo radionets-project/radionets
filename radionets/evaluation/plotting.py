@@ -629,13 +629,13 @@ def plot_box(ax, num_boxes, corners):
 
 
 def histogram_ms_ssim(msssim, out_path, plot_format="png"):
+    msssim = msssim.numpy()
     mean = np.mean(msssim)
     std = np.std(msssim, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
-    bins = np.arange(msssim.min(), 1 + 0.01, 0.01)
     ax1.hist(
         msssim,
-        bins=bins,
+        bins=30,
         color="darkorange",
         linewidth=3,
         histtype="step",
@@ -668,11 +668,9 @@ def histogram_sum_intensity(ratios_sum, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     mean = np.mean(ratios_sum)
     std = np.std(ratios_sum, ddof=1)
-    bins = np.arange(0.05, ratios_sum.max() + 0.05, 0.1)
-    bins = np.insert(bins, 0, 0)
     ax1.hist(
         ratios_sum,
-        bins=bins,
+        bins=30,
         color="darkorange",
         linewidth=3,
         histtype="step",
@@ -707,11 +705,9 @@ def histogram_peak_intensity(ratios_peak, out_path, plot_format="png"):
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     mean = np.mean(ratios_peak)
     std = np.std(ratios_peak, ddof=1)
-    bins = np.arange(0.05, ratios_peak.max() + 0.05, 0.1)
-    bins = np.insert(bins, 0, 0)
     ax1.hist(
         ratios_peak,
-        bins=bins,
+        bins=30,
         color="darkorange",
         linewidth=3,
         histtype="step",
@@ -768,11 +764,9 @@ def histogram_area(vals, out_path, plot_format="png"):
     vals = vals.numpy()
     mean = np.mean(vals)
     std = np.std(vals, ddof=1)
-    bins = np.arange(0.05, np.round(vals.max()) + 0.05, 0.1)
-    bins = np.insert(bins, 0, 0)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
     ax1.hist(
-        vals, bins=bins, color="darkorange", linewidth=3, histtype="step", alpha=0.75
+        vals, bins=30, color="darkorange", linewidth=3, histtype="step", alpha=0.75
     )
     ax1.axvline(1, color="red", linestyle="dashed")
     ax1.set_xlabel("Ratio of areas")
