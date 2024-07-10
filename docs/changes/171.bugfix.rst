@@ -1,0 +1,2 @@
+- fix `evaluate_msssim_sampled`
+- fix call of `evaluate_msssim_sampled`
