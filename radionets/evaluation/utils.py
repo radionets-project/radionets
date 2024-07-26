@@ -198,7 +198,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         )
         cbar.set_label("Phase / rad")
     elif unc:
-        cbar = fig.colorbar(im, cax=cax, orientation="vertical")
+        cbar = fig.colorbar(im, cax=cax, orientation="horizontal", location="top")
         cbar.set_label(r"$\sigma$ / $\mathrm{Jy \cdot px^{-1}}$")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="horizontal", location="top")
