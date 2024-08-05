@@ -5,14 +5,17 @@ channels:
     - pytorch
     - defaults
     - conda-forge
+    - nvidia
 dependencies:
   - python
-  - pytorch
+  - pytorch-gpu
+  - pytorch-cuda=12.1
+  - torchvision
   - cudatoolkit
   - cartopy
   - numpy
   - numba
+  - towncrier
   - pip
   - pip:
-    - towncrier
     - -e .
