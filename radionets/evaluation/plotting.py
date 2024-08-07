@@ -629,7 +629,6 @@ def plot_box(ax, num_boxes, corners):
 
 
 def histogram_ms_ssim(msssim, out_path, bins=30, plot_format="png"):
-    msssim = msssim.numpy()
     mean = np.mean(msssim)
     std = np.std(msssim, ddof=1)
     fig, (ax1) = plt.subplots(1, figsize=(6, 4))
