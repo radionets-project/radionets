@@ -564,7 +564,8 @@ def evaluate_ms_ssim_sampled(conf):
     out_path = Path(model_path).parent / "evaluation"
     out_path.mkdir(parents=True, exist_ok=True)
 
-    data_path = str(out_path) + "/sampled_imgs.h5"
+    name_model = Path(model_path).stem
+    data_path = str(out_path) + f"/sampled_imgs_{name_model}.h5"
     loader = create_sampled_databunch(data_path, conf["batch_size"])
     vals = []
 
@@ -586,10 +587,10 @@ def evaluate_ms_ssim_sampled(conf):
     click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
 
     if conf["save_vals"]:
-        click.echo("\nSaving area ratios.\n")
+        click.echo("\nSaving msssim ratios.\n")
         out = Path(conf["save_path"])
         out.mkdir(parents=True, exist_ok=True)
-        np.savetxt(out / "area_ratios.txt", vals)
+        np.savetxt(out / "msssim_ratios.txt", vals)
 
 
 def evaluate_area_sampled(conf):

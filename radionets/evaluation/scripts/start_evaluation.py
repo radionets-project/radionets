@@ -17,6 +17,7 @@ from radionets.evaluation.train_inspection import (
     evaluate_intensity_sampled,
     evaluate_mean_diff,
     evaluate_ms_ssim,
+    evaluate_ms_ssim_sampled,
     evaluate_point,
     evaluate_unc,
     evaluate_viewing_angle,
@@ -103,7 +104,11 @@ def main(configuration_path):
 
     if eval_conf["ms_ssim"]:
         click.echo("\nStart evaluation of ms ssim.\n")
-        evaluate_ms_ssim(eval_conf)
+        samp_file = check_samp_file(eval_conf)
+        if samp_file:
+            evaluate_ms_ssim_sampled(eval_conf)
+        else:
+            evaluate_ms_ssim(eval_conf)
 
     if eval_conf["intensity"]:
         click.echo("\nStart evaluation of intensity.\n")
