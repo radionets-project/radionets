@@ -1,0 +1,1 @@
+- fix plotting for `evaluate_msssim_sampled`
