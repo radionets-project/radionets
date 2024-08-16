@@ -583,7 +583,7 @@ def evaluate_ms_ssim_sampled(conf):
     name_model = Path(model_path).stem
     data_path = str(out_path) + f"/sampled_imgs_{name_model}.h5"
     loader = create_sampled_databunch(data_path, conf["batch_size"])
-    vals = []
+    vals = np.array([])
 
     # iterate trough DataLoader
     for i, (samp, std, img_true) in enumerate(tqdm(loader)):
@@ -594,10 +594,9 @@ def evaluate_ms_ssim_sampled(conf):
             win_size=7,
             size_average=False,
         )
-        vals.extend(val)
+        vals = np.append(vals, val)
 
     click.echo("\nCreating ms-ssim histogram.\n")
-    vals = torch.tensor(vals)
     histogram_ms_ssim(vals, out_path, plot_format=conf["format"])
 
     click.echo(f"\nThe mean ms-ssim value is {vals.mean()}.\n")
