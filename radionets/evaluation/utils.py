@@ -202,7 +202,7 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar.set_label(r"$\sigma$ / $\mathrm{Jy \cdot px^{-1}}$")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="horizontal", location="top")
-        cbar.set_label(r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$")
+        cbar.set_label(r"$\mathrm{Flux \ Density / Jy \cdot px^{-1}}$")
 
     if phase:
         # set ticks for colorbar
