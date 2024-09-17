@@ -6,10 +6,11 @@ import torch
 from tqdm import tqdm
 
 import radionets.dl_framework.architecture as architecture
-from radionets.dl_framework.data import DataBunch, get_dls  # , load_data
+from radionets.dl_framework.data import DataBunch, get_dls, load_data
 from radionets.dl_framework.inspection import plot_loss
 from radionets.dl_framework.model import save_model
-from radionets.dl_framework.vis_data import load_data
+
+# from radionets.dl_framework.vis_data import load_data
 from radionets.evaluation.train_inspection import create_inspection_plots
 
 

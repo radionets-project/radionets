@@ -7,6 +7,7 @@ import torch
 from pyvisgen.simulation.observation import Observation
 from pyvisgen.simulation.scan import RIME
 from torch.utils.data import Dataset
+from torchvision.transforms import Resize
 
 from radionets.dl_framework.data import get_bundles
 
@@ -37,7 +38,7 @@ class VisDataset(Dataset):
         return data
 
     def __getitem__(self, i):
-        img = self.open_image("y", i)
+        img = Resize(64)(self.open_image("y", i)[None])[0]
         with torch.no_grad():
             uv_coords, vis_sparse = self._prepare_vis(img, self.obs)
         vis_sparse = torch.stack((vis_sparse.real, vis_sparse.imag), dim=-1)
@@ -187,8 +188,8 @@ def load_data(data_path, mode, fourier=False):
         ref_frequency=1.3e9,
         frequency_offsets=[0],
         bandwidths=[1.67e6],
-        fov=1536,
-        image_size=512,
+        fov=1536 / 4,
+        image_size=64,
         array_layout="meerkat",
         corrupted=False,
         device="cuda:0",

@@ -45,17 +45,65 @@ def splitted_L1_masked(x, y):
     return loss
 
 
-def splitted_L1(x, y):
-    inp_amp = x[:, 0, :]
-    inp_phase = x[:, 1, :]
+# from radionets.evaluation.utils import apply_symmetry
 
-    tar_amp = y[:, 0, :]
-    tar_phase = y[:, 1, :]
+
+def splitted_L1(x, y):
+    # x, means, stds = x
+    # x[:, 0] = x[:, 0] * stds[:, 0] + means[:, 0]
+    # x[:, 1] = x[:, 1] * stds[:, 1] + means[:, 1]
+    # x[:, 2] = x[:, 2] * stds[:, 2] + means[:, 2]
+    # x[:, 3] = x[:, 3] * stds[:, 3] + means[:, 3]
+    # x[:, 4] = x[:, 4] * stds[:, 4] + means[:, 4]
+    # x[:, 5] = x[:, 5] * stds[:, 5] + means[:, 5]
+    # x[:, 6] = x[:, 6] * stds[:, 6] + means[:, 6]
+    # x[:, 7] = x[:, 7] * stds[:, 7] + means[:, 7]
+    # x[:, 8] = x[:, 8] * stds[:, 8] + means[:, 8]
+    # x[:, 9] = x[:, 9] * stds[:, 9] + means[:, 9]
+    # x[:, 10] = x[:, 10] * stds[:, 10] + means[:, 10]
+    # x[:, 11] = x[:, 11] * stds[:, 11] + means[:, 11]
+    # y[:, 0] = y[:, 0] * stds[:, 0] + means[:, 0]
+    # y[:, 1] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 2] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 3] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 4] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 5] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 6] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 7] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 8] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 9] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 10] = y[:, 1] * stds[:, 1] + means[:, 1]
+    # y[:, 11] = y[:, 1] * stds[:, 1] + means[:, 1]
+    inp_amp = x[:, :6]
+    inp_phase = x[:, 6:]
+
+    tar_amp = y[:, :6]
+    tar_phase = y[:, 6:]
+
+    # a_pred = x[:, 0] #* torch.cos(x[:, 1])
+    # b_pred = x[:, 1] #* torch.sin(x[:, 1])
+    # compl_pred = a_pred + b_pred * 1j
+    # ifft_pred = torch.abs(
+    # torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(compl_pred)))
+    # )
+
+    # a_true = y[:, 0] #* torch.cos(y[:, 1])
+    # b_true = y[:, 1] #* torch.sin(y[:, 1])
+    # compl_true = a_true + b_true * 1j
+    # ifft_true = torch.abs(
+    # torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(compl_true)))
+    # )
 
     l1 = nn.L1Loss()
     loss_amp = l1(inp_amp, tar_amp)
     loss_phase = l1(inp_phase, tar_phase)
-    loss = loss_amp + loss_phase
+    # ifft_pred[ifft_pred <= 1e-8] = 1e-8
+    # ifft_true[ifft_true <= 1e-8] = 1e-8
+    # loss_fft = l1(torch.log10(ifft_pred), torch.log10(ifft_true))
+    # print("fft", loss_fft)
+    # print("real", loss_amp)
+    # print("imag", loss_phase)
+    loss = loss_amp + loss_phase  # + loss_fft
     return loss
 
 
@@ -111,7 +159,7 @@ def vis_data_loss(x, y):
     vis_conj = conjugate_vis(visibilities, halfspace)
     vis_real = vis_conj.real.float()
     vis_imag = vis_conj.imag.float()
-    x_reshaped = x.reshape(-1, 512, 512, 2)
+    x_reshaped = x.reshape(-1, 64, 64, 2)
     ifft_img = torch.abs(
         torch.fft.fftshift(
             torch.fft.ifft2(

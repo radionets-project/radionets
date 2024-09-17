@@ -87,9 +87,13 @@ class SRResNet_16(nn.Module):
         )
 
         self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2))
+        self.hardtanh = nn.Hardtanh(-pi, pi)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
-        s = x.shape[-1]
+        # s = x.shape[-1]
+        means = x.mean(axis=-1).mean(axis=-1).reshape(x.shape[0], x.shape[1], 1, 1)
+        stds = x.std(axis=-1).std(axis=-1).reshape(x.shape[0], x.shape[1], 1, 1)
 
         x = self.preBlock(x)
 
@@ -97,10 +101,13 @@ class SRResNet_16(nn.Module):
 
         x = self.final(x)
 
-        x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
-        x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
+        # x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
+        # x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
+        # x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
+        # x0 = self.relu(x0)
+        # x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s // 2 + 1, s)
 
-        return torch.cat([x0, x1], dim=1)
+        return (x, means, stds)  # torch.cat([x0, x1], dim=1)
 
 
 class SRResNet_16_unc(nn.Module):

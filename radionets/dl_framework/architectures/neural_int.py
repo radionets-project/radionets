@@ -15,7 +15,7 @@ class ImplicitAstro_Trans(nn.Module):
             L_embed=5,  # 5
             embed_type="fourier",
             activation=nn.PReLU,
-            sigma=20,  # 2.5
+            sigma=2.5,  # 2.5
             context_type="Transformer",
         )
 

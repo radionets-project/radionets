@@ -29,7 +29,9 @@ class h5_dataset:
 
     def __getitem__(self, i):
         x = self.open_image("x", i)
+        # x = torch.stack([torch.abs(x[0] + 1j * x[1]), torch.angle(x[0] + 1j * x[1])])
         y = self.open_image("y", i)
+        # y = torch.stack([torch.abs(y[0] + 1j * y[1]), torch.angle(y[0] + 1j * y[1])])
         return x, y
 
     def open_bundle(self, bundle_path, var):

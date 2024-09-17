@@ -441,18 +441,20 @@ def symmetry(image, key):
     if len(image.shape) == 3:
         image = image.view(1, image.shape[0], image.shape[1], image.shape[2])
     half_image = image.shape[-1] // 2
+    print(half_image)
     upper_half = image[:, :, :half_image, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
+    print("a", a.shape)
 
-    image[:, 0, half_image + 1 :, 1:] = a[:, 0, :-1, :-1]
-    image[:, 0, half_image + 1 :, 0] = a[:, 0, :-1, -1]
+    image[:, :6, half_image + 1 :, 1:] = a[:, :6, :-1, :-1]
+    image[:, :6, half_image + 1 :, 0] = a[:, :6, :-1, -1]
 
     if key == "unc":
-        image[:, 1, half_image + 1 :, 1:] = a[:, 1, :-1, :-1]
-        image[:, 1, half_image + 1 :, 0] = a[:, 1, :-1, -1]
+        image[:, 1, half_image + 1 :, 1:] = a[:, :6, :-1, :-1]
+        image[:, 1, half_image + 1 :, 0] = a[:, :6, :-1, -1]
     else:
-        image[:, 1, half_image + 1 :, 1:] = -a[:, 1, :-1, :-1]
-        image[:, 1, half_image + 1 :, 0] = -a[:, 1, :-1, -1]
+        image[:, 6:, half_image + 1 :, 1:] = -a[:, 6:, :-1, :-1]
+        image[:, 6:, half_image + 1 :, 0] = -a[:, 6:, :-1, -1]
 
     return image
 
@@ -478,7 +480,7 @@ def apply_symmetry(img_dict):
             half_image = img_dict[key].shape[-1] // 2
             output = F.pad(
                 input=img_dict[key],
-                pad=(0, 0, 0, half_image - 1),
+                pad=(0, 0, 0, half_image - 64),
                 mode="constant",
                 value=0,
             )
