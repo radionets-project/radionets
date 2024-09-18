@@ -60,8 +60,7 @@ def main(configuration_path):
                 create_predictions(eval_conf)
                 break
 
-    if eval_conf["unc"]:
-        evaluate_unc(eval_conf)
+    if eval_conf["vis_unc"]:
         create_uncertainty_plots(
             eval_conf, num_images=eval_conf["num_images"], rand=eval_conf["random"]
         )
@@ -129,6 +128,10 @@ def main(configuration_path):
             evaluate_area_sampled(eval_conf)
         else:
             evaluate_area(eval_conf)
+
+    if eval_conf["unc"]:
+        click.echo("\nStart evaluation of uncertainty.\n")
+        evaluate_unc(eval_conf)
 
     if eval_conf["point"]:
         click.echo("\nStart evaluation of point sources.\n")
