@@ -161,7 +161,9 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False):
+def make_axes_nice(
+    fig, ax, im, title, phase=False, phase_diff=False, unc=False, german=False
+):
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
     Parameters
@@ -202,7 +204,10 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         cbar.set_label(r"$\sigma$ / $\mathrm{Jy \cdot px^{-1}}$")
     else:
         cbar = fig.colorbar(im, cax=cax, orientation="horizontal", location="top")
-        cbar.set_label(r"$\mathrm{Flux \ Density / Jy \cdot px^{-1}}$")
+        if german:
+            cbar.set_label(r"$\mathrm{Flussdichte / Jy \cdot px^{-1}}$")
+        else:
+            cbar.set_label(r"$\mathrm{Flux \ Density / Jy \cdot px^{-1}}$")
 
     if phase:
         # set ticks for colorbar
