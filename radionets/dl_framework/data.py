@@ -141,7 +141,7 @@ def get_bundles(path):
     returns list of bundle paths located in a directory
     """
     data_path = Path(path)
-    bundles = np.array([x for x in data_path.iterdir()])
+    bundles = np.array(data_path.glob("samp_*.h5"))
     return bundles
 
 
@@ -192,10 +192,8 @@ def load_data(data_path, mode, fourier=False):
     test_ds: h5_dataset
         dataset containing x and y images
     """
-    bundle_paths = get_bundles(data_path)
-    data = np.sort(
-        [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
-    )
-    data = sorted(data, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
+    data_path = Path(data_path)
+    bundle_paths = data_path.glob("samp_*" + mode + "*.h5")
+    data = sorted(bundle_paths, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
     ds = h5_dataset(data, tar_fourier=fourier)
     return ds
