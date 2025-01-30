@@ -441,18 +441,24 @@ def symmetry(image, key):
     if len(image.shape) == 3:
         image = image.view(1, image.shape[0], image.shape[1], image.shape[2])
     half_image = image.shape[-1] // 2
-    upper_half = image[:, :, :half_image, :].clone()
+    upper_half = image[:, :, : half_image + 1, :].clone()
     a = torch.rot90(upper_half, 2, dims=[-2, -1])
 
-    image[:, 0, half_image + 1 :, 1:] = a[:, 0, :-1, :-1]
-    image[:, 0, half_image + 1 :, 0] = a[:, 0, :-1, -1]
+    image[:, 0, half_image + 1 :, 1:] = a[:, 0, 1:-1, :-1]
+    image[:, 0, half_image + 1 :, 0] = a[:, 0, 1:-1, -1]
+    image[:, 0, half_image : half_image + 1, half_image + 1 :] = a[
+        :, 0, 0:1, half_image:-1
+    ]
 
     if key == "unc":
         image[:, 1, half_image + 1 :, 1:] = a[:, 1, :-1, :-1]
         image[:, 1, half_image + 1 :, 0] = a[:, 1, :-1, -1]
     else:
-        image[:, 1, half_image + 1 :, 1:] = -a[:, 1, :-1, :-1]
-        image[:, 1, half_image + 1 :, 0] = -a[:, 1, :-1, -1]
+        image[:, 1, half_image + 1 :, 1:] = -a[:, 1, 1:-1, :-1]
+        image[:, 1, half_image + 1 :, 0] = -a[:, 1, 1:-1, -1]
+        image[:, 1, half_image : half_image + 1, half_image + 1 :] = -a[
+            :, 1, 0:1, half_image:-1
+        ]
 
     return image
 
