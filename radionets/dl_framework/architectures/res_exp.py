@@ -38,17 +38,14 @@ class SRResNet(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
-        s = x.shape[-1]
-
         x = self.preBlock(x)
 
         x = x + self.postBlock(self.blocks(x))
 
         x = self.final(x)
 
-        x0 = x[:, 0].reshape(-1, 1, s, s)
-        x0 = self.relu(x0)
-        x1 = self.hardtanh(x[:, 1]).reshape(-1, 1, s, s)
+        x0 = self.relu(x[:, 0].unsqueeze(1))
+        x1 = self.hardtanh(x[:, 1].unsqueeze(1))
 
         return torch.cat([x0, x1], dim=1)
 
@@ -89,7 +86,7 @@ class SRResNet_16(nn.Module):
         self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2))
 
     def forward(self, x):
-        s = x.shape[-1]
+        s = x.shape[-2]
 
         x = self.preBlock(x)
 
