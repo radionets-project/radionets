@@ -344,7 +344,7 @@ class TestEvaluation:
     def test_symmetry(self):
         import torch
 
-        from radionets.evaluation.utils import symmetry
+        from radionets.utils import symmetry
 
         x = torch.randint(0, 9, size=(1, 2, 64, 64))
         x_symm = symmetry(x.clone(), key="unc")
@@ -355,7 +355,8 @@ class TestEvaluation:
         import torch
         import torch.nn.functional as F
 
-        from radionets.evaluation.utils import get_ifft, read_pred, symmetry, trunc_rvs
+        from radionets.evaluation.utils import get_ifft, read_pred, trunc_rvs
+        from radionets.utils import symmetry
 
         num_samples = 100
         num_img = 2

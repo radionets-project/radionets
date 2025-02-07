@@ -34,7 +34,6 @@ from radionets.evaluation.plotting import (
 from radionets.evaluation.pointsources import flux_comparison
 from radionets.evaluation.utils import (
     apply_normalization,
-    apply_symmetry,
     check_samp_file,
     create_databunch,
     create_sampled_databunch,
@@ -50,8 +49,8 @@ from radionets.evaluation.utils import (
     sample_images,
     sampled_dataset,
     save_pred,
-    symmetry,
 )
+from radionets.utils import apply_symmetry, symmetry
 
 
 def create_predictions(conf):

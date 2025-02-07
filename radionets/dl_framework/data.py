@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
-from radionets.evaluation.utils import apply_symmetry
+from radionets.utils import apply_symmetry
 
 
 class h5_dataset:

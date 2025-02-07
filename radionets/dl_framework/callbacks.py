@@ -12,7 +12,6 @@ from radionets.dl_framework.utils import _maybe_item, get_ifft_torch
 from radionets.evaluation.plotting import create_OrBu
 from radionets.evaluation.utils import (
     apply_normalization,
-    apply_symmetry,
     check_vmin_vmax,
     eval_model,
     get_ifft,
@@ -22,6 +21,7 @@ from radionets.evaluation.utils import (
     make_axes_nice,
     rescale_normalization,
 )
+from radionets.utils import apply_symmetry
 
 OrBu = create_OrBu()
 
