@@ -32,31 +32,39 @@ class h5_dataset:
         x = self.open_image("x", i)
 
         sym_x = apply_symmetry({"x": x}, overlap=1)["x"]
-        di = np.abs(
-            np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(sym_x[0] + 1j * sym_x[1])))
+        di = torch.abs(
+            torch.fft.fftshift(
+                torch.fft.ifft2(
+                    torch.fft.fftshift(sym_x[0, 0, ...] + 1j * sym_x[0, 1, ...])
+                )
+            )
         )
-        di_fft = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(di)))
+        di_fft = torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(di)))
 
-        x = torch.stack([torch.abs(di_fft), torch.angle(di_fft)])
+        x = torch.stack([torch.abs(di_fft), torch.angle(di_fft)], dim=0)
         x[0] **= 0.1
         del sym_x, di, di_fft
 
         half_image = x.shape[2] // 2
-        x = x[:, half_image + 4, :]
+        x = x[:, : half_image + 4, :]
 
         y = self.open_image("y", i)
         sym_y = apply_symmetry({"y": y}, overlap=1)["y"]
-        y_di = np.abs(
-            np.fft.fftshift(np.fft.ifft2(np.fft.fftshift(sym_y[0] + 1j * sym_y[1])))
+        y_di = torch.abs(
+            torch.fft.fftshift(
+                torch.fft.ifft2(
+                    torch.fft.fftshift(sym_y[0, 0, ...] + 1j * sym_y[0, 1, ...])
+                )
+            )
         )
-        y_di_fft = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(y_di)))
+        y_di_fft = torch.fft.fftshift(torch.fft.fft2(torch.fft.fftshift(y_di)))
 
         y = torch.stack([torch.abs(y_di_fft), torch.angle(y_di_fft)])
         y[0] **= 0.1
         del sym_y, y_di, y_di_fft
 
         half_image = y.shape[2] // 2
-        y = y[:, half_image + 4, :]
+        y = y[:, : half_image + 4, :]
 
         return x, y
 
