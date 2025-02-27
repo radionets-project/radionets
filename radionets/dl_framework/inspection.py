@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -13,6 +15,9 @@ def plot_loss(learn, model_path, output_format="pdf"):
     model_path: str
         path to trained model
     """
+    if not isinstance(model_path, Path):
+        model_path = Path(model_path)
+
     # to prevent the localhost error from happening first change the backende and
     # second turn off the interactive mode
     mpl.use("Agg")
@@ -22,7 +27,7 @@ def plot_loss(learn, model_path, output_format="pdf"):
     print(f"\nPlotting Loss for: {model_path.stem}\n")
     logscale = learn.avg_loss.plot_loss()
     title = str(model_path.stem).replace("_", " ")
-    plt.title(fr"{title}")
+    plt.title(rf"{title}")
     if logscale:
         plt.yscale("log")
     plt.savefig(
@@ -43,6 +48,9 @@ def plot_lr(learn, model_path, output_format="png"):
     model_path: str
         path to trained model
     """
+    if not isinstance(model_path, Path):
+        model_path = Path(model_path)
+
     # to prevent the localhost error from happening first change the backende and
     # second turn off the interactive mode
     mpl.use("Agg")
@@ -70,6 +78,9 @@ def plot_lr_loss(learn, arch_name, out_path, skip_last, output_format="png"):
     skip_last: int
         skip n last points
     """
+    if not isinstance(out_path, Path):
+        out_path = Path(out_path)
+
     # to prevent the localhost error from happening first change the backende and
     # second turn off the interactive mode
     mpl.use("Agg")
