@@ -2,10 +2,88 @@ import numpy as np
 import torch
 from torch import nn
 
+from radionets.utils import apply_symmetry
+
 
 def l1(x, y):
     l1 = nn.L1Loss()
     loss = l1(x, y)
+    return loss
+
+
+def l1_amp(x, y):
+    l1 = nn.L1Loss()
+    loss = l1(x, y[:, 0].unsqueeze(1))
+    return loss
+
+
+def l1_phase(x, y):
+    l1 = nn.L1Loss()
+    loss = l1(x, y[:, 1].unsqueeze(1))
+    return loss
+
+
+def l1_amp_fft(x, y):
+    pred = torch.cat((x, y[:, 1].unsqueeze(1)), dim=1)
+    pred = apply_symmetry({"x": pred}, overlap=4)["x"]
+    y = apply_symmetry({"y": y}, overlap=4)["y"]
+
+    y[y < 0.5] = 0
+    pred[y < 0.5] = 0
+    loss_amp = l1_amp(pred[:, 0].unsqueeze(1), y)
+
+    a = pred[:, 0] ** (1 / 0.1) * torch.cos(pred[:, 1])
+    b = pred[:, 0] ** (1 / 0.1) * torch.sin(pred[:, 1])
+
+    x = a + b * 1j
+    x = torch.abs(torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(x))))
+
+    del a, b, pred
+
+    a = y[:, 0] ** (1 / 0.1) * torch.cos(y[:, 1])
+    b = y[:, 0] ** (1 / 0.1) * torch.sin(y[:, 1])
+
+    y = a + b * 1j
+    y = torch.abs(torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(y))))
+
+    mask = (y > 1e-6).bool()
+
+    l1 = nn.L1Loss()
+    loss_fft = l1(x[mask], y[mask])
+
+    loss = 0.5 * loss_fft + loss_amp
+
+    return loss
+
+
+def l1_phase_fft(x, y):
+    loss_phase = l1_phase(x, y)
+
+    l1 = nn.L1Loss()
+    pred = torch.cat((y[:, 0].unsqueeze(1), x), dim=1)
+    pred = apply_symmetry({"x": pred}, overlap=4)["x"]
+    y = apply_symmetry({"y": y}, overlap=4)["y"]
+
+    a = pred[:, 0] ** (1 / 0.1) * torch.cos(pred[:, 1])
+    b = pred[:, 0] ** (1 / 0.1) * torch.sin(pred[:, 1])
+
+    x = a + b * 1j
+    x = torch.abs(torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(x))))
+
+    del a, b, pred
+
+    a = y[:, 0] ** (1 / 0.1) * torch.cos(y[:, 1])
+    b = y[:, 0] ** (1 / 0.1) * torch.sin(y[:, 1])
+
+    y = a + b * 1j
+    y = torch.abs(torch.fft.fftshift(torch.fft.ifft2(torch.fft.fftshift(y))))
+
+    mask = (y > 1e-6).bool()
+
+    loss_fft = l1(x[mask], y[mask])
+
+    loss = loss_fft + loss_phase
+
     return loss
 
 
