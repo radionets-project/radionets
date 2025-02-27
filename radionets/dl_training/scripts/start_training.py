@@ -73,7 +73,9 @@ def main(configuration_path, mode):
         click.echo("Start training of the model.\n")
 
         # define_learner
-        learn = define_learner(data, arch, train_conf)
+        learn = define_learner(
+            data, arch, train_conf, arch_name=train_conf["arch_name"]
+        )
 
         # load pretrained model
         if train_conf["pre_model"] != "none":

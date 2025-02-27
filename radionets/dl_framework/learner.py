@@ -27,7 +27,14 @@ def get_learner(
     return Learner(dls, arch, loss_func, lr=lr, cbs=cb_funcs, opt_func=opt_func)
 
 
-def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
+def define_learner(
+    data,
+    arch,
+    train_conf,
+    lr_find=False,
+    plot_loss=False,
+    arch_name=None,
+):
     cbfs = []
     model_path = train_conf["model_path"]
     lr = train_conf["lr"]
@@ -75,6 +82,7 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
                     plot_n_epochs=train_conf["plot_n_epochs"],
                     amp_phase=train_conf["amp_phase"],
                     scale=train_conf["scale"],
+                    arch_name=arch_name,
                 ),
             ]
         )
