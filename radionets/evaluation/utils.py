@@ -4,6 +4,7 @@ import h5py
 import numpy as np
 import torch
 import torch.nn.functional as F
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numba import set_num_threads, vectorize
 from torch.utils.data import DataLoader
 
@@ -162,9 +163,12 @@ def reshape_2d(array):
     return array.reshape(-1, *shape)
 
 
-def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False):
+def make_axes_nice(
+    fig, ax, im, title, phase=False, phase_diff=False, unc=False
+) -> tuple:
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
+
     Parameters
     ----------
     fig : figure object
@@ -175,9 +179,16 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         plotted image
     title : str
         title of subplot
-    """
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+    Returns
+    -------
+    fig : figure object
+        current figure
+    ax : axis object
+        current axis
+    cbar : colorbar object
+        Current colorbar
+    """
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title(title)
@@ -211,6 +222,8 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
     elif phase_diff:
         # set ticks for colorbar
         cbar.ax.set_yticklabels([r"$-2\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$2\pi$"])
+
+    return fig, ax, cbar
 
 
 def check_vmin_vmax(inp):
