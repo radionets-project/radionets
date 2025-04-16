@@ -164,7 +164,16 @@ def reshape_2d(array):
 
 
 def make_axes_nice(
-    fig, ax, im, title, phase=False, phase_diff=False, unc=False
+    fig,
+    ax,
+    im,
+    title,
+    phase=False,
+    phase_diff=False,
+    unc=False,
+    unit="Jy",
+    top=False,
+    cbar_kwargs={"orientation": "vertical"},
 ) -> tuple:
     """Create nice colorbars with bigger label size for every axis in a subplot.
     Also use ticks for the phase.
@@ -190,35 +199,48 @@ def make_axes_nice(
         Current colorbar
     """
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
+    if top:
+        cax = divider.append_axes("top", size="5%", pad=0.05)
+    else:
+        cax = divider.append_axes("right", size="5%", pad=0.05)
     ax.set_title(title)
 
     if phase:
         cbar = fig.colorbar(
             im,
             cax=cax,
-            orientation="vertical",
             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
+            **cbar_kwargs,
         )
         cbar.set_label("Phase / rad")
     elif phase_diff:
         cbar = fig.colorbar(
             im,
             cax=cax,
-            orientation="vertical",
             ticks=[-2 * np.pi, -np.pi, 0, np.pi, 2 * np.pi],
+            **cbar_kwargs,
         )
         cbar.set_label("Phase / rad")
     elif unc:
-        cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label(r"$\sigma$ / $\mathrm{Jy \cdot px^{-1}}$")
+        cbar = fig.colorbar(
+            im,
+            cax=cax,
+            **cbar_kwargs,
+        )
+        cbar.set_label(rf"$\sigma$ / $\mathrm{{{unit} \cdot px^{{-1}}}}$")
     else:
-        cbar = fig.colorbar(im, cax=cax, orientation="vertical")
-        cbar.set_label(r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$")
+        cbar = fig.colorbar(
+            im,
+            cax=cax,
+            **cbar_kwargs,
+        )
+        cbar.set_label(rf"$\mathrm{{Flux \ density \:/\: {unit} \cdot px^{{-1}}}}$")
 
     if phase:
         # set ticks for colorbar
-        cbar.ax.set_yticklabels([r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"])
+        cbar.ax.set_yticklabels(
+            [r"$-\pi$", r"$-\pi / 2$", r"$0$", r"$\pi / 2$", r"$\pi$"]
+        )
     elif phase_diff:
         # set ticks for colorbar
         cbar.ax.set_yticklabels([r"$-2\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$2\pi$"])
@@ -778,12 +800,12 @@ def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
     ifft_truth : ndarray
         true source in image space
     """
-    img_test, norm_dict = apply_normalization(img_test, norm_dict)
+    # img_test, norm_dict = apply_normalization(img_test, norm_dict)
     pred = eval_model(img_test, model)
-    pred = rescale_normalization(pred, norm_dict)
+    # pred = rescale_normalization(pred, norm_dict)
     if model_2 is not None:
         pred_2 = eval_model(img_test, model_2)
-        pred_2 = rescale_normalization(pred_2, norm_dict)
+        # pred_2 = rescale_normalization(pred_2, norm_dict)
         pred = torch.cat((pred, pred_2), dim=1)
 
     # apply symmetry
