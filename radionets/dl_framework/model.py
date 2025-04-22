@@ -171,8 +171,15 @@ class LocallyConnected2d(nn.Module):
 
 
 class SRBlock(nn.Module):
-    def __init__(self, ni, nf, stride=1):
+    def __init__(self, ni, nf, stride=1, dropout=False, eval=False, dropout_p=0.5):
         super().__init__()
+        self.dropout = dropout
+
+        if eval:
+            self.p = 0
+        else:
+            self.p = dropout_p
+
         self.convs = self._conv_block(ni, nf, stride)
         self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
         self.pool = (
@@ -183,17 +190,117 @@ class SRBlock(nn.Module):
         return self.convs(x) + self.idconv(self.pool(x))
 
     def _conv_block(self, ni, nf, stride):
-        return nn.Sequential(
+        if self.dropout:
+            block = nn.Sequential(
+                nn.Conv2d(
+                    ni,
+                    nf,
+                    3,
+                    stride=stride,
+                    padding=1,
+                    bias=False,
+                    padding_mode="reflect",
+                ),
+                nn.InstanceNorm2d(nf, eps=0.1),
+                nn.PReLU(),
+                nn.Dropout(p=self.p),
+                nn.Conv2d(
+                    nf,
+                    nf,
+                    3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                    padding_mode="reflect",
+                ),
+                nn.Dropout(p=self.p),
+                nn.InstanceNorm2d(nf, eps=0.1),
+            )
+        else:
+            block = nn.Sequential(
+                nn.Conv2d(
+                    ni,
+                    nf,
+                    3,
+                    stride=stride,
+                    padding=1,
+                    bias=False,
+                    padding_mode="reflect",
+                ),
+                nn.InstanceNorm2d(nf),
+                nn.PReLU(),
+                nn.Conv2d(
+                    nf,
+                    nf,
+                    3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                    padding_mode="reflect",
+                ),
+                nn.InstanceNorm2d(nf),
+            )
+
+        return block
+
+
+class BottleneckResBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, stride=1, downsample=False):
+        super(BottleneckResBlock, self).__init__()
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.stride = stride
+        self.downsample = downsample
+
+        self.prelu = nn.PReLU()
+        self.convs = self._conv_block()
+
+    def _conv_block(self):
+        block = nn.Sequential(
             nn.Conv2d(
-                ni, nf, 3, stride=stride, padding=1, bias=False, padding_mode="reflect"
+                self.in_channels,
+                self.out_channels // 4,
+                kernel_size=1,
+                stride=1,
+                bias=False,
             ),
-            nn.InstanceNorm2d(nf),
-            nn.PReLU(),
+            nn.BatchNorm2d(self.out_channels // 4),
+            self.prelu,
             nn.Conv2d(
-                nf, nf, 3, stride=1, padding=1, bias=False, padding_mode="reflect"
+                self.out_channels // 4,
+                self.out_channels // 4,
+                kernel_size=3,
+                stride=self.stride,
+                padding=1,
+                bias=False,
             ),
-            nn.InstanceNorm2d(nf),
+            nn.BatchNorm2d(self.out_channels // 4),
+            self.prelu,
+            nn.Conv2d(
+                self.out_channels // 4,
+                self.out_channels,
+                kernel_size=1,
+                stride=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(self.out_channels),
         )
+
+        return block
+
+    def forward(self, x):
+        x0 = x
+
+        x = self.convs(x)
+
+        if self.downsample:
+            x0 = self.downsample(x0)
+
+        x += x0
+        x = self.prelu(x)
+
+        return x
 
 
 def symmetry(x):
