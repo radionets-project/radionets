@@ -15,7 +15,7 @@ maintainers = [
   { name = "Felix Geyer", email = "felix.geyer@tu-dortmund.de" },
 ]
 license = { text = "MIT" }
-url = "https://github.com/radionets-project/radionets""
+url = "https://github.com/radionets-project/radionets"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -35,7 +35,6 @@ classifiers = [
 
 requires-python = ">=3.10"
 
-
 dependencies = [
     "fastai",
     "kornia",
@@ -54,24 +53,19 @@ dependencies = [
     "pre-commit",
 ]
 
-
 [project.optional-dependencies]
-
 tests = ["pytest >= 7.0", "pytest-cov", "pytest-order"]
-
 
 [project.scripts]
 radionets_simulations = "radionets.simulations.scripts.simulate_images:main"
 radionets_training = "radionets.dl_training.scripts.start_training:main"
 radionets_evaluation = "radionets.evaluation.scripts.start_evaluation:main"
 
-
 [tool.pytest.ini_options]
 addopts = "--verbose"
 
-
 [tool.towncrier]
-package = "radionets"
+package = "pyvisgen"
 directory = "docs/changes"
 filename = "CHANGES.rst"
 template = "docs/changes/template.rst"
@@ -88,6 +82,10 @@ showcontent = true
 
 [tool.towncrier.fragment.api]
 name = "API Changes"
+showcontent = true
+
+[tool.towncrier.fragment.datamodel]
+name = "Data Model Changes"
 showcontent = true
 
 [tool.towncrier.fragment.optimization]
