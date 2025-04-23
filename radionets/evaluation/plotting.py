@@ -501,14 +501,12 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     make_axes_nice(fig, ax2, im2, f"Truth, ratio: {diff}")
     outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
-    # Assign labels for the levels and save them for the legend
-    for i in range(len(labels)):
-        CS1.collections[i].set_label(labels[i])
-        CS2.collections[i].set_label(labels[i])
+    cl1, _ = CS1.legend_elements()
+    cl2, _ = CS2.legend_elements()
 
     # plotting legend
-    ax1.legend(loc="best")
-    ax2.legend(loc="best")
+    ax1.legend(cl1, labels, loc="best")
+    ax2.legend(cl2, labels, loc="best")
 
     ax1.set_ylabel(r"Pixels")
     ax1.set_xlabel(r"Pixels")
