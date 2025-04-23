@@ -494,14 +494,15 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     im1 = ax1.imshow(
         ifft_pred,
         cmap="inferno",
-        norm=PowerNorm(0.4, vmin=ifft_truth[0].min(), vmax=ifft_truth[0].max()),
+        norm=PowerNorm(0.4, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
     )
     CS1 = ax1.contour(ifft_pred, levels=levels, colors=colors)
     make_axes_nice(fig, ax1, im1, "Prediction")
 
     im2 = ax2.imshow(
         ifft_truth,
-        norm=PowerNorm(0.4, vmin=ifft_truth[0].min(), vmax=ifft_truth[0].max()),
+        cmap="inferno",
+        norm=PowerNorm(0.4, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
     )
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_ratio(CS1, CS2), 2)
