@@ -64,7 +64,7 @@ radionets_training = "radionets.dl_training.scripts.start_training:main"
 radionets_evaluation = "radionets.evaluation.scripts.start_evaluation:main"
 
 [tool.setuptools_scm]
-write_to = "pyvisgen/_version.py"
+write_to = "radionets/_version.py"
 
 [tool.setuptools.packages.find]
 where = ["."]
