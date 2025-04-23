@@ -14,7 +14,7 @@ maintainers = [
   { name = "Kevin Schmitz", email = "kevin2.schmitz@tu-dortmund.de" },
   { name = "Felix Geyer", email = "felix.geyer@tu-dortmund.de" },
 ]
-license = { text = "MIT" }
+license = "MIT"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -62,6 +62,12 @@ tests = ["pytest >= 7.0", "pytest-cov", "pytest-order"]
 radionets_simulations = "radionets.simulations.scripts.simulate_images:main"
 radionets_training = "radionets.dl_training.scripts.start_training:main"
 radionets_evaluation = "radionets.evaluation.scripts.start_evaluation:main"
+
+[tool.setuptools_scm]
+write_to = "pyvisgen/_version.py"
+
+[tool.setuptools.packages.find]
+where = ["."]
 
 [tool.pytest.ini_options]
 addopts = "--verbose"
