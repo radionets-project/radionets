@@ -49,6 +49,7 @@ dependencies = [
     "toml",
     "comet_ml",
     "pre-commit",
+    "spacy<=3.8"
 ]
 
 [project.urls]
