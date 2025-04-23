@@ -65,7 +65,7 @@ radionets_evaluation = "radionets.evaluation.scripts.start_evaluation:main"
 addopts = "--verbose"
 
 [tool.towncrier]
-package = "pyvisgen"
+package = "radionets"
 directory = "docs/changes"
 filename = "CHANGES.rst"
 template = "docs/changes/template.rst"
