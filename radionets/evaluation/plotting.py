@@ -486,6 +486,7 @@ def plot_contour(
     plot_format="png",
     return_fig=False,
     diff_in_name=True,
+    norm_scale=0.4,
 ):
     labels = [r"1%", r"10%", r"30%", r"50%", r"80%"]
     colors = ["#454CC7", "#1984DE", "#50B3D7", "#ABD9DC", "#FFFFFF"]
@@ -503,7 +504,7 @@ def plot_contour(
     im1 = ax[0].imshow(
         ifft_pred,
         cmap="inferno",
-        norm=PowerNorm(0.4, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
+        norm=PowerNorm(norm_scale, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
     )
     CS1 = ax[0].contour(ifft_pred, levels=levels, colors=colors)
     make_axes_nice(fig, ax[0], im1, "Prediction")
@@ -511,7 +512,7 @@ def plot_contour(
     im2 = ax[1].imshow(
         ifft_truth,
         cmap="inferno",
-        norm=PowerNorm(0.4, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
+        norm=PowerNorm(norm_scale, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
     )
     CS2 = ax[1].contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_ratio(CS1, CS2), 2)
