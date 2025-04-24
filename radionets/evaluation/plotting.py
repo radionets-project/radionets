@@ -523,7 +523,7 @@ def plot_contour(
     ax[1].set_xlabel(r"Pixels")
 
     if return_fig:
-        return fig, ax, outpath
+        return fig, ax, outpath, cl1, cl2, labels
 
     plt.tight_layout(pad=0.75)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
