@@ -478,7 +478,9 @@ def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
     plt.close("all")
 
 
-def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
+def plot_contour(
+    ifft_pred, ifft_truth, out_path, i, plot_format="png", return_fig=False
+):
     labels = [r"1%", r"10%", r"30%", r"50%", r"80%"]
     colors = ["#454CC7", "#1984DE", "#50B3D7", "#ABD9DC", "#FFFFFF"]
     levels = [
@@ -490,36 +492,38 @@ def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
     ]
 
     # plt.style.use('./paper_large.rc')
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
+    fig, ax = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
 
-    im1 = ax1.imshow(
+    im1 = ax[0].imshow(
         ifft_pred,
         cmap="inferno",
         norm=PowerNorm(0.4, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
     )
-    CS1 = ax1.contour(ifft_pred, levels=levels, colors=colors)
-    make_axes_nice(fig, ax1, im1, "Prediction")
+    CS1 = ax[0].contour(ifft_pred, levels=levels, colors=colors)
+    make_axes_nice(fig, ax[0], im1, "Prediction")
 
-    im2 = ax2.imshow(
+    im2 = ax[1].imshow(
         ifft_truth,
         cmap="inferno",
         norm=PowerNorm(0.4, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
     )
-    CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
+    CS2 = ax[1].contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_ratio(CS1, CS2), 2)
-    make_axes_nice(fig, ax2, im2, f"Truth, ratio: {diff}")
+    make_axes_nice(fig, ax[1], im2, f"Truth, ratio: {diff}")
     outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
     cl1, _ = CS1.legend_elements()
     cl2, _ = CS2.legend_elements()
 
     # plotting legend
-    ax1.legend(cl1, labels, loc="best")
-    ax2.legend(cl2, labels, loc="best")
+    ax[0].legend(cl1, labels, loc="best")
+    ax[1].legend(cl2, labels, loc="best")
 
-    ax1.set_ylabel(r"Pixels")
-    ax1.set_xlabel(r"Pixels")
-    ax2.set_xlabel(r"Pixels")
+    ax[0].set(ylabel=r"Pixels", xlabel=r"Pixels")
+    ax[1].set_xlabel(r"Pixels")
+
+    if return_fig:
+        return fig, ax
 
     plt.tight_layout(pad=0.75)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
