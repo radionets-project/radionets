@@ -93,7 +93,7 @@ class CometCallback(Callback):
             pred = torch.stack((pred[:, 0, :], pred[:, 2, :]), dim=1)
 
         images = {"pred": pred, "truth": img_true}
-        images = apply_symmetry(images, overlap=4)  # TODO: Change overlap accordingly
+        images = apply_symmetry(images, overlap=1)  # TODO: Change overlap accordingly
         pred = images["pred"]
         img_true = images["truth"]
 
