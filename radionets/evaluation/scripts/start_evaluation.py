@@ -25,6 +25,11 @@ from radionets.evaluation.train_inspection import (
 )
 from radionets.evaluation.utils import check_outpath, check_samp_file, read_config
 
+try:
+    from rich import print
+except ImportError:
+    pass
+
 
 @click.command()
 @click.argument("configuration_path", type=click.Path(exists=True, dir_okay=False))

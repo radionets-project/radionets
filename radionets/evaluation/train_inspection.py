@@ -93,7 +93,7 @@ def get_prediction(conf, mode="test"):
     )
 
     # Rescale if necessary
-    img_test, norm_dict = apply_normalization(img_test, norm_dict)
+    # img_test, norm_dict = apply_normalization(img_test, norm_dict)
     pred = eval_model(img_test, model)
     pred = rescale_normalization(pred, norm_dict)
 
@@ -419,6 +419,15 @@ def evaluate_dynamic_range(conf):
 
     click.echo("\nCreating histogram of dynamic ranges.\n")
     histogram_dynamic_ranges(dr_truths, dr_preds, out_path, plot_format=conf["format"])
+    if conf["save_vals"]:
+        click.echo("\nSaving dynamic range values.\n")
+        out = Path(conf["save_path"])
+        out.mkdir(parents=True, exist_ok=True)
+        np.savetxt(
+            out / "jet_angles.txt",
+            np.stack((dr_truths, dr_preds), axis=1),
+            header="truths, preds",
+        )
 
 
 def evaluate_ms_ssim(conf):

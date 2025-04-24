@@ -62,7 +62,7 @@ def area_of_contour(ifft_pred, ifft_truth):
     """
     mpl.use("Agg")
 
-    levels = [ifft_truth.max() * 0.1]
+    levels = [ifft_truth.max() * 0.05]
 
     CS1 = plt.contour(ifft_pred, levels=levels)
 
