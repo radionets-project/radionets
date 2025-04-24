@@ -281,37 +281,44 @@ def visualize_source_reconstruction(
     dr=False,
     msssim=False,
     plot_format="png",
+    return_fig=False,
+    cmap="inferno",
+    cmap_diff="OrBu",
 ):
     # plt.style.use("./paper_large_3.rc")
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
+    fig, ax = plt.subplots(1, 3, figsize=(16, 10), sharey=True)
 
     # Plot prediction
-    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
+    im1 = ax[0].imshow(ifft_pred, vmax=ifft_truth.max(), cmap=cmap)
 
     # Plot truth
-    im2 = ax2.imshow(ifft_truth, cmap="inferno")
+    im2 = ax[1].imshow(ifft_truth, cmap=cmap)
 
     a = check_vmin_vmax(ifft_pred - ifft_truth)
-    im3 = ax3.imshow(ifft_pred - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
+    im3 = ax[2].imshow(
+        ifft_pred - ifft_truth,
+        cmap=OrBu if cmap_diff == "OrBu" else cmap_diff,
+        vmin=-a,
+        vmax=a,
+    )
 
-    make_axes_nice(fig, ax1, im1, r"FFT Prediction")
-    make_axes_nice(fig, ax2, im2, r"FFT Truth")
-    make_axes_nice(fig, ax3, im3, r"FFT Diff")
+    make_axes_nice(fig, ax[0], im1, r"iFFT Prediction")
+    make_axes_nice(fig, ax[1], im2, r"iFFT Truth")
+    make_axes_nice(fig, ax[2], im3, r"iFFT Diff")
 
-    ax1.set_ylabel(r"Pixels")
-    ax1.set_xlabel(r"Pixels")
-    ax2.set_xlabel(r"Pixels")
-    ax3.set_xlabel(r"Pixels")
+    ax[0].set(ylabel=r"Pixels", xlabel=r"Pixels")
+    ax[1].set_xlabel(r"Pixels")
+    ax[2].set_xlabel(r"Pixels")
 
     if dr:
         dr_truth, dr_pred, num_boxes, corners = calc_dr(
             ifft_truth[None, ...], ifft_pred[None, ...]
         )
-        ax1.plot([], [], " ", label=f"DR: {int(dr_pred[0])}")
-        ax2.plot([], [], " ", label=f"DR: {int(dr_truth[0])}")
+        ax[0].plot([], [], " ", label=f"DR: {int(dr_pred[0])}")
+        ax[1].plot([], [], " ", label=f"DR: {int(dr_truth[0])}")
 
-        plot_box(ax1, num_boxes, corners[0], img_size=ifft_pred.shape[0])
-        plot_box(ax2, num_boxes, corners[0], img_size=ifft_truth.shape[0])
+        plot_box(ax[0], num_boxes, corners[0], img_size=ifft_pred.shape[0])
+        plot_box(ax[1], num_boxes, corners[0], img_size=ifft_truth.shape[0])
 
     if msssim:
         val = ms_ssim(
@@ -322,10 +329,13 @@ def visualize_source_reconstruction(
             size_average=False,
         )
         val = val.numpy()[0]
-        ax1.plot([], [], " ", label=f"MS-SSIM: {val:.2f}")
-        ax1.legend(loc="best")
+        ax[0].plot([], [], " ", label=f"MS-SSIM: {val:.2f}")
+        ax[0].legend(loc="best")
 
     outpath = str(out_path) + f"/fft_pred_{i}.{plot_format}"
+
+    if return_fig:
+        return fig, ax, outpath, np.abs(ifft_pred), np.abs(ifft_truth)
 
     fig.tight_layout(pad=1)
     plt.savefig(outpath, bbox_inches="tight", pad_inches=0.05)
