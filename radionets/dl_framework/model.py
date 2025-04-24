@@ -77,9 +77,11 @@ def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
     name_pretrained = Path(pre_path).stem
     print(f"\nLoad pretrained model: {name_pretrained}\n")
     if torch.cuda.is_available() and not plot_loss:
-        checkpoint = torch.load(pre_path)
+        checkpoint = torch.load(pre_path, weights_only=False)
     else:
-        checkpoint = torch.load(pre_path, map_location=torch.device("cpu"))
+        checkpoint = torch.load(
+            pre_path, map_location=torch.device("cpu"), weights_only=False
+        )
 
     if visualize:
         learn.load_state_dict(checkpoint["model"])
