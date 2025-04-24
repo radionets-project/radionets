@@ -319,9 +319,9 @@ def visualize_source_reconstruction(
         vmax=a,
     )
 
-    make_axes_nice(fig, ax[0], im1, r"iFFT Prediction")
-    make_axes_nice(fig, ax[1], im2, r"iFFT Truth")
-    make_axes_nice(fig, ax[2], im3, r"iFFT Diff")
+    make_axes_nice(fig, ax[0], im1, r"FFT Prediction")
+    make_axes_nice(fig, ax[1], im2, r"FFT Truth")
+    make_axes_nice(fig, ax[2], im3, r"FFT Diff")
 
     ax[0].set(ylabel=r"Pixels", xlabel=r"Pixels")
     ax[1].set_xlabel(r"Pixels")
