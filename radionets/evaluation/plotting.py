@@ -204,10 +204,11 @@ def visualize_with_fourier(
     ax[5].set_xlabel(r"Pixels")
     plt.tight_layout(pad=1.5)
 
-    if return_fig:
-        return fig, ax
-
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
+
+    if return_fig:
+        return fig, ax, outpath
+
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
 
 
