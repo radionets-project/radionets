@@ -121,7 +121,15 @@ def plot_inp_tar(h5_dataset, fourier=False, amp_phase=False):
 
 
 def visualize_with_fourier(
-    i, img_input, img_pred, img_truth, amp_phase, out_path, plot_format="png"
+    i,
+    img_input,
+    img_pred,
+    img_truth,
+    amp_phase,
+    out_path,
+    plot_format="png",
+    return_fig=False,
+    cmaps=None,
 ):
     """
     Visualizing, if the target variables are displayed in fourier space.
@@ -137,59 +145,67 @@ def visualize_with_fourier(
     real_truth, imag_truth = img_truth[0], img_truth[1]
 
     # plotting
-    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(
-        2, 3, figsize=(16, 10), sharex=True, sharey=True
-    )
+    fig, ax = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
+    ax = ax.ravel()
 
     if amp_phase:
-        im1 = ax1.imshow(inp_real, cmap="inferno")
-        make_axes_nice(fig, ax1, im1, r"Amplitude Input")
+        im1 = ax[0].imshow(inp_real, cmap=cmaps[0] if cmaps else "inferno")
+        make_axes_nice(fig, ax[0], im1, r"Amplitude Input")
 
-        im2 = ax2.imshow(real_pred, cmap="inferno")
-        make_axes_nice(fig, ax2, im2, r"Amplitude Prediction")
+        im2 = ax[1].imshow(real_pred, cmap=cmaps[1] if cmaps else "inferno")
+        make_axes_nice(fig, ax[1], im2, r"Amplitude Prediction")
 
-        im3 = ax3.imshow(real_truth, cmap="inferno")
-        make_axes_nice(fig, ax3, im3, r"Amplitude Truth")
+        im3 = ax[2].imshow(real_truth, cmap=cmaps[2] if cmaps else "inferno")
+        make_axes_nice(fig, ax[2], im3, r"Amplitude Truth")
 
         a = check_vmin_vmax(inp_imag)
-        im4 = ax4.imshow(inp_imag, cmap="RdBu", vmin=-a, vmax=a)
-        make_axes_nice(fig, ax4, im4, r"Phase Input", phase=True)
+        im4 = ax[3].imshow(
+            inp_imag, cmap=cmaps[3] if cmaps else "RdBu", vmin=-a, vmax=a
+        )
+        make_axes_nice(fig, ax[3], im4, r"Phase Input", phase=True)
 
         a = check_vmin_vmax(imag_truth)
-        im5 = ax5.imshow(imag_pred, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
-        make_axes_nice(fig, ax5, im5, r"Phase Prediction", phase=True)
+        im5 = ax[4].imshow(
+            imag_pred, cmap=cmaps[4] if cmaps else "RdBu", vmin=-np.pi, vmax=np.pi
+        )
+        make_axes_nice(fig, ax[4], im5, r"Phase Prediction", phase=True)
 
         a = check_vmin_vmax(imag_truth)
-        im6 = ax6.imshow(imag_truth, cmap="RdBu", vmin=-np.pi, vmax=np.pi)
-        make_axes_nice(fig, ax6, im6, r"Phase Truth", phase=True)
+        im6 = ax[5].imshow(
+            imag_truth, cmap=cmaps[5] if cmaps else "RdBu", vmin=-np.pi, vmax=np.pi
+        )
+        make_axes_nice(fig, ax[5], im6, r"Phase Truth", phase=True)
     else:
-        im1 = ax1.imshow(inp_real, cmap="RdBu")
-        make_axes_nice(fig, ax1, im1, r"Real Input")
+        im1 = ax[0].imshow(inp_real, cmap=cmaps[0] if cmaps else "RdBu")
+        make_axes_nice(fig, ax[0], im1, r"Real Input")
 
-        im2 = ax2.imshow(real_pred, cmap="RdBu")
-        make_axes_nice(fig, ax2, im2, r"Real Prediction")
+        im2 = ax[1].imshow(real_pred, cmap=cmaps[1] if cmaps else "RdBu")
+        make_axes_nice(fig, ax[1], im2, r"Real Prediction")
 
-        im3 = ax3.imshow(real_truth, cmap="RdBu")
-        make_axes_nice(fig, ax3, im3, r"Real Truth")
+        im3 = ax[2].imshow(real_truth, cmap=cmaps[2] if cmaps else "RdBu")
+        make_axes_nice(fig, ax[2], im3, r"Real Truth")
 
         a = check_vmin_vmax(inp_imag)
-        im4 = ax4.imshow(inp_imag, cmap="RdBu")
-        make_axes_nice(fig, ax4, im4, r"Imaginary Input")
+        im4 = ax[3].imshow(inp_imag, cmap=cmaps[3] if cmaps else "RdBu")
+        make_axes_nice(fig, ax[3], im4, r"Imaginary Input")
 
         a = check_vmin_vmax(imag_truth)
-        im5 = ax5.imshow(imag_pred, cmap="RdBu")
-        make_axes_nice(fig, ax5, im5, r"Imaginary Prediction")
+        im5 = ax[4].imshow(imag_pred, cmap=cmaps[4] if cmaps else "RdBu")
+        make_axes_nice(fig, ax[4], im5, r"Imaginary Prediction")
 
         a = check_vmin_vmax(imag_truth)
-        im6 = ax6.imshow(imag_truth, cmap="RdBu")
-        make_axes_nice(fig, ax6, im6, r"Imaginary Truth")
+        im6 = ax[5].imshow(imag_truth, cmap=cmaps[5] if cmaps else "RdBu")
+        make_axes_nice(fig, ax[5], im6, r"Imaginary Truth")
 
-    ax1.set_ylabel(r"Pixels")
-    ax4.set_ylabel(r"Pixels")
-    ax4.set_xlabel(r"Pixels")
-    ax5.set_xlabel(r"Pixels")
-    ax6.set_xlabel(r"Pixels")
+    ax[0].set_ylabel(r"Pixels")
+    ax[3].set_ylabel(r"Pixels")
+    ax[3].set_xlabel(r"Pixels")
+    ax[4].set_xlabel(r"Pixels")
+    ax[5].set_xlabel(r"Pixels")
     plt.tight_layout(pad=1.5)
+
+    if return_fig:
+        return fig, ax
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
     fig.savefig(outpath, bbox_inches="tight", pad_inches=0.01)
