@@ -77,6 +77,7 @@ def get_prediction(conf, mode="test"):
         conf["data_path"],
         mode=mode,
         fourier=conf["fourier"],
+        weights_only=False,
     )
 
     num_images = conf["num_images"]
