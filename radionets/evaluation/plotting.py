@@ -479,7 +479,13 @@ def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
 
 
 def plot_contour(
-    ifft_pred, ifft_truth, out_path, i, plot_format="png", return_fig=False
+    ifft_pred,
+    ifft_truth,
+    out_path,
+    i,
+    plot_format="png",
+    return_fig=False,
+    diff_in_name=True,
 ):
     labels = [r"1%", r"10%", r"30%", r"50%", r"80%"]
     colors = ["#454CC7", "#1984DE", "#50B3D7", "#ABD9DC", "#FFFFFF"]
@@ -510,7 +516,11 @@ def plot_contour(
     CS2 = ax[1].contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_ratio(CS1, CS2), 2)
     make_axes_nice(fig, ax[1], im2, f"Truth, ratio: {diff}")
-    outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
+
+    if diff_in_name:
+        outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
+    else:
+        outpath = str(out_path) + f"/contour_{i}.{plot_format}"
 
     cl1, _ = CS1.legend_elements()
     cl2, _ = CS2.legend_elements()
