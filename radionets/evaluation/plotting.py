@@ -531,10 +531,10 @@ def plot_contour(
     diff_in_name=True,
     norm_scale=0.4,
 ):
-    labels = [r"1%", r"10%", r"30%", r"50%", r"80%"]
+    labels = [r"5%", r"10%", r"30%", r"50%", r"80%"]
     colors = ["#454CC7", "#1984DE", "#50B3D7", "#ABD9DC", "#FFFFFF"]
     levels = [
-        ifft_truth.max() * 0.01,
+        ifft_truth.max() * 0.05,
         ifft_truth.max() * 0.1,
         ifft_truth.max() * 0.3,
         ifft_truth.max() * 0.5,
