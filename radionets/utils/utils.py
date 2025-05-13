@@ -44,7 +44,7 @@ def symmetry(image, key):
     return image
 
 
-def apply_symmetry(img_dict, overlap=1):
+def apply_symmetry(img_dict, overlap=4):
     """
     Pads and applies symmetry to half images. Takes a dict as input
 

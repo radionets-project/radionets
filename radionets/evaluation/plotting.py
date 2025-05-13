@@ -149,7 +149,7 @@ def visualize_with_fourier(
         kwargs = 6 * [{}]
 
     # plotting
-    fig, ax = plt.subplots(2, 3, figsize=(16, 10), sharex=True, sharey=True)
+    fig, ax = plt.subplots(2, 4, figsize=(16, 10), sharex=True, sharey=True)
     ax = ax.ravel()
 
     if amp_phase:
@@ -201,23 +201,36 @@ def visualize_with_fourier(
         im3 = ax[2].imshow(real_truth, cmap=cmaps[2] if cmaps else "RdBu", **kwargs[2])
         make_axes_nice(fig, ax[2], im3, r"Real Truth")
 
+        a = check_vmin_vmax(real_pred - real_truth)
+        im4 = ax[3].imshow(
+            real_pred - real_truth, cmap=cmaps[3] if cmaps else "RdBu", **kwargs[3]
+        )
+        make_axes_nice(fig, ax[3], im4, r"Real Diff")
+
         a = check_vmin_vmax(inp_imag)
-        im4 = ax[3].imshow(inp_imag, cmap=cmaps[3] if cmaps else "RdBu", **kwargs[3])
-        make_axes_nice(fig, ax[3], im4, r"Imaginary Input")
+        im4 = ax[4].imshow(inp_imag, cmap=cmaps[4] if cmaps else "RdBu", **kwargs[4])
+        make_axes_nice(fig, ax[4], im4, r"Imaginary Input")
 
         a = check_vmin_vmax(imag_truth)
-        im5 = ax[4].imshow(imag_pred, cmap=cmaps[4] if cmaps else "RdBu", **kwargs[4])
-        make_axes_nice(fig, ax[4], im5, r"Imaginary Prediction")
+        im5 = ax[5].imshow(imag_pred, cmap=cmaps[5] if cmaps else "RdBu", **kwargs[5])
+        make_axes_nice(fig, ax[5], im5, r"Imaginary Prediction")
 
         a = check_vmin_vmax(imag_truth)
-        im6 = ax[5].imshow(imag_truth, cmap=cmaps[5] if cmaps else "RdBu", **kwargs[5])
-        make_axes_nice(fig, ax[5], im6, r"Imaginary Truth")
+        im6 = ax[6].imshow(imag_truth, cmap=cmaps[6] if cmaps else "RdBu", **kwargs[6])
+        make_axes_nice(fig, ax[6], im6, r"Imaginary Truth")
+
+        a = check_vmin_vmax(imag_pred - imag_truth)
+        im7 = ax[7].imshow(
+            imag_pred - imag_truth, cmap=cmaps[7] if cmaps else "RdBu", **kwargs[7]
+        )
+        make_axes_nice(fig, ax[7], im7, r"Imaginary Diff")
 
     ax[0].set_ylabel(r"Pixels")
-    ax[3].set_ylabel(r"Pixels")
-    ax[3].set_xlabel(r"Pixels")
+    ax[4].set_ylabel(r"Pixels")
     ax[4].set_xlabel(r"Pixels")
     ax[5].set_xlabel(r"Pixels")
+    ax[6].set_xlabel(r"Pixels")
+    ax[7].set_xlabel(r"Pixels")
     plt.tight_layout(pad=1.5)
 
     outpath = str(out_path) + f"/prediction_{i}.{plot_format}"
