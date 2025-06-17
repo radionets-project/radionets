@@ -25,11 +25,13 @@ class h5_dataset:
         """
         Returns the total number of pictures in this dataset
         """
-        return len(self.bundles) * self.num_img
+        return len(self.bundles)  # * self.num_img
 
     def __getitem__(self, i):
-        x = self.open_image("x", i)
-        y = self.open_image("y", i)
+        x = torch.from_numpy(np.array(self.open_bundle(self.bundles[i], "x"))).float()
+        y = torch.from_numpy(np.array(self.open_bundle(self.bundles[i], "y"))).float()
+        # x = self.open_image("x", i)
+        # y = self.open_image("y", i)
         return x, y
 
     def open_bundle(self, bundle_path, var):
@@ -61,6 +63,8 @@ class h5_dataset:
                 ]
             )
         )
+        print("data shape", data.shape)
+        print(data)
         if self.tar_fourier is False and data.shape[1] == 2:
             raise ValueError(
                 "Two channeled data is used despite Fourier being False.\
