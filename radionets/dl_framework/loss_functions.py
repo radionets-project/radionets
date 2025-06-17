@@ -50,10 +50,29 @@ def splitted_L1(x, y):
     tar_amp = y[:, 0, :]
     tar_phase = y[:, 1, :]
 
-    l1 = nn.L1Loss()
-    loss_amp = l1(inp_amp, tar_amp)
-    loss_phase = l1(inp_phase, tar_phase)
-    loss = loss_amp + loss_phase
+    mask = torch.zeros(tar_amp.shape)
+    mask[:, 206:306, 206:306] = 1
+
+    mask2 = torch.zeros(tar_amp.shape)
+    mask2[:, 236:376, 236:376] = 1
+
+    mask3 = mask.bool() & mask2.bool()
+
+    l1 = nn.L1Loss(reduction="sum")
+    loss_amp = l1(inp_amp[~mask3.bool()], tar_amp[~mask3.bool()])
+    loss_amp_mid = l1(inp_amp[mask.bool()], tar_amp[mask.bool()])
+    loss_amp_inner = l1(inp_amp[mask2.bool()], tar_amp[mask2.bool()])
+    loss_phase = l1(inp_phase[~mask3.bool()], tar_phase[~mask3.bool()])
+    loss_phase_mid = l1(inp_phase[mask.bool()], tar_phase[mask.bool()])
+    loss_phase_inner = l1(inp_phase[mask2.bool()], tar_phase[mask2.bool()])
+    loss = (
+        loss_amp
+        + loss_phase
+        + loss_amp_mid * 10
+        + loss_phase_mid * 10
+        + loss_amp_inner * 100
+        + loss_phase_inner * 100
+    )
     return loss
 
 
