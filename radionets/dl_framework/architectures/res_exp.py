@@ -58,7 +58,7 @@ class SRResNet_16(nn.Module):
         super().__init__()
 
         self.preBlock = nn.Sequential(
-            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2), nn.PReLU()
+            nn.Conv2d(2, 64, 9, stride=1, padding=4, groups=2, bias=True), nn.PReLU()
         )
 
         # ResBlock 16
@@ -82,23 +82,29 @@ class SRResNet_16(nn.Module):
         )
 
         self.postBlock = nn.Sequential(
-            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=False),
+            nn.Conv2d(64, 64, 3, stride=1, padding=1, bias=True),
             nn.InstanceNorm2d(64),
         )
 
-        self.final = nn.Sequential(nn.Conv2d(64, 2, 9, stride=1, padding=4, groups=2))
+        self.final = nn.Sequential(nn.Conv2d(64, 2, 3, stride=1, padding=1, groups=2))
+        self.map = nn.Hardtanh(
+            min_val=-1,
+            max_val=1,
+        )
 
     def forward(self, x):
         s = x.shape[-1]
+
+        x_start = x.clone()
 
         x = self.preBlock(x)
 
         x = x + self.postBlock(self.blocks(x))
 
-        x = self.final(x)
+        x = self.map(self.final(x) + x_start)
 
-        x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
-        x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
+        x0 = x[:, 0].reshape(-1, 1, s // 2 + 5, s)
+        x1 = x[:, 1].reshape(-1, 1, s // 2 + 5, s)
 
         return torch.cat([x0, x1], dim=1)
 
