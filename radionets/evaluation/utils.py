@@ -478,7 +478,7 @@ def apply_symmetry(img_dict):
             half_image = img_dict[key].shape[-1] // 2
             output = F.pad(
                 input=img_dict[key],
-                pad=(0, 0, 0, half_image - 1),
+                pad=(0, 0, 0, half_image - 5),
                 mode="constant",
                 value=0,
             )
