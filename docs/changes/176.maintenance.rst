@@ -1,0 +1,2 @@
+- Update pyproject and python version support
+- Switch to hatchling build backend
