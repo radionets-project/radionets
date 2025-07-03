@@ -5,7 +5,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from matplotlib.colors import ListedColormap, LogNorm
+from matplotlib.colors import ListedColormap, LogNorm, PowerNorm
 from matplotlib.patches import Rectangle
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pytorch_msssim import ms_ssim
@@ -479,36 +479,42 @@ def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
 
 
 def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
-    labels = [r"10%", r"30%", r"50%", r"80%"]
-    colors = ("r", "tomato", "mistyrose", "black")
+    labels = [r"1%", r"10%", r"30%", r"50%", r"80%"]
+    colors = ["#454CC7", "#1984DE", "#50B3D7", "#ABD9DC", "#FFFFFF"]
     levels = [
+        ifft_truth.max() * 0.01,
         ifft_truth.max() * 0.1,
         ifft_truth.max() * 0.3,
         ifft_truth.max() * 0.5,
         ifft_truth.max() * 0.8,
     ]
 
-    # plt.style.use('./paper_large.rc')
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
 
-    im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max())
+    im1 = ax1.imshow(
+        ifft_pred,
+        cmap="inferno",
+        norm=PowerNorm(0.4, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
+    )
     CS1 = ax1.contour(ifft_pred, levels=levels, colors=colors)
     make_axes_nice(fig, ax1, im1, "Prediction")
 
-    im2 = ax2.imshow(ifft_truth)
+    im2 = ax2.imshow(
+        ifft_truth,
+        cmap="inferno",
+        norm=PowerNorm(0.4, vmin=ifft_truth.min(), vmax=ifft_truth.max()),
+    )
     CS2 = ax2.contour(ifft_truth, levels=levels, colors=colors)
     diff = np.round(compute_area_ratio(CS1, CS2), 2)
     make_axes_nice(fig, ax2, im2, f"Truth, ratio: {diff}")
     outpath = str(out_path) + f"/contour_{diff}_{i}.{plot_format}"
 
-    # Assign labels for the levels and save them for the legend
-    for i in range(len(labels)):
-        CS1.collections[i].set_label(labels[i])
-        CS2.collections[i].set_label(labels[i])
+    cl1, _ = CS1.legend_elements()
+    cl2, _ = CS2.legend_elements()
 
     # plotting legend
-    ax1.legend(loc="best")
-    ax2.legend(loc="best")
+    ax1.legend(cl1, labels, loc="best")
+    ax2.legend(cl2, labels, loc="best")
 
     ax1.set_ylabel(r"Pixels")
     ax1.set_xlabel(r"Pixels")
