@@ -123,94 +123,6 @@ omit = [
 
 [tool.coverage.xml]
 output = "coverage.xml"
-extend-exclude = ["tests", "examples"]
-
-[tool.ruff]
-target-version = "py311"
-line-length = 88
-
-[tool.ruff.lint]
-extend-select = [
-  "I",  # isort
-]
-ignore = []
-
-fixable = ["ALL"]
-unfixable = []
-
-[tool.ruff.lint.per-file-ignores]
-"examples/**" = ["I"]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-line-ending = "auto"
-skip-magic-trailing-comma = false
-docstring-code-format = true
-
-[tool.ruff.lint.isort]
-known-first-party = ["radionets"]
-=======
-  { name = "Kevin Schmitz, Felix Geyer" }
-]
-maintainers = [
-  { name = "Kevin Schmitz", email = "kevin2.schmitz@tu-dortmund.de" },
-  { name = "Felix Geyer", email = "felix.geyer@tu-dortmund.de" },
-]
-license = "MIT"
-license-files = ["LICENSE"]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Science/Research",
-    "Natural Language :: English",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3 :: Only",
-    "Topic :: Scientific/Engineering :: Astronomy",
-    "Topic :: Scientific/Engineering :: Physics",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Topic :: Scientific/Engineering :: Information Analysis",
-]
-
-requires-python = ">=3.10"
-
-dependencies = [
-    "fastai",
-    "kornia",
-    "pytorch-msssim",
-    "numpy<=2.0",
-    "astropy",
-    "tqdm",
-    "click",
-    "numba",
-    "jupyter",
-    "h5py",
-    "scikit-image",
-    "pandas",
-    "toml",
-    "comet_ml",
-    "pre-commit",
-    "spacy<=3.8"
-]
-
-[project.urls]
-repository = "https://github.com/radionets-project/radionets"
-
-[project.optional-dependencies]
-tests = ["pytest >= 7.0", "pytest-cov", "pytest-order"]
-
-[project.scripts]
-radionets_simulations = "radionets.simulations.scripts.simulate_images:main"
-radionets_training = "radionets.dl_training.scripts.start_training:main"
-radionets_evaluation = "radionets.evaluation.scripts.start_evaluation:main"
-
-[tool.setuptools_scm]
-write_to = "radionets/_version.py"
-
-[tool.setuptools.packages.find]
-where = ["."]
 
 [tool.pytest.ini_options]
 addopts = "--verbose"
@@ -250,3 +162,30 @@ addopts = "--verbose"
     [[tool.towncrier.section]]
         name = ""
         path = ""
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+extend-exclude = ["tests", "examples"]
+
+[tool.ruff.lint]
+extend-select = [
+  "I",  # isort
+]
+ignore = []
+
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"examples/**" = ["I"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["radionets"]
