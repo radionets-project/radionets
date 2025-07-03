@@ -1,9 +1,10 @@
 import numpy as np
-from tqdm import tqdm
-from scipy.ndimage import gaussian_filter
 from scipy import ndimage
+from scipy.ndimage import gaussian_filter
+from tqdm import tqdm
+
 from radionets.dl_framework.data import save_fft_pair
-from radionets.simulations.utils import adjust_outpath, add_noise, add_white_noise
+from radionets.simulations.utils import add_noise, add_white_noise, adjust_outpath
 
 
 def simulate_gaussian_sources(

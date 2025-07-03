@@ -1,6 +1,6 @@
-import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def compute_area_ratio(CS_pred, CS_truth):

@@ -26,7 +26,7 @@ You can create one by running the following command in this repository:
 $ mamba env create -f environment.yml
 ```
 Depending on your `cuda` version you have to specify the `cudatoolkit` version used by `pytorch`. If you are working on machines
-with `cuda` versions < 10.2, please change the version number in the environment.yml file. Since the package `pre-commit` is used, you need to execute 
+with `cuda` versions < 10.2, please change the version number in the environment.yml file. Since the package `pre-commit` is used, you need to execute
 ```
 $ pre-commit install
 ```
@@ -61,7 +61,7 @@ Functions for handling the different training options. Currently, there are the 
 
 ### simulations (further developed in [pyvisgen](https://github.com/radionets-project/pyvisgen) repository)
 
-Functions to simulate and illustrate radio interferometric observations. At the moment simulations based on the MNIST dataset and 
+Functions to simulate and illustrate radio interferometric observations. At the moment simulations based on the MNIST dataset and
 simulations of Gaussian sources are possible. We are currently working on simulating visibilities directly in Fourier space.
 For more information, visit our corresponding repository [pyvisgen](https://github.com/radionets-project/pyvisgen). In the future, the simulations will be created
 using the `pyvisgen` repository, while the `radionets` repository contains the training and evaluation methods.
