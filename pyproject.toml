@@ -150,3 +150,103 @@ docstring-code-format = true
 
 [tool.ruff.lint.isort]
 known-first-party = ["radionets"]
+=======
+  { name = "Kevin Schmitz, Felix Geyer" }
+]
+maintainers = [
+  { name = "Kevin Schmitz", email = "kevin2.schmitz@tu-dortmund.de" },
+  { name = "Felix Geyer", email = "felix.geyer@tu-dortmund.de" },
+]
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+requires-python = ">=3.10"
+
+dependencies = [
+    "fastai",
+    "kornia",
+    "pytorch-msssim",
+    "numpy<=2.0",
+    "astropy",
+    "tqdm",
+    "click",
+    "numba",
+    "jupyter",
+    "h5py",
+    "scikit-image",
+    "pandas",
+    "toml",
+    "comet_ml",
+    "pre-commit",
+    "spacy<=3.8"
+]
+
+[project.urls]
+repository = "https://github.com/radionets-project/radionets"
+
+[project.optional-dependencies]
+tests = ["pytest >= 7.0", "pytest-cov", "pytest-order"]
+
+[project.scripts]
+radionets_simulations = "radionets.simulations.scripts.simulate_images:main"
+radionets_training = "radionets.dl_training.scripts.start_training:main"
+radionets_evaluation = "radionets.evaluation.scripts.start_evaluation:main"
+
+[tool.setuptools_scm]
+write_to = "radionets/_version.py"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+addopts = "--verbose"
+
+[tool.towncrier]
+    package = "radionets"
+    directory = "docs/changes"
+    filename = "CHANGES.rst"
+    template = "docs/changes/template.rst"
+    # let towncrier create proper links to the merged PR
+    issue_format = "`#{issue} <https://github.com/radionets-project/radionets/pull/{issue}>`__"
+
+    [tool.towncrier.fragment.feature]
+        name = "New Features"
+        showcontent = true
+
+    [tool.towncrier.fragment.bugfix]
+        name = "Bug Fixes"
+        showcontent = true
+
+    [tool.towncrier.fragment.api]
+        name = "API Changes"
+        showcontent = true
+
+    [tool.towncrier.fragment.datamodel]
+        name = "Data Model Changes"
+        showcontent = true
+
+    [tool.towncrier.fragment.optimization]
+        name = "Refactoring and Optimization"
+        showcontent = true
+
+    [tool.towncrier.fragment.maintenance]
+        name = "Maintenance"
+        showcontent = true
+
+    [[tool.towncrier.section]]
+        name = ""
+        path = ""
