@@ -34,8 +34,8 @@ def get_length_extended(element):
     sig_y_min = element[3, :][element[4, :] == 1.0][arg_min_y]
 
     # multiply with the factor for full width-half maximum
-    extend_max = np.sqrt(sig_x_max ** 2 + sig_y_max ** 2) * 2.35
-    extend_min = np.sqrt(sig_x_min ** 2 + sig_y_min ** 2) * 2.35
+    extend_max = np.sqrt(sig_x_max**2 + sig_y_max**2) * 2.35
+    extend_min = np.sqrt(sig_x_min**2 + sig_y_min**2) * 2.35
     # compute amount of vector
     laenge_x = (x_max - x_min) ** 2
     laenge_y = (y_max - y_min) ** 2

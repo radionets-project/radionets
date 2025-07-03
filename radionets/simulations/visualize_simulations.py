@@ -1,19 +1,16 @@
-import radionets.simulations.layouts.layouts as layouts
-from radionets.simulations.uv_simulations import Antenna, Source
-import cartopy.crs as ccrs
-import numpy as np
-import matplotlib.pyplot as plt
-import cartopy.io.img_tiles as cimgt
-
 from pathlib import Path
 
-from matplotlib.colors import LogNorm
+import cartopy.crs as ccrs
+import cartopy.io.img_tiles as cimgt
 import matplotlib.patches as mpatches
-from radionets.evaluation.utils import make_axes_nice
-
-
+import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib import cm
-from matplotlib.colors import ListedColormap
+from matplotlib.colors import ListedColormap, LogNorm
+
+import radionets.simulations.layouts.layouts as layouts
+from radionets.evaluation.utils import make_axes_nice
+from radionets.simulations.uv_simulations import Antenna, Source
 
 
 def create_OrBu():

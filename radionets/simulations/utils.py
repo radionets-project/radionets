@@ -1,10 +1,12 @@
-from pathlib import Path
-import click
 import os
-import sys
 import re
+import sys
+from pathlib import Path
+
+import click
 import numpy as np
 from scipy import interpolate
+
 from radionets.dl_framework.data import (
     get_bundles,
     split_amp_phase,

@@ -1,8 +1,10 @@
-from radionets.simulations.gaussians import simulate_gaussian_sources
-from radionets.simulations.sampling import sample_frequencies
-from radionets.simulations.point_sources import create_point_source_img
-import click
 from pathlib import Path
+
+import click
+
+from radionets.simulations.gaussians import simulate_gaussian_sources
+from radionets.simulations.point_sources import create_point_source_img
+from radionets.simulations.sampling import sample_frequencies
 
 
 def create_fft_images(sim_conf):

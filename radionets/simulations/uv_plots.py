@@ -1,12 +1,10 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
 import cartopy.crs as ccrs
-from matplotlib.animation import FuncAnimation
-from matplotlib.animation import PillowWriter
-from radionets.simulations.uv_simulations import get_uv_coverage
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.animation import FuncAnimation, PillowWriter
 from matplotlib.colors import LogNorm
 
+from radionets.simulations.uv_simulations import get_uv_coverage
 
 # make nice Latex friendly plots
 # mpl.use("pgf")

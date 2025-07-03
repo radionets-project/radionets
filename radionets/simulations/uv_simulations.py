@@ -1,5 +1,6 @@
-import numpy as np
 import astropy.coordinates as ac
+import numpy as np
+
 import radionets.simulations.layouts.layouts as layouts
 
 

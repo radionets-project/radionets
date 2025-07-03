@@ -1,5 +1,6 @@
 import click
 import toml
+
 from radionets.simulations.simulate import create_fft_images, sample_fft_images
 from radionets.simulations.utils import check_outpath, read_config
 

@@ -1,7 +1,8 @@
 from math import sqrt
-from skimage.feature import blob_log
-import torch
+
 import numpy as np
+import torch
+from skimage.feature import blob_log
 
 
 def calc_blobs(ifft_pred, ifft_truth):

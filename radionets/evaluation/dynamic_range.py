@@ -16,10 +16,10 @@ def select_box(rms, sensitivity=1e-6):
 
 def compute_rms(batch, size):
     rms1 = rms2 = rms3 = rms4 = np.ones(len(batch)) * -1
-    rms1 = np.sqrt((batch[:, :size, :size].reshape(-1, size ** 2) ** 2).mean(axis=1))
-    rms2 = np.sqrt((batch[:, :size, -size:].reshape(-1, size ** 2) ** 2).mean(axis=1))
-    rms3 = np.sqrt((batch[:, -size:, :size].reshape(-1, size ** 2) ** 2).mean(axis=1))
-    rms4 = np.sqrt((batch[:, -size:, -size:].reshape(-1, size ** 2) ** 2).mean(axis=1))
+    rms1 = np.sqrt((batch[:, :size, :size].reshape(-1, size**2) ** 2).mean(axis=1))
+    rms2 = np.sqrt((batch[:, :size, -size:].reshape(-1, size**2) ** 2).mean(axis=1))
+    rms3 = np.sqrt((batch[:, -size:, :size].reshape(-1, size**2) ** 2).mean(axis=1))
+    rms4 = np.sqrt((batch[:, -size:, -size:].reshape(-1, size**2) ** 2).mean(axis=1))
     return np.stack([rms1, rms2, rms3, rms4], axis=0)
 
 
