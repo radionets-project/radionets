@@ -53,7 +53,7 @@ class SRResNet(nn.Module):
         return torch.cat([x0, x1], dim=1)
 
 
-class SRResNet_16(nn.Module):
+class SRResNet_34(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -103,7 +103,7 @@ class SRResNet_16(nn.Module):
         return torch.cat([x0, x1], dim=1)
 
 
-class SRResNet_16_unc(nn.Module):
+class SRResNet_34_unc(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -163,7 +163,7 @@ class SRResNet_16_unc(nn.Module):
         return torch.cat([x0, x3, x1, x4], dim=1)
 
 
-class SRResNet_16_unc_no_grad(nn.Module):
+class SRResNet_34_unc_no_grad(nn.Module):
     def __init__(self):
         super().__init__()
 
