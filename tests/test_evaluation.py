@@ -2,6 +2,10 @@ import numpy as np
 import pytest
 from scipy.stats import truncnorm
 
+from torch.serialization import add_safe_globals
+from fastcore.foundation import L
+
+add_safe_globals([L])
 
 def truncnorm_moments(mu, sig, a, b):
     a, b = (a - mu) / sig, (b - mu) / sig
@@ -324,7 +328,7 @@ class TestEvaluation:
         assert num_zero.dtype == "float64"
 
         ratio = diff.max(axis=-1).max(axis=-1) / ifft_truth.max(axis=-1).max(axis=-1)
-        assert ratio.dtype == "float64"
+        assert ratio.dtype == "float32"
         assert ratio > 0
 
         below_zero = np.sum(diff < 0, axis=(1, 2)) / (img_size * img_size) * 100

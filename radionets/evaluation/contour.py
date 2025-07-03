@@ -21,7 +21,7 @@ def compute_area_ratio(CS_pred, CS_truth):
     areas_truth = np.array([])
     areas_pred = np.array([])
 
-    for area in CS_truth.collections[0].get_paths():
+    for area in CS_truth.get_paths():
         truth_x = area.vertices[:, 0]
         truth_y = area.vertices[:, 1]
 
@@ -31,7 +31,7 @@ def compute_area_ratio(CS_pred, CS_truth):
         area_truth = np.abs(area_truth)
         areas_truth = np.append(areas_truth, area_truth)
 
-    for area in CS_pred.collections[0].get_paths():
+    for area in CS_pred.get_paths():
         pred_x = area.vertices[:, 0]
         pred_y = area.vertices[:, 1]
 
