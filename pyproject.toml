@@ -1,3 +1,191 @@
 [build-system]
-requires = ["setuptools>=64"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "radionets"
+dynamic = ["version"]
+description = "Imaging radio interferometric data with neural networks"
+readme = "README.md"
+authors = [
+  { name = "Kevin Schmitz", email = "kevin2.schmitz@tu-dortmund.de" },
+  { name = "Felix Geyer" },
+  { name = "Anno Knierim", email = "anno.knierim@tu-dortmund.de" },
+]
+maintainers = [
+  { name = "Kevin Schmitz", email = "kevin2.schmitz@tu-dortmund.de" },
+  { name = "Anno Knierim", email = "anno.knierim@tu-dortmund.de" },
+]
+license = { text = "MIT" }
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  "Topic :: Scientific/Engineering :: Physics",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+  "Development Status :: 4 - Beta",
+]
+
+requires-python = ">=3.11"
+
+dependencies = [
+  "astropy",
+  "click",
+  "comet_ml",
+  "fastai",
+  "h5py",
+  "kornia",
+  "natsort",
+  "numba",
+  "numpy",
+  "pandas",
+  "pytorch-msssim",
+  "scikit-image",
+  "rich",
+  "toml",
+  "torch",
+  "tqdm",
+]
+
+[project.urls]
+Homepage = "https://github.com/radionets-project"
+Repository = "https://github.com/radionets-project/radionets"
+
+[project.optional-dependencies]
+plot = [
+  "matplotlib",
+]
+
+[dependency-groups]
+tests = [
+  "coverage!=6.3.0",
+  "h5py",
+  "pytest >= 7.0",
+  "pytest-cov",
+  "pytest-xdist",
+  "pytest-order",
+  "restructuredtext-lint",
+  "tomli",
+]
+
+docs = [
+  "graphviz",
+  "ipython",
+  "jupyter",
+  "matplotlib",
+  "nbsphinx",
+  "notebook",
+  "numpydoc",
+  "pydata_sphinx_theme",
+  "sphinx",
+  "sphinx-changelog",
+  "sphinx-copybutton",
+  "sphinx-design",
+  "sphinx-gallery >= 0.16.0",
+  "sphinx_automodapi",
+  "sphinxcontrib-bibtex",
+  "tomli; python_version < '3.11'",
+]
+
+dev = [
+  "ipython",
+  "jupyter",
+  "pre-commit",
+  {include-group = "tests"},
+  {include-group = "docs"},
+]
+
+[project.scripts]
+radionets-simulation = "radionets.simulations.scripts.simulate_images:main"
+radionets-training = "radionets.dl_training.scripts.start_training:main"
+radionets-evaluation = "radionets.evaluation.scripts.start_evaluation:main"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "radionets/_version.py"
+
+[tool.hatch.build.targets.wheel]
+include = ["radionets"]
+
+[tool.coverage.run]
+omit = [
+  "radionets/version.py",
+  "radionets/_version.py",
+  "docs/*",
+  "radionets/gridding/alt_gridder.py",
+]
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.pytest.ini_options]
+addopts = "--verbose"
+
+[tool.towncrier]
+    package = "radionets"
+    directory = "docs/changes"
+    filename = "CHANGES.rst"
+    template = "docs/changes/template.rst"
+    # let towncrier create proper links to the merged PR
+    issue_format = "`#{issue} <https://github.com/radionets-project/radionets/pull/{issue}>`__"
+
+    [tool.towncrier.fragment.feature]
+        name = "New Features"
+        showcontent = true
+
+    [tool.towncrier.fragment.bugfix]
+        name = "Bug Fixes"
+        showcontent = true
+
+    [tool.towncrier.fragment.api]
+        name = "API Changes"
+        showcontent = true
+
+    [tool.towncrier.fragment.datamodel]
+        name = "Data Model Changes"
+        showcontent = true
+
+    [tool.towncrier.fragment.optimization]
+        name = "Refactoring and Optimization"
+        showcontent = true
+
+    [tool.towncrier.fragment.maintenance]
+        name = "Maintenance"
+        showcontent = true
+
+    [[tool.towncrier.section]]
+        name = ""
+        path = ""
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+extend-exclude = ["tests", "examples"]
+
+[tool.ruff.lint]
+extend-select = [
+  "I",  # isort
+]
+ignore = []
+
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+"examples/**" = ["I"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+skip-magic-trailing-comma = false
+docstring-code-format = true
+
+[tool.ruff.lint.isort]
+known-first-party = ["radionets"]

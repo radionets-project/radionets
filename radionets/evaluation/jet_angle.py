@@ -1,5 +1,6 @@
-import torch
 from math import pi
+
+import torch
 
 
 def bmul(vec, mat, axis=0):
@@ -147,5 +148,5 @@ def im_to_array_value(image):
     grid_x, grid_y = torch.meshgrid(a, a, indexing="xy")
     x_coords = torch.cat(num * [grid_x.flatten().unsqueeze(0)])
     y_coords = torch.cat(num * [grid_y.flatten().unsqueeze(0)])
-    value = image.reshape(-1, pix ** 2)
+    value = image.reshape(-1, pix**2)
     return x_coords, y_coords, value

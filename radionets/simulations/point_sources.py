@@ -1,7 +1,8 @@
-from radionets.simulations.gaussians import create_grid, create_rot_mat
+import h5py
 import numpy as np
 from tqdm import tqdm
-import h5py
+
+from radionets.simulations.gaussians import create_grid, create_rot_mat
 
 
 def gaussian_component(x, y, flux, x_fwhm, y_fwhm, rot, center=None):
@@ -129,8 +130,8 @@ def create_gauss(img, num_sources, source_list, img_size=63):
     rng = np.random.default_rng()
     amp = rng.uniform(1, 10, num_sources)
     sx = np.random.randint(
-        round(1 / 8 * (img_size ** 2) / 720),
-        1 / 2 * (img_size ** 2) / 360,
+        round(1 / 8 * (img_size**2) / 720),
+        1 / 2 * (img_size**2) / 360,
         size=(num_sources),
     )
     sy = sx

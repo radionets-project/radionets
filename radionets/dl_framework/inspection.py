@@ -22,7 +22,7 @@ def plot_loss(learn, model_path, output_format="pdf"):
     print(f"\nPlotting Loss for: {model_path.stem}\n")
     logscale = learn.avg_loss.plot_loss()
     title = str(model_path.stem).replace("_", " ")
-    plt.title(fr"{title}")
+    plt.title(rf"{title}")
     if logscale:
         plt.yscale("log")
     plt.savefig(

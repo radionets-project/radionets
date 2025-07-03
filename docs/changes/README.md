@@ -1,6 +1,6 @@
 # How to use `towncrier`
 
-A tutorial can be found [here](https://towncrier.readthedocs.io/en/stable/tutorial.html). 
+A tutorial can be found [here](https://towncrier.readthedocs.io/en/stable/tutorial.html).
 
 1. Create a new file for your changes `<PULL REQUEST>.<TYPE>.rst` in the corresponding folder. The following types are available:
     - feature: `New feature`

@@ -1,0 +1,1 @@
+- Fix legend handles missing in eval contour plot

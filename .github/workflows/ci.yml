@@ -20,11 +20,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python-version: "3.9"
+            python-version: "3.11"
             install-method: mamba
 
           - os: ubuntu-latest
-            python-version: "3.10"
+            python-version: "3.12"
             install-method: mamba
             extra-args: ["codecov"]
 
@@ -34,40 +34,33 @@ jobs:
         shell: bash -leo pipefail {0}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Prepare mamba installation
-        if: matrix.install-method == 'mamba'
+        if: matrix.install-method == 'mamba' &&  contains(github.event.pull_request.labels.*.name, 'documentation-only') == false
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
           # setup correct python version
-          sed -i -e "s/- python=.*/- python=$PYTHON_VERSION/g" environment.yml
+          sed -i -e "s/- python.*/- python=$PYTHON_VERSION/g" environment.yml
 
       - name: mamba setup
-        if: matrix.install-method == 'mamba'
+        if: matrix.install-method == 'mamba' &&  contains(github.event.pull_request.labels.*.name, 'documentation-only') == false
         uses: mamba-org/setup-micromamba@v1
         with:
           environment-file: environment.yml
           cache-downloads: true
-
-      - name: Python setup
-        if: matrix.install-method == 'pip'
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-          check-latest: true
 
       - name: Install dependencies
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
           python --version
-          pip install pytest-cov pytest-xdist 'coverage!=6.3.0'
-          pip install -e .[all]
+          pip install --group tests -e .
           pip freeze
+          pip list
 
       - name: List installed package versions (conda)
         if: matrix.environment-type == 'mamba'
@@ -75,29 +68,32 @@ jobs:
 
       - name: Tests
         run: |
-          py.test --cov --cov-report=xml
+          pytest -vv --cov --cov-report=xml
 
-      - uses: codecov/codecov-action@v3
-        if: contains(matrix.extra-args, 'codecov')
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install doc dependencies
         run: |
-          sudo apt update --yes && sudo apt install --yes git 
+          sudo apt update --yes && sudo apt install --yes git
           pip install -U pip towncrier
+          pip install --group docs -e .
+          git describe --tags
 
       - name: Produce Changelog
         run: |
           towncrier build --yes --version==0.0.0
-

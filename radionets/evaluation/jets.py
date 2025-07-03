@@ -1,5 +1,6 @@
 import numpy as np
-from astropy.modeling import models, fitting
+from astropy.modeling import fitting, models
+
 from radionets.evaluation.plotting import plot_fitgaussian
 
 
