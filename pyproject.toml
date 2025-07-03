@@ -123,6 +123,7 @@ omit = [
 
 [tool.coverage.xml]
 output = "coverage.xml"
+extend-exclude = ["tests", "examples"]
 
 [tool.ruff]
 target-version = "py311"
