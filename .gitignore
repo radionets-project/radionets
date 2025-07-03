@@ -47,3 +47,6 @@ dist/
 radionets/dl_framework/values.yaml
 *.csv
 *.swp
+*.whl
+
+*.ruff_cache
