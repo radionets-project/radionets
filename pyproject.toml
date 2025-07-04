@@ -111,7 +111,7 @@ source = "vcs"
 version-file = "radionets/_version.py"
 
 [tool.hatch.build.targets.wheel]
-include = ["radionets"]
+include = ["src/radionets"]
 
 [tool.coverage.run]
 omit = [
