@@ -58,11 +58,13 @@ def read_config(config):
     train_conf["lr_ratio"] = config["param_scheduling"]["lr_ratio"]
 
     train_conf["source_list"] = config["general"]["source_list"]
+
     return train_conf
 
 
 def check_outpath(model_path, train_conf):
     path = Path(model_path)
+
     exists = path.exists()
     if exists:
         if train_conf["quiet"]:
@@ -85,6 +87,7 @@ def define_arch(arch_name, img_size):
         arch = getattr(architecture, arch_name)(img_size)
     else:
         arch = getattr(architecture, arch_name)()
+
     return arch
 
 
@@ -103,6 +106,7 @@ def pop_interrupt(learn, train_conf):
             create_inspection_plots(learn, train_conf)
     else:
         print(f"Stopping after epoch {learn.epoch}")
+
     sys.exit(1)
 
 
