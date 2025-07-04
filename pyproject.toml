@@ -113,6 +113,9 @@ version-file = "src/radionets/_version.py"
 [tool.hatch.build.targets.wheel]
 include = ["src/radionets"]
 
+[tool.hatch.build.targets.wheel.sources]
+"src/radionets" = "radionets"
+
 [tool.coverage.run]
 omit = [
   "src/radionets/version.py",
