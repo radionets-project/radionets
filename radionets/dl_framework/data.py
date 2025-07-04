@@ -40,16 +40,20 @@ class h5_dataset:
     def open_image(self, var, i):
         if isinstance(i, int):
             i = torch.tensor([i])
+
         elif isinstance(i, np.ndarray):
             i = torch.tensor(i)
+
         indices, _ = torch.sort(i)
         bundle = torch.div(indices, self.num_img, rounding_mode="floor")
         image = indices - bundle * self.num_img
         bundle_unique = torch.unique(bundle)
+
         bundle_paths = [
             h5py.File(self.bundles[bundle], "r") for bundle in bundle_unique
         ]
         bundle_paths_str = list(map(str, bundle_paths))
+
         data = torch.tensor(
             np.array(
                 [
@@ -61,6 +65,7 @@ class h5_dataset:
                 ]
             )
         )
+
         if self.tar_fourier is False and data.shape[1] == 2:
             raise ValueError(
                 "Two channeled data is used despite Fourier being False.\
@@ -161,7 +166,9 @@ def open_bundle_pack(path):
     bundle_x = []
     bundle_y = []
     bundle_z = []
+
     f = h5py.File(path, "r")
+
     bundle_size = len(f) // 3
     for i in range(bundle_size):
         bundle_x_i = np.array(f["x" + str(i)])
@@ -170,7 +177,9 @@ def open_bundle_pack(path):
         bundle_y.append(bundle_y_i)
         bundle_z_i = np.array(f["z" + str(i)])
         bundle_z.append(bundle_z_i)
+
     f.close()
+
     return np.array(bundle_x), np.array(bundle_y), bundle_z
 
 
@@ -193,9 +202,12 @@ def load_data(data_path, mode, fourier=False):
         dataset containing x and y images
     """
     bundle_paths = get_bundles(data_path)
+
     data = np.sort(
         [path for path in bundle_paths if re.findall("samp_" + mode, path.name)]
     )
     data = sorted(data, key=lambda f: int("".join(filter(str.isdigit, str(f)))))
+
     ds = h5_dataset(data, tar_fourier=fourier)
+
     return ds
