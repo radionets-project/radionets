@@ -51,4 +51,4 @@ radionets/dl_framework/values.yaml
 
 *.ruff_cache
 
-radionets/_version.py
+src/radionets/_version.py
