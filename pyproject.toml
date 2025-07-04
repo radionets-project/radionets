@@ -108,17 +108,16 @@ radionets-evaluation = "radionets.evaluation.scripts.start_evaluation:main"
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "radionets/_version.py"
+version-file = "src/radionets/_version.py"
 
 [tool.hatch.build.targets.wheel]
 include = ["src/radionets"]
 
 [tool.coverage.run]
 omit = [
-  "radionets/version.py",
-  "radionets/_version.py",
+  "src/radionets/version.py",
+  "src/radionets/_version.py",
   "docs/*",
-  "radionets/gridding/alt_gridder.py",
 ]
 
 [tool.coverage.xml]
