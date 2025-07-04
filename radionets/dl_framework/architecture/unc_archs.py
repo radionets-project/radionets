@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from radionets.dl_framework.architectures.res_exp import SRResNet_16
+from radionets.dl_framework.architecture import SRResNet_34
 from radionets.dl_framework.model import GeneralELU, LocallyConnected2d
 
 
@@ -53,7 +53,7 @@ class Uncertainty(nn.Module):
 class UncertaintyWrapper(nn.Module):
     def __init__(self, img_size):
         super().__init__()
-        self.pred = SRResNet_16()
+        self.pred = SRResNet_34()
 
         self.uncertainty = Uncertainty(img_size)
 
