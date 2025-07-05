@@ -3,7 +3,7 @@ from scipy import ndimage
 from scipy.ndimage import gaussian_filter
 from tqdm import tqdm
 
-from radionets.dl_framework.data import save_fft_pair
+from radionets.core.data import save_fft_pair
 from radionets.simulations.utils import add_noise, add_white_noise, adjust_outpath
 
 

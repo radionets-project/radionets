@@ -101,24 +101,26 @@ dev = [
 
 [project.scripts]
 radionets-simulation = "radionets.simulations.scripts.simulate_images:main"
-radionets-training = "radionets.dl_training.scripts.start_training:main"
+radionets-training = "radionets.training.scripts.start_training:main"
 radionets-evaluation = "radionets.evaluation.scripts.start_evaluation:main"
 
 [tool.hatch.version]
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "radionets/_version.py"
+version-file = "src/radionets/_version.py"
 
 [tool.hatch.build.targets.wheel]
-include = ["radionets"]
+include = ["src/radionets"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/radionets" = "radionets"
 
 [tool.coverage.run]
 omit = [
-  "radionets/version.py",
-  "radionets/_version.py",
+  "src/radionets/version.py",
+  "src/radionets/_version.py",
   "docs/*",
-  "radionets/gridding/alt_gridder.py",
 ]
 
 [tool.coverage.xml]

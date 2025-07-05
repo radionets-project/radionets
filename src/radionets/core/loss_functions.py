@@ -12,6 +12,7 @@ def l1(x, y):
 def create_circular_mask(h, w, center=None, radius=None, bs=64):
     if center is None:
         center = (int(w / 2), int(h / 2))
+
     if radius is None:
         radius = min(center[0], center[1], w - center[0], h - center[1])
 
@@ -19,6 +20,7 @@ def create_circular_mask(h, w, center=None, radius=None, bs=64):
     dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
 
     mask = dist_from_center <= radius
+
     return np.repeat([mask], bs, axis=0)
 
 
@@ -40,6 +42,7 @@ def splitted_L1_masked(x, y):
     loss_amp = l1(inp_amp, tar_amp)
     loss_phase = l1(inp_phase, tar_phase)
     loss = loss_amp + loss_phase
+
     return loss
 
 
@@ -54,6 +57,7 @@ def splitted_L1(x, y):
     loss_amp = l1(inp_amp, tar_amp)
     loss_phase = l1(inp_phase, tar_phase)
     loss = loss_amp + loss_phase
+
     return loss
 
 
@@ -91,6 +95,7 @@ def beta_nll_loss(x, y, beta=0.5):
 def mse(x, y):
     mse = nn.MSELoss()
     loss = mse(x, y)
+
     return loss
 
 

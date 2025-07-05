@@ -34,6 +34,7 @@ def create_OrBu():
     fader_orange = [colorFader(c4, c2, x / n) for x in range(n + 1)]
     cmap = fader_lila + ["white"] + fader_orange
     newcmp = ListedColormap(cmap, name="OrangeBlue")
+
     return newcmp
 
 
@@ -42,12 +43,15 @@ OrBu = create_OrBu()
 
 def plot_target(h5_dataset, log=False):
     index = np.random.randint(len(h5_dataset) - 1)
+
     plt.figure(figsize=(5.78, 3.57))
+
     target = reshape_2d(h5_dataset[index][1]).squeeze(0)
     if log:
         plt.imshow(target, norm=LogNorm())
     else:
         plt.imshow(target)
+
     plt.xlabel("Pixels")
     plt.ylabel("Pixels")
     plt.colorbar(label="Intensity / a.u.")
@@ -479,7 +483,7 @@ def visualize_sampled_unc(i, mean, std, ifft_truth, out_path, plot_format):
 
 
 def plot_contour(ifft_pred, ifft_truth, out_path, i, plot_format="png"):
-    labels = [r"1%", r"10%", r"30%", r"50%", r"80%"]
+    labels = ["1%", "10%", "30%", "50%", "80%"]
     colors = ["#454CC7", "#1984DE", "#50B3D7", "#ABD9DC", "#FFFFFF"]
     levels = [
         ifft_truth.max() * 0.01,

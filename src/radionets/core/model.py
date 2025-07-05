@@ -1,49 +1,7 @@
 from pathlib import Path
 
 import torch
-import torch.nn.functional as F
 from torch import nn
-from torch.nn.modules.utils import _pair
-
-
-class Lambda(nn.Module):
-    def __init__(self, func):
-        super().__init__()
-        self.func = func
-
-    def forward(self, x):
-        return self.func(x)
-
-
-class GeneralRelu(nn.Module):
-    def __init__(self, leak=None, sub=None, maxv=None):
-        super().__init__()
-        self.leak = leak
-        self.sub = sub
-        self.maxv = maxv
-
-    def forward(self, x):
-        x = F.leaky_relu(x, self.leak) if self.leak is not None else F.relu(x)
-        if self.sub is not None:
-            x = x - self.sub
-        if self.maxv is not None:
-            x.clamp_max_(self.maxv)
-        return x
-
-
-class GeneralELU(nn.Module):
-    def __init__(self, add=None, maxv=None):
-        super().__init__()
-        self.add = add
-        self.maxv = maxv
-
-    def forward(self, x):
-        x = F.elu(x)
-        if self.add is not None:
-            x = x + self.add
-        if self.maxv is not None:
-            x.clamp_max_(self.maxv)
-        return x
 
 
 def init_cnn_(m, f):
@@ -58,14 +16,6 @@ def init_cnn_(m, f):
 def init_cnn(m, uniform=False):
     f = nn.init.kaiming_uniform_ if uniform else nn.init.kaiming_normal_
     init_cnn_(m, f)
-
-
-def conv(ni, nc, ks, stride, padding):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding),)
-    bn = (nn.BatchNorm2d(nc),)
-    act = GeneralRelu(leak=0.1, sub=0.4)  # nn.ReLU()
-    layers = [*conv, *bn, act]
-    return layers
 
 
 def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):
@@ -131,69 +81,6 @@ def save_model(learn, model_path):
         },
         model_path,
     )
-
-
-class LocallyConnected2d(nn.Module):
-    def __init__(
-        self, in_channels, out_channels, output_size, kernel_size, stride, bias=False
-    ):
-        super(LocallyConnected2d, self).__init__()
-        self.weight = nn.Parameter(
-            torch.randn(
-                1,
-                out_channels,
-                in_channels,
-                output_size[0],
-                output_size[1],
-                kernel_size**2,
-            )
-        )
-        if bias:
-            self.bias = nn.Parameter(
-                torch.randn(1, out_channels, output_size[0], output_size[1])
-            )
-        else:
-            self.register_parameter("bias", None)
-        self.kernel_size = _pair(kernel_size)
-        self.stride = _pair(stride)
-
-    def forward(self, x):
-        _, c, h, w = x.size()
-        kh, kw = self.kernel_size
-        dh, dw = self.stride
-        x = x.unfold(2, kh, dh).unfold(3, kw, dw)
-        x = x.contiguous().view(*x.size()[:-2], -1)
-        # Sum in in_channel and kernel_size dims
-        out = (x.unsqueeze(1) * self.weight).sum([2, -1])
-        if self.bias is not None:
-            out += self.bias
-        return out
-
-
-class SRBlock(nn.Module):
-    def __init__(self, ni, nf, stride=1):
-        super().__init__()
-        self.convs = self._conv_block(ni, nf, stride)
-        self.idconv = nn.Identity() if ni == nf else nn.Conv2d(ni, nf, 1)
-        self.pool = (
-            nn.Identity() if stride == 1 else nn.AvgPool2d(2, ceil_mode=True)
-        )  # nn.AvgPool2d(8, 2, ceil_mode=True)
-
-    def forward(self, x):
-        return self.convs(x) + self.idconv(self.pool(x))
-
-    def _conv_block(self, ni, nf, stride):
-        return nn.Sequential(
-            nn.Conv2d(
-                ni, nf, 3, stride=stride, padding=1, bias=False, padding_mode="reflect"
-            ),
-            nn.InstanceNorm2d(nf),
-            nn.PReLU(),
-            nn.Conv2d(
-                nf, nf, 3, stride=1, padding=1, bias=False, padding_mode="reflect"
-            ),
-            nn.InstanceNorm2d(nf),
-        )
 
 
 def symmetry(x):

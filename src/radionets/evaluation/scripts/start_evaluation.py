@@ -2,7 +2,7 @@ import click
 import numpy as np
 import toml
 
-from radionets.dl_framework.callbacks import PredictionImageGradient
+from radionets.core.callbacks import PredictionImageGradient
 from radionets.evaluation.train_inspection import (
     create_contour_plots,
     create_inspection_plots,

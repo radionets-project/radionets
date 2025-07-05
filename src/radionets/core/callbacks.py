@@ -6,9 +6,9 @@ import numpy as np
 import torch
 from fastai.callback.core import Callback, CancelBackwardException
 
-from radionets.dl_framework.model import save_model
-from radionets.dl_framework.utils import _maybe_item, get_ifft_torch
-from radionets.evaluation.plotting import create_OrBu
+from radionets.core.model import save_model
+from radionets.core.utils import _maybe_item, get_ifft_torch
+from radionets.evaluation.plotting import OrBu
 from radionets.evaluation.utils import (
     apply_normalization,
     apply_symmetry,
@@ -21,8 +21,6 @@ from radionets.evaluation.utils import (
     make_axes_nice,
     rescale_normalization,
 )
-
-OrBu = create_OrBu()
 
 
 class CometCallback(Callback):
@@ -56,32 +54,49 @@ class CometCallback(Callback):
         img_test = img_test.unsqueeze(0)
         img_true = img_true.unsqueeze(0)
         model = self.model
-        if self.learn.normalize.mode == "all":
-            norm_dict = {"all": 0}
-        img_test, norm_dict = apply_normalization(img_test, norm_dict)
+
+        try:
+            if self.learn.normalize.mode == "all":
+                norm_dict = {"all": 0}
+                img_test, norm_dict = apply_normalization(img_test, norm_dict)
+        except AttributeError:
+            pass
 
         with self.experiment.test():
             with torch.no_grad():
                 pred = eval_model(img_test, model)
-        pred = rescale_normalization(pred, norm_dict)
+
+        try:
+            if self.learn.normalize.mode == "all":
+                pred = rescale_normalization(pred, norm_dict)
+        except AttributeError:
+            pass
+
         if pred.shape[1] == 4:
             self.uncertainty = True
             pred = torch.stack((pred[:, 0, :], pred[:, 2, :]), dim=1)
+
         images = {"pred": pred, "truth": img_true}
         images = apply_symmetry(images)
         pred = images["pred"]
         img_true = images["truth"]
 
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 10))
+        fig, ax = plt.subplots(2, 2, figsize=(16, 10), layout="constrained")
+        ax = ax.ravel()
+
         lim_phase = check_vmin_vmax(img_true[0, 1])
-        im1 = ax1.imshow(pred[0, 0], cmap="inferno")
-        im2 = ax2.imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
-        im3 = ax3.imshow(img_true[0, 0], cmap="inferno")
-        im4 = ax4.imshow(img_true[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
-        make_axes_nice(fig, ax1, im1, "Real")
-        make_axes_nice(fig, ax2, im2, "Imaginary")
-        make_axes_nice(fig, ax3, im3, "Org. Real")
-        make_axes_nice(fig, ax4, im4, "Org. Imaginary")
+        im1 = ax[0].imshow(pred[0, 0], cmap="inferno")
+        make_axes_nice(fig, ax[0], im1, "Real")
+
+        im2 = ax[1].imshow(pred[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        make_axes_nice(fig, ax[1], im2, "Imaginary")
+
+        im3 = ax[2].imshow(img_true[0, 0], cmap="inferno")
+        make_axes_nice(fig, ax[2], im3, "Org. Real")
+
+        im4 = ax[3].imshow(img_true[0, 1], cmap=OrBu, vmin=-lim_phase, vmax=lim_phase)
+        make_axes_nice(fig, ax[3], im4, "Org. Imaginary")
+
         fig.tight_layout(pad=0.1)
         self.experiment.log_figure(
             figure=fig, figure_name=f"{self.epoch + 1}_pred_epoch"
@@ -93,16 +108,27 @@ class CometCallback(Callback):
         img_test = img_test.unsqueeze(0)
         img_true = img_true.unsqueeze(0)
         model = self.model
-        if self.learn.normalize.mode == "all":
-            norm_dict = {"all": 0}
-        img_test, norm_dict = apply_normalization(img_test, norm_dict)
+
+        try:
+            if self.learn.normalize.mode == "all":
+                norm_dict = {"all": 0}
+                img_test, norm_dict = apply_normalization(img_test, norm_dict)
+        except AttributeError:
+            pass
 
         with self.experiment.test():
             with torch.no_grad():
                 pred = eval_model(img_test, model)
-        pred = rescale_normalization(pred, norm_dict)
+
+        try:
+            if self.learn.normalize.mode == "all":
+                pred = rescale_normalization(pred, norm_dict)
+        except AttributeError:
+            pass
+
         if self.uncertainty:
             pred = torch.stack((pred[:, 0, :], pred[:, 2, :]), dim=1)
+
         images = {"pred": pred, "truth": img_true}
         images = apply_symmetry(images)
         pred = images["pred"]
@@ -118,20 +144,23 @@ class CometCallback(Callback):
             img_true, amp_phase=self.amp_phase, scale=self.scale
         )
 
-        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 10))
-        im1 = ax1.imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
-        im2 = ax2.imshow(ifft_truth, cmap="inferno")
+        fig, ax = plt.subplots(1, 3, figsize=(16, 10), layout="constrained")
+
+        im1 = ax[0].imshow(ifft_pred, vmax=ifft_truth.max(), cmap="inferno")
+        im2 = ax[1].imshow(ifft_truth, cmap="inferno")
         a = check_vmin_vmax(ifft_pred - ifft_truth)
-        im3 = ax3.imshow(ifft_pred - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
+        im3 = ax[2].imshow(ifft_pred - ifft_truth, cmap=OrBu, vmin=-a, vmax=a)
 
-        make_axes_nice(fig, ax1, im1, r"FFT Prediction")
-        make_axes_nice(fig, ax2, im2, r"FFT Truth")
-        make_axes_nice(fig, ax3, im3, r"FFT Diff")
+        make_axes_nice(fig, ax[0], im1, "FFT Prediction")
+        make_axes_nice(fig, ax[1], im2, "FFT Truth")
+        make_axes_nice(fig, ax[2], im3, "FFT Diff")
 
-        ax1.set_ylabel(r"Pixels")
-        ax1.set_xlabel(r"Pixels")
-        ax2.set_xlabel(r"Pixels")
-        ax3.set_xlabel(r"Pixels")
+        ax[0].set(
+            ylabel="Pixels",
+            xlabel="Pixels",
+        )
+        ax[1].set_xlabel("Pixels")
+        ax[2].set_xlabel("Pixels")
 
         fig.tight_layout(pad=0.1)
         self.experiment.log_figure(
@@ -214,13 +243,17 @@ class DataAug(Callback):
     def before_batch(self):
         x = self.xb[0].clone()
         y = self.yb[0].clone()
+
         randint = np.random.randint(0, 1, x.shape[0]) * 2
         last_axis = len(x.shape) - 1
+
         for i in range(x.shape[0]):
             x[i] = torch.rot90(x[i], int(randint[i]), [last_axis - 2, last_axis - 1])
             y[i] = torch.rot90(y[i], int(randint[i]), [last_axis - 2, last_axis - 1])
+
         x = x.squeeze(1)
         y = y.squeeze(1)
+
         self.learn.xb = [x]
         self.learn.yb = [y]
 
@@ -281,6 +314,7 @@ class SaveTempCallback(Callback):
     def after_epoch(self):
         p = Path(self.model_path).parent
         p.mkdir(parents=True, exist_ok=True)
+
         if (self.epoch + 1) % 10 == 0:
             out = p / f"temp_{self.epoch + 1}.model"
             save_model(self, out)

@@ -2,8 +2,8 @@
 
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./resources/radionets_large_subtitle_dark.png">
-  <img alt="Radionets logo. Deep-learning based imaging in radio interferometry." src="./resources/radionets_large_subtitle.png">
+  <source media="(prefers-color-scheme: dark)" srcset="./assets/radionets_large_subtitle_dark.png">
+  <img alt="Radionets logo. Deep-learning based imaging in radio interferometry." src="./assets/radionets_large_subtitle.png">
 </picture>
 
 
@@ -72,15 +72,15 @@ Functions for the evaluation of the training sessions. The available options rea
 methods computing characteristic values on large test datasets. In detail:
 
 * Amplitude and phase for the prediction and the truth. Example image below includes the difference between prediction and truth.
-![](resources/amp_phase.png)
+![](assets/amp_phase.png)
 * Reconstructed source images with additional features, such as MS-SSIM values or the viewing angle. Example image below.
-![](resources/source_plot.png)
+![](assets/source_plot.png)
 * Histogram of differences between predicted and true viewing angles. The image includes a comparison with [wsclean](https://gitlab.com/aroffringa/wsclean).
-![](resources/hist_jet_offsets.png)
+![](assets/hist_jet_offsets.png)
 * Histogram of the ratio between predicted and true source areas. The image includes a comparison with [wsclean](https://gitlab.com/aroffringa/wsclean).
-![](resources/hist_area_ratios.png)
+![](assets/hist_area_ratios.png)
 * Histogram of flux difference in the core component. The image includes a comparison with [wsclean](https://gitlab.com/aroffringa/wsclean).
-![](resources/hist_mean_diffs.png)
+![](assets/hist_mean_diffs.png)
 * Included, but not yet fully operational
   * Histogram of differences between predicted and true MS-SSIM values on a dedicated test dataset
   * Histogram of differences between predicted and true dynamic range values on a dedicated test dataset

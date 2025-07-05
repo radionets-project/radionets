@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from pytorch_msssim import ms_ssim
 from tqdm import tqdm
 
-from radionets.dl_framework.data import load_data
+from radionets.core.data import load_data
 from radionets.evaluation.blob_detection import calc_blobs, crop_first_component
 from radionets.evaluation.contour import analyse_intensity, area_of_contour
 from radionets.evaluation.dynamic_range import calc_dr

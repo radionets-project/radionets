@@ -4,8 +4,8 @@ from fastai.data.core import DataLoaders
 from fastai.learner import Learner
 from fastai.optimizer import Adam
 
-import radionets.dl_framework.loss_functions as loss_functions
-from radionets.dl_framework.callbacks import (
+import radionets.core.loss_functions as loss_functions
+from radionets.core.callbacks import (
     AvgLossCallback,
     CometCallback,
     CudaCallback,
@@ -14,7 +14,7 @@ from radionets.dl_framework.callbacks import (
     SaveTempCallback,
     SwitchLoss,
 )
-from radionets.dl_framework.model import init_cnn
+from radionets.core.model import init_cnn
 
 
 def get_learner(
