@@ -19,7 +19,7 @@ class TestEvaluation:
     def test_get_images(self):
         import torch
 
-        from radionets.dl_framework.data import load_data
+        from radionets.core.data import load_data
         from radionets.evaluation.utils import get_images
 
         test_ds = load_data(

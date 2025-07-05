@@ -2,7 +2,7 @@ from click.testing import CliRunner
 
 
 def test_create_databunch():
-    from radionets.dl_framework.data import DataBunch, get_dls, load_data
+    from radionets.core.data import DataBunch, get_dls, load_data
 
     data_path = "./tests/build/data/"
     fourier = False
@@ -23,8 +23,8 @@ def test_create_databunch():
 def test_define_learner():
     import toml
 
-    from radionets.dl_framework.learner import define_learner
-    from radionets.dl_training.utils import (
+    from radionets.core.learner import define_learner
+    from radionets.training.utils import (
         create_databunch,
         define_arch,
         get_normalisation_factors,
@@ -50,7 +50,7 @@ def test_define_learner():
 
 
 def test_training():
-    from radionets.dl_training.scripts.start_training import main
+    from radionets.training.scripts.start_training import main
 
     runner = CliRunner()
     options = ["tests/training.toml"]
@@ -109,7 +109,7 @@ def test_save_model():
 def test_load_pretrained_model():
     import toml
 
-    from radionets.dl_training.scripts.start_training import main
+    from radionets.training.scripts.start_training import main
 
     config = toml.load("tests/training.toml")
     config["paths"]["pre_model"] = config["paths"]["model_path"]
@@ -125,7 +125,7 @@ def test_load_pretrained_model():
 
 
 def test_plot_loss():
-    from radionets.dl_training.scripts.start_training import main
+    from radionets.training.scripts.start_training import main
 
     runner = CliRunner()
     options = ["tests/training.toml", "--mode=plot_loss"]

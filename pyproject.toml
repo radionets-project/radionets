@@ -101,7 +101,7 @@ dev = [
 
 [project.scripts]
 radionets-simulation = "radionets.simulations.scripts.simulate_images:main"
-radionets-training = "radionets.dl_training.scripts.start_training:main"
+radionets-training = "radionets.training.scripts.start_training:main"
 radionets-evaluation = "radionets.evaluation.scripts.start_evaluation:main"
 
 [tool.hatch.version]
