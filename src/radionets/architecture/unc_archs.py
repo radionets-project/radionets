@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn.modules.utils import _pair
 
-from radionets.dl_framework.architecture import GeneralELU, SRResNet_34
+from radionets.architecture import GeneralELU, SRResNet_34
 
 
 class Uncertainty(nn.Module):

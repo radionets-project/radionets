@@ -7,9 +7,9 @@ import torch.nn.functional as F
 from numba import set_num_threads, vectorize
 from torch.utils.data import DataLoader
 
-import radionets.dl_framework.architecture as architecture
-from radionets.dl_framework.data import load_data
-from radionets.dl_framework.model import load_pre_model
+from radionets import architecture
+from radionets.core.data import load_data
+from radionets.core.model import load_pre_model
 
 
 def source_list_collate(batch):
@@ -240,7 +240,7 @@ def load_pretrained_model(arch_name, model_path, img_size=63):
     Parameters
     ----------
     arch_name: str
-        name of the architecture (architectures are in dl_framework.architectures)
+        name of the architecture
     model_path: str
         path to pretrained model
 

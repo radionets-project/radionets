@@ -3,8 +3,6 @@ from pathlib import Path
 import torch
 from torch import nn
 
-from radionets.dl_framework.architecture import GeneralReLU
-
 
 def init_cnn_(m, f):
     if isinstance(m, nn.Conv2d):
@@ -18,14 +16,6 @@ def init_cnn_(m, f):
 def init_cnn(m, uniform=False):
     f = nn.init.kaiming_uniform_ if uniform else nn.init.kaiming_normal_
     init_cnn_(m, f)
-
-
-def conv(ni, nc, ks, stride, padding):
-    conv = (nn.Conv2d(ni, nc, ks, stride, padding),)
-    bn = (nn.BatchNorm2d(nc),)
-    act = GeneralReLU(leak=0.1, sub=0.4)  # nn.ReLU()
-    layers = [*conv, *bn, act]
-    return layers
 
 
 def load_pre_model(learn, pre_path, visualize=False, plot_loss=False):

@@ -6,8 +6,8 @@ import numpy as np
 import torch
 from fastai.callback.core import Callback, CancelBackwardException
 
-from radionets.dl_framework.model import save_model
-from radionets.dl_framework.utils import _maybe_item, get_ifft_torch
+from radionets.core.model import save_model
+from radionets.core.utils import _maybe_item, get_ifft_torch
 from radionets.evaluation.plotting import OrBu
 from radionets.evaluation.utils import (
     apply_normalization,

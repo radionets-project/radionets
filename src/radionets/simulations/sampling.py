@@ -4,7 +4,7 @@ import numpy as np
 from numpy import savez_compressed
 from tqdm import tqdm
 
-from radionets.dl_framework.data import (
+from radionets.core.data import (
     open_bundle_pack,
     open_fft_bundle,
     save_fft_pair,

@@ -3,8 +3,8 @@ from math import pi
 import torch
 from torch import nn
 
-from radionets.dl_framework.architecture.activation import GeneralReLU
-from radionets.dl_framework.architecture.blocks import SRBlock
+from radionets.architecture.activation import GeneralReLU
+from radionets.architecture.blocks import SRBlock
 
 
 class SRResNet(nn.Module):

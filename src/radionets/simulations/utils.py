@@ -7,7 +7,7 @@ import click
 import numpy as np
 from scipy import interpolate
 
-from radionets.dl_framework.data import (
+from radionets.core.data import (
     get_bundles,
     split_amp_phase,
     split_real_imag,
