@@ -2,6 +2,8 @@ import numpy as np
 import torch
 from torch import Tensor, nn
 
+from radionets.evaluation.utils import apply_symmetry
+
 
 class SplittedL1Loss(nn.Module):
     def __init__(self, reduction: str = "mean") -> None:
@@ -32,16 +34,12 @@ class MaskedSplittedL1Loss(nn.Module):
         size_average: bool = None,
         reduce: bool = None,
         reduction: str = "mean",
-        width: int = 256,
-        height: int = 256,
         center: list | tuple = None,
-        radius: int = 50,
+        radius: int = 30,
     ) -> None:
         super().__init__()
 
         self.reduction = reduction
-        self.width = width
-        self.height = height
         self.center = center
         self.radius = radius
 
@@ -65,26 +63,31 @@ class MaskedSplittedL1Loss(nn.Module):
 
         x = torch.arange(w, device=device).view(1, -1)
         y = torch.arange(h, device=device).view(-1, 1)
-        dist_from_center = np.sqrt((x - center[0]) ** 2 + (y - center[1]) ** 2)
+        dist_from_center = torch.sqrt((x - center[0]) ** 2 + (y - center[1]) ** 2)
 
         mask = dist_from_center <= radius
 
         return mask
 
-    def forward(self, input: Tensor, target: Tensor) -> Tensor:
-        inp_amp = input[:, 0, :]
-        inp_phase = input[:, 1, :]
+    def forward(self, inputs: Tensor, targets: Tensor) -> Tensor:
+        inputs = apply_symmetry(inputs)
+        targets = apply_symmetry(targets)
 
-        tar_amp = target[:, 0, :]
-        tar_phase = target[:, 1, :]
+        _, _, h, w = targets.shape
 
-        if self._mask is None or self._mask.device != input.device:
+        inp_amp = inputs[:, 0]
+        inp_phase = inputs[:, 1]
+
+        tar_amp = targets[:, 0]
+        tar_phase = targets[:, 1]
+
+        if self._mask is None or self._mask.device != inputs.device:
             self._mask = self._create_circular_mask(
-                w=self.width,
-                h=self.height,
+                w=w,
+                h=h,
                 center=self.center,
                 radius=self.radius,
-                device=input.device,
+                device=inputs.device,
             )
 
         weight = torch.where(self._mask, 1.0, 0.3)
