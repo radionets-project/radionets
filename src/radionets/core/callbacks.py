@@ -234,7 +234,7 @@ class CometCallback(PlottingCallbackABC):
 
         self.experiment.log_figure(
             figure=self.fig,
-            figure_name=f"fourier_pred_{current_epoch}",
+            figure_name=f"fourier_pred_{current_epoch:0>4}",
         )
 
         plt.close(self.fig)
@@ -244,7 +244,7 @@ class CometCallback(PlottingCallbackABC):
 
         self.experiment.log_figure(
             figure=self.fig,
-            figure_name=f"fft_pred_{current_epoch}",
+            figure_name=f"fft_pred_{current_epoch:0>4}",
         )
         plt.close(self.fig)
 
@@ -334,9 +334,7 @@ class MLFlowCodeCarbonCallback(LightningCallback):
 
         try:
             self._log_metrics()
-        except FileNotFoundError as e:
-            warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
-        except KeyError as e:
+        except (FileNotFoundError, KeyError) as e:
             warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
 
         self._log_params()
@@ -348,9 +346,7 @@ class MLFlowCodeCarbonCallback(LightningCallback):
 
         try:
             self._log_metrics()
-        except FileNotFoundError as e:
-            warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
-        except KeyError as e:
+        except (FileNotFoundError, KeyError) as e:
             warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
 
         self._log_params()
@@ -362,9 +358,7 @@ class MLFlowCodeCarbonCallback(LightningCallback):
 
         try:
             self._log_metrics()
-        except FileNotFoundError as e:
-            warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
-        except KeyError as e:
+        except (FileNotFoundError, KeyError) as e:
             warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
 
         self._log_params()
@@ -415,8 +409,17 @@ class MLFlowCodeCarbonCallback(LightningCallback):
         dataset = self.train_config.paths.data_path.name
         dataset += "_amp_phase" if self.train_config.model.amp_phase else "_real_imag"
 
+        model = "Radionets"
+        model += "_" + str(self.train_config.model.arch_name().__class__.__name__)
+        model += "_" + str(self.train_config.training.optimizer.optimizer.__name__)
+
+        if self.train_config.training.lr_scheduling:
+            model += "_" + str(
+                self.train_config.training.lr_scheduling.scheduler.__name__
+            )
+
         params_dict = dict(
-            model=str(self.train_config.model.arch_name().__class__.__name__),
+            model=model,
             dataset=dataset,
             task=self.task,
             architecture=self.architecture,
