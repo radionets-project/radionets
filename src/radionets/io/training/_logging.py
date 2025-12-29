@@ -46,7 +46,6 @@ class MLFlowLoggerConfig(BaseModel):
     tracking_uri: str | None = "http://127.0.0.1:5000"
     tags: dict | None = None
     log_model: Literal[True, False, "all"] = False
-    checkpoint_path_prefix: str = ""
     prefix: str = ""
     artifact_location: str | None = None
     run_id: str | None = None
