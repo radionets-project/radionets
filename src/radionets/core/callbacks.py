@@ -274,7 +274,7 @@ class MLFlowCallback(PlottingCallbackABC):
     def plot_val_pred(self, predictions, targets, current_epoch: int) -> None:
         super().plot_val_pred(predictions, targets, current_epoch)
 
-        artifact_file = str(self.base_dir) + f"/fourier_pred_{current_epoch:0>4}.png"
+        artifact_file = f"fourier_pred_{current_epoch:0>4}.png"
 
         self.experiment.log_figure(
             figure=self.fig,
@@ -287,7 +287,7 @@ class MLFlowCallback(PlottingCallbackABC):
     def plot_val_fft(self, predictions, targets, current_epoch: int) -> None:
         super().plot_val_fft(predictions, targets, current_epoch)
 
-        artifact_file = str(self.base_dir) + f"/fft_pred_{current_epoch:0>4}.png"
+        artifact_file = f"fft_pred_{current_epoch:0>4}.png"
 
         self.experiment.log_figure(
             figure=self.fig,
