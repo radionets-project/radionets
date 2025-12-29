@@ -1,4 +1,5 @@
-import torch
+from inspect import signature
+
 from lightning import LightningModule
 
 
@@ -12,6 +13,8 @@ class TrainModule(LightningModule):
         self.optimizer = train_config["training"]["optimizer"]["optimizer"]
         self.loss_fn = train_config["training"]["loss"]["loss_func"]()
         self.train_length = train_length
+        self.num_epochs = train_config["training"]["num_epochs"]
+        self.batch_size = train_config["training"]["batch_size"]
 
     def forward(self, inputs):
         return self.model(inputs)
@@ -67,5 +70,37 @@ class TrainModule(LightningModule):
             self.parameters(),
             lr=self.train_config["training"]["optimizer"]["lr"],
         )
+        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        #     optimizer, mode="min", factor=0.1, patience=10, threshold=1e-5
+        # )
 
-        return optimizer
+        sched_config = self.train_config["training"]["lr_scheduling"]
+        if sched_config:
+            sched_sig_set = set(signature(sched_config["scheduler"]).parameters.keys())
+
+            if "epochs" not in sched_config:
+                sched_config["epochs"] = self.num_epochs
+
+            if "steps_per_epoch" not in sched_config:
+                sched_config["steps_per_epoch"] = (
+                    int(self.train_length) // self.batch_size
+                )
+
+            sched_config_set = set(sched_config)
+            sched_keys = sched_config_set.intersection(sched_sig_set)
+            sched_kwargs = dict(zip(sched_keys, map(sched_config.get, sched_keys)))
+
+            scheduler = sched_config["scheduler"](optimizer, **sched_kwargs)
+
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": {
+                    "scheduler": scheduler,
+                    "monitor": sched_config["monitor"],
+                    "interval": sched_config["interval"],
+                    "frequency": sched_config["frequency"],
+                    "strict": sched_config["strict"],
+                },
+            }
+
+        return {"optimizer": optimizer}
