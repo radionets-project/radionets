@@ -1,9 +1,8 @@
 import inspect
 from collections.abc import Callable
-from typing import Self
 
 import torch
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from radionets.architecture import loss
 
@@ -71,20 +70,29 @@ class OptimizerConfig(BaseModel):
 class LRSchedulerConfig(BaseModel):
     """Learning rate scheduling configuration."""
 
-    lr_start: float = Field(default=1e-5, gt=0.0)
-    lr_max: float = Field(default=1e-3, gt=0.0)
-    lr_stop: float = Field(default=1e-7, gt=0.0)
-    warmup_ratio: float = Field(default=0.25, gt=0.0, le=1.0)
+    scheduler: str | Callable = torch.optim.lr_scheduler.OneCycleLR
+    monitor: str = "train_loss"
+    interval: str = "step"
+    frequency: int = 1
+    strict: bool = True
 
-    @model_validator(mode="after")
-    def validate_lr_schedule(self) -> Self:
-        """Validate learning rate schedule relationships."""
-        if self.lr_max <= self.lr_start:
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("scheduler")
+    @classmethod
+    def load_optimizer_instance(cls, scheduler: str):
+        avail_schedulers = {}
+
+        for member in inspect.getmembers(torch.optim.lr_scheduler):
+            if inspect.isclass(member[1]):
+                avail_schedulers[member[0]] = member[1]
+
+        try:
+            scheduler = avail_schedulers[scheduler]
+        except KeyError as e:
             raise ValueError(
-                f"lr_max ({self.lr_max}) must be > lr_start ({self.lr_start})"
-            )
-        if self.lr_max <= self.lr_stop:
-            raise ValueError(
-                f"lr_max ({self.lr_max}) must be > lr_stop ({self.lr_stop})"
-            )
-        return self
+                f"Unknown optimizer: TrainConfig got {scheduler} but expected "
+                f"one of {set(avail_schedulers)}!"
+            ) from e
+
+        return scheduler

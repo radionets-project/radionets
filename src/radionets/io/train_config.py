@@ -81,7 +81,7 @@ class TrainingConfig(BaseModel):
     batch_size: int = Field(default=100, gt=0)
     loss: LossConfig = LossConfig()
     optimizer: OptimizerConfig = OptimizerConfig()
-    lr_scheduler: bool | LRSchedulerConfig = False
+    lr_scheduling: bool | LRSchedulerConfig = False
 
     @field_validator("loss", mode="after")
     @classmethod
@@ -99,7 +99,7 @@ class TrainingConfig(BaseModel):
 
         return v
 
-    @field_validator("lr_scheduler", mode="after")
+    @field_validator("lr_scheduling", mode="after")
     @classmethod
     def validate_lr_scheduler(cls, v: bool | LRSchedulerConfig):
         if isinstance(v, str):

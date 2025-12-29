@@ -31,11 +31,15 @@ loss_func = "MSELoss"
 optimizer = "AdamW"
 lr = 0.001
 
-[training.lr_scheduler]
-lr_start = 1e-5
-lr_max = 5e-3
-lr_stop = 1e-7
-warmup_ratio = 0.2
+[training.lr_scheduling]
+scheduler = "OneCycleLR"
+
+# kwargs for OneCycleLR
+# See: https://docs.pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
+max_lr = 1e-3           # Maxmimum at 1e-3
+div_factor = 1e2        # Initial at 1e-3 / 1e2 = 1e-5
+final_div_factor = 1e2  # Final at initial_lr / 1e2 = 1e-7
+pct_start = 0.25
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ACCELERATORS & DATALOADING
