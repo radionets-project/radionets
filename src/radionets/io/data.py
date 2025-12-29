@@ -347,6 +347,7 @@ class WebDatasetModule(LightningDataModule):
         transform: Callable | None = None,
         target_transform: Callable | None = None,
         shuffle_buffer: int | None = None,
+        compressed: bool = False,
         **kwargs,
     ):
         super().__init__()
@@ -359,6 +360,7 @@ class WebDatasetModule(LightningDataModule):
         self.transform = transform or identity
         self.target_transform = target_transform or identity
         self.shuffle_buffer = shuffle_buffer
+        self.compressed = compressed
 
         self._get_dataset_lengths()
 
@@ -401,12 +403,14 @@ class WebDatasetModule(LightningDataModule):
         wds.WebDataset
             Configured WebDataset pipeline.
         """
-        urls = sorted(map(str, self.data_dir.glob(f"{mode}-*.tar")))
+        suffix = "tar.gz" if self.compressed else "tar"
+
+        urls = sorted(map(str, self.data_dir.glob(f"{mode}-*.{suffix}")))
 
         if not urls:
             raise ValueError(
                 f"No WebDataset shards found for mode '{mode}' in {self.data_dir}. "
-                f"Expected pattern: {mode}-{{000000..NNNNN}}.tar"
+                f"Expected pattern: {mode}-{{000000..NNNNN}}.{suffix}"
             )
         if shuffle:
             shuffle = self.batch_size

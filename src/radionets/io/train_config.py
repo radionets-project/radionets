@@ -158,6 +158,7 @@ class DataLoaderConfig(BaseModel):
 
     module: str | Callable = data.H5DataModule
     num_workers: int = Field(default=10, gt=0)
+    compressed: bool = False
 
     model_config = ConfigDict(extra="allow")
 
