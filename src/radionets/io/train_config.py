@@ -119,6 +119,7 @@ class DeviceConfig(BaseModel):
     num_devices: str | list | int = "auto"
     precision: str | int = "32-true"
     deepspeed: bool | str | DeepSpeedConfig = False
+    strategy: str = "auto"
 
     @model_validator(mode="after")
     def check_device_count(self) -> None:

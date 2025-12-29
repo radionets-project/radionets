@@ -1,8 +1,9 @@
+import torch
 from lightning import LightningModule
 
 
 class TrainModule(LightningModule):
-    def __init__(self, train_config: dict):
+    def __init__(self, train_config: dict, train_length: int = None):
         super().__init__()
         self.save_hyperparameters()
 
@@ -10,6 +11,7 @@ class TrainModule(LightningModule):
         self.model = train_config["model"]["arch_name"]()
         self.optimizer = train_config["training"]["optimizer"]["optimizer"]
         self.loss_fn = train_config["training"]["loss"]["loss_func"]()
+        self.train_length = train_length
 
     def forward(self, inputs):
         return self.model(inputs)
