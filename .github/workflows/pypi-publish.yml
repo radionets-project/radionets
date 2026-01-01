@@ -11,7 +11,7 @@ jobs:
   dist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: hynek/build-and-inspect-python-package@v2
         with:
           path: .
@@ -19,7 +19,7 @@ jobs:
   distlong:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -28,7 +28,7 @@ jobs:
       - name: Build SDist and wheel
         run: uvx --from build pyproject-build
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: Packages-distlong-${{ github.job }}
           path: dist/*
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.event.action == 'published'
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: Packages
           path: dist
