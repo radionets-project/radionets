@@ -9,8 +9,10 @@ from .archs import (
     SRResNet34_unc,
     SRResNet34_unc_no_grad,
     SRResNet34AmpPhase,
-    SRResNetAmp,
-    SRResNetPhase,
+    SRResNetAmp18,
+    SRResNetImag,
+    SRResNetImag10,
+    SRResNetPhase18,
 )
 from .blocks import BottleneckResBlock, Decoder, Encoder, NNBlock, SRBlock
 from .layers import LocallyConnected2d
@@ -27,8 +29,10 @@ __all__ = [
     "NNBlock",
     "SRBlock",
     "SRResNet",
-    "SRResNetAmp",
-    "SRResNetPhase",
+    "SRResNetAmp18",
+    "SRResNetPhase18",
+    "SRResNetImag",
+    "SRResNetImag10",
     "SRResNet8",
     "SRResNet18",
     "SRResNet18Complex",
