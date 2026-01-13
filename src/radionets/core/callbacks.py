@@ -123,27 +123,49 @@ class CometCallback(Callback):
         im1 = ax[0].imshow(
             pred[0, 0], cmap="radionets.PuOr", vmin=-lim_amp, vmax=lim_amp
         )
-        make_axes_nice(fig, ax[0], im1, "Real")
+        make_axes_nice(fig, ax[0], im1, "Amplitude" if self.amp_phase else "Real")
 
         im2 = ax[1].imshow(
             pred[0, 1], cmap="radionets.PuOr", vmin=-lim_phase, vmax=lim_phase
         )
-        make_axes_nice(fig, ax[1], im2, "Imaginary")
+        make_axes_nice(fig, ax[1], im2, "Phase" if self.amp_phase else "Imaginary")
 
         im3 = ax[2].imshow(
             img_true[0, 0], cmap="radionets.PuOr", vmin=-lim_amp, vmax=lim_amp
         )
-        make_axes_nice(fig, ax[2], im3, "Org. Real")
+        make_axes_nice(
+            fig, ax[2], im3, "Org. Amplitude" if self.amp_phase else "Org. Real"
+        )
 
         im4 = ax[3].imshow(
             img_true[0, 1], cmap="radionets.PuOr", vmin=-lim_phase, vmax=lim_phase
         )
-        make_axes_nice(fig, ax[3], im4, "Org. Imaginary")
+        make_axes_nice(
+            fig, ax[3], im4, "Org. Phase" if self.amp_phase else "Org. Imaginary"
+        )
+
+        self._set_contours(img_true[0, 0], ax=ax[0])
+        self._set_contours(img_true[0, 0], ax=ax[2])
+        self._set_contours(img_true[0, 1], ax=ax[1])
+        self._set_contours(img_true[0, 1], ax=ax[3])
 
         self.experiment.log_figure(
             figure=fig, figure_name=f"{self.epoch + 1}_pred_epoch"
         )
         plt.close()
+
+    def _set_contours(self, img, ax):
+        img = torch.abs(img)
+        levels = sorted([0.88, 0.75, 0.63, 0.50, 0.38, 0.25, 0.13, 0.05])
+        thresholds = [img.max() * level for level in levels]
+
+        CS = ax.contour(img, thresholds, colors="k", linewidths=0.1)
+
+        fmt = {}
+        for l, s in zip(CS.levels, levels):  # noqa: E741
+            fmt[l] = rf"${s * 100:2.0f} \%$"
+
+        ax.clabel(CS, CS.levels, fmt=fmt, fontsize=6)
 
     def plot_test_fft(self):
         img_test, img_true, _ = get_images(self.test_ds, 1, rand=False)
@@ -390,7 +412,7 @@ class SaveTempCallback(Callback):
         p = Path(self.model_path).parent
         p.mkdir(parents=True, exist_ok=True)
 
-        if (self.epoch + 1) % 10 == 0:
+        if (self.epoch + 1) % 1 == 0:
             out = p / f"temp_{self.epoch + 1}.model"
             save_model(self, out)
             LOGGER.info(f"Finished Epoch {self.epoch + 1}, model saved.")
