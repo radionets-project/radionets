@@ -89,6 +89,7 @@ def define_learner(data, arch, train_conf, lr_find=False, plot_loss=False):
         loss_func = loss_functions.init_feature_loss()
     else:
         loss_func = getattr(loss_functions, train_conf["loss_func"])
+        loss_func = loss_func(**train_conf["loss_conf"])
 
     # Combine model and data in learner
     learn = get_learner(
