@@ -62,6 +62,8 @@ def read_config(config):
 
     train_conf["source_list"] = config["general"]["source_list"]
 
+    train_conf["loss_conf"] = config["loss"]
+
     return train_conf
 
 
