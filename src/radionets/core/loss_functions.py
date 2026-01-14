@@ -996,6 +996,7 @@ class ImagCombinedFluxEmoio2(nn.Module):
         return loss
 
 
+# just Flux Imag, inner 5% maks, outta l1
 class ImagFluxEmoio(nn.Module):
     def __init__(self, levels, weights, **kwargs):
         super().__init__()
@@ -1060,6 +1061,229 @@ class ImagFluxEmoio(nn.Module):
 
         print(f"{loss_rest = }, {loss_mask = }")
         print("\n")
+
+        return loss
+
+
+# just Flux real, inner 5% maks, outta l1
+class RealFluxEmoio(nn.Module):
+    def __init__(self, levels, weights, **kwargs):
+        super().__init__()
+        if not levels:
+            levels = [0.88, 0.75, 0.63, 0.50, 0.38, 0.25, 0.13, 0.05]
+        if not weights:
+            weights = [2.00, 1.76, 1.50, 1.26, 1.00, 0.76, 0.50, 0.26]
+        if not all([isinstance(levels, list), isinstance(weights, list)]):
+            raise ValueError(
+                "'radii' and 'weights' must be lists, but got "
+                f"{type(levels)} and {type(weights)} instead."
+            )
+        if not len(weights) == len(levels):
+            raise ValueError("len(weights) has to be equal to len(levels)")
+        self.levels = levels
+        self.weights = weights
+
+    def forward(self, x, y):
+        """
+        Combined loss for amplitude reconstruction with masked weighting.
+
+        Uses Huber loss for peak/total (robust against outliers) and
+        L1 loss for masked amplitude comparison.
+        """
+        pred = x["pred"]
+
+        pred = apply_symmetry({"pred": pred})["pred"]
+        truth = apply_symmetry({"y": y})["y"]
+
+        pred_real = pred[:, 0, :].clone()
+        truth_real = truth[:, 0, :].clone()
+
+        hu3 = nn.HuberLoss(delta=0.05)
+        l1 = nn.L1Loss()
+
+        # --- Masked Amplitude:  ---
+        truth_max = truth_real.amax(dim=(-2, -1), keepdim=True)
+
+        thresholds = [truth_max * level for level in self.levels]
+        masks = [torch.abs(truth_real) > thresholds[0]]
+
+        for i, _ in enumerate(thresholds[0:-1]):
+            mask = (torch.abs(truth_real) <= thresholds[i]) & (
+                torch.abs(truth_real) > thresholds[i + 1]
+            )
+            masks.append(mask)
+
+        masks.append(torch.abs(truth_real) <= thresholds[-1])
+
+        # --- emoio: ---
+
+        loss = []
+
+        for i, (mask, weight) in enumerate(zip(masks[:-1], self.weights)):
+            print(
+                f"loss maske {i} =",
+                (pred_real[mask] - truth_real[mask]).mean(dtype=torch.float32),
+                "\n",
+            )
+            loss.append(hu3(pred_real[mask], truth_real[mask]) * weight)
+
+        loss_mask = sum(loss)
+
+        loss_rest = l1(pred_real[masks[-1]], truth_real[masks[-1]])
+
+        loss = loss_rest + loss_mask
+
+        print(f"{loss_rest = }, {loss_mask = }")
+        print("\n")
+
+        return loss
+
+
+################## Masks for flux but no weights ######################
+
+
+# just Flux real, inner 5% maks, outta l1, no weights at all
+class RealFluxEmoio_nw(nn.Module):
+    def __init__(self, levels, weights, **kwargs):
+        super().__init__()
+        if not levels:
+            levels = [0.88, 0.75, 0.63, 0.50, 0.38, 0.25, 0.13, 0.05]
+        self.levels = levels
+        self.weights = weights
+
+    def forward(self, x, y):
+        """
+        Combined loss for amplitude reconstruction with masked.
+        """
+        pred = x["pred"]
+
+        pred = apply_symmetry({"pred": pred})["pred"]
+        truth = apply_symmetry({"y": y})["y"]
+
+        pred_real = pred[:, 0, :].clone()
+        truth_real = truth[:, 0, :].clone()
+
+        hu3 = nn.HuberLoss(delta=0.01)
+        l1 = nn.L1Loss()
+
+        # --- Masked Amplitude:  ---
+        truth_max = truth_real.amax(dim=(-2, -1), keepdim=True)
+
+        thresholds = [truth_max * level for level in self.levels]
+        masks = [torch.abs(truth_real) > thresholds[0]]
+
+        for i, _ in enumerate(thresholds[0:-1]):
+            mask = (torch.abs(truth_real) <= thresholds[i]) & (
+                torch.abs(truth_real) > thresholds[i + 1]
+            )
+            masks.append(mask)
+
+        masks.append(torch.abs(truth_real) <= thresholds[-1])
+
+        # --- emoio: ---
+
+        loss = []
+
+        for i, mask in enumerate(masks[:-1]):
+            print(
+                f"loss mask {i} =",
+                (pred_real[mask] - truth_real[mask]).mean(dtype=torch.float32),
+                "\n",
+            )
+            loss.append(hu3(pred_real[mask], truth_real[mask]))
+
+        loss_mask = sum(loss)
+
+        loss_rest = l1(pred_real[masks[-1]], truth_real[masks[-1]])
+
+        loss = loss_rest + loss_mask
+
+        print(f"{loss_rest = }, {loss_mask = }")
+        print("\n")
+
+        return loss
+
+
+########### only the FFT Truth and prediction ###########
+
+
+class RealImageCompare(nn.Module):
+    def __init__(self, levels, weights, **kwargs):
+        super().__init__()
+        self.levels = levels
+        self.weights = weights
+
+    def forward(self, x, y):
+        pred = x["pred"]
+
+        pred = apply_symmetry({"pred": pred})["pred"]
+        truth = apply_symmetry({"y": y})["y"]
+
+        pred[:, 1] = truth[:, 1]  # pred = [pred_real, truth_imag]
+
+        l1 = nn.L1Loss()
+
+        pred_image = get_ifft(pred)
+        truth_image = get_ifft(truth)
+
+        loss = l1(pred_image - truth_image)
+
+        return loss
+
+
+########### The FFT Truth and prediction with masks###########
+
+
+class RealImageCompareMask(nn.Module):
+    def __init__(self, levels, weights, **kwargs):
+        super().__init__()
+        self.levels = levels
+        self.weights = weights
+
+    def forward(self, x, y):
+        pred = x["pred"]
+
+        pred = apply_symmetry({"pred": pred})["pred"]
+        truth = apply_symmetry({"y": y})["y"]
+
+        pred[:, 1] = truth[:, 1]  # pred = [pred_real, truth_imag]
+
+        pred_image = get_ifft(pred)
+        truth_image = get_ifft(truth)
+
+        # --- Masked Amplitude:  ---
+        truth_max = truth_image.amax(dim=(-2, -1), keepdim=True)
+
+        thresholds = [truth_max * level for level in self.levels]
+        masks = [torch.abs(truth_image) > thresholds[0]]
+
+        for i, _ in enumerate(thresholds[0:-1]):
+            mask = (torch.abs(truth_image) <= thresholds[i]) & (
+                torch.abs(truth_image) > thresholds[i + 1]
+            )
+            masks.append(mask)
+
+        masks.append(torch.abs(truth_image) <= thresholds[-1])
+
+        # --- emoio: ---
+
+        hu3 = nn.HuberLoss(delta=0.01)
+
+        loss = []
+
+        for i, mask in enumerate(masks[:-1]):
+            print(
+                f"loss mask {i} =",
+                (pred_image[mask] - truth_image[mask]).mean(dtype=torch.float32),
+                "\n",
+            )
+            loss.append(hu3(pred_image[mask], truth_image[mask]))
+
+        loss_mask = sum(loss)
+
+        loss_rest = l1(pred_image[masks[-1]], truth_image[masks[-1]])
+
+        loss = loss_mask + loss_rest
 
         return loss
 
