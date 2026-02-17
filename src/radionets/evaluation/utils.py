@@ -211,6 +211,8 @@ def make_axes_nice(fig, ax, im, title, phase=False, phase_diff=False, unc=False)
         # set ticks for colorbar
         cbar.ax.set_yticklabels([r"$-2\pi$", r"$-\pi$", r"$0$", r"$\pi$", r"$2\pi$"])
 
+    return fig, ax, cbar
+
 
 def check_vmin_vmax(inp):
     """Check wether the absolute of the maxmimum or the minimum is bigger.
@@ -304,7 +306,7 @@ def get_images(test_ds, num_images, rand=False, indices=None):
         return mean, std, img_true
 
 
-def eval_model(img, model):
+def eval_model(img, model, ch=0):
     """Put model into eval mode and evaluate test images.
 
     Parameters
@@ -326,9 +328,37 @@ def eval_model(img, model):
         model.cuda()
     with torch.no_grad():
         if torch.cuda.is_available():
-            pred = model(img.float().cuda())["pred"]
+            pred = model(img.float().cuda())["pred"]  # [:, ch].unsqueeze(1)
         else:
-            pred = model(img.float())["pred"]
+            pred = model(img.float())["pred"]  # [:, ch].unsqueeze(1)
+    return pred.cpu()
+
+
+def eval_model_single_channel(img, model, ch=0):
+    """Put model into eval mode and evaluate test images.
+
+    Parameters
+    ----------
+    img : str
+        test image
+    model : architecture object
+        architecture with pretrained weigths
+
+    Returns
+    -------
+    pred : n 1d arrays
+        predicted images
+    """
+    if len(img.shape) == (3):
+        img = img.unsqueeze(0)
+    model.eval()
+    if torch.cuda.is_available():
+        model.cuda()
+    with torch.no_grad():
+        if torch.cuda.is_available():
+            pred = model(img.float().cuda())["pred"][:, ch].unsqueeze(1)
+        else:
+            pred = model(img.float())["pred"][:, ch].unsqueeze(1)
     return pred.cpu()
 
 
@@ -347,6 +377,9 @@ def get_ifft(array, amp_phase=False, scale=False):
     ndarray
         image(s) in image space
     """
+    if isinstance(array, torch.Tensor):
+        array = array.detach().cpu().numpy()
+
     if len(array.shape) == 3:
         array = array.unsqueeze(0) if hasattr(array, "numpy") else array[np.newaxis, :]
     if amp_phase:
@@ -400,7 +433,7 @@ def check_outpath(model_path):
     return exists
 
 
-def symmetry(image, key):
+def symmetry(image, key, overlap=5):
     """Symmetry function to complete the images.
 
     Parameters
@@ -434,7 +467,7 @@ def symmetry(image, key):
     return image
 
 
-def apply_symmetry(img_dict):
+def apply_symmetry(img_dict, overlap=5):
     """Pads and applies symmetry to half images.
     Takes a dict as input.
 
@@ -455,11 +488,11 @@ def apply_symmetry(img_dict):
             half_image = img_dict[key].shape[-1] // 2
             output = F.pad(
                 input=img_dict[key],
-                pad=(0, 0, 0, half_image - 5),
+                pad=(0, 0, 0, half_image - overlap),
                 mode="constant",
                 value=0,
             )
-            output = symmetry(output, key)
+            output = symmetry(output, key, overlap)
             img_dict[key] = output
 
     return img_dict
