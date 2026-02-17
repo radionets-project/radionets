@@ -21,6 +21,7 @@ from radionets.evaluation.utils import (
     create_databunch,
     create_sampled_databunch,
     eval_model,
+    eval_model_single_channel,
     get_ifft,
     get_images,
     load_pretrained_model,
@@ -88,9 +89,9 @@ def get_prediction(conf, mode="test"):
     )
 
     # Rescale if necessary
-    img_test, norm_dict = apply_normalization(img_test, norm_dict)
+    # img_test, norm_dict = apply_normalization(img_test, norm_dict)
     pred = eval_model(img_test, model)
-    pred = rescale_normalization(pred, norm_dict)
+    # pred = rescale_normalization(pred, norm_dict)
 
     images = {"pred": pred, "inp": img_test, "true": img_true}
 
@@ -132,7 +133,7 @@ def get_separate_prediction(conf):
         conf["data_path"],
         mode="test",
         fourier=conf["fourier"],
-        source_list=conf["source_list"],
+        # source_list=conf["source_list"],
     )
 
     num_images = conf["num_images"]
@@ -140,7 +141,7 @@ def get_separate_prediction(conf):
 
     if num_images is None:
         num_images = len(test_ds)
-    img_test, img_true = get_images(test_ds, num_images, rand=rand)
+    img_test, img_true, indices = get_images(test_ds, num_images, rand=rand)
     img_size = img_test.shape[-1]
     model_1, norm_dict = load_pretrained_model(
         conf["arch_name"], conf["model_path"], img_size
@@ -149,16 +150,21 @@ def get_separate_prediction(conf):
         conf["arch_name_2"], conf["model_path_2"], img_size
     )
 
-    pred_1 = eval_model(img_test, model_1)
-    pred_2 = eval_model(img_test, model_2)
+    pred_1 = eval_model_single_channel(img_test, model_1, ch=0)
+    pred_2 = eval_model_single_channel(img_test, model_2, ch=1)
 
-    # test for uncertainty
+    # test for uncertainty =
     if pred_1.shape[1] == 2:
         pred_1 = pred_1[:, 0, :].unsqueeze(1)
         pred_2 = pred_2[:, 0, :].unsqueeze(1)
 
-    pred = torch.cat((pred_1, pred_2), dim=1)
-    return pred, img_test, img_true
+    pred = torch.cat((pred_1, pred_2), dim=1).squeeze()
+
+    images = {"pred": pred, "inp": img_test, "true": img_true}
+    if images["pred"].shape[-2] < images["pred"].shape[-1]:
+        images = apply_symmetry(images)
+
+    return images
 
 
 def create_inspection_plots(conf, num_images=3, rand=False):
