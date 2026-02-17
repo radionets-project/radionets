@@ -127,7 +127,9 @@ class SRResNetSingleChannel(nn.Module):
         )
 
         self.prelu = nn.PReLU()
-        self.hardtanh = nn.Hardtanh(-pi, pi)
+        # self.hardtanh = nn.Hardtanh(-pi, pi)
+        self.hardtanh = nn.Hardtanh(-0.1, 0.1)
+        self.tanhshrink = nn.Tanhshrink()
 
     def _create_blocks(self, n_blocks):
         blocks = []
@@ -192,13 +194,13 @@ class SRResNetImag(SRResNetSingleChannel):
     def __init__(self):
         super().__init__()
         self._create_blocks(8)
-        self.tanhshrink = nn.Tanhshrink()
 
     def forward(self, inputs):
         x = inputs[:, 1, ...][:, None]
         x = self.preBlock(x)
         x = x + self.postBlock(self.blocks(x))
         x = self.final(x)
+        # x = self.prelu(x)
         x = self.tanhshrink(x)
 
         x = torch.cat((inputs[:, 0, ...][:, None], x), dim=1)
