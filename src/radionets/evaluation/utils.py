@@ -839,7 +839,7 @@ def process_prediction(conf, img_test, img_true, norm_dict, model, model_2):
     if model_2 is not None:
         pred_2 = eval_model(img_test, model_2)
         pred_2 = rescale_normalization(pred_2, norm_dict)
-        pred = torch.cat((pred, pred_2), dim=1)
+        pred = torch.cat((pred[:, 0].unsqueeze(1), pred_2[:, 1].unsqueeze(1)), dim=1)
 
     # apply symmetry
     if pred.shape[-2] < pred.shape[-1]:
