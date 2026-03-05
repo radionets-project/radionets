@@ -58,7 +58,7 @@ def create_predictions(conf):
     model_path = conf["model_path"]
     name_model = Path(model_path).stem
 
-    out_path = Path(model_path).parent / "evaluation"
+    out_path = conf["save_path"] / "inspection"
     out_path.mkdir(parents=True, exist_ok=True)
     out_path = str(out_path) + f"/predictions_{name_model}.h5"
 
