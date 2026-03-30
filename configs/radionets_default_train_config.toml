@@ -13,7 +13,6 @@ checkpoint = false
 # ─────────────────────────────────────────────────────────────────────────────
 [model]
 arch_name = "SRResNet18"
-fourier = true
 amp_phase = true
 normalize = false
 
@@ -36,7 +35,7 @@ scheduler = "OneCycleLR"
 
 # kwargs for OneCycleLR
 # See: https://docs.pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
-max_lr = 1e-3           # Maxmimum at 1e-3
+max_lr = 1e-3           # Maximum at 1e-3
 div_factor = 1e2        # Initial at 1e-3 / 1e2 = 1e-5
 final_div_factor = 1e2  # Final at initial_lr / 1e2 = 1e-7
 pct_start = 0.25
@@ -51,6 +50,7 @@ precision = "32-true"
 deepspeed = "deepspeed_stage_2"
 
 [dataloader]
+fourier = true
 module = "WebDatasetModule"
 num_workers = 10
 prefetch_factor = 2
