@@ -20,7 +20,7 @@ from lightning.pytorch.loggers import CometLogger, MLFlowLogger
 from matplotlib.colors import PowerNorm
 from pydantic import BaseModel
 
-from radionets.evaluation.contour import analyse_intensity, area_of_contour
+from radionets.evaluation.contour import intensity_ratio, source_area_ratio
 from radionets.evaluation.utils import apply_symmetry, get_ifft
 from radionets.plotting.utils import get_vmin_vmax, set_cbar
 
@@ -496,12 +496,12 @@ class LogAdditionalParamsCallback(LightningCallback):
 
             area.extend(
                 [
-                    area_of_contour(ifft_pred, ifft_target)
+                    source_area_ratio(ifft_pred, ifft_target)
                     for ifft_pred, ifft_target in zip(ifft_preds, ifft_targets)
                 ]
             )
 
-            total, peak = analyse_intensity(ifft_preds, ifft_targets)
+            total, peak = intensity_ratio(ifft_preds, ifft_targets)
             total_flux.extend(total)
             peak_flux.extend(peak)
 
