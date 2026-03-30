@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
+import logging
 from math import sqrt
 from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
+from pandas import DataFrame
 from skimage.feature import blob_log
+from tqdm import tqdm
+
+from radionets.utils.batch_size import AdaptiveBatchSize
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike, NDArray
 
+LOGGER = logging.getLogger("radionets")
+
 
 def calc_blobs(
-    ifft_pred: ArrayLike,
-    ifft_truth: ArrayLike,
+    ifft_image: ArrayLike,
 ) -> tuple[NDArray, NDArray]:
     """Detect blobs using Laplacian of Gaussian in prediction
     and truth images.
@@ -34,13 +40,10 @@ def calc_blobs(
     blobs_log_truth : :func:`~numpy.ndarray`
         Detected blobs in ground truth, shape (N, 3) with columns [y, x, radius].
     """
-    if isinstance(ifft_pred, torch.Tensor):
-        ifft_pred = ifft_pred.detach().cpu().numpy()
+    if isinstance(ifft_image, torch.Tensor):
+        ifft_image = ifft_image.detach().cpu().numpy()
 
-    if isinstance(ifft_truth, torch.Tensor):
-        ifft_truth = ifft_truth.detach().cpu().numpy()
-
-    threshold = ifft_truth.max() * 0.1
+    threshold = ifft_image.max() * 0.1
     kwargs = {
         "min_sigma": 1,
         "max_sigma": 10,
@@ -49,20 +52,18 @@ def calc_blobs(
         "overlap": 0.9,
     }
 
-    blobs_log_pred = blob_log(ifft_pred, **kwargs)
-    blobs_log_truth = blob_log(ifft_truth, **kwargs)
+    blobs_log = blob_log(ifft_image, **kwargs)
 
     # Compute radii in the 3rd column.
-    blobs_log_pred[:, 2] = blobs_log_pred[:, 2] * sqrt(2)
-    blobs_log_truth[:, 2] = blobs_log_truth[:, 2] * sqrt(2)
+    blobs_log[:, 2] = blobs_log[:, 2] * sqrt(2)
 
-    return blobs_log_pred, blobs_log_truth
+    return blobs_log
 
 
 def crop_first_component(
     pred: ArrayLike,
     truth: ArrayLike,
-    blob_truth: list | tuple,
+    blobs_target: list | tuple,
 ) -> tuple[NDArray, NDArray]:
     """Return cropped images around the first component of the true image.
 
@@ -82,7 +83,7 @@ def crop_first_component(
     flux_truth : :func:`~numpy.ndarray`
         Cropped truth image.
     """
-    y, x, r = blob_truth
+    y, x, r = blobs_target
     x_coord, y_coord = _corners(y, x, r)
 
     flux_truth = truth[x_coord[0] : x_coord[1], y_coord[0] : y_coord[1]]
@@ -122,3 +123,28 @@ def _corners(
     y_coord = [y - r, y + r + 1]
 
     return x_coord, y_coord
+
+
+def eval_mean_difference(config, preds, targets) -> None:
+    LOGGER.info("Evaluating mean difference...")
+
+    vals = []
+    with AdaptiveBatchSize(
+        preds, targets, initial_batch_size=config.general.batch_size
+    ) as batched:
+        for preds_batch, targets_batch in tqdm(batched):
+            blobs_target = calc_blobs(targets_batch)[0].copy()
+            flux_preds, flux_targets = crop_first_component(
+                preds_batch, targets_batch, blobs_target
+            )
+
+            vals_batch = (
+                (flux_preds.mean() - flux_targets.mean()) / flux_targets.mean() * 100
+            )
+            vals.append(vals_batch)
+
+    vals = np.asarray(vals)
+    LOGGER.info(f"Mean difference: {vals.mean()}")
+
+    file_path = config.paths.save_path / "mean_diff.csv"
+    DataFrame(data={"mean_diff": vals}).to_csv(file_path, index=False)
