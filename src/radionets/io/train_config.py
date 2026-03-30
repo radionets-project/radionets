@@ -3,7 +3,7 @@ import os
 import tomllib
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import torch
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -50,7 +50,6 @@ class PathsConfig(BaseModel):
 
 class ModelConfig(BaseModel):
     arch_name: str | Callable = archs.SRResNet18
-    fourier: bool = True
     amp_phase: bool = True
     normalize: bool = False
 
@@ -122,7 +121,7 @@ class DeviceConfig(BaseModel):
     strategy: str = "auto"
 
     @model_validator(mode="after")
-    def check_device_count(self) -> None:
+    def check_device_count(self) -> Self:
         if self.accelerator in ["gpu", "tpu", "hpu"] and not torch.cuda.is_available():
             raise ValueError(
                 f"'accelerator' is set to {self.accelerator} in the "
@@ -160,6 +159,7 @@ class DataLoaderConfig(BaseModel):
     module: str | Callable = data.H5DataModule
     num_workers: int = Field(default=10, gt=0)
     compressed: bool = False
+    fourier: bool = True
 
     model_config = ConfigDict(extra="allow")
 
