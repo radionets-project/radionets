@@ -1,6 +1,11 @@
 from math import pi
 
 import torch
+from pandas import DataFrame
+
+from radionets.core.logging import _setup_logger
+
+LOGGER = _setup_logger(namespace=__name__)
 
 
 def bmul(vec: torch.Tensor, mat: torch.Tensor, axis: int = 0) -> torch.Tensor:
@@ -24,7 +29,7 @@ def bmul(vec: torch.Tensor, mat: torch.Tensor, axis: int = 0) -> torch.Tensor:
 
 
 def _im2array_value(
-    image: torch.tensor,
+    image: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Transforms the image to an array of pixel coordinates and
     its intensities.
@@ -89,7 +94,7 @@ def pca(
     inp = torch.stack([delta_x, delta_y], dim=1)
 
     cov_w = bmul(
-        (cog_x - 1 * torch.sum(image * image, axis=1).unsqueeze(-1) / cog_x).squeeze(1),
+        (cog_x - 1 * torch.sum(image * image, dim=1).unsqueeze(-1) / cog_x).squeeze(1),
         (torch.matmul(image.unsqueeze(1) * inp, inp.transpose(1, 2))),
     )
 
@@ -99,7 +104,7 @@ def pca(
     return cog_x, cog_y, psi_torch
 
 
-def calc_jet_angle(
+def jet_angle(
     image: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Calculate the jet angle from an image consisting of
@@ -130,11 +135,17 @@ def calc_jet_angle(
     if image.ndim == 2:
         image = image.unsqueeze(0)
 
-    batch_size, img_size, _ = image.shape
+    # unpack first or first two dims to batch_size, e.g. if
+    # ndim is 4 (num_batches, images_per_batch, H, W),
+    # batch_size also contains the number of batches.
+    # If only one batch and ndim is 3, batch_size is only the number
+    # of images per batch
+    *batch_size, img_size, _ = image.shape
 
     # only use pixels above 40% of peak flux
-    max_vals = image.view(1, -1).max(dim=1).values
-    threshold = (0.4 * max_vals).view(batch_size, 1, 1)
+    max_vals = image.amax(dim=(-2, -1))
+    threshold = (0.4 * max_vals).view(*batch_size, 1, 1)
+    print(f"{threshold.shape = }")
     image = torch.where(image >= threshold, image, torch.zeros_like(image))
 
     _, _, alpha_pca = pca(image)
@@ -160,3 +171,16 @@ def calc_jet_angle(
     alpha = torch.rad2deg(alpha_pca)
 
     return m, n, alpha
+
+
+def eval_jet_angle(config, preds, targets):
+    LOGGER.info("Evaluating jet angle...")
+    m_pred, n_pred, alpha_pred = jet_angle(torch.tensor(preds))
+    m_target, n_target, alpha_target = jet_angle(torch.tensor(targets))
+
+    diff = (alpha_pred - alpha_target).numpy()
+
+    file_path = config.paths.save_path / "jet_angles_diff.csv"
+    DataFrame(data={"diff": diff}).to_csv(file_path, index=False)
+
+    LOGGER.info(f"Saved to {file_path}")
