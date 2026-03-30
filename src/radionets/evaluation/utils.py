@@ -18,15 +18,19 @@ def get_ifft(image, amp_phase=False, scale=False, uncertainty=False):
         image = image.unsqueeze(0)
 
     if amp_phase:
-        amp = 10 ** (10 * image[:, 0] - 10) - 1e-10 if scale else image[:, 0]
+        amp = (
+            10 ** (10 * image[..., 0, :, :] - 10) - 1e-10
+            if scale
+            else image[..., 0, :, :]
+        )
 
         index = 2 if uncertainty else 1
-        a = amp * torch.cos(image[:, index])
-        b = amp * torch.sin(image[:, index])
+        a = amp * torch.cos(image[..., index, :, :])
+        b = amp * torch.sin(image[..., index, :, :])
 
         compl = a + b * 1j
     else:
-        compl = image[:, 0] + image[:, 1] * 1j
+        compl = image[..., 0, :, :] + image[..., 1, :, :] * 1j
 
     if compl.shape[0] == 1:
         compl = compl.squeeze(0)
@@ -34,7 +38,7 @@ def get_ifft(image, amp_phase=False, scale=False, uncertainty=False):
     return torch.abs(torch.fft.ifftshift(torch.fft.ifft2(torch.fft.fftshift(compl))))
 
 
-def apply_symmetry(image, uncertainty: bool = False) -> torch.tensor:
+def apply_symmetry(image, uncertainty: bool = False) -> torch.Tensor:
     """Applies symmetry operations on an array.
 
     This follows Figure 5.3 in http://dx.doi.org/10.17877/DE290R-24834
@@ -58,7 +62,7 @@ def apply_symmetry(image, uncertainty: bool = False) -> torch.tensor:
     if image.ndim == 3:
         image = image.unsqueeze(0)
 
-    _, _, H, W = image.shape
+    *_, H, W = image.shape
 
     # Assume images are square; get target height from full width
     # NOTE: This may have to be changed should we allow different
@@ -83,7 +87,7 @@ def apply_symmetry(image, uncertainty: bool = False) -> torch.tensor:
     lower_half = lower_half[..., :-1, :]
 
     if not uncertainty:
-        lower_half[:, 1, ...] *= -1
+        lower_half[..., 1, :, :] *= -1
 
     full_image[..., half_width + 1 :, :] = lower_half
 
