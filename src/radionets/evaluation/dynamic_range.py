@@ -3,14 +3,19 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+from pandas import DataFrame
+
+from radionets.core.logging import _setup_logger
 
 if TYPE_CHECKING:
+    import torch
     from numpy.typing import ArrayLike, NDArray
 
+LOGGER = _setup_logger(namespace=__name__)
 _BOX_FACTORS = np.array([0.3, 0.22, 0.16])
 
 
-def get_boxsize(num_corners: int, num_pixel: int = 63) -> int:
+def get_boxsize(num_corners: int, num_pixel: int = 63, box_factors=None) -> int:
     """
     Compute corner box size based on number of corners used.
 
@@ -26,7 +31,10 @@ def get_boxsize(num_corners: int, num_pixel: int = 63) -> int:
     int
         Box size in pixels.
     """
-    return int(num_pixel * _BOX_FACTORS[num_corners - 2])
+    if not box_factors:
+        box_factors = _BOX_FACTORS
+
+    return int(num_pixel * box_factors[num_corners - 2])
 
 
 def select_box(rms: NDArray, sensitivity: float = 1e-6) -> NDArray:
@@ -143,7 +151,7 @@ def get_rms(
     return rms_truth, rms_pred, rms_boxes, corners
 
 
-def calc_dr(ifft_truth, ifft_pred):
+def dynamic_range(ifft_pred: torch.Tensor, ifft_target: torch.Tensor) -> tuple:
     """
     Calculate dynamic range for ground truth and predicted images.
 
@@ -152,30 +160,41 @@ def calc_dr(ifft_truth, ifft_pred):
 
     Parameters
     ----------
-    ifft_truth : :func:`~numpy.ndarray`
-        Ground truth inverse FFT images (image space), shape (B, H, W).
     ifft_pred : :func:`~numpy.ndarray`
         Predicted inverse FFT images (image space), shape (B, H, W).
+    ifft_target : :func:`~numpy.ndarray`
+        Ground truth inverse FFT images (image space), shape (B, H, W).
 
     Returns
     -------
-    dr_truth : :func:`~numpy.ndarray`
-        Dynamic range for truth.
-    dr_pred : :func:`~numpy.ndarray`
+    dr_target : :func:`~numpy.ndarray`
+        Dynamic range for target.
+    dr_preds : :func:`~numpy.ndarray`
         Dynamic range for predictions.
     rms_boxes : np. ndarray
         Number of valid corners per sample.
     corners : :func:`~numpy.ndarray`
         Corner validity mask.
     """
-    rms_truth, rms_pred, rms_boxes, corners = get_rms(ifft_truth, ifft_pred)
+    rms_target, rms_pred, rms_boxes, corners = get_rms(ifft_target, ifft_pred)
 
-    peak_truth = ifft_truth.reshape(len(ifft_truth), -1).max(axis=1)
-    peak_pred = ifft_pred.reshape(len(ifft_pred), -1).max(axis=1)
+    peak_target = ifft_target.reshape(len(ifft_target), -1).max(dim=1)
+    peak_pred = ifft_pred.reshape(len(ifft_pred), -1).max(dim=1)
 
-    valid_truth = rms_truth != 0
+    valid_target = rms_target != 0
     valid_pred = rms_pred != 0
-    dr_truth = peak_truth[valid_truth] / rms_truth[valid_truth]
+    dr_target = peak_target[valid_target] / rms_target[valid_target]
     dr_pred = peak_pred[valid_pred] / rms_pred[valid_pred]
 
-    return dr_truth, dr_pred, rms_boxes, corners
+    return dr_pred, dr_target, rms_boxes, corners
+
+
+def eval_dynamic_range(config, preds: torch.Tensor, targets: torch.Tensor) -> None:
+    LOGGER.info("Evaluating dynamic range...")
+    dr_preds, dr_targets, _, _ = dynamic_range(preds, targets)
+
+    file_path = config.paths.save_path / "dynamic_range.csv"
+    DataFrame(data={"preds": dr_preds, "targets": dr_targets}).to_csv(
+        file_path, index=False
+    )
+    LOGGER.info(f"Saved to {file_path}")
