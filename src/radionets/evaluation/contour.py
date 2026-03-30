@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
+from pandas import DataFrame
 from torch import Tensor
 
 if TYPE_CHECKING:
-    from matplotlib.contour import QuadContourSet
+    import torch
     from numpy.typing import ArrayLike
+
+LOGGER = logging.getLogger("radionets")
 
 
 def _compute_source_area(vertices: ArrayLike) -> float:
@@ -34,96 +38,115 @@ def _compute_source_area(vertices: ArrayLike) -> float:
     return 0.5 * np.abs(s1 - s2)
 
 
-def compute_area_ratio(cs_pred: QuadContourSet, cs_truth: QuadContourSet) -> float:
-    """Computes the ratio of true and predicted source areas.
-
-    Parameters
-    ----------
-    cs_pred : :class:`~matplotlib.contour.QuadContourSet`
-        contour object of prediction
-    cs_truth : :class:`~matplotlib.contour.QuadContourSet`
-        contour object of truth
-
-    Returns
-    -------
-    float
-        Ratio between true and predicted source areas.
-    """
-    areas_pred = np.array(
-        [_compute_source_area(path.vertices) for path in cs_pred.get_paths()]
-    )
-    areas_truth = np.array(
-        [_compute_source_area(path.vertices) for path in cs_truth.get_paths()]
-    )
-
-    return areas_pred.sum() / areas_truth.sum()
-
-
-def area_of_contour(
+def source_area_ratio(
     ifft_pred: ArrayLike,
-    ifft_truth: ArrayLike,
+    ifft_target: ArrayLike,
     level: float = 0.05,
-) -> float:
-    """Compute area ratio at 5% of the maximum of prediction and truth.
+) -> list[float] | float:
+    """Compute area ratio at 5% of the maximum of prediction and target.
 
     Parameters
     ----------
     ifft_pred : ndarray
-        source image of prediction
-    ifft_truth : ndarray
-        source image of truth
+        Predicted source image(s).
+    ifft_target : ndarray
+        Target source image(s).
+    level : float, optional
+        Percentile level of maximum (true) flux computed on the target.
+        Default: 0.05
 
     Returns
     -------
-    float
-        area difference
+    list[float] | float
+        Ratio of predicted and targeted source areas. If batch size is 1,
+        returns ratio as float.
     """
-    levels = [ifft_truth.max() * level]
+    if isinstance(ifft_target, torch.Tensor):
+        levels = ifft_target.amax(dim=[-2, -1]) * level
+    else:
+        levels = ifft_target.max(axis=(-2, -1)) * level
 
     fig, ax = plt.subplots()
-    cs_pred = ax.contour(ifft_pred, levels=levels)
-    cs_truth = ax.contour(ifft_truth, levels=levels)
+    cs_pred = ax.contour(ifft_pred, levels=[levels])
+    cs_target = ax.contour(ifft_target, levels=[levels])
     plt.close(fig)
 
-    return compute_area_ratio(cs_pred, cs_truth)
+    area_pred = np.array(
+        [_compute_source_area(path.vertices) for path in cs_pred.get_paths()]
+    )
+    area_target = np.array(
+        [_compute_source_area(path.vertices) for path in cs_target.get_paths()]
+    )
+
+    return area_pred.sum() / area_target.sum()
 
 
-def analyse_intensity(pred: ArrayLike, truth: ArrayLike) -> tuple[float, float]:
+def intensity_ratio(
+    pred: ArrayLike, target: ArrayLike
+) -> tuple[np.ndarray, np.ndarray]:
     """Compute intensity ratios between prediction
-    and ground truth images.
+    and ground target images.
 
     Parameters
     ----------
     pred : :func:`~numpy.ndarray`, shape (..., H, W)
         Prediction image(s).
-    truth : :func:`~numpy.ndarray`, shape (..., H, W)
-        Ground truth image(s).
+    target : :func:`~numpy.ndarray`, shape (..., H, W)
+        Ground target image(s).
 
     Returns
     -------
     sum_ratio : :func:`~numpy.ndarray`
-        Ratio of summed intensities (prediction / truth).
+        Ratio of summed intensities (prediction / target).
     peak_ratio : :func:`~numpy.ndarray`
-        Ratio of peak intensities (prediction / truth).
+        Ratio of peak intensities (prediction / target).
     """
     if pred.ndim == 2:
         pred = pred[None, ...]
 
-    if truth.ndim == 2:
-        truth = truth[None, ...]
+    if target.ndim == 2:
+        target = target[None, ...]
 
     if isinstance(pred, Tensor):
         pred = pred.detach().cpu().numpy()
 
-    if isinstance(truth, Tensor):
-        truth = truth.detach().cpu().numpy()
+    if isinstance(target, Tensor):
+        target = target.detach().cpu().numpy()
 
-    threshold = truth.max(axis=(-2, -1), keepdims=True) * 0.05
+    threshold = target.max(axis=(-2, -1), keepdims=True) * 0.05
 
-    source_truth = np.where(truth > threshold, truth, 0)
+    source_target = np.where(target > threshold, target, 0)
     source_pred = np.where(pred > threshold, pred, 0)
 
-    sum_ratio = source_pred.sum(axis=(-2, -1)) / source_truth.sum(axis=(-2, -1))
-    peak_ratio = source_pred.max(axis=(-2, -1)) / source_truth.max(axis=(-2, -1))
+    sum_ratio = source_pred.sum(axis=(-2, -1)) / source_target.sum(axis=(-2, -1))
+    peak_ratio = source_pred.max(axis=(-2, -1)) / source_target.max(axis=(-2, -1))
 
     return sum_ratio, peak_ratio
+
+
+def eval_intensity(config, preds: torch.Tensor, targets: torch.Tensor) -> None:
+    LOGGER.info("Evaluating integrated flux and peak flux...")
+    sum_ratio, peak_ratio = intensity_ratio(preds, targets)
+
+    LOGGER.info(f"Mean integrated flux ratio: {sum_ratio.mean()}")
+    LOGGER.info(f"Mean peak flux ratio: {peak_ratio.mean()}")
+
+    file_path = config.paths.save_path / "flux_intensity.csv"
+    DataFrame(data={"integrated_flux": sum_ratio, "peak_flux": peak_ratio}).to_csv(
+        file_path, index=False
+    )
+    LOGGER.info(f"Saved to {file_path}")
+
+
+def eval_area(config, preds: torch.Tensor, targets: torch.Tensor) -> None:
+    LOGGER.info("Evaluating integrated flux and peak flux...")
+
+    ratios = []
+    for p, t in preds, targets:
+        ratios.append(source_area_ratio(p, t, config.area.level))
+
+    LOGGER.info(f"Mean area ratio: {np.array(ratios).mean()}")
+
+    file_path = config.paths.save_path / "area_ratios.csv"
+    DataFrame(data={"area_ratio": ratios}).to_csv(file_path, index=False)
+    LOGGER.info(f"Saved to {file_path}")
