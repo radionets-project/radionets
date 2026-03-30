@@ -1,5 +1,6 @@
 from inspect import signature
 
+import torch
 from lightning import LightningModule
 
 
@@ -60,19 +61,18 @@ class TrainModule(LightningModule):
         return preds, targets
 
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        inputs, _ = self._extract_inputs_targets(batch)
+        inputs, targets = self._extract_inputs_targets(batch)
         preds = self(inputs)["pred"]
 
-        return preds
+        if targets is None:
+            return preds
+        return torch.stack((preds, targets), dim=1)
 
     def configure_optimizers(self):
         optimizer = self.optimizer(
             self.parameters(),
             lr=self.train_config["training"]["optimizer"]["lr"],
         )
-        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        #     optimizer, mode="min", factor=0.1, patience=10, threshold=1e-5
-        # )
 
         sched_config = self.train_config["training"]["lr_scheduling"]
         if sched_config:
