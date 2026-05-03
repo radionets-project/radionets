@@ -63,7 +63,7 @@ def calc_blobs(
 def crop_first_component(
     pred: ArrayLike,
     truth: ArrayLike,
-    blobs_target: list | tuple,
+    blobs_target: ArrayLike | tuple,
 ) -> tuple[NDArray, NDArray]:
     """Return cropped images around the first component of the true image.
 
