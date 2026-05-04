@@ -4,7 +4,7 @@ from pathlib import Path
 import lightning as L
 import rich_click as click
 import torch
-from rich import print
+from rich.pretty import pretty_repr
 
 from radionets.core.logging import _setup_logger
 from radionets.evaluation import (
@@ -36,7 +36,7 @@ def main(config_path):
         config_path = Path(config_path)
 
     eval_config = EvalConfig.from_toml(config_path)
-    print(eval_config)
+    LOGGER.info(pretty_repr(eval_config))
 
     data_module = eval_config.dataloader.module(
         data_dir=eval_config.paths.data_path,
