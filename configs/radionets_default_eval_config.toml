@@ -74,3 +74,16 @@ project_name = "Radionets Experiment"
 plot_n_epochs = 1
 scale = true
 comet_ml = true
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# EVALUATION COMPONENTS
+# ─────────────────────────────────────────────────────────────────────────────
+[evaluation]
+viewing_angle = true
+dynamic_range = true
+intensity = true
+mean_diff = true
+area = true
+predict_grad = false
+evaluate_gan = false
