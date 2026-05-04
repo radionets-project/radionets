@@ -145,7 +145,6 @@ def jet_angle(
     # only use pixels above 40% of peak flux
     max_vals = image.amax(dim=(-2, -1))
     threshold = (0.4 * max_vals).view(*batch_size, 1, 1)
-    print(f"{threshold.shape = }")
     image = torch.where(image >= threshold, image, torch.zeros_like(image))
 
     _, _, alpha_pca = pca(image)

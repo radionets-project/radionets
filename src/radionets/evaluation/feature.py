@@ -83,8 +83,8 @@ def crop_first_component(
     flux_truth : :func:`~numpy.ndarray`
         Cropped truth image.
     """
-    y, x, r = blobs_target
-    x_coord, y_coord = _corners(y, x, r)
+    y, x, r = blobs_target[0], blobs_target[1], blobs_target[2]
+    x_coord, y_coord = _corners(x, y, r)
 
     flux_truth = truth[x_coord[0] : x_coord[1], y_coord[0] : y_coord[1]]
     flux_pred = pred[x_coord[0] : x_coord[1], y_coord[0] : y_coord[1]]

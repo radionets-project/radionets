@@ -178,8 +178,8 @@ def dynamic_range(ifft_pred: torch.Tensor, ifft_target: torch.Tensor) -> tuple:
     """
     rms_target, rms_pred, rms_boxes, corners = get_rms(ifft_target, ifft_pred)
 
-    peak_target = ifft_target.reshape(len(ifft_target), -1).max(dim=1)
-    peak_pred = ifft_pred.reshape(len(ifft_pred), -1).max(dim=1)
+    peak_target = ifft_target.reshape(len(ifft_target), -1).amax(dim=1)
+    peak_pred = ifft_pred.reshape(len(ifft_pred), -1).amax(dim=1)
 
     valid_target = rms_target != 0
     valid_pred = rms_pred != 0

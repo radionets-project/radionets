@@ -5,11 +5,10 @@ from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from pandas import DataFrame
-from torch import Tensor
 
 if TYPE_CHECKING:
-    import torch
     from numpy.typing import ArrayLike
 
 LOGGER = logging.getLogger("radionets")
@@ -107,10 +106,10 @@ def intensity_ratio(
     if target.ndim == 2:
         target = target[None, ...]
 
-    if isinstance(pred, Tensor):
+    if isinstance(pred, torch.Tensor):
         pred = pred.detach().cpu().numpy()
 
-    if isinstance(target, Tensor):
+    if isinstance(target, torch.Tensor):
         target = target.detach().cpu().numpy()
 
     threshold = target.max(axis=(-2, -1), keepdims=True) * 0.05
@@ -142,8 +141,8 @@ def eval_area(config, preds: torch.Tensor, targets: torch.Tensor) -> None:
     LOGGER.info("Evaluating integrated flux and peak flux...")
 
     ratios = []
-    for p, t in preds, targets:
-        ratios.append(source_area_ratio(p, t, config.area.level))
+    for p, t in zip(preds, targets):
+        ratios.append(source_area_ratio(p, t, config.evaluation.area.level))
 
     LOGGER.info(f"Mean area ratio: {np.array(ratios).mean()}")
 
