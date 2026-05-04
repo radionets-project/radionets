@@ -49,7 +49,6 @@ def main(config_path, mode="train", premodel=None):
     data_module = train_config.dataloader.module(
         data_dir=train_config.paths.data_path,
         batch_size=train_config.training.batch_size,
-        fourier=train_config.model.fourier,
         **train_config.dataloader.model_dump(),
     )  # ty:ignore[call-non-callable]
 
