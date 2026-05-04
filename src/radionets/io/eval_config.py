@@ -14,6 +14,7 @@ from pydantic import (
 
 from radionets.architecture import archs
 
+from .evaluation import AreaConfig
 from .train_config import DataLoaderConfig
 from .training import DeepSpeedConfig
 
@@ -57,7 +58,7 @@ class PathsConfig(BaseModel):
 
 
 class ModelConfig(BaseModel):
-    arch_name: str | list[Callable] = Field(
+    arch_name: str | list[str | Callable] = Field(
         default=[archs.SRResNet18],
         min_length=1,
         max_length=2,
@@ -67,15 +68,17 @@ class ModelConfig(BaseModel):
 
     @field_validator("arch_name")
     @classmethod
-    def load_arch_instance(cls, archs: str):
-        avail_archs = {}
+    def load_arch_instance(cls, arch_name: str | list):
+        if isinstance(arch_name, str):
+            arch_name = [arch_name]
 
+        avail_archs = {}
         for member in inspect.getmembers(archs):
             if inspect.isclass(member[1]):
                 avail_archs[member[0]] = member[1]
 
         arch_list = []
-        for arch in archs:
+        for arch in arch_name:
             try:
                 if isinstance(arch, str):
                     arch_list.append(avail_archs[arch])
@@ -93,27 +96,29 @@ class ModelConfig(BaseModel):
 class DeviceConfig(BaseModel):
     """Device configuration settings."""
 
-    accelerator: list[str] = Field(
+    accelerator: str | list[str] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
     )
-    num_devices: list[str | list | int] = Field(
+    num_devices: str | int | list[str | list | int] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
     )
-    precision: list[str | int] = Field(
+    precision: str | int | list[str | int] = Field(
         default=["32-true"],
         min_length=1,
         max_length=2,
     )
-    deepspeed: list[bool | str | DeepSpeedConfig] = Field(
-        default=[False],
-        min_length=1,
-        max_length=2,
+    deepspeed: bool | str | DeepSpeedConfig | list[bool | str | DeepSpeedConfig] = (
+        Field(
+            default=[False],
+            min_length=1,
+            max_length=2,
+        )
     )
-    strategy: list[str] = Field(
+    strategy: str | list[str] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
@@ -158,7 +163,10 @@ class DeviceConfig(BaseModel):
 
     @field_validator("deepspeed", mode="after")
     @classmethod
-    def validate_deepspeed(cls, val: bool | str | DeepSpeedConfig):
+    def validate_deepspeed(cls, val: bool | str | DeepSpeedConfig | list):
+        if isinstance(val, str | bool | DeepSpeedConfig):
+            val = [val]
+
         result = []
         for v in val:
             if isinstance(v, str):
@@ -180,13 +188,22 @@ class GeneralConfig(BaseModel):
 class EvaluationComponentsConfig(BaseModel):
     viewing_angle: bool = True
     dynamic_range: bool = True
-    ms_ssim: bool = False
     intensity: bool = True
     mean_diff: bool = True
-    area: bool = True
-    point: bool = False
-    predict_grad: bool = False
+    area: bool | dict | AreaConfig = Field(default=True, validate_default=True)
+    predict_grad: bool = True
     evaluate_gan: bool = True
+
+    @field_validator("area", mode="after")
+    @classmethod
+    def validate_area_config(cls, v: bool | dict | AreaConfig):
+        print("HIHO", 50 * "#")
+        if isinstance(v, dict):
+            return AreaConfig(**v)
+        elif v is True:
+            return AreaConfig()  # Return defaults
+
+        return v
 
 
 class EvalConfig(BaseModel):

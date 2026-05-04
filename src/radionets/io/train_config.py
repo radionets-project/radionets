@@ -263,6 +263,11 @@ class LoggingConfig(BaseModel):
     mlflow: bool | MLFlowLoggerConfig = False
     codecarbon: bool | CodeCarbonEmissionTrackerConfig = False
 
+    @field_validator("project_name", mode="before")
+    @classmethod
+    def handle_project_name(cls, v: str):
+        return v.replace(" ", "_")
+
     @field_validator("default_logger", mode="after")
     @classmethod
     def validate_default_logger(cls, v):
