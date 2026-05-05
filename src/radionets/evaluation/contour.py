@@ -43,7 +43,7 @@ def _compute_source_area(vertices: ArrayLike) -> float:
 def source_area_ratio(
     ifft_pred: ArrayLike,
     ifft_target: ArrayLike,
-    level: float = 0.05,
+    threshold: float = 0.05,
 ) -> list[float] | float:
     """Compute area ratio at 5% of the maximum of prediction and target.
 
@@ -53,8 +53,8 @@ def source_area_ratio(
         Predicted source image(s).
     ifft_target : ndarray
         Target source image(s).
-    level : float, optional
-        Percentile level of maximum (true) flux computed on the target.
+    threshold : float, optional
+        Percentile threshold of maximum (true) flux computed on the target.
         Default: 0.05
 
     Returns
@@ -64,9 +64,9 @@ def source_area_ratio(
         returns ratio as float.
     """
     if isinstance(ifft_target, torch.Tensor):
-        levels = ifft_target.amax(dim=[-2, -1]) * level
+        levels = ifft_target.amax(dim=[-2, -1]) * threshold
     else:
-        levels = ifft_target.max(axis=(-2, -1)) * level
+        levels = ifft_target.max(axis=(-2, -1)) * threshold
 
     fig, ax = plt.subplots()
     cs_pred = ax.contour(ifft_pred, levels=[levels])
@@ -84,7 +84,7 @@ def source_area_ratio(
 
 
 def intensity_ratio(
-    pred: ArrayLike, target: ArrayLike
+    pred: ArrayLike, target: ArrayLike, threshold=0.05
 ) -> tuple[np.ndarray, np.ndarray]:
     """Compute intensity ratios between prediction
     and ground target images.
@@ -115,7 +115,7 @@ def intensity_ratio(
     if isinstance(target, torch.Tensor):
         target = target.detach().cpu().numpy()
 
-    threshold = target.max(axis=(-2, -1), keepdims=True) * 0.05
+    threshold = target.max(axis=(-2, -1), keepdims=True) * threshold
 
     source_target = np.where(target > threshold, target, 0)
     source_pred = np.where(pred > threshold, pred, 0)
@@ -145,7 +145,7 @@ def eval_area(config, preds: torch.Tensor, targets: torch.Tensor) -> None:
 
     ratios = []
     for p, t in zip(preds, targets):
-        ratios.append(source_area_ratio(p, t, config.evaluation.area.level))
+        ratios.append(source_area_ratio(p, t, config.evaluation.area.threshold))
 
     LOGGER.info(f"Mean area ratio: {np.array(ratios).mean()}")
 
