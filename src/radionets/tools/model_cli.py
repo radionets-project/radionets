@@ -48,7 +48,7 @@ def main(config_path, mode="train", premodel=None):
 
     data_module = train_config.dataloader.module(
         data_dir=train_config.paths.data_path,
-        batch_size=train_config.training.batch_size,
+        batch_size=train_config.dataloader.batch_size,
         **train_config.dataloader.model_dump(),
     )  # ty:ignore[call-non-callable]
 
@@ -61,19 +61,20 @@ def main(config_path, mode="train", premodel=None):
 
     # with rich_training_layout(train_config, callbacks) as layout_callbacks:
     trainer = L.Trainer(
-        limit_train_batches=data_module.train_length // train_config.training.batch_size
+        limit_train_batches=data_module.train_length
+        // train_config.dataloader.batch_size
         if data_module.train_length
-        else train_config.training.batch_size,
-        limit_val_batches=data_module.valid_length // train_config.training.batch_size
+        else train_config.dataloader.batch_size,
+        limit_val_batches=data_module.valid_length // train_config.dataloader.batch_size
         if data_module.valid_length
-        else train_config.training.batch_size,
-        limit_test_batches=data_module.test_length // train_config.training.batch_size
+        else train_config.dataloader.batch_size,
+        limit_test_batches=data_module.test_length // train_config.dataloader.batch_size
         if data_module.test_length
-        else train_config.training.batch_size,
+        else train_config.dataloader.batch_size,
         max_epochs=train_config.training.num_epochs,
         callbacks=callbacks,
         logger=loggers,
-        log_every_n_steps=train_config.training.batch_size,
+        log_every_n_steps=train_config.dataloader.batch_size,
         devices=train_config.devices.num_devices,
         accelerator=train_config.devices.accelerator,
         precision=train_config.devices.precision,

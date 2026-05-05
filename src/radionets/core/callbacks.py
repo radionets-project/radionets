@@ -80,7 +80,7 @@ class PlottingCallbackABC(ABC, LightningCallback):
     def __init__(self, train_config, *args, **kwargs):
         super().__init__()
         self.train_config = train_config
-        self.amp_phase = train_config.model.amp_phase
+        self.amp_phase = train_config.dataloader.amp_phase
         self.scale = train_config.logging.scale
 
         self.cached_batch = None
@@ -407,7 +407,9 @@ class MLFlowCodeCarbonCallback(LightningCallback):
 
     def _log_params(self):
         dataset = self.train_config.paths.data_path.name
-        dataset += "_amp_phase" if self.train_config.model.amp_phase else "_real_imag"
+        dataset += (
+            "_amp_phase" if self.train_config.dataloader.amp_phase else "_real_imag"
+        )
 
         model = "Radionets"
         model += "_" + str(self.train_config.model.arch_name().__class__.__name__)
@@ -435,7 +437,7 @@ class MLFlowCodeCarbonCallback(LightningCallback):
 class LogAdditionalParamsCallback(LightningCallback):
     def __init__(self, train_config, *args, **kwargs):
         self.train_config = train_config
-        self.amp_phase = train_config.model.amp_phase
+        self.amp_phase = train_config.dataloader.amp_phase
 
         self.experiment = None
 
