@@ -18,17 +18,31 @@ from .evaluation import AreaConfig
 from .train_config import DataLoaderConfig
 from .training import DeepSpeedConfig
 
+__all__ = [
+    "PathsConfig",
+    "ModelConfig",
+    "DeviceConfig",
+    "GeneralConfig",
+    "EvaluationComponentsConfig",
+    "EvalConfig",
+]
+
 
 class PathsConfig(BaseModel):
     """File paths configuration."""
 
     data_path: Path = Path("./example_data/")
+    """Path to the directory containing the test dataset."""
+
     model_paths: list[Path] = Field(
         default=[Path("./path/to/model.ckpt")],
         min_length=1,
         max_length=2,
     )
+    """Paths to the pretrained model checkpoints."""
+
     save_path: Path = Path("./build")
+    """Path to the directory where evaluation results will be saved."""
 
     @field_validator("data_path", "save_path")
     @classmethod
@@ -63,8 +77,15 @@ class ModelConfig(BaseModel):
         min_length=1,
         max_length=2,
     )
+    """Name/callable or list of two names/callables of the architecture(s)
+    to use for evaluation."""
+
     fourier: bool = True
+    """Whether data is in Fourier representation or not."""
+
     amp_phase: bool = False
+    """Whether data is in amplitude/phase or real/imaginary representation.
+    Fourier representation only."""
 
     @field_validator("arch_name")
     @classmethod
@@ -101,16 +122,30 @@ class DeviceConfig(BaseModel):
         min_length=1,
         max_length=2,
     )
+    """Type of accelerator to use (e.g., "auto", "gpu", "cpu"). See
+    `PyTorch Lightning Accelerator
+    <https://lightning.ai/docs/pytorch/stable/extensions/accelerator.html>`_
+    for more information.
+    """
+
     num_devices: str | int | list[str | list | int] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
     )
+    """Number of devices to use."""
+
     precision: str | int | list[str | int] = Field(
         default=["32-true"],
         min_length=1,
         max_length=2,
     )
+    """Precision to use (e.g., "32-true", "16-mixed"). See
+    `PyTorch Lightning N-bit Precision
+    <https://lightning.ai/docs/pytorch/stable/common/precision.html>`_
+    for more information
+    """
+
     deepspeed: bool | str | DeepSpeedConfig | list[bool | str | DeepSpeedConfig] = (
         Field(
             default=[False],
@@ -118,11 +153,31 @@ class DeviceConfig(BaseModel):
             max_length=2,
         )
     )
+    """Whether to use the deepspeed deep learning training optimization library.
+    Set to ``True`` if you want to use the `default settings
+    <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.strategies.DeepSpeedStrategy.html>`_,
+    or change specific settings yourself:
+
+    .. code-block:: toml
+
+        [devices.deepspeed]
+        stage = 1
+
+    You can also pass a string like ``"deepspeed_stage_1"`` to use the settings
+    pre-defined by PyTorch Lightning. See `DeepSpeed
+    <https://lightning.ai/docs/pytorch/stable/advanced/model_parallel/deepspeed.html>`_
+    for more information.
+    """
+
     strategy: str | list[str] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
     )
+    """Select a strategy for model distribution during evaluation. See
+    `What is a Strategy? <https://lightning.ai/docs/pytorch/stable/extensions/strategy.html>`_
+    for more information.
+    """
 
     @model_validator(mode="after")
     def check_device_count(self) -> Self:
@@ -183,14 +238,68 @@ class DeviceConfig(BaseModel):
 
 class GeneralConfig(BaseModel):
     batch_size: int = 20
+    """Batch size during the evaluation process."""
 
 
 class EvaluationComponentsConfig(BaseModel):
     viewing_angle: bool = True
+    """Enable viewing angle evaluation of the source. ``radionets`` will
+    use a PCA to estimate the relative source angle to the x-axis of the image
+    and compare prediction and target angles.
+    """
+
     dynamic_range: bool = True
+    """Enable dynamic range evaluation of the source flux. ``radionets`` will
+    compute the RMS for both prediction and target and estimate the dynamic range
+    of both images.
+    """
+
     intensity: bool = True
+    """Enable peak flux intensity and integrated flux intensity evaluation of the
+    source. The peak flux intensity is the maximum flux emitted from the source.
+    The integrated flux intensity is the sum of all pixels above a threshold
+    (the default is ``0.05``) of the maximum target flux. To change the threshold,
+    change the config as follows:
+
+    .. code-block:: toml
+
+        [evaluation.intensity]
+        threshold = 0.05
+
+    The ratios between predictions and targets are saved to a file `flux_intensity.csv`
+    under the path specified in the ``save_path`` field. For more information, refer
+    to :func:`~radionets.evaluation.contour.intensity_ratio` and
+    :func:`~radionets.evaluation.contour.eval_intensity`.
+    """
+
     mean_diff: bool = True
+    """Enable mean difference computation between prediction and target.
+    Sources are detected using a Laplacian of Gaussian approach
+    (using skimage's :func:`~skimage.feature.blob_log`). The mean of the differences
+    of the blobs is saved to a file `mean_diff.csv` under the path specified in the
+    ``save_path`` field. All values are percentages. For more information, refer to
+    :func:`~radionets.evaluation.feature.eval_mean_difference`.
+    """
+
     area: bool | dict | AreaConfig = Field(default=True, validate_default=True)
+    """Enable source area evaluation. The area is estimated using a matplotlib
+    :class:`~matplotlib.contour.QuadContourSet`. All flux above a threshold
+    (the default is ``0.05``) of the maximum target flux is considered signal
+    and thus contributes to the area. To change the threshold,
+    change the config as follows:
+
+
+    .. code-block:: toml
+
+        [evaluation.intensity]
+        threshold = 0.05
+
+    The ratios between predictions and targets are saved to a file `area_ratios.csv`
+    under the path specified in the ``save_path`` field. For more information, refer
+    to :func:`~radionets.evaluation.contour.source_area_ratio` and
+    :func:`~radionets.evaluation.contour.eval_area`.
+    """
+
     predict_grad: bool = True
     evaluate_gan: bool = True
 
