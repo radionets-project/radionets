@@ -40,15 +40,15 @@ def main(config_path):
 
     data_module = eval_config.dataloader.module(
         data_dir=eval_config.paths.data_path,
-        batch_size=eval_config.general.batch_size,
         **eval_config.dataloader.model_dump(),
     )  # ty:ignore[call-non-callable]
 
     if len(eval_config.paths.model_paths) == 2:
         trainer_ch0 = L.Trainer(
-            limit_test_batches=data_module.test_length // eval_config.general.batch_size
+            limit_test_batches=data_module.test_length
+            // eval_config.dataloader.batch_size
             if data_module.test_length
-            else eval_config.general.batch_size,
+            else eval_config.dataloader.batch_size,
             devices=eval_config.devices.num_devices[0],
             accelerator=eval_config.devices.accelerator[0],
             precision=eval_config.devices.precision[0],  # ty:ignore[invalid-argument-type]
@@ -57,9 +57,10 @@ def main(config_path):
             else "auto",  # ty:ignore[invalid-argument-type]
         )
         trainer_ch1 = L.Trainer(
-            limit_test_batches=data_module.test_length // eval_config.general.batch_size
+            limit_test_batches=data_module.test_length
+            // eval_config.dataloader.batch_size
             if data_module.test_length
-            else eval_config.general.batch_size,
+            else eval_config.dataloader.batch_size,
             devices=eval_config.devices.num_devices[1],
             accelerator=eval_config.devices.accelerator[1],
             precision=eval_config.devices.precision[1],  # ty:ignore[invalid-argument-type]
@@ -91,9 +92,10 @@ def main(config_path):
         )
     else:
         trainer = L.Trainer(
-            limit_test_batches=data_module.test_length // eval_config.general.batch_size
+            limit_test_batches=data_module.test_length
+            // eval_config.dataloader.batch_size
             if data_module.test_length
-            else eval_config.general.batch_size,
+            else eval_config.dataloader.batch_size,
             devices=eval_config.devices.num_devices[0],
             accelerator=eval_config.devices.accelerator[0],
             precision=eval_config.devices.precision[0],  # ty:ignore[invalid-argument-type]

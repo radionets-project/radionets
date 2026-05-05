@@ -133,7 +133,7 @@ def eval_mean_difference(config, preds, targets) -> None:
 
     vals = []
     with AdaptiveBatchSize(
-        preds, targets, initial_batch_size=config.general.batch_size
+        preds, targets, initial_batch_size=config.dataloader.batch_size
     ) as batched:
         for preds_batch, targets_batch in tqdm(batched):
             blobs_target = calc_blobs(targets_batch)[0].copy()
