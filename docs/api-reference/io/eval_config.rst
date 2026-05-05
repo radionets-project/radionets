@@ -115,13 +115,15 @@ and what strategy to use.
 
 ``[dataloader]``
 ^^^^^^^^^^^^^^^^
+The dataloader table contains all settings required to load the data,
+and set the data representation or batch size.
 
 .. autopydantic_fields:: radionets.io.eval_config.DataLoaderConfig
 
 ``[evaluation]``
 ^^^^^^^^^^^^^^^^
 This table contains all available evaluation functions that ``radionets``
-has to offer. Most of the metrics are ratios between predictions and
+has to offer. Most of the metrics are ratios of predictions and
 targets, such that
 
 .. math::
