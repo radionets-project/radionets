@@ -73,6 +73,10 @@ class PathsConfig(BaseModel):
 
 
 class ModelConfig(BaseModel):
+    """The model configuration sets the architecture
+    and data representation.
+    """
+
     arch_name: str | list[str | Callable] = Field(
         default=[archs.SRResNet18],
         min_length=1,
@@ -80,13 +84,6 @@ class ModelConfig(BaseModel):
     )
     """Name/callable or list of two names/callables of the architecture(s)
     to use for evaluation."""
-
-    fourier: bool = True
-    """Whether data is in Fourier representation or not."""
-
-    amp_phase: bool = False
-    """Whether data is in amplitude/phase or real/imaginary representation.
-    Fourier representation only."""
 
     @field_validator("arch_name")
     @classmethod
@@ -116,7 +113,11 @@ class ModelConfig(BaseModel):
 
 
 class DeviceConfig(BaseModel):
-    """Device configuration settings."""
+    """Device configuration settings.
+
+    Allows setting the type and number of devices used for
+    the evaluation, as well as strategies for distribution.
+    """
 
     accelerator: str | list[str] = Field(
         default=["auto"],
@@ -308,7 +309,6 @@ class EvaluationMethodsConfig(BaseModel):
     @field_validator("area", mode="after")
     @classmethod
     def validate_area_config(cls, v: bool | dict | AreaConfig):
-        print("HIHO", 50 * "#")
         if isinstance(v, dict):
             return AreaConfig(**v)
         elif v is True:
