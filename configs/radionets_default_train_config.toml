@@ -1,4 +1,4 @@
-title = "Radionets Default Training Configuration"
+title = "Radionets Example Training Configuration"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PATHS & I/O
@@ -13,7 +13,6 @@ checkpoint = false
 # ─────────────────────────────────────────────────────────────────────────────
 [model]
 arch_name = "SRResNet18"
-amp_phase = true
 normalize = false
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -21,7 +20,6 @@ normalize = false
 # ─────────────────────────────────────────────────────────────────────────────
 [training]
 num_epochs = 50
-batch_size = 16
 
 [training.loss]
 loss_func = "MSELoss"
@@ -50,11 +48,13 @@ precision = "32-true"
 deepspeed = "deepspeed_stage_2"
 
 [dataloader]
-fourier = true
 module = "WebDatasetModule"
+batch_size = 16
 num_workers = 10
 prefetch_factor = 2
 persistent_workers = false
+amp_phase = false
+fourier = true
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CALLBACKS
