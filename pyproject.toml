@@ -71,6 +71,7 @@ tests = [
 ]
 
 docs = [
+  "autodoc-pydantic>=2.2.0",
   "graphviz>=0.21",
   "ipython>=9.4.0",
   "jupyter>=1.1.1",
