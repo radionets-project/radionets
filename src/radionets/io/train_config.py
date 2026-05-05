@@ -49,8 +49,9 @@ class PathsConfig(BaseModel):
 
 
 class ModelConfig(BaseModel):
+    """Model config"""
+
     arch_name: str | Callable = archs.SRResNet18
-    amp_phase: bool = True
     normalize: bool = False
 
     @field_validator("arch_name")
@@ -77,7 +78,6 @@ class TrainingConfig(BaseModel):
     """Hyperparameters configuration."""
 
     num_epochs: int = Field(default=50, gt=0)
-    batch_size: int = Field(default=100, gt=0)
     loss: LossConfig = LossConfig()
     optimizer: OptimizerConfig = OptimizerConfig()
     lr_scheduling: bool | LRSchedulerConfig = False
@@ -157,9 +157,26 @@ class DataLoaderConfig(BaseModel):
     """DataLoader configuration."""
 
     module: str | Callable = data.H5DataModule
+    """The :class:`~lightning.LightningDataModule` to use for training/evaluation.
+    The datamodule sets up the datasets and dataloaders for the model.
+    """
+
+    batch_size: int = Field(default=100, gt=0)
+    """Batch size for training/evaluation."""
+
     num_workers: int = Field(default=10, gt=0)
+    """Number of concurrent workers loading the data from files."""
+
     compressed: bool = False
+    """Whether data files are compressed using gzip. This option
+    only applies to WebDataset shards."""
+
     fourier: bool = True
+    """Whether data is in Fourier representation or not."""
+
+    amp_phase: bool = False
+    """Whether data is in amplitude/phase or real/imaginary representation.
+    Fourier representation only."""
 
     model_config = ConfigDict(extra="allow")
 
