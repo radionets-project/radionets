@@ -15,7 +15,7 @@ class TrainModule(LightningModule):
         self.loss_fn = train_config["training"]["loss"]["loss_func"]()
         self.train_length = train_length
         self.num_epochs = train_config["training"]["num_epochs"]
-        self.batch_size = train_config["training"]["batch_size"]
+        self.batch_size = train_config["dataloader"]["batch_size"]
 
     def forward(self, inputs):
         return self.model(inputs)
