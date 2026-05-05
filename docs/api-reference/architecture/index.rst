@@ -1,8 +1,8 @@
 .. _architecture:
 
-*******************************************
-Architecture Module (:mod:`radionets.core`)
-*******************************************
+***************************************************
+Architecture Module (:mod:`radionets.architecture`)
+***************************************************
 
 .. currentmodule:: radionets.architecture
 
@@ -25,7 +25,8 @@ Submodules
   archs
   blocks
   layers
-  unc_archs
+  loss
+  uncertainty_archs
 
 
 Reference/API

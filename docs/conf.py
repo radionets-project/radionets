@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 import datetime
+import importlib
 import os
 import tomllib
 from pathlib import Path
+
+from docutils import nodes
+from docutils.parsers.rst import Directive
+from docutils.statemachine import StringList
+from pydantic_core import PydanticUndefined
+from sphinx.pycode import ModuleAnalyzer
 
 import radionets
 
@@ -19,6 +26,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.viewcode",
     "sphinxcontrib.bibtex",
+    "sphinxcontrib.autodoc_pydantic",
     "sphinx_automodapi.automodapi",
     "sphinx_automodapi.smart_resolver",
     "IPython.sphinxext.ipython_console_highlighting",
@@ -37,6 +45,12 @@ autodoc_mock_imports = [
     "numba.np.ufunc",
     "numba.np.ufunc.decorators",
 ]
+
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_settings_show_json = True
+autodoc_pydantic_model_show_validator_members = False
+autodoc_pydantic_model_show_validator_summary = False
+autodoc_pydantic_field_list_validators = False
 
 numpydoc_show_class_members = False
 numpydoc_class_members_toctree = False
@@ -187,6 +201,7 @@ intersphinx_mapping = {
     "rich": ("https://rich.readthedocs.io/en/stable", None),
     "scipy": ("https://docs.scipy.org/doc/scipy", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
+    "skimage": ("https://scikit-image.org/docs/stable/", None),
 }
 
 
@@ -222,3 +237,69 @@ nitpick_ignore = [
     ("py:func", "register_module_full_backward_pre_hook"),
     ("py:meth", "nn.Module.load_state_dict"),
 ]
+
+
+class AutoPydanticFieldsList(Directive):
+    """Custom sphinx directive to convert Pydantic fields to lists."""
+
+    required_arguments = 1
+
+    def run(self):
+        target = self.arguments[0]
+        module_path, class_name = target.rsplit(".", 1)
+
+        module = importlib.import_module(module_path)
+        cls = getattr(module, class_name)
+
+        # resolve module/class import
+        module_path = cls.__module__
+        class_name = cls.__name__
+
+        analyzer = ModuleAnalyzer.for_module(module_path)
+        analyzer.analyze()
+
+        lines = []
+        for name, field in cls.model_fields.items():
+            type_str = (
+                str(field.annotation)
+                .replace("typing.", "")
+                .replace("radionets.io.eval_config.", "")
+            )
+            type_str = type_str.replace("<class '", "").replace("'>", "")
+
+            if field.default is PydanticUndefined:
+                default_str = "*Required*"
+            elif isinstance(field.default, str):
+                default_str = f'``"{field.default}"``'
+            else:
+                default_str = f"``{field.default}``"
+
+            doc_lines = analyzer.attr_docs.get((class_name, name), [])
+
+            if not doc_lines and field.description:
+                doc_lines = field.description.splitlines()
+
+            bullet_start = f"* ``{name}`` (*{type_str}*): "
+
+            if doc_lines:
+                lines.append(f"{bullet_start}{doc_lines[0]}")
+                for dline in doc_lines[1:]:
+                    lines.append(f"  {dline}")
+
+                if len(doc_lines) > 1:
+                    lines.append("  ")
+                    lines.append(f"  Default: {default_str}.")
+                else:
+                    lines[-1] += f" Default: {default_str}."
+            else:
+                lines.append(f"{bullet_start}Default: {default_str}.")
+
+        lines.append("")
+
+        node = nodes.container()
+        self.state.nested_parse(StringList(lines), self.content_offset, node)
+        return node.children
+
+
+def setup(app):
+    app.add_directive("autopydantic_fields", AutoPydanticFieldsList)

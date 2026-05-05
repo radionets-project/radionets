@@ -1,10 +1,10 @@
-.. _unc_archs:
+.. _uncertainty_archs:
 
 *******************************************************************
-Uncertainty Architectures (:mod:`radionets.architecture.unc_archs`)
+Uncertainty Architectures (:mod:`radionets.architecture.uncertainty_archs`)
 *******************************************************************
 
-.. currentmodule:: radionets.architecture.unc_archs
+.. currentmodule:: radionets.architecture.uncertainty_archs
 
 Uncertainty Architectures submodule of :mod:`radionets.blocks`.
 
@@ -12,5 +12,5 @@ Uncertainty Architectures submodule of :mod:`radionets.blocks`.
 Reference/API
 =============
 
-.. automodapi:: radionets.architecture.unc_archs
+.. automodapi:: radionets.architecture.uncertainty_archs
     :inherited-members: Module

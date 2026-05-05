@@ -21,13 +21,11 @@ Submodules
   :maxdepth: 1
   :glob:
 
-  blob_detection
   contour
   dynamic_range
+  feature
   jet_angle
   jets
-  pointsources
-  train_inspection
   utils
 
 
