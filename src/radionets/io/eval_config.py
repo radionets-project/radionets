@@ -11,10 +11,11 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from pydantic_settings import BaseSettings
 
 from radionets.architecture import archs
 
-from .evaluation import AreaConfig
+from .evaluation import AreaConfig, IntensityConfig
 from .train_config import DataLoaderConfig
 from .training import DeepSpeedConfig
 
@@ -22,8 +23,8 @@ __all__ = [
     "PathsConfig",
     "ModelConfig",
     "DeviceConfig",
-    "GeneralConfig",
-    "EvaluationComponentsConfig",
+    "DataLoaderConfig",
+    "EvaluationMethodsConfig",
     "EvalConfig",
 ]
 
@@ -236,12 +237,11 @@ class DeviceConfig(BaseModel):
         return result
 
 
-class GeneralConfig(BaseModel):
-    batch_size: int = 20
-    """Batch size during the evaluation process."""
+class EvaluationMethodsConfig(BaseModel):
+    """Contains all settings for the evaluation methods defined in
+    :mod:`~radionets.evaluation`.
+    """
 
-
-class EvaluationComponentsConfig(BaseModel):
     viewing_angle: bool = True
     """Enable viewing angle evaluation of the source. ``radionets`` will
     use a PCA to estimate the relative source angle to the x-axis of the image
@@ -254,7 +254,9 @@ class EvaluationComponentsConfig(BaseModel):
     of both images.
     """
 
-    intensity: bool = True
+    intensity: bool | dict | IntensityConfig = Field(
+        default=True, validate_default=True
+    )
     """Enable peak flux intensity and integrated flux intensity evaluation of the
     source. The peak flux intensity is the maximum flux emitted from the source.
     The integrated flux intensity is the sum of all pixels above a threshold
@@ -314,8 +316,18 @@ class EvaluationComponentsConfig(BaseModel):
 
         return v
 
+    @field_validator("intensity", mode="after")
+    @classmethod
+    def validate_intensity_config(cls, v: bool | dict | IntensityConfig):
+        if isinstance(v, dict):
+            return IntensityConfig(**v)
+        elif v is True:
+            return IntensityConfig()  # Return defaults
 
-class EvalConfig(BaseModel):
+        return v
+
+
+class EvalConfig(BaseSettings):
     """Main training configuration."""
 
     title: str = "Evaluation configuration"
@@ -323,10 +335,7 @@ class EvalConfig(BaseModel):
     model: ModelConfig = Field(default_factory=ModelConfig)
     devices: DeviceConfig = Field(default_factory=DeviceConfig)
     dataloader: DataLoaderConfig = Field(default_factory=DataLoaderConfig)
-    general: GeneralConfig = Field(default_factory=GeneralConfig)
-    evaluation: EvaluationComponentsConfig = Field(
-        default_factory=EvaluationComponentsConfig
-    )
+    evaluation: EvaluationMethodsConfig = Field(default_factory=EvaluationMethodsConfig)
 
     @classmethod
     def from_toml(cls, path: str | Path) -> "EvalConfig":

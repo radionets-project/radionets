@@ -1,8 +1,17 @@
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 
 from lightning.pytorch.loggers import CSVLogger
-from pydantic import BaseModel
 from rich.logging import RichHandler
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
+
+
+__all__ = ["Loggers"]
+
 
 logging.basicConfig(
     level="INFO",

@@ -1,3 +1,3 @@
-from ._eval_options import AreaConfig
+from ._eval_options import AreaConfig, IntensityConfig
 
-__all__ = ["AreaConfig"]
+__all__ = ["AreaConfig", "IntensityConfig"]

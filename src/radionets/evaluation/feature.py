@@ -17,6 +17,9 @@ from radionets.utils.batch_size import AdaptiveBatchSize
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike, NDArray
 
+
+__all__ = ["calc_blobs", "crop_first_component", "eval_mean_difference"]
+
 LOGGER = logging.getLogger("radionets")
 
 
