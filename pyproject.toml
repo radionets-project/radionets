@@ -33,13 +33,13 @@ requires-python = ">=3.11"
 dependencies = [
     "astropy>=7.1.0",
     "comet-ml>=3.50.0",
-    "fastai>=2.8.2",
     "h5py>=3.14.0",
-    "kornia>=0.8.1",
+    "lightning>=2.6.1",
     "natsort>=8.4.0",
     "numba>=0.61.2",
     "numpy>=2.2.6",
     "pandas>=2.3.1",
+    "pyarrow>=24.0.0",
     "pytorch-msssim>=1.0.0",
     "rich-click>=1.8.9",
     "rich>=14.1.0",
@@ -47,6 +47,7 @@ dependencies = [
     "toml>=0.10.2",
     "torch>=2.7.1",
     "tqdm>=4.67.1",
+    "webdataset>=1.0.2",
 ]
 
 [project.urls]
