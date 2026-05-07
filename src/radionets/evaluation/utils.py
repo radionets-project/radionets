@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -94,3 +96,32 @@ def apply_symmetry(image, uncertainty: bool = False) -> torch.Tensor:
     full_image[..., half_width + 1 :, :] = lower_half
 
     return full_image
+
+
+def _method_factory(eval_config):
+    from radionets.evaluation import metrics
+
+    evaluation = eval_config.evaluation
+
+    if evaluation.viewing_angle:
+        evaluation.viewing_angle.met_cls = metrics.ViewingAngle()
+    if evaluation.dynamic_range:
+        evaluation.viewing_angle.met_cls = metrics.DynamicRange(
+            sensitivity=evaluation.dynamic_range.sensitivity
+        )
+    if evaluation.intensity:
+        evaluation.intensity.met_cls = metrics.IntensityRatio(
+            threshold=evaluation.intensity.threshold
+        )
+    if evaluation.mean_diff:
+        evaluation.mean_diff.met_cls = metrics.MeanDifference(
+            threshold=evaluation.mean_diff.threshold
+        )
+    if evaluation.area:
+        evaluation.area.met_cls = metrics.SourceAreaRatio(
+            threshold=evaluation.area.threshold
+        )
+    if evaluation.predict_grad:
+        warnings.warn("'predict_grad' is not implemented yet! Skipping.", stacklevel=2)
+    if evaluation.evaluate_gan:
+        warnings.warn("'evaluate_gan' is not implemented yet! Skipping.", stacklevel=2)
