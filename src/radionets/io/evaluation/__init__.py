@@ -1,3 +1,15 @@
-from ._eval_options import AreaConfig, IntensityConfig
+from ._eval_options import (
+    AreaConfig,
+    DynamicRangeConfig,
+    IntensityConfig,
+    MeanDiffConfig,
+    ViewingAngleConfig,
+)
 
-__all__ = ["AreaConfig", "IntensityConfig"]
+__all__ = [
+    "AreaConfig",
+    "DynamicRangeConfig",
+    "IntensityConfig",
+    "MeanDiffConfig",
+    "ViewingAngleConfig",
+]

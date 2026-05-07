@@ -15,7 +15,13 @@ from pydantic_settings import BaseSettings
 
 from radionets.architecture import archs
 
-from .evaluation import AreaConfig, IntensityConfig
+from .evaluation import (
+    AreaConfig,
+    DynamicRangeConfig,
+    IntensityConfig,
+    MeanDiffConfig,
+    ViewingAngleConfig,
+)
 from .train_config import DataLoaderConfig
 from .training import DeepSpeedConfig
 
@@ -243,13 +249,13 @@ class EvaluationMethodsConfig(BaseModel):
     :mod:`~radionets.evaluation`.
     """
 
-    viewing_angle: bool = True
+    viewing_angle: bool = Field(default=True, validate_default=True)
     """Enable viewing angle evaluation of the source. ``radionets`` will
     use a PCA to estimate the relative source angle to the x-axis of the image
     and compare prediction and target angles.
     """
 
-    dynamic_range: bool = True
+    dynamic_range: bool = Field(default=True, validate_default=True)
     """Enable dynamic range evaluation of the source flux. ``radionets`` will
     compute the RMS for both prediction and target and estimate the dynamic range
     of both images.
@@ -275,7 +281,7 @@ class EvaluationMethodsConfig(BaseModel):
     :func:`~radionets.evaluation.contour.eval_intensity`.
     """
 
-    mean_diff: bool = True
+    mean_diff: bool = Field(default=True, validate_default=True)
     """Enable mean difference computation between prediction and target.
     Sources are detected using a Laplacian of Gaussian approach
     (using skimage's :func:`~skimage.feature.blob_log`). The mean of the differences
@@ -306,13 +312,23 @@ class EvaluationMethodsConfig(BaseModel):
     predict_grad: bool = True
     evaluate_gan: bool = True
 
-    @field_validator("area", mode="after")
+    @field_validator("viewing_angle", mode="after")
     @classmethod
-    def validate_area_config(cls, v: bool | dict | AreaConfig):
+    def validate_viewing_angle_config(cls, v: bool | dict | ViewingAngleConfig):
         if isinstance(v, dict):
-            return AreaConfig(**v)
+            return ViewingAngleConfig(**v)
         elif v is True:
-            return AreaConfig()  # Return defaults
+            return ViewingAngleConfig()  # Return defaults
+
+        return v
+
+    @field_validator("dynamic_range", mode="after")
+    @classmethod
+    def validate_dynamic_range_config(cls, v: bool | dict | DynamicRangeConfig):
+        if isinstance(v, dict):
+            return DynamicRangeConfig(**v)
+        elif v is True:
+            return DynamicRangeConfig()  # Return defaults
 
         return v
 
@@ -323,6 +339,26 @@ class EvaluationMethodsConfig(BaseModel):
             return IntensityConfig(**v)
         elif v is True:
             return IntensityConfig()  # Return defaults
+
+        return v
+
+    @field_validator("mean_diff", mode="after")
+    @classmethod
+    def validate_mean_diff_config(cls, v: bool | dict | MeanDiffConfig):
+        if isinstance(v, dict):
+            return MeanDiffConfig(**v)
+        elif v is True:
+            return MeanDiffConfig()  # Return defaults
+
+        return v
+
+    @field_validator("area", mode="after")
+    @classmethod
+    def validate_area_config(cls, v: bool | dict | AreaConfig):
+        if isinstance(v, dict):
+            return AreaConfig(**v)
+        elif v is True:
+            return AreaConfig()  # Return defaults
 
         return v
 
