@@ -1,4 +1,3 @@
-import warnings
 from pathlib import Path
 
 import lightning as L
@@ -7,14 +6,7 @@ import torch
 from rich.pretty import pretty_repr
 
 from radionets.core.logging import _setup_logger
-from radionets.evaluation import (
-    eval_area,
-    eval_intensity,
-    eval_jet_angle,
-    eval_mean_difference,
-)
-from radionets.evaluation.dynamic_range import eval_dynamic_range
-from radionets.evaluation.utils import apply_symmetry, get_ifft
+from radionets.evaluation.utils import _method_factory, apply_symmetry, get_ifft
 from radionets.io import EvalConfig
 from radionets.training import TrainModule
 
@@ -42,6 +34,8 @@ def main(config_path):
         data_dir=eval_config.paths.data_path,
         **eval_config.dataloader.model_dump(),
     )  # ty:ignore[call-non-callable]
+
+    _method_factory(eval_config)
 
     if len(eval_config.paths.model_paths) == 2:
         trainer_ch0 = L.Trainer(
@@ -105,8 +99,10 @@ def main(config_path):
         )
 
         train_module = TrainModule.load_from_checkpoint(
-            eval_config.paths.model_paths[0]
+            eval_config.paths.model_paths[0],
+            eval_methods=eval_config.evaluation,
         )
+
         model_output = trainer.predict(model=train_module, datamodule=data_module)
 
     if not eval_config.paths.save_path.exists():
@@ -124,7 +120,7 @@ def main(config_path):
     # C: Channel real [0]/imag [1] or amp [0]/phase [1] -+  |  |
     # H: Height --------------------------------------------+  |
     # W: Width ------------------------------------------------+
-    model_output: torch.Tensor = torch.stack(model_output, dim=1)
+    model_output: torch.Tensor = torch.stack(model_output, dim=1)  # ty:ignore[invalid-argument-type]
     preds: torch.Tensor = model_output[:, :, 0]
     targets: torch.Tensor = model_output[:, :, 1]
 
@@ -136,20 +132,13 @@ def main(config_path):
     preds_ifft = preds_ifft.reshape(-1, *preds_ifft.shape[-2:])
     targets_ifft = targets_ifft.reshape(-1, *targets_ifft.shape[-2:])
 
-    if eval_config.evaluation.viewing_angle:
-        eval_jet_angle(eval_config, preds_ifft, targets_ifft)
-    if eval_config.evaluation.dynamic_range:
-        eval_dynamic_range(eval_config, preds_ifft, targets_ifft)
-    if eval_config.evaluation.intensity:
-        eval_intensity(eval_config, preds_ifft, targets_ifft)
-    if eval_config.evaluation.mean_diff:
-        eval_mean_difference(eval_config, preds_ifft, targets_ifft)
-    if eval_config.evaluation.area:
-        eval_area(eval_config, preds_ifft, targets_ifft)
-    if eval_config.evaluation.predict_grad:
-        warnings.warn("'predict_grad' is not implemented yet! Skipping.", stacklevel=2)
-    if eval_config.evaluation.evaluate_gan:
-        warnings.warn("'evaluate_gan' is not implemented yet! Skipping.", stacklevel=2)
+    metrics = {}
+    for field in eval_config.evaluation:
+        if hasattr(field[1], "met_cls"):
+            print(field[0], field[1].__class__.__name__)
+            metrics[field[0]] = field[1].met_cls.compute()
+
+    print(pretty_repr(metrics))
 
 
 if __name__ == "__main__":
