@@ -1,11 +1,24 @@
+from __future__ import annotations
+
 from inspect import signature
+from typing import TYPE_CHECKING
 
 import torch
 from lightning import LightningModule
 
+from radionets.evaluation.utils import apply_symmetry, get_ifft
+
+if TYPE_CHECKING:
+    from radionets.io.eval_config import EvaluationMethodsConfig
+
 
 class TrainModule(LightningModule):
-    def __init__(self, train_config: dict, train_length: int = None):
+    def __init__(
+        self,
+        train_config: dict,
+        train_length: int | None = None,
+        eval_methods: EvaluationMethodsConfig | None = None,
+    ) -> None:
         super().__init__()
         self.save_hyperparameters()
 
@@ -17,7 +30,15 @@ class TrainModule(LightningModule):
         self.num_epochs = train_config["training"]["num_epochs"]
         self.batch_size = train_config["dataloader"]["batch_size"]
 
+        if eval_methods:
+            self.eval_methods = eval_methods
+
+            for field in eval_methods:
+                if hasattr(field[1], "met_cls"):
+                    setattr(self, field[0], field[1].met_cls)
+
     def forward(self, inputs):
+        """Main forward feed call to the model."""
         return self.model(inputs)
 
     def training_step(self, batch, batch_idinputs):
@@ -50,7 +71,11 @@ class TrainModule(LightningModule):
 
         return inputs, targets
 
-    def test_step(self, batch, batch_idx):
+    def test_step(
+        self,
+        batch,
+        batch_idx,
+    ):
         inputs, targets = self._extract_inputs_targets(batch)
         preds = self(inputs)["pred"]
 
@@ -58,14 +83,24 @@ class TrainModule(LightningModule):
             loss = self.loss_fn(preds, targets)
             self.log("test_loss", loss, prog_bar=True, sync_dist=True)
 
-        return preds, targets
-
     def predict_step(self, batch, batch_idx, dataloader_idx=0):
         inputs, targets = self._extract_inputs_targets(batch)
         preds = self(inputs)["pred"]
 
         if targets is None:
             return preds
+
+        preds_ifft = get_ifft(apply_symmetry(preds))
+        targets_ifft = get_ifft(apply_symmetry(targets))
+
+        preds_ifft = preds_ifft.reshape(-1, *preds_ifft.shape[-2:])
+        targets_ifft = targets_ifft.reshape(-1, *targets_ifft.shape[-2:])
+
+        # Fields are tuples w/ format (name, value)
+        for field in self.eval_methods:
+            if hasattr(field[1], "met_cls"):
+                getattr(self, field[0]).update(preds_ifft, targets_ifft)
+
         return torch.stack((preds, targets), dim=1)
 
     def configure_optimizers(self):
