@@ -91,9 +91,19 @@ class ModelConfig(BaseModel):
     """Name/callable or list of two names/callables of the architecture(s)
     to use for evaluation."""
 
+    weights_only: bool | list[bool] = Field(
+        default=[True],
+        min_length=1,
+        max_length=2,
+    )
+    """Whether PyTorch's unpickler should be restricted when loading checkpoints.
+    See `torch.load with weights_only=True <https://docs.pytorch.org/docs/2.12/notes/serialization.html#weights-only>`_
+    for more information.
+    """
+
     @field_validator("arch_name")
     @classmethod
-    def load_arch_instance(cls, arch_name: str | list):
+    def load_arch_instance(cls, arch_name: str | list) -> list:
         if isinstance(arch_name, str):
             arch_name = [arch_name]
 
@@ -116,6 +126,14 @@ class ModelConfig(BaseModel):
                 ) from e
 
         return arch_list
+
+    @field_validator("weights_only")
+    @classmethod
+    def validate_weights_only(cls, weights_only: bool | list[bool]) -> list:
+        if isinstance(weights_only, bool):
+            weights_only = [weights_only]
+
+        return weights_only
 
 
 class DeviceConfig(BaseModel):
