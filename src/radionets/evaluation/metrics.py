@@ -158,7 +158,7 @@ class SourceAreaRatio(Metric):
             ifft_preds, ifft_targets, thresholds
         )
 
-        self.area_ratios.append(area_preds.sum() / area_targets.sum())
+        self.area_ratios.append(area_preds / area_targets)
 
     def __contour_area(
         self,
@@ -342,8 +342,6 @@ class DynamicRange(Metric):
             _rms_truth_boxes[num_corners] = self.__compute_rms(ifft_truth, size)
             _rms_pred_boxes[num_corners] = self.__compute_rms(ifft_pred, size)
 
-        print([b.shape for b in _rms_pred_boxes.values()])
-
         rms_boxes = self.__select_box(_rms_truth_boxes[4], sensitivity=self.sensitivity)
         current_batch_size = len(ifft_pred)
 
@@ -371,8 +369,6 @@ class DynamicRange(Metric):
                 torch.abs(_rms_pred_boxes[num_corners][:, mask]).sum(dim=0)
                 / num_corners
             )
-
-        print(f"{rms_truth.shape = }, {rms_truth = }")
 
         return rms_truth, rms_pred
 
