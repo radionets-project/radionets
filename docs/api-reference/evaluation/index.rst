@@ -21,11 +21,7 @@ Submodules
   :maxdepth: 1
   :glob:
 
-  contour
-  dynamic_range
-  feature
-  jet_angle
-  jets
+  metrics
   utils
 
 
