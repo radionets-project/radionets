@@ -37,4 +37,6 @@ class MeanDiffConfig(BaseModel):
 
 
 class ViewingAngleConfig(BaseModel):
+    threshold: float = Field(default=0.4, ge=0.0, le=1.0)
+
     model_config = ConfigDict(extra="allow")

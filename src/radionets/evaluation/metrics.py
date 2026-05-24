@@ -629,7 +629,7 @@ class ViewingAngle(Metric):
     target_m: list[torch.Tensor]
     target_n: list[torch.Tensor]
 
-    def __init__(self) -> None:
+    def __init__(self, threshold) -> None:
         super().__init__()
 
         self.add_state("pred_angle", default=[], dist_reduce_fx="cat")
@@ -638,6 +638,8 @@ class ViewingAngle(Metric):
         self.add_state("target_angle", default=[], dist_reduce_fx="cat")
         self.add_state("target_m", default=[], dist_reduce_fx="cat")
         self.add_state("target_n", default=[], dist_reduce_fx="cat")
+
+        self.threshold = threshold
 
     def update(self, ifft_pred: torch.Tensor, ifft_target: torch.Tensor) -> None:
         """Return cropped images around the first component of the true image.
@@ -664,7 +666,7 @@ class ViewingAngle(Metric):
         self.pred_angle.append(pred_angle)
         self.pred_m.append(pred_m)
         self.pred_n.append(pred_n)
-        self.target_angle.append(target_m)
+        self.target_angle.append(target_angle)
         self.target_m.append(target_m)
         self.target_n.append(target_n)
 
@@ -705,11 +707,11 @@ class ViewingAngle(Metric):
         # batch_size also contains the number of batches.
         # If only one batch and ndim is 3, batch_size is only the number
         # of images per batch
-        *batch_size, img_size, _ = image.shape
+        *batch_size, _, _ = image.shape
 
         # only use pixels above 40% of peak flux
         max_vals = image.amax(dim=(-2, -1))
-        threshold = (0.4 * max_vals).view(*batch_size, 1, 1)
+        threshold = (self.threshold * max_vals).view(*batch_size, 1, 1)
         image = torch.where(image >= threshold, image, torch.zeros_like(image))
 
         _, _, alpha_pca = self.__pca(image)

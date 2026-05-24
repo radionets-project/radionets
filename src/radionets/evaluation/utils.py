@@ -104,7 +104,9 @@ def _method_factory(eval_config):
     evaluation = eval_config.evaluation
 
     if evaluation.viewing_angle:
-        evaluation.viewing_angle.met_cls = metrics.ViewingAngle()
+        evaluation.viewing_angle.met_cls = metrics.ViewingAngle(
+            threshold=evaluation.viewing_angle.threshold
+        )
     if evaluation.dynamic_range:
         evaluation.dynamic_range.met_cls = metrics.DynamicRange(
             sensitivity=evaluation.dynamic_range.sensitivity
