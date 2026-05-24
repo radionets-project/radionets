@@ -8,7 +8,16 @@ __all__ = [
     "IntensityConfig",
     "MeanDiffConfig",
     "ViewingAngleConfig",
+    "SaveImagesConfig",
 ]
+
+
+class SaveImagesConfig(BaseModel):
+    split_size: int = Field(default=-1, gt=0)  # -1 will save all images in one file
+    num_images: int | None = None
+    random_sampling: int | bool = False
+
+    model_config = ConfigDict(extra="allow")
 
 
 class AreaConfig(BaseModel):

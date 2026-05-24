@@ -4,7 +4,9 @@ import lightning as L
 import pandas as pd
 import rich_click as click
 import torch
+from rich.console import Console
 from rich.pretty import pretty_repr
+from rich.table import Table
 
 from radionets.core.logging import _setup_logger
 from radionets.evaluation.utils import _method_factory
@@ -69,11 +71,11 @@ def main(config_path):
 
         train_module_ch0 = TrainModule.load_from_checkpoint(
             eval_config.paths.model_paths[0],
-            weights_only=eval_config.model.weights_only,
+            weights_only=eval_config.model.weights_only[0],
         )
         train_module_ch1 = TrainModule.load_from_checkpoint(
             eval_config.paths.model_paths[1],
-            weights_only=eval_config.model.weights_only,
+            weights_only=eval_config.model.weights_only[1],
         )
         pred_ch0 = (
             trainer_ch0.predict(model=train_module_ch0, datamodule=data_module)
@@ -107,7 +109,7 @@ def main(config_path):
         train_module = TrainModule.load_from_checkpoint(
             eval_config.paths.model_paths[0],
             eval_methods=eval_config.evaluation,
-            weights_only=eval_config.model.weights_only,
+            weights_only=eval_config.model.weights_only[0],
         )
 
         model_output = trainer.predict(model=train_module, datamodule=data_module)
@@ -119,27 +121,12 @@ def main(config_path):
         )
         eval_config.paths.save_path.mkdir(parents=True)
 
-    # Concat model_output: The input has the shape (N, B, P, C, H, W)
-    #                                               |  |  |  |  |  |
-    # N: Number of batches -------------------------+  |  |  |  |  |
-    # B: Images per batch -----------------------------+  |  |  |  |
-    # T: Channel for prediction [0] or target [1]---------+  |  |  |
-    # C: Channel real [0]/imag [1] or amp [0]/phase [1] -----+  |  |
-    # H: Height ------------------------------------------------+  |
-    # W: Width ----------------------------------------------------+
-    #
-    # And the output becomes: (N * B, P, C, H, W)
-    model_output: torch.Tensor = torch.cat(model_output)  # ty:ignore[invalid-argument-type]
-    # preds: torch.Tensor = model_output[:, :, 0]
-    # targets: torch.Tensor = model_output[:, :, 1]
+    table = Table(title=f"Evaluation Summary for {data_module.predict_length}")
 
-    # Make images symmetrical again and apply ifft to get image
-    # space representation
-    # preds_ifft = get_ifft(apply_symmetry(preds))
-    # targets_ifft = get_ifft(apply_symmetry(targets))
-    #
-    # preds_ifft = preds_ifft.reshape(-1, *preds_ifft.shape[-2:])
-    # targets_ifft = targets_ifft.reshape(-1, *targets_ifft.shape[-2:])
+    table.add_column("Metric", justify="left", style="dark_sea_green4")
+    table.add_column("Mean", justify="right")
+    table.add_column("Std. Dev.", justify="right")
+    table.add_column("Median", justify="right")
 
     metrics = {}
     for field in eval_config.evaluation:
@@ -148,7 +135,74 @@ def main(config_path):
             df = pd.DataFrame(field[1].met_cls.compute())
             df.to_csv(eval_config.paths.save_path / f"{field[0]}.csv", index=False)
 
-    print(pretty_repr(metrics))
+            table.add_row(
+                field[0],
+                str(df.iloc[:, 0].mean()),
+                str(df.iloc[:, 0].std()),
+                str(df.iloc[:, 0].median()),
+            )
+
+    console = Console()
+    console.print(table)
+
+    if eval_config.evaluation.save_images:
+        # use lazy import
+        from radionets.evaluation.utils import get_ifft, apply_symmetry  # noqa: I001
+
+        # Concat model_output: The input has the shape (N, B, P, C, H, W)
+        #                                               |  |  |  |  |  |
+        # N: Number of batches -------------------------+  |  |  |  |  |
+        # B: Images per batch -----------------------------+  |  |  |  |
+        # T: Channel for prediction [0] or target [1]---------+  |  |  |
+        # C: Channel real [0]/imag [1] or amp [0]/phase [1] -----+  |  |
+        # H: Height ------------------------------------------------+  |
+        # W: Width ----------------------------------------------------+
+        #
+        # And the output becomes: (N * B, P, C, H, W)
+        model_output: torch.Tensor = torch.cat(model_output)  # ty:ignore[invalid-argument-type]
+
+        num_images = eval_config.evaluation.save_images.num_images
+        random_sampling = eval_config.evaluation.save_images.random_sampling
+        if num_images:
+            im_slice = slice(num_images)
+        elif num_images and random_sampling:
+            if isinstance(random_sampling, int):
+                torch.manual_seed(random_sampling)
+
+            im_slice = torch.randint(low=0, high=len(model_output), size=(num_images))
+        else:
+            im_slice = slice(None)
+
+        preds: torch.Tensor = model_output[im_slice, 0]
+        targets: torch.Tensor = model_output[im_slice, 1]
+
+        # Make images symmetrical again and apply ifft to get image
+        # space representation
+        preds_ifft = get_ifft(apply_symmetry(preds))
+        targets_ifft = get_ifft(apply_symmetry(targets))
+
+        preds_ifft = preds_ifft.reshape(-1, *preds_ifft.shape[-2:])
+        targets_ifft = targets_ifft.reshape(-1, *targets_ifft.shape[-2:])
+
+        split_size = eval_config.evaluation.save_images.split_size
+        if split_size == -1:
+            split_size = len(model_output)
+
+        preds_split = torch.tensor_split(preds, split_size)
+        targets_split = torch.tensor_split(targets, split_size)
+        preds_ifft_split = torch.tensor_split(preds_ifft, split_size)
+        targets_ifft_split = torch.tensor_split(targets_ifft, split_size)
+        for idx, (ps, ts, pis, tis) in enumerate(
+            zip(preds_split, targets_split, preds_ifft_split, targets_ifft_split)
+        ):
+            torch.save(
+                obj={"PRED": ps, "TARGET": ts},
+                f=eval_config.paths.save_path / f"eval_{idx}.pt",
+            )
+            torch.save(
+                obj={"PRED": pis, "TARGET": tis},
+                f=eval_config.paths.save_path / f"eval_ifft_{idx}.pt",
+            )
 
 
 if __name__ == "__main__":

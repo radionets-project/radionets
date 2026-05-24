@@ -20,6 +20,7 @@ from .evaluation import (
     DynamicRangeConfig,
     IntensityConfig,
     MeanDiffConfig,
+    SaveImagesConfig,
     ViewingAngleConfig,
 )
 from .train_config import DataLoaderConfig
@@ -127,7 +128,7 @@ class ModelConfig(BaseModel):
 
         return arch_list
 
-    @field_validator("weights_only")
+    @field_validator("weights_only", mode="before")
     @classmethod
     def validate_weights_only(cls, weights_only: bool | list[bool]) -> list:
         if isinstance(weights_only, bool):
@@ -179,6 +180,7 @@ class DeviceConfig(BaseModel):
             max_length=2,
         )
     )
+
     """Whether to use the deepspeed deep learning training optimization library.
     Set to ``True`` if you want to use the `default settings
     <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.strategies.DeepSpeedStrategy.html>`_,
@@ -242,7 +244,7 @@ class DeviceConfig(BaseModel):
 
         return self
 
-    @field_validator("deepspeed", mode="after")
+    @field_validator("deepspeed", mode="before")
     @classmethod
     def validate_deepspeed(cls, val: bool | str | DeepSpeedConfig | list):
         if isinstance(val, str | bool | DeepSpeedConfig):
@@ -267,13 +269,20 @@ class EvaluationMethodsConfig(BaseModel):
     :mod:`~radionets.evaluation`.
     """
 
+    save_images: bool | dict | SaveImagesConfig = Field(
+        default=True, validate_default=True
+    )
+    """Whether to save images in .pt pickle files."""
+
     viewing_angle: bool = Field(default=True, validate_default=True)
     """Enable viewing angle evaluation of the source. ``radionets`` will
     use a PCA to estimate the relative source angle to the x-axis of the image
     and compare prediction and target angles.
     """
 
-    dynamic_range: bool = Field(default=True, validate_default=True)
+    dynamic_range: bool | dict | DynamicRangeConfig = Field(
+        default=True, validate_default=True
+    )
     """Enable dynamic range evaluation of the source flux. ``radionets`` will
     compute the RMS for both prediction and target and estimate the dynamic range
     of both images.
@@ -299,7 +308,7 @@ class EvaluationMethodsConfig(BaseModel):
     :func:`~radionets.evaluation.contour.eval_intensity`.
     """
 
-    mean_diff: bool = Field(default=True, validate_default=True)
+    mean_diff: bool | dict | MeanDiffConfig = Field(default=True, validate_default=True)
     """Enable mean difference computation between prediction and target.
     Sources are detected using a Laplacian of Gaussian approach
     (using skimage's :func:`~skimage.feature.blob_log`). The mean of the differences
@@ -329,6 +338,16 @@ class EvaluationMethodsConfig(BaseModel):
 
     predict_grad: bool = True
     evaluate_gan: bool = True
+
+    @field_validator("save_images", mode="after")
+    @classmethod
+    def validate_save_images_config(cls, v: bool | dict | SaveImagesConfig):
+        if isinstance(v, dict):
+            return SaveImagesConfig(**v)
+        elif v is True:
+            return SaveImagesConfig()  # Return defaults
+
+        return v
 
     @field_validator("viewing_angle", mode="after")
     @classmethod

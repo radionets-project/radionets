@@ -3,6 +3,7 @@ from ._eval_options import (
     DynamicRangeConfig,
     IntensityConfig,
     MeanDiffConfig,
+    SaveImagesConfig,
     ViewingAngleConfig,
 )
 
@@ -12,4 +13,5 @@ __all__ = [
     "IntensityConfig",
     "MeanDiffConfig",
     "ViewingAngleConfig",
+    "SaveImagesConfig",
 ]
