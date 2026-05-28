@@ -181,6 +181,7 @@ class SRBlock(NNBlock):
                 bias=False,
                 padding_mode="reflect",
             ),
+            nn.Dropout(p=self.dropout),
             nn.InstanceNorm2d(num_features=self.out_channels),
             nn.PReLU(),
             nn.Conv2d(
@@ -192,15 +193,9 @@ class SRBlock(NNBlock):
                 bias=False,
                 padding_mode="reflect",
             ),
+            nn.Dropout(p=self.dropout),
             nn.InstanceNorm2d(num_features=self.out_channels),
         ]
-
-        # NOTE: This will be included directly in the blocks
-        # list in a future release and is only here for
-        # compatibility reasons
-        if self.dropout:
-            blocks.insert(1, nn.Dropout(p=self.dropout))
-            blocks.insert(4, nn.Rropout(p=self.dropout))
 
         return blocks
 
