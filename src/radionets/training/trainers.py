@@ -30,9 +30,9 @@ class TrainModule(LightningModule):
         self.num_epochs = train_config["training"]["num_epochs"]
         self.batch_size = train_config["dataloader"]["batch_size"]
 
-        if eval_methods:
-            self.eval_methods = eval_methods
+        self.eval_methods = eval_methods
 
+        if self.eval_methods:
             for field in eval_methods:
                 if hasattr(field[1], "met_cls"):
                     setattr(self, field[0], field[1].met_cls)
@@ -92,10 +92,11 @@ class TrainModule(LightningModule):
         preds_ifft = preds_ifft.reshape(-1, *preds_ifft.shape[-2:])
         targets_ifft = targets_ifft.reshape(-1, *targets_ifft.shape[-2:])
 
-        # Fields are tuples w/ format (name, value)
-        for field in self.eval_methods:
-            if hasattr(field[1], "met_cls"):
-                getattr(self, field[0]).update(preds_ifft, targets_ifft)
+        if self.eval_methods:
+            # Fields are tuples w/ format (name, value)
+            for field in self.eval_methods:
+                if hasattr(field[1], "met_cls"):
+                    getattr(self, field[0]).update(preds_ifft, targets_ifft)
 
         return torch.stack((preds, targets), dim=1)
 
