@@ -41,7 +41,7 @@ class TrainModule(LightningModule):
         """Main forward feed call to the model."""
         return self.model(inputs)
 
-    def training_step(self, batch, batch_idinputs):
+    def training_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
 
         logits = self(inputs)["pred"]
@@ -71,11 +71,7 @@ class TrainModule(LightningModule):
 
         return inputs, targets
 
-    def test_step(
-        self,
-        batch,
-        batch_idx,
-    ):
+    def test_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
         preds = self(inputs)["pred"]
 
@@ -83,7 +79,7 @@ class TrainModule(LightningModule):
             loss = self.loss_fn(preds, targets)
             self.log("test_loss", loss, prog_bar=True, sync_dist=True)
 
-    def predict_step(self, batch, batch_idx, dataloader_idx=0):
+    def predict_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
         preds = self(inputs)["pred"]
 
