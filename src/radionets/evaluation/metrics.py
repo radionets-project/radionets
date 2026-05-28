@@ -175,7 +175,7 @@ class SourceAreaRatio(Metric):
 
         # loop over images in batch
         for p, t in zip(preds_np, targets_np):
-            level_val = t.max() * self.level
+            level_val = t.max() * self.threshold
 
             fig, ax = plt.subplots()
             cs_pred = ax.contour(p, levels=[level_val])
