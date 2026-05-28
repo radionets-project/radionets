@@ -2,20 +2,22 @@ from pathlib import Path
 
 import lightning as L
 import rich_click as click
-from rich import print
+from rich.pretty import pretty_repr
 
 from radionets.core.callbacks import Callbacks
-from radionets.core.logging import Loggers
+from radionets.core.logging import Loggers, _setup_logger
 from radionets.io import TrainConfig
 from radionets.training import TrainModule
 from radionets.utils._paths import _validate_pre_model_path
 from radionets.utils.carbon_tracking import CarbonTracker
 
+LOGGER = _setup_logger(namespace=__name__)
+
 
 @click.command()
 @click.argument(
     "mode",
-    type=click.Choice(["train", "test", "predict"], case_sensitive=False),
+    type=click.Choice(["train", "predict"], case_sensitive=False),
     default="train",
 )
 @click.argument("config_path", type=click.Path(exists=True, dir_okay=False))
@@ -37,7 +39,7 @@ def main(config_path, mode="train", premodel=None):
 
     train_config = TrainConfig.from_toml(config_path)
 
-    print(train_config)
+    LOGGER.info(pretty_repr(train_config))
 
     if mode == "predict":
         train_config.paths.model_path /= "inference"
@@ -97,7 +99,10 @@ def main(config_path, mode="train", premodel=None):
     elif mode.lower() == "predict":
         _validate_pre_model_path(train_config)
 
-        train_module = TrainModule.load_from_checkpoint(train_config.paths.pre_model)
+        train_module = TrainModule.load_from_checkpoint(
+            checkpoint_path=train_config.paths.pre_model,
+            weights_only=train_config.model.weights_only,
+        )
         preds = trainer.predict(model=train_module, datamodule=data_module)
 
         return preds
