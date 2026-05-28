@@ -336,7 +336,6 @@ class LoggingConfig(BaseModel):
 class TrainConfig(BaseModel):
     """Main training configuration."""
 
-    title: str = "Train configuration"
     paths: PathsConfig = Field(default_factory=PathsConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
     training: TrainingConfig = Field(default_factory=TrainingConfig)
