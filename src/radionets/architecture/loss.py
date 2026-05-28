@@ -1,6 +1,5 @@
-import numpy as np
 import torch
-from torch import Tensor, nn
+from torch import nn
 
 from radionets.evaluation.utils import apply_symmetry
 
