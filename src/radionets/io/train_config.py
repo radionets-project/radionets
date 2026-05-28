@@ -53,6 +53,7 @@ class ModelConfig(BaseModel):
 
     arch_name: str | Callable = archs.SRResNet18
     normalize: bool = False
+    weights_only: bool = True
 
     @field_validator("arch_name")
     @classmethod
