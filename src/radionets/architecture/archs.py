@@ -121,7 +121,7 @@ class SRResNetComplex(nn.Module):
     def _create_blocks(self, n_blocks, **kwargs):
         blocks = []
         for _ in range(n_blocks):
-            blocks.append(ComplexSRBlock(64, 64, **kwargs))
+            blocks.append(ComplexSRBlock(self.channels, self.channels, **kwargs))
 
         self.blocks = nn.Sequential(*blocks)
 
@@ -134,72 +134,72 @@ class SRResNetComplex(nn.Module):
 
 
 class SRResNet18(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 8 ResBlocks to build a SRResNet18
-        self._create_blocks(8)
+        self._create_blocks(8, **kwargs)
 
 
 class SRResNet18Complex(SRResNetComplex):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 8 ResBlocks to build a SRResNet18
-        self._create_blocks(8)
+        self._create_blocks(8, **kwargs)
 
 
 class SRResNet18AmpPhase(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 8 ResBlocks to build a SRResNet18
-        self._create_blocks(8)
+        self._create_blocks(8, **kwargs)
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
 
-    def forward(self, x):
-        x = super().forward(x)
+    def forward(self, input):
+        out = super().forward(input)
 
-        x_amp = self.relu(x[:, 0].unsqueeze(1))
-        x_phase = self.hardtanh(x[:, 1].unsqueeze(1))
+        amp = self.relu(out[:, 0].unsqueeze(1))
+        phase = self.hardtanh(out[:, 1].unsqueeze(1))
 
-        return {"pred": torch.cat([x_amp, x_phase], dim=1)}
+        return {"pred": torch.cat([amp, phase], dim=1)}
 
 
 class SRResNet34(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 16 ResBlocks to build a SRResNet34
-        self._create_blocks(16)
+        self._create_blocks(16, **kwargs)
 
 
 class SRResNet34AmpPhase(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 16 ResBlocks to build a SRResNet34
-        self._create_blocks(16)
+        self._create_blocks(16, **kwargs)
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
 
-    def forward(self, x):
-        x = super().forward(x)
+    def forward(self, input):
+        out = super().forward(input)
 
-        x_amp = self.relu(x[:, 0].unsqueeze(1))
-        x_phase = self.hardtanh(x[:, 1].unsqueeze(1))
+        amp = self.relu(out[:, 0].unsqueeze(1))
+        phase = self.hardtanh(out[:, 1].unsqueeze(1))
 
-        return {"pred": torch.cat([x_amp, x_phase], dim=1)}
+        return {"pred": torch.cat([amp, phase], dim=1)}
 
 
 class SRResNet34_unc(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
-        self._create_blocks(16)
+        self._create_blocks(16, **kwargs)
 
         self.postBlock = nn.Sequential(
             nn.Conv2d(
@@ -213,12 +213,12 @@ class SRResNet34_unc(SRResNet):
             nn.InstanceNorm2d(self.channels),
         )
 
-        self.elu = GeneralReLU(sub=-1e-10)
+        self.grelu = GeneralReLU(sub=-1e-10)
 
-    def forward(self, x):
-        s = x.shape[-1]
+    def forward(self, input):
+        s = input.shape[-1]
 
-        x = self.preBlock(x)
+        x = self.preBlock(input)
 
         x = x + self.postBlock(self.blocks(x))
 
@@ -227,9 +227,9 @@ class SRResNet34_unc(SRResNet):
         x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
         x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
         x3 = x[:, 2].reshape(-1, 1, s // 2 + 1, s)
-        x3 = self.elu(x3)
+        x3 = self.grelu(x3)
         x4 = x[:, 3].reshape(-1, 1, s // 2 + 1, s)
-        x4 = self.elu(x4)
+        x4 = self.grelu(x4)
 
         return {"pred": torch.cat([x0, x3, x1, x4], dim=1)}
 
@@ -238,10 +238,10 @@ class SRResNet34_unc_no_grad(SRResNet34_unc):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x):
-        s = x.shape[-1]
+    def forward(self, input):
+        s = input.shape[-1]
 
-        x = self.preBlock(x)
+        x = self.preBlock(input)
 
         x = x + self.postBlock(self.blocks(x))
 
