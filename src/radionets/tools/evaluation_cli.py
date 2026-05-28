@@ -121,7 +121,9 @@ def main(config_path):
         )
         eval_config.paths.save_path.mkdir(parents=True)
 
-    table = Table(title=f"Evaluation Summary for {data_module.predict_length}")
+    table = Table(
+        title=f"Evaluation Summary for {data_module.predict_length} test images"
+    )
 
     table.add_column("Metric", justify="left", style="dark_sea_green4")
     table.add_column("Mean", justify="right")
@@ -153,7 +155,7 @@ def main(config_path):
         #                                               |  |  |  |  |  |
         # N: Number of batches -------------------------+  |  |  |  |  |
         # B: Images per batch -----------------------------+  |  |  |  |
-        # T: Channel for prediction [0] or target [1]---------+  |  |  |
+        # P: Channel for prediction [0] or target [1]---------+  |  |  |
         # C: Channel real [0]/imag [1] or amp [0]/phase [1] -----+  |  |
         # H: Height ------------------------------------------------+  |
         # W: Width ----------------------------------------------------+
@@ -163,13 +165,14 @@ def main(config_path):
 
         num_images = eval_config.evaluation.save_images.num_images
         random_sampling = eval_config.evaluation.save_images.random_sampling
-        if num_images:
-            im_slice = slice(num_images)
-        elif num_images and random_sampling:
+
+        if num_images and random_sampling:
             if isinstance(random_sampling, int):
                 torch.manual_seed(random_sampling)
 
             im_slice = torch.randint(low=0, high=len(model_output), size=(num_images))
+        elif num_images:
+            im_slice = slice(num_images)
         else:
             im_slice = slice(None)
 
@@ -186,7 +189,7 @@ def main(config_path):
 
         split_size = eval_config.evaluation.save_images.split_size
         if split_size == -1:
-            split_size = len(model_output)
+            split_size = 1
 
         preds_split = torch.tensor_split(preds, split_size)
         targets_split = torch.tensor_split(targets, split_size)
@@ -195,13 +198,17 @@ def main(config_path):
         for idx, (ps, ts, pis, tis) in enumerate(
             zip(preds_split, targets_split, preds_ifft_split, targets_ifft_split)
         ):
+            outpath = eval_config.paths.save_path / "images"
+            if not outpath.is_dir():
+                outpath.mkdir(parents=True)
+
             torch.save(
                 obj={"PRED": ps, "TARGET": ts},
-                f=eval_config.paths.save_path / f"eval_{idx}.pt",
+                f=outpath / f"eval_{idx}.pt",
             )
             torch.save(
                 obj={"PRED": pis, "TARGET": tis},
-                f=eval_config.paths.save_path / f"eval_ifft_{idx}.pt",
+                f=outpath / f"eval_ifft_{idx}.pt",
             )
 
 
