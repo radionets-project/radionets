@@ -10,7 +10,7 @@ class SplittedL1Loss(nn.Module):
         super().__init__()
         self.reduction = reduction
 
-    def forward(self, pred: Tensor, target: Tensor) -> Tensor:
+    def forward(self, pred: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Runs the forward pass.
         """
@@ -28,18 +28,16 @@ class SplittedL1Loss(nn.Module):
         return loss
 
 
-class MaskedSplittedL1Loss(nn.Module):
+class MaskedSplitL1Loss(nn.Module):
     def __init__(
         self,
-        size_average: bool = None,
-        reduce: bool = None,
         reduction: str = "mean",
-        center: list | tuple = None,
-        radius: int = 30,
+        center: list | tuple | None = None,
+        radius: int | None = 30,
+        **kwargs,
     ) -> None:
         super().__init__()
 
-        self.reduction = reduction
         self.center = center
         self.radius = radius
 
@@ -47,14 +45,16 @@ class MaskedSplittedL1Loss(nn.Module):
         # None at first, then torch.Tensor after caching
         self._mask: torch.Tensor | None = None
 
+        self._l1 = nn.L1Loss(reduction=reduction)
+
     def _create_circular_mask(
         self,
         w: int,
         h: int,
-        center: list | tuple = None,
-        radius: int = None,
-        device: torch.device = None,
-    ) -> np.ndarray:
+        center: list[int] | tuple[int, int] | None = None,
+        radius: int | None = None,
+        device: torch.device | None = None,
+    ) -> torch.Tensor:
         if center is None:
             center = (int(w / 2), int(h / 2))
 
@@ -63,17 +63,15 @@ class MaskedSplittedL1Loss(nn.Module):
 
         x = torch.arange(w, device=device).view(1, -1)
         y = torch.arange(h, device=device).view(-1, 1)
-        dist_from_center = torch.sqrt((x - center[0]) ** 2 + (y - center[1]) ** 2)
+        dist_from_center = (x - center[0]) ** 2 + (y - center[1]) ** 2
 
-        mask = dist_from_center <= radius
+        return dist_from_center <= radius**2
 
-        return mask
-
-    def forward(self, inputs: Tensor, targets: Tensor) -> Tensor:
+    def forward(self, inputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         inputs = apply_symmetry(inputs)
         targets = apply_symmetry(targets)
 
-        _, _, h, w = targets.shape
+        *_, h, w = targets.shape
 
         inp_amp = inputs[:, 0]
         inp_phase = inputs[:, 1]
@@ -97,9 +95,8 @@ class MaskedSplittedL1Loss(nn.Module):
         tar_amp *= weight
         tar_phase *= weight
 
-        l1 = nn.L1Loss(reduction=self.reduction)
-        loss_amp = l1(inp_amp, tar_amp)
-        loss_phase = l1(inp_phase, tar_phase)
+        loss_amp = self._l1(inp_amp, tar_amp)
+        loss_phase = self._l1(inp_phase, tar_phase)
         loss = loss_amp + loss_phase
 
         return loss
