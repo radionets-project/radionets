@@ -1,4 +1,4 @@
-from .activation import GeneralELU, GeneralReLU, Lambda
+from .activation import GeneralELU, GeneralReLU
 from .archs import (
     SRResNet,
     SRResNet18,
@@ -19,7 +19,6 @@ __all__ = [
     "Encoder",
     "GeneralELU",
     "GeneralReLU",
-    "Lambda",
     "LocallyConnected2d",
     "NNBlock",
     "SRBlock",
