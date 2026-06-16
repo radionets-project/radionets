@@ -45,7 +45,6 @@ pct_start = 0.25
 accelerator = "gpu"
 num_devices = "auto"
 precision = "32-true"
-deepspeed = "deepspeed_stage_2"
 
 [dataloader]
 module = "WebDatasetModule"
