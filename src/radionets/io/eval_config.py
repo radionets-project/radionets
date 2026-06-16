@@ -50,7 +50,7 @@ class PathsConfig(BaseModel):
     """Paths to the pretrained model checkpoints."""
 
     save_path: Path = Path("./build")
-    """Path to the directory where evaluation results will be saved."""
+    """Path to the directory where the results will be saved."""
 
     @field_validator("data_path", "save_path")
     @classmethod
