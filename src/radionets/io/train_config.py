@@ -117,6 +117,7 @@ class DeviceConfig(BaseModel):
 
     accelerator: str = "auto"
     num_devices: str | list | int = "auto"
+    num_nodes: int = 1
     precision: str | int = "32-true"
     deepspeed: bool | str | DeepSpeedConfig = False
     strategy: str = "auto"
