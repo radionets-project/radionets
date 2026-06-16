@@ -8,21 +8,15 @@ from radionets.core.callbacks import Callbacks
 from radionets.core.logging import Loggers, _setup_logger
 from radionets.io import TrainConfig
 from radionets.training import TrainModule
-from radionets.utils._paths import _validate_pre_model_path
 from radionets.utils.carbon_tracking import CarbonTracker
 
 LOGGER = _setup_logger(namespace=__name__)
 
 
 @click.command()
-@click.argument(
-    "mode",
-    type=click.Choice(["train", "predict"], case_sensitive=False),
-    default="train",
-)
 @click.argument("config_path", type=click.Path(exists=True, dir_okay=False))
 @click.option("--premodel", "-p", type=click.Path(exists=True, dir_okay=False))
-def main(config_path, mode="train", premodel=None):
+def main(config_path, premodel=None):
     """Starts the radionets training process with
     options specified in configuration file.
 
@@ -40,9 +34,6 @@ def main(config_path, mode="train", premodel=None):
     train_config = TrainConfig.from_toml(config_path)
 
     LOGGER.info(pretty_repr(train_config))
-
-    if mode == "predict":
-        train_config.paths.model_path /= "inference"
 
     if premodel:
         # if the premodel cli option is used, overwrite config path
@@ -84,28 +75,16 @@ def main(config_path, mode="train", premodel=None):
         else train_config.devices.strategy,
     )
 
-    trainer.radionets_task = mode.lower()
+    trainer.radionets_task = "training"
 
-    if mode.lower() == "train":
-        # let mlflow callback stop the tracker
-        stop_inside_scope = train_config.logging.mlflow
+    # let mlflow callback stop the tracker
+    stop_inside_scope = train_config.logging.mlflow
 
-        with CarbonTracker(
-            train_config=train_config, stop_inside_scope=stop_inside_scope
-        ) as tracker:
-            trainer.carbontracker = tracker
-            trainer.fit(model=train_module, datamodule=data_module)
-
-    elif mode.lower() == "predict":
-        _validate_pre_model_path(train_config)
-
-        train_module = TrainModule.load_from_checkpoint(
-            checkpoint_path=train_config.paths.pre_model,
-            weights_only=train_config.model.weights_only,
-        )
-        preds = trainer.predict(model=train_module, datamodule=data_module)
-
-        return preds
+    with CarbonTracker(
+        train_config=train_config, stop_inside_scope=stop_inside_scope
+    ) as tracker:
+        trainer.carbontracker = tracker
+        trainer.fit(model=train_module, datamodule=data_module)
 
 
 if __name__ == "__main__":
