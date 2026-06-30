@@ -212,8 +212,9 @@ class PlottingCallbackABC(ABC, LightningCallback):
                 self.cached_batch[1].to(pl_module.device),
             )
 
-            predictions = pl_module.predict_step(batch, batch_idx=0).cpu()
-            targets = batch[1].cpu()
+            results = pl_module.predict_step(batch, batch_idx=0).cpu()
+            predictions = results[:, 0].cpu()
+            targets = results[:, 1].cpu()
 
             # check if images are half or full
             if predictions.shape[-2] != predictions.shape[-1]:
