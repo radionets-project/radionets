@@ -1,3 +1,4 @@
+import sysconfig
 import tomllib
 from pathlib import Path
 
@@ -44,9 +45,32 @@ class PathsConfig(BaseSettings):
         return v.expanduser().resolve()
 
 
+class RCParamsConfig(BaseSettings):
+    model_config = ConfigDict(extra="allow")
+
+
 class GeneralConfig(BaseSettings):
     display_names: None | list = Field(default=None)
     colors: None | list = Field(default=None)
+    mplstyle: str | Path = Field(default="radionets")
+    rcparams: dict | RCParamsConfig = Field(default_factory=RCParamsConfig)
+
+    @field_validator("mplstyle")
+    @classmethod
+    def validate_mplstyle(cls, v):
+        if v == "radionets":
+            root = sysconfig.get_path("data", sysconfig.get_default_scheme())
+            v = root + "/share/resources/radionets.mplstyle"
+
+        return v
+
+    @field_validator("rcparams", mode="before")
+    @classmethod
+    def validate_rcparams_config(cls, v: dict | RCParamsConfig):
+        if isinstance(v, dict):
+            return RCParamsConfig.model_validate({**v})
+        elif isinstance(v, RCParamsConfig):
+            return RCParamsConfig.model_validate(v)
 
 
 class SubplotsConfig(BaseSettings):
@@ -256,6 +280,7 @@ class PlottingConfig(BaseSettings):
     angle: bool | dict | AnglePlotConfig = True
     mean_diff: bool | dict | MeanDiffPlotConfig = True
     area: bool | dict | SourceAreaPlotConfig = True
+    debug: bool = False
 
     @classmethod
     def from_toml(cls, path: str | Path) -> "PlottingConfig":
