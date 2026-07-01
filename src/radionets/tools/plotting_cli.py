@@ -30,7 +30,7 @@ def main(config_path, input_paths, output_path):
                 "if no config path is provided!"
             )
         config = PlottingConfig(
-            paths=dict(data_path=input_paths, save_path=output_path)
+            paths=dict(data_paths=input_paths, save_path=output_path)
         )
     else:
         config = PlottingConfig.from_toml(config_path)
