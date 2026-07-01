@@ -17,7 +17,7 @@ __all__ = [
 class PathsConfig(BaseSettings):
     """File paths configuration."""
 
-    data_path: str | Path | list[str | Path] = Field(
+    data_paths: str | Path | list[str | Path] = Field(
         min_length=1,
         max_length=4,
     )
@@ -26,7 +26,7 @@ class PathsConfig(BaseSettings):
     save_path: Path
     """Path to the directory where the plots will be saved."""
 
-    @field_validator("data_path", mode="before")
+    @field_validator("data_paths", mode="before")
     @classmethod
     def expand_data_paths(cls, v: str | Path | list[str | Path]) -> list[Path]:
 
@@ -287,6 +287,22 @@ class PlottingConfig(BaseSettings):
             data = tomllib.load(f)
 
         return cls(**data)
+
+    @field_validator("paths", mode="after")
+    @classmethod
+    def validate_paths_config(cls, v: dict | PathsConfig):
+        if isinstance(v, dict):
+            return PathsConfig(**v)
+
+        return v
+
+    @field_validator("general", mode="after")
+    @classmethod
+    def validate_general_config(cls, v: dict | GeneralConfig):
+        if isinstance(v, dict):
+            return GeneralConfig(**v)
+
+        return v
 
     @field_validator("peak_flux", mode="after")
     @classmethod
