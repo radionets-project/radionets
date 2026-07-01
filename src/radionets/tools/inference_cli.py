@@ -64,8 +64,8 @@ def main(config_path):
             else "auto",  # ty:ignore[invalid-argument-type]
         )
 
-        trainer_ch0.radionets_task = "inference"
-        trainer_ch1.radionets_task = "inference"
+        trainer_ch0.radionets_task = "inference"  # ty:ignore[unresolved-attribute]
+        trainer_ch1.radionets_task = "inference"  # ty:ignore[unresolved-attribute]
 
         train_module_ch0 = TrainModule.load_from_checkpoint(
             inference_config.paths.model_paths[0],
@@ -77,17 +77,17 @@ def main(config_path):
         )
         pred_ch0 = (
             trainer_ch0.predict(model=train_module_ch0, datamodule=data_module)
-            .detach()
+            .detach()  # ty:ignore[unresolved-attribute]
             .cpu()
         )
         pred_ch1 = (
             trainer_ch1.predict(model=train_module_ch1, datamodule=data_module)
-            .detach()
+            .detach()  # ty:ignore[unresolved-attribute]
             .cpu()
         )
 
         model_output = torch.cat(
-            (pred_ch0[:, 0].unsqueeze(1), pred_ch1[:, 1].unsqueeze(1)),  # ty:ignore[invalid-argument-type]
+            (pred_ch0[:, 0].unsqueeze(1), pred_ch1[:, 1].unsqueeze(1)),
             dim=1,
         )
     else:
@@ -104,11 +104,10 @@ def main(config_path):
             else "auto",  # ty:ignore[invalid-argument-type]
         )
 
-        trainer.radionets_task = "inference"
+        trainer.radionets_task = "inference"  # ty:ignore[unresolved-attribute]
 
         train_module = TrainModule.load_from_checkpoint(
             inference_config.paths.model_paths[0],
-            eval_methods=inference_config.evaluation,
             weights_only=inference_config.model.weights_only[0],
         )
 
