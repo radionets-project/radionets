@@ -4,7 +4,7 @@ from torch import nn
 from radionets.evaluation.utils import apply_symmetry
 
 
-class SplittedL1Loss(nn.Module):
+class SplitL1Loss(nn.Module):
     def __init__(self, reduction: str = "mean") -> None:
         super().__init__()
         self.reduction = reduction
