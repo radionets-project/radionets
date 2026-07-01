@@ -79,17 +79,17 @@ def main(config_path):
         )
         pred_ch0 = (
             trainer_ch0.predict(model=train_module_ch0, datamodule=data_module)
-            .detach()
+            .detach()  # ty:ignore[unresolved-attribute]
             .cpu()
         )
         pred_ch1 = (
             trainer_ch1.predict(model=train_module_ch1, datamodule=data_module)
-            .detach()
+            .detach()  # ty:ignore[unresolved-attribute]
             .cpu()
         )
 
         model_output = torch.cat(
-            (pred_ch0[:, 0].unsqueeze(1), pred_ch1[:, 1].unsqueeze(1)),  # ty:ignore[invalid-argument-type]
+            (pred_ch0[:, 0].unsqueeze(1), pred_ch1[:, 1].unsqueeze(1)),
             dim=1,
         )
     else:
@@ -163,14 +163,14 @@ def main(config_path):
         # And the output becomes: (N * B, P, C, H, W)
         model_output: torch.Tensor = torch.cat(model_output)  # ty:ignore[invalid-argument-type]
 
-        num_images = eval_config.evaluation.save_images.num_images
-        random_sampling = eval_config.evaluation.save_images.random_sampling
+        num_images = eval_config.evaluation.save_images.num_images  # ty:ignore[unresolved-attribute]
+        random_sampling = eval_config.evaluation.save_images.random_sampling  # ty:ignore[unresolved-attribute]
 
         if num_images and random_sampling:
             if isinstance(random_sampling, int):
                 torch.manual_seed(random_sampling)
 
-            im_slice = torch.randint(low=0, high=len(model_output), size=(num_images))
+            im_slice = torch.randint(low=0, high=len(model_output), size=(num_images,))
         elif num_images:
             im_slice = slice(num_images)
         else:
@@ -187,9 +187,9 @@ def main(config_path):
         preds_ifft = preds_ifft.reshape(-1, *preds_ifft.shape[-2:])
         targets_ifft = targets_ifft.reshape(-1, *targets_ifft.shape[-2:])
 
-        split_size = eval_config.evaluation.save_images.split_size
+        split_size = eval_config.evaluation.save_images.split_size  # ty:ignore[unresolved-attribute]
         if split_size == -1:
-            split_size = 1
+            split_size = 1  # Save all in one file, i.e. 1 split
 
         preds_split = torch.tensor_split(preds, split_size)
         targets_split = torch.tensor_split(targets, split_size)
