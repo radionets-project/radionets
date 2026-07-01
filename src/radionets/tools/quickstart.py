@@ -17,10 +17,10 @@ from radionets.core.logging import _setup_logger
 @click.option(
     "-m",
     "--mode",
-    type=click.Choice(["train", "eval"]),
+    type=click.Choice(["train", "eval", "inference", "plot"]),
     default="train",
     help="""What config file to create at config_path.
-        Valid are {train, eval}. Default: train""",
+        Valid are {train, eval, inference, plot}. Default: train""",
 )
 @click.option(
     "-y",
@@ -44,8 +44,8 @@ def main(
     config_path : str or Path
         Path to write the config to.
     mode : str, optional
-        Determines the type of config. Either 'train'
-        or 'eval' are valid. Default: 'train'
+        Determines the type of config. One of 'train',
+        'eval', 'inference' or 'plot' are valid. Default: 'train'
     overwrite : bool, optional
         If ``True``, overwrites the config file if it already
         exists. Default: ``False``
@@ -53,11 +53,18 @@ def main(
     Notes
     -----
     If a directory is given, this tool will create
-    a file called 'radionets_default_{train,eval}_config.toml'
+    a file called 'radionets_default_{train,eval,inference,plot}_config.toml'
     inside that directory.
+
+    Raises
+    ------
+    ValueError
+        If mode is not one of 'train', 'eval', 'inference' or 'plot'.
     """
-    if mode not in ["train", "eval"]:
-        raise ValueError("Unknown mode: Expected one of {train, eval}.")
+    if mode not in ["train", "eval", "inference", "plot"]:
+        raise ValueError(
+            "Unknown mode: Expected one of {train, eval, inference, plot}."
+        )
 
     log = _setup_logger(namespace=__name__, tracebacks_suppress=[click])
 
@@ -70,14 +77,9 @@ def main(
 
     root = sysconfig.get_path("data", sysconfig.get_default_scheme())
 
-    if mode == "train":
-        default_config_path = Path(
-            root + "/share/configs/radionets_default_train_config.toml"
-        )
-    else:
-        default_config_path = Path(
-            root + "/share/configs/radionets_default_eval_config.toml"
-        )
+    default_config_path = Path(
+        root + f"/share/configs/radionets_default_{mode}_config.toml"
+    )
 
     log.info(f"Loading default radionets {mode} configuration...")
     with open(default_config_path) as f:
