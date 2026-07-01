@@ -63,6 +63,8 @@ def set_cbar(
             label=r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$",
         )
 
+    return cbar
+
 
 def get_vmin_vmax(image: ArrayLike):
     """Check whether the absolute of the maximum or the minimum is bigger.
