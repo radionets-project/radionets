@@ -33,7 +33,7 @@ class TrainModule(LightningModule):
         self.eval_methods = eval_methods
 
         if self.eval_methods:
-            for field in eval_methods:
+            for field in self.eval_methods:
                 if hasattr(field[1], "met_cls"):
                     setattr(self, field[0], field[1].met_cls)
 
@@ -56,20 +56,6 @@ class TrainModule(LightningModule):
         logits = self(inputs)["pred"]
         loss = self.loss_fn(logits, targets)
         self.log("val_loss", loss, prog_bar=True, sync_dist=True)
-
-    def _extract_inputs_targets(self, batch):
-        if isinstance(batch, dict):
-            inputs = batch["inputs"]
-            targets = batch.get("target", None)
-        elif isinstance(batch, list | tuple):
-            if len(batch) >= 2 and hasattr(batch[1], "__array__"):
-                inputs, targets = batch[0], batch[1]
-            else:
-                inputs, targets = batch[0], None
-        else:
-            inputs, targets = batch, None
-
-        return inputs, targets
 
     def test_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
@@ -99,6 +85,20 @@ class TrainModule(LightningModule):
                     getattr(self, field[0]).update(preds_ifft, targets_ifft)
 
         return torch.stack((preds, targets), dim=1)
+
+    def _extract_inputs_targets(self, batch):
+        if isinstance(batch, dict):
+            inputs = batch["inputs"]
+            targets = batch.get("target", None)
+        elif isinstance(batch, list | tuple):
+            if len(batch) >= 2 and hasattr(batch[1], "__array__"):
+                inputs, targets = batch[0], batch[1]
+            else:
+                inputs, targets = batch[0], None
+        else:
+            inputs, targets = batch, None
+
+        return inputs, targets
 
     def configure_optimizers(self):
         optimizer = self.optimizer(
