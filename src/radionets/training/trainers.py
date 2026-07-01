@@ -7,6 +7,7 @@ import torch
 from lightning import LightningModule
 
 from radionets.evaluation.utils import apply_symmetry, get_ifft
+from radionets.utils.normalization import Normalize
 
 if TYPE_CHECKING:
     from radionets.io.eval_config import EvaluationMethodsConfig
@@ -29,6 +30,7 @@ class TrainModule(LightningModule):
         self.train_length = train_length
         self.num_epochs = train_config["training"]["num_epochs"]
         self.batch_size = train_config["dataloader"]["batch_size"]
+        self.normalize = self.train_config["model"]["normalize"]
 
         self.eval_methods = eval_methods
 
@@ -44,8 +46,16 @@ class TrainModule(LightningModule):
     def training_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
 
-        logits = self(inputs)["pred"]
-        loss = self.loss_fn(logits, targets)
+        if self.normalize:
+            norm = Normalize(**self.normalize)
+            inputs = norm(inputs)
+
+        preds = self(inputs)["pred"]
+
+        if self.normalize:
+            preds = norm.denormalize(preds)
+
+        loss = self.loss_fn(preds, targets)
         self.log("train_loss", loss, prog_bar=True, sync_dist=True)
 
         return loss
@@ -53,13 +63,29 @@ class TrainModule(LightningModule):
     def validation_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
 
-        logits = self(inputs)["pred"]
-        loss = self.loss_fn(logits, targets)
+        if self.normalize:
+            norm = Normalize(**self.normalize)
+            inputs = norm(inputs)
+
+        preds = self(inputs)["pred"]
+
+        if self.normalize:
+            preds = norm.denormalize(preds)
+
+        loss = self.loss_fn(preds, targets)
         self.log("val_loss", loss, prog_bar=True, sync_dist=True)
 
     def test_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
+
+        if self.normalize:
+            norm = Normalize(**self.normalize)
+            inputs = norm(inputs)
+
         preds = self(inputs)["pred"]
+
+        if self.normalize:
+            preds = norm.denormalize(preds)
 
         if targets is not None:
             loss = self.loss_fn(preds, targets)
@@ -67,7 +93,15 @@ class TrainModule(LightningModule):
 
     def predict_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
+
+        if self.normalize:
+            norm = Normalize(**self.normalize)
+            inputs = norm(inputs)
+
         preds = self(inputs)["pred"]
+
+        if self.normalize:
+            preds = norm.denormalize(preds)
 
         if targets is None:
             return preds
