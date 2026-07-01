@@ -457,7 +457,11 @@ class Hist:
         if debug:
             LOGGER.setLevel("DEBUG")
 
-        for field, val in self.config:
-            if val:
-                LOGGER.info(f"Plotting {field}:")
-                getattr(self, field)()
+        with plt.style.context(self.config.general.mplstyle):
+            # optional overwrite for user settings
+            plt.rcParams.update(**self.config.general.rcparams.model_dump())
+
+            for field, val in self.config:
+                if val:
+                    LOGGER.info(f"Plotting {field}:")
+                    getattr(self, field)()
