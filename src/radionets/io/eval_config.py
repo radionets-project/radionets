@@ -92,7 +92,7 @@ class ModelConfig(BaseModel):
     """Name/callable or list of two names/callables of the architecture(s)
     to use for evaluation."""
 
-    weights_only: bool | list[bool] = Field(
+    weights_only: list[bool] = Field(
         default=[True],
         min_length=1,
         max_length=2,
@@ -144,7 +144,7 @@ class DeviceConfig(BaseModel):
     the evaluation, as well as strategies for distribution.
     """
 
-    accelerator: str | list[str] = Field(
+    accelerator: list[str] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
@@ -155,14 +155,14 @@ class DeviceConfig(BaseModel):
     for more information.
     """
 
-    num_devices: str | int | list[str | list | int] = Field(
+    num_devices: list[str | list | int] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
     )
     """Number of devices to use."""
 
-    precision: str | int | list[str | int] = Field(
+    precision: list[str | int] = Field(
         default=["32-true"],
         min_length=1,
         max_length=2,
@@ -173,12 +173,10 @@ class DeviceConfig(BaseModel):
     for more information
     """
 
-    deepspeed: bool | str | DeepSpeedConfig | list[bool | str | DeepSpeedConfig] = (
-        Field(
-            default=[False],
-            min_length=1,
-            max_length=2,
-        )
+    deepspeed: list[bool | str | DeepSpeedConfig] = Field(
+        default=[False],
+        min_length=1,
+        max_length=2,
     )
 
     """Whether to use the deepspeed deep learning training optimization library.
@@ -197,7 +195,7 @@ class DeviceConfig(BaseModel):
     for more information.
     """
 
-    strategy: str | list[str] = Field(
+    strategy: list[str] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
@@ -206,6 +204,14 @@ class DeviceConfig(BaseModel):
     `What is a Strategy? <https://lightning.ai/docs/pytorch/stable/extensions/strategy.html>`_
     for more information.
     """
+
+    @field_validator("accelerator", "num_devices", "precision", "deepspeed", "strategy")
+    @classmethod
+    def validate_weights_only(cls, key) -> list:
+        if not isinstance(key, list):
+            key = [key]
+
+        return key
 
     @model_validator(mode="after")
     def check_device_count(self) -> Self:
@@ -244,12 +250,9 @@ class DeviceConfig(BaseModel):
 
         return self
 
-    @field_validator("deepspeed", mode="before")
+    @field_validator("deepspeed", mode="after")
     @classmethod
-    def validate_deepspeed(cls, val: bool | str | DeepSpeedConfig | list):
-        if isinstance(val, str | bool | DeepSpeedConfig):
-            val = [val]
-
+    def validate_deepspeed(cls, val: list):
         result = []
         for v in val:
             if isinstance(v, str):

@@ -39,11 +39,7 @@ class PathsConfig(BaseModel):
     @classmethod
     def expand_path(cls, v: Path) -> Path:
         """Expand and resolve paths."""
-
-        if v in {None, False}:
-            v = None
-        else:
-            v.expanduser().resolve()
+        v = None if v in {None, False} else v.expanduser().resolve()
 
         return v
 
