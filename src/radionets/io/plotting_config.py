@@ -271,10 +271,8 @@ class SourceAreaPlotConfig(PlottingBase):
 
 
 class PlottingConfig(BaseSettings):
-    """Main training configuration."""
-
-    paths: PathsConfig = Field(default_factory=PathsConfig)
-    general: GeneralConfig = Field(default_factory=GeneralConfig)
+    paths: dict | PathsConfig = Field(default_factory=PathsConfig)
+    general: dict | GeneralConfig = Field(default_factory=GeneralConfig)
     peak_flux: bool | PeakFluxPlotConfig = True
     integrated_flux: bool | IntegratedFluxPlotConfig = True
     angle: bool | dict | AnglePlotConfig = True
@@ -300,9 +298,9 @@ class PlottingConfig(BaseSettings):
 
         return v
 
-    @field_validator("intensity_sum", mode="after")
+    @field_validator("integrated_flux", mode="after")
     @classmethod
-    def validate_intensity_sum_config(cls, v: bool | dict | IntegratedFluxPlotConfig):
+    def validate_integrated_flux_config(cls, v: bool | dict | IntegratedFluxPlotConfig):
         if isinstance(v, dict):
             return IntegratedFluxPlotConfig(**v)
         elif v is True:
