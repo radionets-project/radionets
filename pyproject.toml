@@ -120,6 +120,7 @@ include = ["src/radionets"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "configs" = "share/configs"
+"resources" = "share/resources"
 
 [tool.coverage.run]
 omit = [
