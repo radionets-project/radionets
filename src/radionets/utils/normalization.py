@@ -33,7 +33,7 @@ def _normalize(
     clamp_sigma
         If given, cap outlier values to ``[mean - clamp_sigma * std,
         mean + clamp_sigma * std]`` before normalization. If ``None``,
-        skip clamping. Defalt: ``None``
+        skip clamping. Default: ``None``
 
     Returns
     -------
@@ -118,19 +118,19 @@ def _denormalize(
     x: np.ndarray | torch.Tensor,
     params: dict[str, Any],
 ) -> torch.Tensor:
-    """Reverse a prior :func:`normalize` call.
+    """Reverse a prior :func:`_normalize` call.
 
     Parameters
     ----------
     x : np.ndarray or torch.Tensor
         Array-like normalized data.
     params : dict
-        The params dict returned by :func:`normalize`.  Must contain
+        The params dict returned by :func:`_normalize`. Must contain
         ``"method"``, ``"mean"``, and ``"std"`` keys.
 
     Returns
     -------
-    np.ndarray | torch.Tensor
+    np.ndarray or torch.Tensor
         Data restored to the original scale.
 
     Raises
@@ -183,7 +183,7 @@ def _denormalize(
 
 
 class Normalize(nn.Module):
-    """Wraps :func:`_normalize` and :func:`_denormalize` as a ``nn.Module``.
+    """Bundles :func:`_normalize` and :func:`_denormalize` as a ``nn.Module``.
 
     Parameters
     ----------
@@ -194,10 +194,10 @@ class Normalize(nn.Module):
     epsilon : float, optional
         Small constant added to the denominator to avoid division by zero.
         Default: ``1e-7``.
-    clamp_sigma
+    clamp_sigma : float or None
         If given, cap outlier values to ``[mean - clamp_sigma * std,
         mean + clamp_sigma * std]`` before normalization. If ``None``,
-        skip clamping. Defalt: ``None``
+        skip clamping. Default: ``None``
     """
 
     _params: torch.Tensor
@@ -252,7 +252,7 @@ class Normalize(nn.Module):
         return normalized
 
     def denormalize(self, x: torch.Tensor) -> torch.Tensor:
-        """Denormalize *x* using stored parameters.
+        """Denormalize `x` using stored parameters.
 
         Parameters
         ----------
@@ -285,9 +285,9 @@ def clamp_outliers(
 
     Parameters
     ----------
-    x
+    x : np.ndarray or torch.Tensor
         Input array or tensor.
-    sigma
+    sigma : float
         Number of MADs for clipping. Default: ``3.0``.
 
     Returns
