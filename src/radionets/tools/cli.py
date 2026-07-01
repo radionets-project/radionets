@@ -4,6 +4,7 @@ from radionets import __version__
 
 from .evaluation_cli import main as eval
 from .inference_cli import main as inference
+from .plotting_cli import main as plot
 from .quickstart import main as quickstart
 from .training_cli import main as training
 
@@ -13,6 +14,7 @@ click.rich_click.COMMAND_GROUPS = {
             "name": "Model Operations",
             "commands": ["train", "eval", "test", "inference", "predict"],
         },
+        {"name": "Plotting", "commands": ["plot"]},
         {
             "name": "Setup",
             "commands": ["quickstart"],
@@ -51,6 +53,7 @@ def create_mode_command(mode, cmd_alias=None):
 
 
 main.add_command(quickstart, name="quickstart")
+main.add_command(plot, name="plot")
 main.add_command(create_mode_command("train"))
 main.add_command(create_mode_command("test"))
 main.add_command(create_mode_command("test", cmd_alias="eval"))
