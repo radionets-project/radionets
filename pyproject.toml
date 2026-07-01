@@ -32,7 +32,6 @@ requires-python = ">=3.11"
 
 dependencies = [
     "astropy>=7.1.0",
-    "comet-ml>=3.50.0",
     "h5py>=3.14.0",
     "lightning>=2.6.1",
     "natsort>=8.4.0",
@@ -58,6 +57,7 @@ Repository = "https://github.com/radionets-project/radionets"
 plot = [
     "matplotlib>=3.10.5",
 ]
+comet = ["comet-ml>=3.50.0"]
 
 [dependency-groups]
 tests = [
