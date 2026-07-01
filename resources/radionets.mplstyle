@@ -60,4 +60,3 @@ figure.facecolor: white
 figure.edgecolor: 0.50
 figure.figsize: 5.5118, 3.05
 savefig.pad_inches: 0
-

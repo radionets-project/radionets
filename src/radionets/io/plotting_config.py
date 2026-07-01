@@ -29,7 +29,6 @@ class PathsConfig(BaseSettings):
     @field_validator("data_paths", mode="before")
     @classmethod
     def expand_data_paths(cls, v: str | Path | list[str | Path]) -> list[Path]:
-
         paths = []
         if not isinstance(v, list):
             paths.append(v)
