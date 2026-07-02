@@ -57,6 +57,8 @@ class GeneralConfig(BaseSettings):
     colors: None | list = Field(default=None)
     mplstyle: str | Path | dict[str, Path | str] = Field(default="radionets")
     rcparams: dict | RCParamsConfig = Field(default_factory=RCParamsConfig)
+    mplbackend: str | None = None
+    file_format: str = "pdf"
 
     @field_validator("mplstyle")
     @classmethod
