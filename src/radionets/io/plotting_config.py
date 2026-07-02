@@ -29,11 +29,10 @@ class PathsConfig(BaseSettings):
     @field_validator("data_paths", mode="before")
     @classmethod
     def expand_data_paths(cls, v: str | Path | list[str | Path]) -> list[Path]:
-        paths = []
         if not isinstance(v, list):
-            paths.append(v)
+            v = [v]
 
-        paths = [Path(path).expanduser().resolve() for path in paths]
+        paths = [Path(path).expanduser().resolve() for path in v]
 
         return paths
 
@@ -41,7 +40,12 @@ class PathsConfig(BaseSettings):
     @classmethod
     def expand_save_path(cls, v: Path) -> Path:
         """Expand and resolve paths."""
-        return v.expanduser().resolve()
+        v = v.expanduser().resolve()
+
+        if not v.is_dir():
+            v.mkdir(parents=True)
+
+        return v
 
 
 class RCParamsConfig(BaseSettings):
@@ -51,17 +55,18 @@ class RCParamsConfig(BaseSettings):
 class GeneralConfig(BaseSettings):
     display_names: None | list = Field(default=None)
     colors: None | list = Field(default=None)
-    mplstyle: str | Path = Field(default="radionets")
+    mplstyle: str | Path | dict[str, Path | str] = Field(default="radionets")
     rcparams: dict | RCParamsConfig = Field(default_factory=RCParamsConfig)
 
     @field_validator("mplstyle")
     @classmethod
     def validate_mplstyle(cls, v):
+        path = v
         if v == "radionets":
             root = sysconfig.get_path("data", sysconfig.get_default_scheme())
-            v = root + "/share/resources/radionets.mplstyle"
+            path = root + "/share/resources/radionets.mplstyle"
 
-        return v
+        return {"name": v, "path": path}
 
     @field_validator("rcparams", mode="before")
     @classmethod
@@ -79,7 +84,7 @@ class SubplotsConfig(BaseSettings):
 
 
 class FigSaveConfig(BaseSettings):
-    bbox_iches: str = "tight"
+    bbox_inches: str = "tight"
 
     model_config = ConfigDict(extra="allow")
 
@@ -213,7 +218,7 @@ class AnglePlotConfig(BaseSettings):
 
 class MeanDiffPlotConfig(PlottingBase):
     lower_bound: int = -50
-    lower_bound: int = 50
+    upper_bound: int = 50
 
     @field_validator("hist", mode="before")
     @classmethod
