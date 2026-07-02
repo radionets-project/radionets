@@ -4,7 +4,6 @@ font.family: serif
 font.size: 12.0
 
 text.usetex: True
-backend: pgf
 pgf.rcfonts: False
 pgf.texsystem: lualatex
 pgf.preamble: \usepackage{amsmath}\usepackage{amssymb}\usepackage{mathtools}\usepackage{xcolor}\usepackage[math-style=ISO,bold-style=ISO,sans-style=italic]{unicode-math}\usepackage[separate-uncertainty=true,per-mode=reciprocal]{siunitx}\DeclareSIUnit\deg{deg}\DeclareSIUnit\rad{rad}\DeclareSIUnit\px{px}\usepackage{stackengine}\xdefinecolor{ressapphire}{HTML}{85c1dc}\xdefinecolor{respeach}{HTML}{ef9f76}\xdefinecolor{resyellow}{HTML}{e5c890}\xdefinecolor{resmaroon}{HTML}{ea999c}\xdefinecolor{resmauve}{HTML}{ca9ee6}\xdefinecolor{resgreen}{HTML}{a6d189}\xdefinecolor{reslavender}{HTML}{babbf1}\xdefinecolor{resred}{HTML}{e78284}\xdefinecolor{resblue}{HTML}{8caaee}\xdefinecolor{spaceblue}{HTML}{050714}\xdefinecolor{spaceblack}{HTML}{1a1a1a}
