@@ -47,7 +47,7 @@ class Hist:
     def peak_flux(self):
         peak_cfg = self.config.peak_flux
 
-        fig, ax = plt.subplots(**peak_cfg.fig.subplots.dump_model())
+        fig, ax = plt.subplots(**peak_cfg.fig.subplots.model_dump())
 
         for data_path, model, c in zip(
             self.config.paths.data_paths, self.models, self.colors
@@ -107,13 +107,16 @@ class Hist:
             ylabel="Number of Sources",
         )
 
-        out_path = self.config.save_path / "intensity_peak.pdf"
-        fig.savefig(out_path, **peak_cfg.fig.save.dump_model())
+        out_path = (
+            self.config.paths.save_path
+            / f"intensity_peak.{self.config.general.file_format}"
+        )
+        fig.savefig(out_path, **peak_cfg.fig.save.model_dump())
 
     def integrated_flux(self):
         int_cfg = self.config.integrated_flux
 
-        fig, ax = plt.subplots(**int_cfg.fig.subplots.dump_model())
+        fig, ax = plt.subplots(**int_cfg.fig.subplots.model_dump())
 
         for data_path, model, c in zip(
             self.config.paths.data_paths, self.models, self.colors
@@ -129,7 +132,7 @@ class Hist:
             ax.hist(
                 data,
                 bins=int_cfg.hist.bins,
-                histtype=int_cfg.hist.bins,
+                histtype=int_cfg.hist.histtype,
                 color=c,
                 range=(int_cfg.lower_bound, int_cfg.upper_bound),
                 label=hist_label(model, mean, std),
@@ -165,18 +168,21 @@ class Hist:
             ylabel="Number of Sources",
         )
 
-        out_path = self.config.save_path / "intensity_sum.pdf"
-        fig.savefig(out_path, **int_cfg.fig.save.dump_model())
+        out_path = (
+            self.config.paths.save_path
+            / f"intensity_sum.{self.config.general.file_format}"
+        )
+        fig.savefig(out_path, **int_cfg.fig.save.model_dump())
 
     def angle(self):
         angle_cfg = self.config.angle
 
-        fig, ax = plt.subplots(1, 2, **angle_cfg.fig.subplots.dump_model())
+        fig, ax = plt.subplots(1, 2, **angle_cfg.fig.subplots.model_dump())
 
         for data_path, model, c in zip(
             self.config.paths.data_paths, self.models, self.colors
         ):
-            data = pd.read_csv(data_path / "jet_angles.txt")["diff"]
+            data = pd.read_csv(data_path / "viewing_angle.csv")["diff"]
 
             LOGGER.info(
                 f"{model}: {sum(data < angle_cfg.lower_bounds[0]) = } of {len(data)}"
@@ -227,8 +233,11 @@ class Hist:
                 ylabel="Number of Sources",
             )
 
-        out_path = self.config.save_path / "jet_angles.pdf"
-        fig.savefig(out_path, **angle_cfg.fig.save.dump_model())
+        out_path = (
+            self.config.paths.save_path
+            / f"viewing_angle.{self.config.general.file_format}"
+        )
+        fig.savefig(out_path, **angle_cfg.fig.save.model_dump())
 
     def mean_diff(self):
         md_cfg = self.config.mean_diff
@@ -317,8 +326,10 @@ class Hist:
             ylabel="Number of Sources",
         )
 
-        out_path = self.config.save_path / "mean_diff.pdf"
-        fig.savefig(out_path, **md_cfg.fig.save.dump_model())
+        out_path = (
+            self.config.paths.save_path / f"mean_diff.{self.config.general.file_format}"
+        )
+        fig.savefig(out_path, **md_cfg.fig.save.model_dump())
 
     def area(self):
         area_cfg = self.config.area
@@ -349,7 +360,7 @@ class Hist:
                 histtype=area_cfg.hist.histtype,
                 color=c,
                 range=(area_cfg.lower_bound, area_cfg.upper_bound),
-                label=stacked_label(mean_full, std_full, mean, std, model),
+                label=stacked_label(model, mean_full, std_full, mean, std),
                 linewidth=area_cfg.hist.linewidth,
             )
 
@@ -375,8 +386,11 @@ class Hist:
             ylabel="Number of Sources",
         )
 
-        out_path = self.config.save_path / "source_area_ratio.pdf"
-        fig.savefig(out_path, **area_cfg.fig.save.dump_model())
+        out_path = (
+            self.config.paths.save_path
+            / f"source_area_ratio.{self.config.general.file_format}"
+        )
+        fig.savefig(out_path, **area_cfg.fig.save.model_dump())
 
     def _add_annotations(
         self,
@@ -457,11 +471,20 @@ class Hist:
         if debug:
             LOGGER.setLevel("DEBUG")
 
-        with plt.style.context(self.config.general.mplstyle):
+        if self.config.general.mplstyle.get("name") == "radionets":
+            import matplotlib as mpl
+
+            mpl.use("pgf")
+        elif self.config.general.mplbackend:
+            import matplotlib as mpl
+
+            mpl.use(self.config.general.mplbackend)
+
+        with plt.style.context(self.config.general.mplstyle.get("path")):
             # optional overwrite for user settings
             plt.rcParams.update(**self.config.general.rcparams.model_dump())
 
             for field, val in self.config:
-                if val:
+                if val and field not in {"paths", "general", "debug"}:
                     LOGGER.info(f"Plotting {field}:")
                     getattr(self, field)()
