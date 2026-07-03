@@ -3,7 +3,7 @@ from math import pi
 import torch
 from torch import nn
 
-from .activation import GeneralReLU
+from .activation import GeneralELU, GeneralReLU
 from .blocks import ComplexSRBlock, SRBlock
 from .layers import (
     ComplexConv2d,
@@ -30,7 +30,7 @@ class SRResNet(nn.Module):
 
         self.channels = 64
 
-        self.preBlock = nn.Sequential(
+        self.pre_block = nn.Sequential(
             nn.Conv2d(
                 in_channels=2,
                 out_channels=self.channels,
@@ -42,7 +42,7 @@ class SRResNet(nn.Module):
             nn.PReLU(),
         )
 
-        self.postBlock = nn.Sequential(
+        self.post_block = nn.Sequential(
             nn.Conv2d(
                 in_channels=self.channels,
                 out_channels=self.channels,
@@ -73,8 +73,8 @@ class SRResNet(nn.Module):
         self.blocks = nn.Sequential(*blocks)
 
     def forward(self, input):
-        x = self.preBlock(input)
-        x = x + self.postBlock(self.blocks(x))
+        x = self.pre_block(input)
+        x = x + self.post_block(self.blocks(x))
         x = self.final(x)
 
         return {"pred": x}
@@ -86,7 +86,7 @@ class SRResNetComplex(nn.Module):
 
         self.channels = 128
 
-        self.preBlock = nn.Sequential(
+        self.pre_block = nn.Sequential(
             ComplexConv2d(
                 in_channels=2,
                 out_channels=self.channels,
@@ -96,7 +96,7 @@ class SRResNetComplex(nn.Module):
             ComplexPReLU(num_parameters=2),
         )
 
-        self.postBlock = nn.Sequential(
+        self.post_block = nn.Sequential(
             ComplexConv2d(
                 in_channels=self.channels,
                 out_channels=self.channels,
@@ -126,8 +126,8 @@ class SRResNetComplex(nn.Module):
         self.blocks = nn.Sequential(*blocks)
 
     def forward(self, input):
-        x = self.preBlock(input)
-        x = x + self.postBlock(self.blocks(x))
+        x = self.pre_block(input)
+        x = x + self.post_block(self.blocks(x))
         x = self.final(x)
 
         return {"pred": x}
@@ -160,7 +160,7 @@ class SRResNet18AmpPhase(SRResNet):
         self.relu = nn.ReLU()
 
     def forward(self, input):
-        out = super().forward(input)
+        out = super().forward(input)["pred"]
 
         amp = self.relu(out[:, 0].unsqueeze(1))
         phase = self.hardtanh(out[:, 1].unsqueeze(1))
@@ -187,7 +187,7 @@ class SRResNet34AmpPhase(SRResNet):
         self.relu = nn.ReLU()
 
     def forward(self, input):
-        out = super().forward(input)
+        out = super().forward(input)["pred"]
 
         amp = self.relu(out[:, 0].unsqueeze(1))
         phase = self.hardtanh(out[:, 1].unsqueeze(1))
@@ -201,7 +201,7 @@ class SRResNet34_unc(SRResNet):
 
         self._create_blocks(16, **kwargs)
 
-        self.postBlock = nn.Sequential(
+        self.post_block = nn.Sequential(
             nn.Conv2d(
                 in_channels=self.channels,
                 out_channels=self.channels,
@@ -218,9 +218,9 @@ class SRResNet34_unc(SRResNet):
     def forward(self, input):
         s = input.shape[-1]
 
-        x = self.preBlock(input)
+        x = self.pre_block(input)
 
-        x = x + self.postBlock(self.blocks(x))
+        x = x + self.post_block(self.blocks(x))
 
         x = self.final(x)
 
@@ -238,12 +238,14 @@ class SRResNet34_unc_no_grad(SRResNet34_unc):
     def __init__(self):
         super().__init__()
 
+        self.elu = GeneralELU()
+
     def forward(self, input):
         s = input.shape[-1]
 
-        x = self.preBlock(input)
+        x = self.pre_block(input)
 
-        x = x + self.postBlock(self.blocks(x))
+        x = x + self.post_block(self.blocks(x))
 
         x = self.final(x)
 

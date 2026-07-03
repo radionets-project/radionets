@@ -9,14 +9,11 @@ from .archs import (
     SRResNet34_unc_no_grad,
     SRResNet34AmpPhase,
 )
-from .blocks import BottleneckResBlock, Decoder, Encoder, NNBlock, SRBlock
+from .blocks import NNBlock, SRBlock
 from .layers import LocallyConnected2d
 from .uncertainty_archs import Uncertainty, UncertaintyWrapper
 
 __all__ = [
-    "BottleneckResBlock",
-    "Decoder",
-    "Encoder",
     "GeneralELU",
     "GeneralReLU",
     "LocallyConnected2d",
