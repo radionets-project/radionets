@@ -105,4 +105,7 @@ def _setup_logger(namespace="rich", level="INFO", **kwargs):
         handlers=[RichHandler(rich_tracebacks=True, **kwargs)],
     )
 
-    return logging.getLogger(namespace)
+    logger = logging.getLogger(namespace)
+    logger.setLevel(level)
+
+    return logger
