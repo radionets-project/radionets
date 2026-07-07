@@ -58,7 +58,7 @@ class TestGeneralReLU:
 
     def test_maxv_param(self):
         """maxv parameter should clamp maximum values."""
-        inp = torch.full((2, 4, 8, 8), 100.0)  # large values
+        inp = torch.full((2, 4, 8, 8), 100.0)
 
         act = GeneralReLU(maxv=5.0)
         output = act(inp)
@@ -77,7 +77,7 @@ class TestGeneralReLU:
 
     def test_all_params_combined(self):
         """All parameters combined: leak -> sub -> maxv."""
-        inp = torch.randn(2, 4, 8, 8) * 10.0  # mix of positive and negative
+        inp = torch.randn(2, 4, 8, 8) * 10.0
 
         act = GeneralReLU(leak=0.1, sub=1.0, maxv=5.0)
         output = act(inp)
