@@ -38,7 +38,7 @@ def main(config_path):
         **eval_config.dataloader.model_dump(),
     )  # ty:ignore[call-non-callable]
 
-    _method_factory(eval_config)
+    _method_factory(eval_config.evaluation)
 
     if len(eval_config.paths.model_paths) == 2:
         if not eval_config.dataloader.fourier:
