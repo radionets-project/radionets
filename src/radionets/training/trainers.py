@@ -35,9 +35,7 @@ class TrainModule(LightningModule):
         self.eval_methods = eval_methods
 
         if self.eval_methods:
-            for field in self.eval_methods:
-                if hasattr(field[1], "met_cls"):
-                    setattr(self, field[0], field[1].met_cls)
+            self._setup_eval_methods()
 
     def forward(self, inputs):
         """Main forward feed call to the model."""
@@ -91,7 +89,12 @@ class TrainModule(LightningModule):
             loss = self.loss_fn(preds, targets)
             self.log("test_loss", loss, prog_bar=True, sync_dist=True)
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch, batch_idx, eval_methods=None):
+        if eval_methods:
+            # local overwrite for callbacks
+            self.eval_methods = eval_methods
+            self._setup_eval_methods()
+
         inputs, targets = self._extract_inputs_targets(batch)
 
         if self.normalize:
@@ -133,6 +136,11 @@ class TrainModule(LightningModule):
             inputs, targets = batch, None
 
         return inputs, targets
+
+    def _setup_eval_methods(self):
+        for field in self.eval_methods:
+            if hasattr(field[1], "met_cls"):
+                setattr(self, field[0], field[1].met_cls)
 
     def configure_optimizers(self):
         optimizer = self.optimizer(
