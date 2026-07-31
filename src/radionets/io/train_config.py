@@ -6,9 +6,16 @@ from pathlib import Path
 from typing import Literal, Self
 
 import torch
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from radionets.architecture import archs
+from radionets.exceptions import OptionalDependencyMissing
 
 from . import data
 from .training import (
@@ -314,6 +321,11 @@ class LoggingConfig(BaseModel):
     @field_validator("codecarbon", mode="after")
     @classmethod
     def validate_codecarbon(cls, v: bool | CodeCarbonEmissionTrackerConfig):
+        try:
+            import codecarbon  # noqa: F401
+        except ImportError as e:
+            raise OptionalDependencyMissing("codecarbon") from e
+
         if isinstance(v, dict):
             return CodeCarbonEmissionTrackerConfig(
                 **v, project_name=cls.logging.project_name
