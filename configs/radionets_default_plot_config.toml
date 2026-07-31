@@ -1,0 +1,15 @@
+# Radionets default plotting config
+
+peak_flux = true
+integrated_flux = true
+angle = true
+mean_diff = true
+area = true
+
+[paths]
+data_paths = ["path/to/radionets/eval/model1", "path/to/radionets/eval/model2"]
+save_path = "path/to/output/dir"
+
+[general]
+display_names = ["model1", "model2"]
+mplstyle = "radionets"

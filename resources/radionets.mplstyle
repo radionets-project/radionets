@@ -1,0 +1,61 @@
+# Radionets MPLStyle
+
+font.family: serif
+font.size: 12.0
+
+text.usetex: True
+pgf.rcfonts: False
+pgf.texsystem: lualatex
+pgf.preamble: \usepackage{amsmath}\usepackage{amssymb}\usepackage{mathtools}\usepackage{xcolor}\usepackage[math-style=ISO,bold-style=ISO,sans-style=italic]{unicode-math}\usepackage[separate-uncertainty=true,per-mode=reciprocal]{siunitx}\DeclareSIUnit\deg{deg}\DeclareSIUnit\rad{rad}\DeclareSIUnit\px{px}\usepackage{stackengine}\xdefinecolor{ressapphire}{HTML}{85c1dc}\xdefinecolor{respeach}{HTML}{ef9f76}\xdefinecolor{resyellow}{HTML}{e5c890}\xdefinecolor{resmaroon}{HTML}{ea999c}\xdefinecolor{resmauve}{HTML}{ca9ee6}\xdefinecolor{resgreen}{HTML}{a6d189}\xdefinecolor{reslavender}{HTML}{babbf1}\xdefinecolor{resred}{HTML}{e78284}\xdefinecolor{resblue}{HTML}{8caaee}\xdefinecolor{spaceblue}{HTML}{050714}\xdefinecolor{spaceblack}{HTML}{1a1a1a}
+
+lines.markersize: 3.8
+lines.solid_capstyle: round
+lines.dash_capstyle: round
+lines.solid_joinstyle: round
+lines.dash_joinstyle: round
+legend.markerscale: 1
+legend.fancybox: False   # no rounded corners
+
+image.origin: lower
+
+patch.linewidth: 0.4
+patch.facecolor: 348ABD  # grey blue
+patch.edgecolor: EEEEEE
+patch.antialiased: True
+
+axes.facecolor: ECECEC
+axes.edgecolor: white
+axes.linewidth: 0.8
+axes.grid: True
+axes.titlesize: x-large
+axes.labelsize: medium
+axes.labelcolor: 1a1a1a
+axes.axisbelow: True     # grid/ticks are below elements (e.g., lines, text)
+
+xtick.labelsize: medium
+ytick.labelsize: medium
+
+axes.prop_cycle: cycler('color', ['348ABD', 'E24A33', '8EBA42', '988ED5', '777777', 'FBC15E', 'FFB5B8'])
+                   #348ABD : blue
+                   #E24A33 : red
+                   #8EBA42 : green
+                   #988ED5 : purple
+                   #777777 : gray
+                   #FBC15E : yellow
+                   #FFB5B8 : pink
+
+xtick.color: 1a1a1a
+xtick.direction: out
+
+ytick.color: 1a1a1a
+ytick.direction: out
+
+grid.color: white
+grid.linewidth: 0.4
+grid.alpha: 0.4
+grid.linestyle: -
+
+figure.facecolor: white
+figure.edgecolor: 0.50
+figure.figsize: 5.5118, 3.05
+savefig.pad_inches: 0

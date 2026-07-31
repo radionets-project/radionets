@@ -1,521 +1,547 @@
+import warnings
+from abc import ABC
 from pathlib import Path
 
-import comet_ml
-import kornia as K
+import lightning as L
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
-from fastai.callback.core import Callback, CancelBackwardException
-from matplotlib.colors import PowerNorm
-
-from radionets.core.logging import setup_logger
-from radionets.core.model import save_model
-from radionets.core.utils import _maybe_item, get_ifft_torch
-from radionets.evaluation.utils import (
-    apply_normalization,
-    apply_symmetry,
-    check_vmin_vmax,
-    eval_model,
-    get_ifft,
-    get_images,
-    load_data,
-    load_pretrained_model,
-    make_axes_nice,
-    rescale_normalization,
+import pandas as pd
+from lightning.pytorch.callbacks import (
+    BatchSizeFinder,
+    DeviceStatsMonitor,
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+    RichProgressBar,
+    Timer,
 )
+from lightning.pytorch.callbacks import Callback as LightningCallback
+from lightning.pytorch.loggers import CometLogger, MLFlowLogger
+from matplotlib.colors import PowerNorm
+from pydantic import BaseModel
+
+from radionets.evaluation.metrics import IntensityRatio, SourceAreaRatio
+from radionets.evaluation.utils import apply_symmetry, get_ifft
+from radionets.plotting.utils import get_vmin_vmax, set_cbar
+
+matplotlib.use("Agg")
 
 __all__ = [
+    "Callbacks",
     "CometCallback",
-    "AvgLossCallback",
-    "PredictionImageGradient",
-    "GradientCallback",
-    "SwitchLoss",
-    "SaveTempCallback",
-    "Normalize",
-    "DataAug",
-    "CudaCallback",
+    "LogAdditionalParamsCallback",
+    "MLFlowCallback",
+    "MLFlowCodeCarbonCallback",
+    "PlottingCallbackABC",
 ]
 
-LOGGER = setup_logger(namespace=__name__)
+
+class Callbacks:
+    @classmethod
+    def get_callbacks(cls, train_config: BaseModel) -> list:
+        default_callback = RichProgressBar()
+        callbacks = [default_callback]
+
+        if train_config.callbacks.model_checkpoint:
+            model_checkpoint = ModelCheckpoint(
+                **train_config.callbacks.model_checkpoint.model_dump()
+            )
+            callbacks.append(model_checkpoint)
+
+        if train_config.callbacks.batch_size_finder:
+            batch_size_finder = BatchSizeFinder(
+                **train_config.callbacks.batch_size_finder.model_dump()
+            )
+            callbacks.append(batch_size_finder)
+
+        if train_config.callbacks.early_stopping:
+            early_stopping = EarlyStopping(
+                **train_config.callbacks.early_stopping.model_dump()
+            )
+            callbacks.append(early_stopping)
+
+        if train_config.callbacks.lr_monitor:
+            lr_monitor = LearningRateMonitor(
+                **train_config.callbacks.lr_monitor.model_dump()
+            )
+            callbacks.append(lr_monitor)
+
+        if train_config.callbacks.device_stats_monitor:
+            callbacks.append(DeviceStatsMonitor())
+
+        if train_config.callbacks.timer:
+            timer = Timer(**train_config.callbacks.timer.model_dump())
+            callbacks.append(timer)
+
+        if train_config.logging.comet_ml:
+            callbacks.append(CometCallback(train_config))
+
+        if train_config.logging.mlflow:
+            callbacks.append(MLFlowCallback(train_config))
+
+            if train_config.logging.codecarbon:
+                callbacks.append(MLFlowCodeCarbonCallback(train_config))
+
+            callbacks.append(LogAdditionalParamsCallback(train_config))
+
+        return callbacks
 
 
-class CometCallback(Callback):
-    """Callback for logging training metrics and visualizations
-    to Comet ML.
+class PlottingCallbackABC(ABC, LightningCallback):
+    def __init__(self, train_config, *args, **kwargs):
+        super().__init__()
+        self.train_config = train_config
+        self.amp_phase = train_config.dataloader.amp_phase
+        self.scale = train_config.logging.scale
 
-    This callback logs training and validation losses, and
-    creates plots for predictions and Fourier-transformed
-    data for monitoring during training.
+        self.cached_batch = None
 
-    Parameters
-    ----------
-    name : str
-        Project name for the Comet ML experiment.
-    validation_data : str or Path
-        Path to the validation dataset.
-    plot_n_epochs : int
-        Frequency of plotting (every n epochs).
-    amp_phase : bool
-        Whether to use amplitude-phase representation.
-    scale : str
-        Scaling method for data.
-    """
+        data_types = ["Amplitude", "Phase"] if self.amp_phase else ["Real", "Imaginary"]
+        results = [" Prediction", " Ground Truth"]
+        self.pred_plot_titles = [t + r for r in results for t in data_types]
 
-    def __init__(self, name, validation_data, plot_n_epochs, amp_phase, scale):
-        self.experiment = comet_ml.Experiment(project_name=name)
-        self.data_path = validation_data
-        self.plot_epoch = plot_n_epochs
-        self.test_ds = load_data(self.data_path, mode="test", fourier=True)
-        self.amp_phase = amp_phase
-        self.scale = scale
-        self.uncertainty = False
+    def plot_val_pred(self, predictions, targets, current_epoch: int):
+        self.fig, self.axs = plt.subplots(
+            2, 2, figsize=(12, 8.5), layout="constrained", sharex=True, sharey=True
+        )
+        self.axs = self.axs.flatten()
 
-    def after_train(self):
-        self.experiment.log_metric(
-            "Train Loss",
-            self.recorder._train_mets.map(_maybe_item),
-            epoch=self.epoch + 1,
+        limits_0 = get_vmin_vmax(targets[0, 0])  # Limits for amp/real
+        limits_1 = get_vmin_vmax(targets[0, 1])  # Limits for phase/imaginary
+
+        im0 = self.axs[0].imshow(
+            predictions[0, 0],
+            cmap="radionets.PuOr",
+            vmin=-limits_0,
+            vmax=limits_0,
+            origin="lower",
+        )
+        im1 = self.axs[1].imshow(
+            predictions[0, 1],
+            cmap="radionets.PuOr",
+            vmin=-limits_1,
+            vmax=limits_1,
+            origin="lower",
+        )
+        im2 = self.axs[2].imshow(
+            targets[0, 0],
+            cmap="radionets.PuOr",
+            vmin=-limits_0,
+            vmax=limits_0,
+            origin="lower",
+        )
+        im3 = self.axs[3].imshow(
+            targets[0, 1],
+            cmap="radionets.PuOr",
+            vmin=-limits_1,
+            vmax=limits_1,
+            origin="lower",
         )
 
-    def after_validate(self):
-        self.experiment.log_metric(
-            "Validation Loss",
-            self.recorder._valid_mets.map(_maybe_item),
-            epoch=self.epoch + 1,
-        )
+        for ax, im, title in zip(
+            self.axs,
+            [im0, im1, im2, im3],
+            self.pred_plot_titles,
+        ):
+            set_cbar(self.fig, ax, im, title=title, phase="Phase" in title)
 
-    def plot_test_pred(self):
-        img_test, img_true, _ = get_images(self.test_ds, 1, rand=False)
-        img_test = img_test.unsqueeze(0)
-        img_true = img_true.unsqueeze(0)
-        model = self.model
+        self.axs[0].set(ylabel="Frequels")
+        self.axs[2].set(xlabel="Frequels", ylabel="Frequels")
+        self.axs[3].set(xlabel="Frequels")
 
-        try:
-            if self.learn.normalize.mode == "all":
-                norm_dict = {"all": 0}
-                img_test, norm_dict = apply_normalization(img_test, norm_dict)
-        except AttributeError:
-            pass
-
-        with self.experiment.test(), torch.no_grad():
-            pred = eval_model(img_test, model)
-
-        try:
-            if self.learn.normalize.mode == "all":
-                pred = rescale_normalization(pred, norm_dict)
-        except AttributeError:
-            pass
-
-        if pred.shape[1] == 4:
-            self.uncertainty = True
-            pred = torch.stack((pred[:, 0, :], pred[:, 2, :]), dim=1)
-
-        images = {"pred": pred, "truth": img_true}
-        images = apply_symmetry(images)
-        pred = images["pred"]
-        img_true = images["truth"]
-
-        fig, ax = plt.subplots(2, 2, figsize=(11, 8.5), layout="constrained")
-        ax = ax.ravel()
-
-        lim_amp = check_vmin_vmax(img_true[0, 0])
-        lim_phase = check_vmin_vmax(img_true[0, 1])
-        im1 = ax[0].imshow(
-            pred[0, 0], cmap="radionets.PuOr", vmin=-lim_amp, vmax=lim_amp
-        )
-        make_axes_nice(fig, ax[0], im1, "Real")
-
-        im2 = ax[1].imshow(
-            pred[0, 1], cmap="radionets.PuOr", vmin=-lim_phase, vmax=lim_phase
-        )
-        make_axes_nice(fig, ax[1], im2, "Imaginary")
-
-        im3 = ax[2].imshow(
-            img_true[0, 0], cmap="radionets.PuOr", vmin=-lim_amp, vmax=lim_amp
-        )
-        make_axes_nice(fig, ax[2], im3, "Org. Real")
-
-        im4 = ax[3].imshow(
-            img_true[0, 1], cmap="radionets.PuOr", vmin=-lim_phase, vmax=lim_phase
-        )
-        make_axes_nice(fig, ax[3], im4, "Org. Imaginary")
-
-        self.experiment.log_figure(
-            figure=fig, figure_name=f"{self.epoch + 1}_pred_epoch"
-        )
-        plt.close()
-
-    def plot_test_fft(self):
-        img_test, img_true, _ = get_images(self.test_ds, 1, rand=False)
-        img_test = img_test.unsqueeze(0)
-        img_true = img_true.unsqueeze(0)
-        model = self.model
-
-        try:
-            if self.learn.normalize.mode == "all":
-                norm_dict = {"all": 0}
-                img_test, norm_dict = apply_normalization(img_test, norm_dict)
-        except AttributeError:
-            pass
-
-        with self.experiment.test(), torch.no_grad():
-            pred = eval_model(img_test, model)
-
-        try:
-            if self.learn.normalize.mode == "all":
-                pred = rescale_normalization(pred, norm_dict)
-        except AttributeError:
-            pass
-
-        if self.uncertainty:
-            pred = torch.stack((pred[:, 0, :], pred[:, 2, :]), dim=1)
-
-        images = {"pred": pred, "truth": img_true}
-        images = apply_symmetry(images)
-        pred = images["pred"]
-        img_true = images["truth"]
-
-        ifft_pred = get_ifft_torch(
-            pred,
+    def plot_val_fft(self, predictions, targets, current_epoch):
+        ifft_pred = get_ifft(
+            predictions,
             amp_phase=self.amp_phase,
             scale=self.scale,
-            uncertainty=self.uncertainty,
         )
-        ifft_truth = get_ifft_torch(
-            img_true, amp_phase=self.amp_phase, scale=self.scale
+        ifft_truth = get_ifft(targets, amp_phase=self.amp_phase, scale=self.scale)
+
+        self.fig, self.axs = plt.subplots(1, 3, figsize=(16, 4.5), layout="constrained")
+
+        im0 = self.axs[0].imshow(
+            ifft_pred,
+            norm=PowerNorm(0.25, vmax=ifft_truth.max()),
+            cmap="inferno",
+            origin="lower",
+        )
+        im1 = self.axs[1].imshow(
+            ifft_truth,
+            norm=PowerNorm(0.25),
+            cmap="inferno",
+            origin="lower",
         )
 
-        fig, ax = plt.subplots(1, 3, figsize=(16, 4.5), layout="constrained")
-
-        im1 = ax[0].imshow(
-            ifft_pred, norm=PowerNorm(0.25, vmax=ifft_truth.max()), cmap="inferno"
-        )
-        im2 = ax[1].imshow(ifft_truth, norm=PowerNorm(0.25), cmap="inferno")
-        a = check_vmin_vmax(ifft_pred - ifft_truth)
-        im3 = ax[2].imshow(
-            ifft_pred - ifft_truth, cmap="radionets.PuOr", vmin=-a, vmax=a
+        limits = get_vmin_vmax(ifft_pred - ifft_truth)
+        im2 = self.axs[2].imshow(
+            ifft_pred - ifft_truth,
+            cmap="radionets.PuOr",
+            vmin=-limits,
+            vmax=limits,
+            origin="lower",
         )
 
-        make_axes_nice(fig, ax[0], im1, "FFT Prediction")
-        make_axes_nice(fig, ax[1], im2, "FFT Truth")
-        make_axes_nice(fig, ax[2], im3, "FFT Diff")
+        for ax, im, title in zip(
+            self.axs,
+            [im0, im1, im2],
+            ["Prediction", "Truth", "Difference"],
+        ):
+            set_cbar(self.fig, ax, im, title="FFT " + title)
 
-        ax[0].set(
+        self.axs[0].set(
             ylabel="Pixels",
             xlabel="Pixels",
         )
-        ax[1].set_xlabel("Pixels")
-        ax[2].set_xlabel("Pixels")
+        self.axs[1].set_xlabel("Pixels")
+        self.axs[2].set_xlabel("Pixels")
+
+    def on_validation_epoch_end(self, trainer: L.Trainer, pl_module) -> None:
+        """Log predictions at validation epoch end."""
+
+        if self.cached_batch is None:
+            val_dataloader = trainer.datamodule.val_dataloader()
+            batch = next(iter(val_dataloader))
+
+            # cache only one sample
+            self.cached_batch = (
+                batch[0][0][None, ...].cpu(),
+                batch[1][0][None, ...].cpu(),
+            )
+
+        if (trainer.current_epoch + 1) % self.train_config.logging.plot_n_epochs == 0:
+            batch = (
+                self.cached_batch[0].to(pl_module.device),
+                self.cached_batch[1].to(pl_module.device),
+            )
+
+            results = pl_module.predict_step(batch, batch_idx=0).cpu()
+            predictions = results[:, 0].cpu()
+            targets = results[:, 1].cpu()
+
+            # check if images are half or full
+            if predictions.shape[-2] != predictions.shape[-1]:
+                predictions = apply_symmetry(predictions)
+                targets = apply_symmetry(targets)
+
+            self.plot_val_pred(
+                predictions,
+                targets,
+                current_epoch=trainer.current_epoch,
+            )
+
+            self.plot_val_fft(
+                predictions,
+                targets,
+                current_epoch=trainer.current_epoch,
+            )
+
+
+class CometCallback(PlottingCallbackABC):
+    def __init__(self, train_config, *args, **kwargs):
+        super().__init__(train_config, *args, **kwargs)
+        self.experiment = None
+
+    def plot_val_pred(self, predictions, targets, current_epoch: int) -> None:
+        super().plot_val_pred(predictions, targets, current_epoch)
 
         self.experiment.log_figure(
-            figure=fig, figure_name=f"{self.epoch + 1}_fft_epoch"
+            figure=self.fig,
+            figure_name=f"fourier_pred_{current_epoch:0>4}",
         )
-        plt.close()
 
-    def after_epoch(self):
-        if (self.epoch + 1) % self.plot_epoch == 0:
-            self.plot_test_pred()
-            self.plot_test_fft()
+        plt.close(self.fig)
 
+    def plot_val_fft(self, predictions, targets, current_epoch: int) -> None:
+        super().plot_val_fft(predictions, targets, current_epoch)
 
-class AvgLossCallback(Callback):
-    """Callback for tracking and plotting average training
-    and validation losses.
-
-    Saves the average loss for training and validation
-    that is printed to the terminal.
-    """
-
-    def __init__(self):
-        if not hasattr(self, "loss_train"):
-            self.loss_train = []
-        if not hasattr(self, "loss_valid"):
-            self.loss_valid = []
-        if not hasattr(self, "lrs"):
-            self.lrs = []
-
-    def after_train(self):
-        self.loss_train.append(self.recorder._train_mets.map(_maybe_item))
-
-    def after_validate(self):
-        self.loss_valid.append(self.recorder._valid_mets.map(_maybe_item))
-
-    def after_batch(self):
-        self.lrs.append(self.opt.hypers[-1]["lr"])
-
-    def plot_loss(self):
-        min_epoch = np.argmin(self.loss_valid)
-        plt.plot(self.loss_train, label="Training loss")
-        plt.plot(self.loss_valid, label="Validation loss")
-        plt.axvline(
-            min_epoch,
-            color="black",
-            linestyle="dashed",
-            label=f"Minimum at Epoch {min_epoch}",
+        self.experiment.log_figure(
+            figure=self.fig,
+            figure_name=f"fft_pred_{current_epoch:0>4}",
         )
-        plt.xlabel(r"Number of Epochs")
-        plt.ylabel(r"Loss")
-        plt.legend()
+        plt.close(self.fig)
 
-        train = np.array(self.loss_train)
-        valid = np.array(self.loss_valid)
+    def on_validation_epoch_end(self, trainer: L.Trainer, pl_module) -> None:
+        """Log predictions at validation epoch end."""
+        if self.experiment is None:
+            try:
+                self.experiment = next(
+                    logger.experiment
+                    for logger in trainer.loggers
+                    if isinstance(logger, CometLogger)
+                )
+            except StopIteration as e:
+                raise ValueError(
+                    f"Could not find a CometLogger instance in {trainer.loggers}."
+                ) from e
 
-        return bool(len(train[train < 0]) == 0 or len(valid[valid < 0]) == 0)
-
-    def plot_lrs(self):
-        plt.plot(self.lrs)
-        plt.xlabel(r"Number of Batches")
-        plt.ylabel(r"Learning rate")
-
-
-class CudaCallback(Callback):
-    """Callback to move model to CUDA device before training.
-
-    Simple callback that ensures the model is moved to the
-    GPU before the training loop.
-
-    Attributes
-    ----------
-    _order : int
-        Callback execution order (3).
-    """
-
-    _order = 3
-
-    def before_fit(self):
-        self.model.cuda()
+        super().on_validation_epoch_end(trainer, pl_module)
 
 
-class DataAug(Callback):
-    """Callback that applies data augmentation using
-    random rotations.
+class MLFlowCallback(PlottingCallbackABC):
+    def __init__(self, train_config, *args, **kwargs):
+        super().__init__(train_config, *args, **kwargs)
 
-    Applies random multiples of 90-degree rotations to both
-    input and target tensors before each batch to augment
-    the training data.
-    """
+        self.experiment = None
 
-    _order = 3
+    def plot_val_pred(self, predictions, targets, current_epoch: int) -> None:
+        super().plot_val_pred(predictions, targets, current_epoch)
 
-    def before_batch(self):
-        x = self.xb[0].clone()
-        y = self.yb[0].clone()
+        artifact_file = f"fourier_pred_{current_epoch:0>4}.png"
 
-        randint = np.random.randint(0, 1, x.shape[0]) * 2
-        last_axis = len(x.shape) - 1
+        self.experiment.log_figure(
+            figure=self.fig,
+            artifact_file=artifact_file,
+            run_id=self.logger._run_id,
+        )
 
-        for i in range(x.shape[0]):
-            x[i] = torch.rot90(x[i], int(randint[i]), [last_axis - 2, last_axis - 1])
-            y[i] = torch.rot90(y[i], int(randint[i]), [last_axis - 2, last_axis - 1])
+        plt.close(self.fig)
 
-        x = x.squeeze(1)
-        y = y.squeeze(1)
+    def plot_val_fft(self, predictions, targets, current_epoch: int) -> None:
+        super().plot_val_fft(predictions, targets, current_epoch)
 
-        self.learn.xb = [x]
-        self.learn.yb = [y]
+        artifact_file = f"fft_pred_{current_epoch:0>4}.png"
+
+        self.experiment.log_figure(
+            figure=self.fig,
+            artifact_file=artifact_file,
+            run_id=self.logger._run_id,
+        )
+        plt.close(self.fig)
+
+    def on_validation_epoch_end(self, trainer: L.Trainer, pl_module) -> None:
+        """Log predictions at validation epoch end."""
+        if self.experiment is None:
+            try:
+                self.logger = next(
+                    logger
+                    for logger in trainer.loggers
+                    if isinstance(logger, MLFlowLogger)
+                )
+                self.experiment = self.logger.experiment
+
+                self.base_dir = (
+                    self.train_config.paths.model_path / f"mlflow/{self.logger._run_id}"
+                )
+                self.base_dir.mkdir(parents=True)
+
+            except StopIteration as e:
+                raise ValueError(
+                    f"Could not find a MLFlowLogger instance in {trainer.loggers}."
+                ) from e
+
+        super().on_validation_epoch_end(trainer, pl_module)
 
 
-class Normalize(Callback):
-    """Normalization callback for input and target data.
+class MLFlowCodeCarbonCallback(LightningCallback):
+    def __init__(self, train_config, *args, **kwargs):
+        self.train_config = train_config
 
-    Parameters
-    ----------
-    conf : dict
-        Dictionary containing the normalization type stored
-        under the ``'normalize'`` key.
-    """
+        self.experiment = None
 
-    _order = 4
+    def on_fit_end(self, trainer, pl_module):
+        if self.experiment is None:
+            self._set_up_experiment(trainer)
+            self.num_samples = trainer.datamodule.train_length
+            self.num_samples += trainer.datamodule.valid_length
 
-    def __init__(self, conf):
-        self.mode = conf["normalize"]
-        if self.mode == "mean":
-            self.mean_real = conf["norm_factors"]["mean_real"]
-            self.mean_imag = conf["norm_factors"]["mean_imag"]
-            self.std_real = conf["norm_factors"]["std_real"]
-            self.std_imag = conf["norm_factors"]["std_imag"]
+        try:
+            self._log_metrics()
+        except (FileNotFoundError, KeyError) as e:
+            warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
 
-    def normalize(self, x, m, s):
-        return (x - m) / s
+        self._log_params()
 
-    def before_batch(self):
-        x = self.xb[0].clone()
-        y = self.yb[0].clone()
+    def on_test_end(self, trainer, pl_module):
+        if self.experiment is None:
+            self._set_up_experiment(trainer)
+            self.num_samples = trainer.datamodule.test_length
 
-        if self.mode == "max":
-            x[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
-            x[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
-            y[:, 0] *= 1 / torch.amax(x[:, 0], dim=(-2, -1), keepdim=True)
-            y[:, 1] *= 1 / torch.amax(torch.abs(x[:, 1]), dim=(-2, -1), keepdim=True)
+        try:
+            self._log_metrics()
+        except (FileNotFoundError, KeyError) as e:
+            warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
 
-        elif self.mode == "mean":
-            x[:, 0][x[:, 0] != 0] = self.normalize(
-                x[:, 0][x[:, 0] != 0], self.mean_real, self.std_real
+        self._log_params()
+
+    def on_predict_end(self, trainer, pl_module):
+        if self.experiment is None:
+            self._set_up_experiment(trainer)
+            self.num_samples = trainer.datamodule.predict_length
+
+        try:
+            self._log_metrics()
+        except (FileNotFoundError, KeyError) as e:
+            warnings.warn(f"{e}. No emissions were logged.", stacklevel=2)
+
+        self._log_params()
+
+    def _set_up_experiment(self, trainer):
+        try:
+            self.logger = next(
+                logger for logger in trainer.loggers if isinstance(logger, MLFlowLogger)
+            )
+            trainer.carbontracker.tracker.stop()
+            self.experiment = self.logger.experiment
+            self.task = trainer.radionets_task
+
+        except StopIteration as e:
+            raise ValueError(
+                f"Could not find a MLFlowLogger instance in {trainer.loggers}."
+            ) from e
+
+    def _log_metrics(self):
+        emission_file = Path(
+            self.train_config.logging.codecarbon.output_dir + "/emissions.csv"
+        )
+        emission_data = pd.read_csv(emission_file).to_dict()
+
+        eval_res = dict(
+            running_time_total=emission_data["duration"][0],
+            running_time=emission_data["duration"][0] / self.num_samples,
+            power_draw_total=emission_data["energy_consumed"][0] * 3.6e6,
+            power_draw=emission_data["energy_consumed"][0] * 3.6e6 / self.num_samples,
+        )
+
+        for key, val in eval_res.items():
+            self.experiment.log_metric(
+                key=key,
+                value=val,
+                run_id=self.logger._run_id,
             )
 
-            x[:, 1][x[:, 1] != 0] = self.normalize(
-                x[:, 1][x[:, 1] != 0], self.mean_imag, self.std_imag
+        self.architecture = emission_data["gpu_model"][0]
+
+        # Remove file after logging all important metrics to mlflow.
+        # This prevents codecarbon from creating 'emissions.csv_%d.bak'
+        # files in the save directory
+        if emission_file.is_file():
+            emission_file.unlink()
+
+    def _log_params(self):
+        dataset = self.train_config.paths.data_path.name
+        dataset += (
+            "_amp_phase" if self.train_config.dataloader.amp_phase else "_real_imag"
+        )
+
+        model = "Radionets"
+        model += "_" + str(self.train_config.model.arch_name().__class__.__name__)
+        model += "_" + str(self.train_config.training.optimizer.optimizer.__name__)
+
+        if self.train_config.training.lr_scheduling:
+            model += "_" + str(
+                self.train_config.training.lr_scheduling.scheduler.__name__
             )
 
-            y[:, 0] = self.normalize(y[:, 0], self.mean_real, self.std_real)
-            y[:, 1] = self.normalize(y[:, 1], self.mean_imag, self.std_imag)
-
-        elif self.mode == "all":
-            # normalize each image so that mean=0 and std=1
-            means = x.mean(axis=-1).mean(axis=-1).reshape(x.shape[0], x.shape[1], 1, 1)
-            stds = x.std(axis=-1).std(axis=-1).reshape(x.shape[0], x.shape[1], 1, 1)
-            x = self.normalize(x, means, stds)
-            y = self.normalize(y, means, stds)
-
-        self.learn.xb = [x]
-        self.learn.yb = [y]
-
-
-class SaveTempCallback(Callback):
-    """Callback for saving temporary model checkpoints
-    during training.
-
-    Parameters
-    ----------
-    model_path : str or Path
-        Path where temporary models will be saved.
-    """
-
-    _order = 95
-
-    def __init__(self, model_path):
-        self.model_path = model_path
-
-    def after_epoch(self):
-        p = Path(self.model_path).parent
-        p.mkdir(parents=True, exist_ok=True)
-
-        if (self.epoch + 1) % 10 == 0:
-            out = p / f"temp_{self.epoch + 1}.model"
-            save_model(self, out)
-            LOGGER.info(f"Finished Epoch {self.epoch + 1}, model saved.")
-
-
-class SwitchLoss(Callback):
-    """Callback for switching loss functions during training.
-
-    Changes the loss function to a different one after a specified
-    number of epochs.
-
-    Parameters
-    ----------
-    second_loss : callable
-        The loss function to switch to.
-    when_switch : int
-        Epoch number after which to switch loss functions.
-    """
-
-    _order = 5
-
-    def __init__(self, second_loss, when_switch):
-        self.second_loss = second_loss
-        self.when_switch = when_switch
-
-    def before_epoch(self):
-        if (self.epoch + 1) > self.when_switch:
-            self.learn.loss_func = self.second_loss
-
-
-class GradientCallback(Callback):
-    """Callback for gradient and prediction tracking.
-
-    Parameters
-    ----------
-    num_epochs : int
-        Number of training epochs.
-    validation_data : str or Path
-        Path to the validation dataset.
-    arch_name : str
-        Name of the architecture used for the model.
-    amp_phase : bool
-        Whether to use amplitude-phase representation.
-    """
-
-    def __init__(self, num_epochs, validation_data, arch_name, amp_phase):
-        self.num_epochs = num_epochs
-        self.data_path = validation_data
-        self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False
+        params_dict = dict(
+            model=model,
+            dataset=dataset,
+            task=self.task,
+            architecture=self.architecture,
         )
-        self.arch_name = arch_name
-        self.amp_phase = amp_phase
+        for key, val in params_dict.items():
+            self.experiment.log_param(
+                key=key,
+                value=val,
+                run_id=self.logger._run_id,
+            )
 
-    def before_backward(self):
-        raise CancelBackwardException
 
-    def after_cancel_backward(self):
-        self.learn.loss.backward()
+class LogAdditionalParamsCallback(LightningCallback):
+    def __init__(self, train_config, *args, **kwargs):
+        self.train_config = train_config
+        self.amp_phase = train_config.dataloader.amp_phase
 
-        # access gradients of weights of layers (with specified batch and epoch)
-        if self.epoch == self.num_epochs - 1 and self.iter == self.n_iter - 1:
-            grads = []
-            for param in self.learn.model.parameters():
-                grads.append(param.grad.view(-1))
-        # print or save
+        self.experiment = None
 
-    def after_epoch(self):
-        img_test, img_true = get_images(self.test_ds, 1, rand=False)
+        self.source_area_ratio = SourceAreaRatio()
+        self.intensity_ratio = IntensityRatio()
 
-        # for each epoch put test image through model and save to csv
-        fname_template = "pred_{i}.csv"
-        np.savetxt(
-            fname_template.format(i=self.epoch),
-            get_ifft(eval_model(img_test, self.model), self.amp_phase),
-            delimiter=",",
+    def on_fit_end(self, trainer, pl_module):
+        if self.experiment is None:
+            self._set_up_experiment(trainer)
+
+        self._log_metrics(
+            dataloader=trainer.datamodule.val_dataloader(),
+            pl_module=pl_module,
         )
 
-        # # fourier space
-        amp_names = "pred_amp_{i}.csv"
-        phase_names = "pred_phase_{i}.csv"
-        output = eval_model(img_test, self.model)
-        np.savetxt(
-            amp_names.format(i=self.epoch), output[0][0].cpu().numpy(), delimiter=","
-        )
-        np.savetxt(
-            phase_names.format(i=self.epoch), output[0][1].cpu().numpy(), delimiter=","
+    def on_test_end(self, trainer, pl_module):
+        if self.experiment is None:
+            self._set_up_experiment(trainer)
+
+        self._log_metrics(
+            dataloader=trainer.datamodule.test_dataloader(),
+            pl_module=pl_module,
         )
 
+    def on_predict_end(self, trainer, pl_module):
+        if self.experiment is None:
+            self._set_up_experiment(trainer)
 
-class PredictionImageGradient(Callback):
-    """Callback for computing spatial gradients
-    of model predictions.
-
-    Parameters
-    ----------
-    validation_data : str or Path
-        Path to validation dataset.
-    model : str or Path
-        Path to pretrained model.
-    amp_phase : bool
-        Whether to use amplitude-phase representation.
-    arch_name : str
-        Name of the architecture used for the model.
-    """
-
-    def __init__(self, validation_data, model, amp_phase, arch_name):
-        self.data_path = validation_data
-        self.test_ds = load_data(
-            self.data_path, mode="test", fourier=True, source_list=False
+        self._log_metrics(
+            dataloader=trainer.datamodule.predict_dataloader(),
+            pl_module=pl_module,
         )
-        self.model = model
-        self.amp_phase = amp_phase
-        self.arch_name = arch_name
 
-    def save_output_pred(self):
-        img_test, img_true = get_images(self.test_ds, 5, rand=False)
+    def _set_up_experiment(self, trainer):
+        try:
+            self.logger = next(
+                logger for logger in trainer.loggers if isinstance(logger, MLFlowLogger)
+            )
+            self.experiment = self.logger.experiment
 
-        img_size = img_test[0].shape[-1]
-        model_used = load_pretrained_model(self.arch_name, self.model, img_size)
+        except StopIteration as e:
+            raise ValueError(
+                f"Could not find a MLFlowLogger instance in {trainer.loggers}."
+            ) from e
 
-        output = eval_model(img_test[0], model_used)
-        gradient = K.filters.spatial_gradient(output)
+    def _log_metrics(self, dataloader, pl_module):
+        from radionets.evaluation.utils import _method_factory
+        from radionets.io.eval_config import EvaluationMethodsConfig
 
-        grads_x = get_ifft(gradient[:, :, 0], self.amp_phase)
-        grads_y = get_ifft(gradient[:, :, 1], self.amp_phase)
+        eval_methods = EvaluationMethodsConfig(
+            save_images=False,
+            viewing_angle=False,
+            dynamic_range=False,
+            intensity=True,
+            area=dict(mode="pixel"),
+            mean_diff=False,
+        )
+        _method_factory(eval_methods)
 
-        return grads_x, grads_y
+        for batch in dataloader:
+            pl_module.predict_step(
+                batch,
+                batch_idx=0,
+                eval_methods=eval_methods,
+            ).detach().cpu()
+
+        metrics = {}
+        for field in eval_methods:
+            if hasattr(field[1], "met_cls"):
+                metrics[field[0]] = field[1].met_cls.compute()
+
+        trainable_params = sum(
+            p.numel() for p in pl_module.parameters() if p.requires_grad
+        )
+
+        additional_metrics = dict(
+            num_trainable_parameters=trainable_params,
+            mean_area_ratio=np.abs(
+                1.0 - np.mean(metrics["area"]["source_area"].numpy())
+            ),
+            mean_integrated_flux=np.abs(
+                1.0 - np.mean(metrics["intensity"]["integrated_flux"].numpy())
+            ),
+            mean_peak_flux=np.abs(
+                1.0 - np.mean(metrics["intensity"]["peak_flux"].numpy())
+            ),
+        )
+
+        for key, val in additional_metrics.items():
+            self.experiment.log_metric(
+                key=key,
+                value=val,
+                run_id=self.logger._run_id,
+            )

@@ -1,0 +1,38 @@
+title = "Radionets Example Evaluation Configuration"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PATHS & I/O
+# ─────────────────────────────────────────────────────────────────────────────
+[paths]
+data_path = "./example_data/"
+model_path = ["./build/example_model/example.model"]  # you can put up to two models here
+save_path = "./build/eval"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MODEL & ARCHITECTURE
+# ─────────────────────────────────────────────────────────────────────────────
+[model]
+arch_name = ["SRResNet18"]  # you can put up to two models here
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ACCELERATORS & DATALOADING
+# ─────────────────────────────────────────────────────────────────────────────
+[devices]
+accelerator = "gpu"
+num_devices = "auto"
+precision = "32-true"
+
+[dataloader]
+module = "WebDatasetModule"
+batch_size = 20
+num_workers = 10
+prefetch_factor = 2
+persistent_workers = false
+amp_phase = false
+fourier = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IMAGE SAVING
+# ─────────────────────────────────────────────────────────────────────────────
+[save_images]
+split_size = 100

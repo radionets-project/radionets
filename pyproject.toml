@@ -32,14 +32,14 @@ requires-python = ">=3.11"
 
 dependencies = [
     "astropy>=7.1.0",
-    "comet-ml>=3.50.0",
-    "fastai>=2.8.2",
+    "cmasher>=1.9.2",
     "h5py>=3.14.0",
-    "kornia>=0.8.1",
+    "lightning>=2.6.1",
     "natsort>=8.4.0",
     "numba>=0.61.2",
     "numpy>=2.2.6",
     "pandas>=2.3.1",
+    "pyarrow>=24.0.0",
     "pytorch-msssim>=1.0.0",
     "rich-click>=1.8.9",
     "rich>=14.1.0",
@@ -47,6 +47,7 @@ dependencies = [
     "toml>=0.10.2",
     "torch>=2.7.1",
     "tqdm>=4.67.1",
+    "webdataset>=1.0.2",
 ]
 
 [project.urls]
@@ -57,6 +58,8 @@ Repository = "https://github.com/radionets-project/radionets"
 plot = [
     "matplotlib>=3.10.5",
 ]
+comet = ["comet-ml>=3.50.0"]
+codecarbon = ["codecarbon"]
 
 [dependency-groups]
 tests = [
@@ -71,6 +74,7 @@ tests = [
 ]
 
 docs = [
+  "autodoc-pydantic>=2.2.0",
   "graphviz>=0.21",
   "ipython>=9.4.0",
   "jupyter>=1.1.1",
@@ -102,10 +106,7 @@ dev = [
 ]
 
 [project.scripts]
-radionets-simulation = "radionets.simulations.scripts.simulate_images:main"
-radionets-training = "radionets.training.scripts.start_training:main"
-radionets-evaluation = "radionets.evaluation.scripts.start_evaluation:main"
-radionets-quickstart = "radionets.tools.quickstart:quickstart"
+radionets = "radionets.tools.cli:main"
 
 [tool.hatch.version]
 source = "vcs"
@@ -121,6 +122,7 @@ include = ["src/radionets"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "configs" = "share/configs"
+"resources" = "share/resources"
 
 [tool.coverage.run]
 omit = [
@@ -133,7 +135,25 @@ omit = [
 output = "coverage.xml"
 
 [tool.pytest.ini_options]
-addopts = "--verbose"
+norecursedirs = [
+    ".git",
+    ".github",
+    "dist",
+    "build",
+    "docs",
+]
+addopts = [
+    "--strict-markers",
+    "--doctest-modules",
+    "--color=yes",
+    "--disable-pytest-warnings",
+    "--ignore=legacy/checkpoints",
+]
+filterwarnings = [
+    "error::FutureWarning",
+    "ignore:You are using `torch.load` with `weights_only=False`.*:FutureWarning",
+]
+xfail_strict = true
 
 [tool.towncrier]
     package = "radionets"
@@ -174,7 +194,7 @@ addopts = "--verbose"
 [tool.ruff]
 target-version = "py311"
 line-length = 88
-extend-exclude = ["tests", "examples"]
+extend-exclude = ["examples"]
 
 [tool.ruff.lint]
 extend-select = [
@@ -192,6 +212,9 @@ unfixable = []
 
 [tool.ruff.lint.per-file-ignores]
 "examples/**" = ["I"]
+"tests/**" = [
+  "E402",
+]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -202,3 +225,23 @@ docstring-code-format = true
 
 [tool.ruff.lint.isort]
 known-first-party = ["radionets"]
+
+[tool.mypy]
+files = [
+    "src/radionets",
+]
+
+install_types = "True"
+non_interactive = "True"
+disallow_untyped_defs = "True"
+ignore_missing_imports = "True"
+show_error_codes = "True"
+warn_redundant_casts = "True"
+warn_unused_configs = "True"
+warn_unused_ignores = "True"
+allow_redefinition = "True"
+warn_no_return = "False"
+
+[tool.codespell]
+skip = "examples/**"  # NOTE: For now we skip the examples
+ignore-words-list = "RIME,bund"

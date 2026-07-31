@@ -3,9 +3,9 @@ from math import pi
 import torch
 from torch import nn
 
-from radionets.architecture.activation import GeneralReLU
-from radionets.architecture.blocks import ComplexSRBlock, SRBlock
-from radionets.architecture.layers import (
+from .activation import GeneralELU, GeneralReLU
+from .blocks import ComplexSRBlock, SRBlock
+from .layers import (
     ComplexConv2d,
     ComplexInstanceNorm2d,
     ComplexPReLU,
@@ -30,7 +30,7 @@ class SRResNet(nn.Module):
 
         self.channels = 64
 
-        self.preBlock = nn.Sequential(
+        self.pre_block = nn.Sequential(
             nn.Conv2d(
                 in_channels=2,
                 out_channels=self.channels,
@@ -42,7 +42,7 @@ class SRResNet(nn.Module):
             nn.PReLU(),
         )
 
-        self.postBlock = nn.Sequential(
+        self.post_block = nn.Sequential(
             nn.Conv2d(
                 in_channels=self.channels,
                 out_channels=self.channels,
@@ -65,16 +65,16 @@ class SRResNet(nn.Module):
             ),
         )
 
-    def _create_blocks(self, n_blocks):
+    def _create_blocks(self, n_blocks, **kwargs):
         blocks = []
         for _ in range(n_blocks):
-            blocks.append(SRBlock(64, 64))
+            blocks.append(SRBlock(64, 64, **kwargs))
 
         self.blocks = nn.Sequential(*blocks)
 
     def forward(self, input):
-        x = self.preBlock(input)
-        x = x + self.postBlock(self.blocks(x))
+        x = self.pre_block(input)
+        x = x + self.post_block(self.blocks(x))
         x = self.final(x)
 
         return {"pred": x}
@@ -86,7 +86,7 @@ class SRResNetComplex(nn.Module):
 
         self.channels = 128
 
-        self.preBlock = nn.Sequential(
+        self.pre_block = nn.Sequential(
             ComplexConv2d(
                 in_channels=2,
                 out_channels=self.channels,
@@ -96,7 +96,7 @@ class SRResNetComplex(nn.Module):
             ComplexPReLU(num_parameters=2),
         )
 
-        self.postBlock = nn.Sequential(
+        self.post_block = nn.Sequential(
             ComplexConv2d(
                 in_channels=self.channels,
                 out_channels=self.channels,
@@ -118,90 +118,90 @@ class SRResNetComplex(nn.Module):
             ),
         )
 
-    def _create_blocks(self, n_blocks):
+    def _create_blocks(self, n_blocks, **kwargs):
         blocks = []
         for _ in range(n_blocks):
-            blocks.append(ComplexSRBlock(64, 64))
+            blocks.append(ComplexSRBlock(self.channels, self.channels, **kwargs))
 
         self.blocks = nn.Sequential(*blocks)
 
     def forward(self, input):
-        x = self.preBlock(input)
-        x = x + self.postBlock(self.blocks(x))
+        x = self.pre_block(input)
+        x = x + self.post_block(self.blocks(x))
         x = self.final(x)
 
         return {"pred": x}
 
 
 class SRResNet18(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 8 ResBlocks to build a SRResNet18
-        self._create_blocks(8)
+        self._create_blocks(8, **kwargs)
 
 
 class SRResNet18Complex(SRResNetComplex):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 8 ResBlocks to build a SRResNet18
-        self._create_blocks(8)
+        self._create_blocks(8, **kwargs)
 
 
 class SRResNet18AmpPhase(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 8 ResBlocks to build a SRResNet18
-        self._create_blocks(8)
+        self._create_blocks(8, **kwargs)
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
 
-    def forward(self, x):
-        x = super().forward(x)
+    def forward(self, input):
+        out = super().forward(input)["pred"]
 
-        x_amp = self.relu(x[:, 0].unsqueeze(1))
-        x_phase = self.hardtanh(x[:, 1].unsqueeze(1))
+        amp = self.relu(out[:, 0].unsqueeze(1))
+        phase = self.hardtanh(out[:, 1].unsqueeze(1))
 
-        return {"pred": torch.cat([x_amp, x_phase], dim=1)}
+        return {"pred": torch.cat([amp, phase], dim=1)}
 
 
 class SRResNet34(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 16 ResBlocks to build a SRResNet34
-        self._create_blocks(16)
+        self._create_blocks(16, **kwargs)
 
 
 class SRResNet34AmpPhase(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
         # Create 16 ResBlocks to build a SRResNet34
-        self._create_blocks(16)
+        self._create_blocks(16, **kwargs)
 
         self.hardtanh = nn.Hardtanh(-pi, pi)
         self.relu = nn.ReLU()
 
-    def forward(self, x):
-        x = super().forward(x)
+    def forward(self, input):
+        out = super().forward(input)["pred"]
 
-        x_amp = self.relu(x[:, 0].unsqueeze(1))
-        x_phase = self.hardtanh(x[:, 1].unsqueeze(1))
+        amp = self.relu(out[:, 0].unsqueeze(1))
+        phase = self.hardtanh(out[:, 1].unsqueeze(1))
 
-        return {"pred": torch.cat([x_amp, x_phase], dim=1)}
+        return {"pred": torch.cat([amp, phase], dim=1)}
 
 
 class SRResNet34_unc(SRResNet):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
 
-        self._create_blocks(16)
+        self._create_blocks(16, **kwargs)
 
-        self.postBlock = nn.Sequential(
+        self.post_block = nn.Sequential(
             nn.Conv2d(
                 in_channels=self.channels,
                 out_channels=self.channels,
@@ -213,23 +213,23 @@ class SRResNet34_unc(SRResNet):
             nn.InstanceNorm2d(self.channels),
         )
 
-        self.elu = GeneralReLU(sub=-1e-10)
+        self.grelu = GeneralReLU(sub=-1e-10)
 
-    def forward(self, x):
-        s = x.shape[-1]
+    def forward(self, input):
+        s = input.shape[-1]
 
-        x = self.preBlock(x)
+        x = self.pre_block(input)
 
-        x = x + self.postBlock(self.blocks(x))
+        x = x + self.post_block(self.blocks(x))
 
         x = self.final(x)
 
         x0 = x[:, 0].reshape(-1, 1, s // 2 + 1, s)
         x1 = x[:, 1].reshape(-1, 1, s // 2 + 1, s)
         x3 = x[:, 2].reshape(-1, 1, s // 2 + 1, s)
-        x3 = self.elu(x3)
+        x3 = self.grelu(x3)
         x4 = x[:, 3].reshape(-1, 1, s // 2 + 1, s)
-        x4 = self.elu(x4)
+        x4 = self.grelu(x4)
 
         return {"pred": torch.cat([x0, x3, x1, x4], dim=1)}
 
@@ -238,12 +238,14 @@ class SRResNet34_unc_no_grad(SRResNet34_unc):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x):
-        s = x.shape[-1]
+        self.elu = GeneralELU()
 
-        x = self.preBlock(x)
+    def forward(self, input):
+        s = input.shape[-1]
 
-        x = x + self.postBlock(self.blocks(x))
+        x = self.pre_block(input)
+
+        x = x + self.post_block(self.blocks(x))
 
         x = self.final(x)
 

@@ -95,7 +95,7 @@ Maintenance
 
 - Deleted unused functions
 
-  - Deleted unsued architectures
+  - Deleted unused architectures
   - Renamed symmetry function [`#166 <https://github.com/radionets-project/radionets/pull/166>`__]
 
 - Added radionets logo to README [`#169 <https://github.com/radionets-project/radionets/pull/169>`__]
@@ -220,7 +220,7 @@ Radionets 0.2.0 (2023-01-31)
 API Changes
 -----------
 
-- Train on half-sized iamges and applying symmetry afterward is a backward incompatible change
+- Train on half-sized images and applying symmetry afterward is a backward incompatible change
 - Models trained with early versions of ``radionets`` are not supported anymore [`#140 <https://github.com/radionets-project/radionets/pull/140>`__]
 
 

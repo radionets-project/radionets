@@ -1,1 +1,3 @@
-Added docstrings to classses of :mod:`radionets.core.callbacks`
+Added docstrings to classes of :mod:`radionets.core.callbacks`
+
+Fix plot sizes in classes of :mod:`radionets.core.callbacks`

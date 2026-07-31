@@ -1,42 +1,75 @@
-# This is a TOML document.
+title = "Radionets Example Training Configuration"
 
-title = "Train configuration"
-
-[mode]
-quiet = true
-gpu = false
-
-[logging]
-comet_ml = true
-project_name = "VLA"
-plot_n_epochs = 2
-scale = true
-
+# ─────────────────────────────────────────────────────────────────────────────
+# PATHS & I/O
+# ─────────────────────────────────────────────────────────────────────────────
 [paths]
 data_path = "./example_data/"
 model_path = "./build/example_model/example.model"
-pre_model = "none"
+checkpoint = false
 
-[general]
-fourier = true
-amp_phase = true
+# ─────────────────────────────────────────────────────────────────────────────
+# MODEL & ARCHITECTURE
+# ─────────────────────────────────────────────────────────────────────────────
+[model]
+arch_name = "SRResNet18"
 normalize = false
-source_list = false
-arch_name = "filter_deep"
-loss_func = "splitted_L1"
-num_epochs = 5
-inspection = true
-output_format = "png"
-switch_loss = false
-when_switch = 25
 
-[hypers]
-batch_size = 100
-lr = 1e-3
+# ─────────────────────────────────────────────────────────────────────────────
+# TRAINING
+# ─────────────────────────────────────────────────────────────────────────────
+[training]
+num_epochs = 50
 
-[param_scheduling]
-use = true
-lr_start = 7e-2
-lr_max = 3e-1
-lr_stop = 5e-2
-lr_ratio = 0.25
+[training.loss]
+loss_func = "MSELoss"
+
+[training.optimizer]
+optimizer = "AdamW"
+lr = 0.001
+
+[training.lr_scheduling]
+scheduler = "OneCycleLR"
+
+# kwargs for OneCycleLR
+# See: https://docs.pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.OneCycleLR.html
+max_lr = 1e-3           # Maximum at 1e-3
+div_factor = 1e2        # Initial at 1e-3 / 1e2 = 1e-5
+final_div_factor = 1e2  # Final at initial_lr / 1e2 = 1e-7
+pct_start = 0.25
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ACCELERATORS & DATALOADING
+# ─────────────────────────────────────────────────────────────────────────────
+[devices]
+accelerator = "gpu"
+num_devices = "auto"
+precision = "32-true"
+
+[dataloader]
+module = "WebDatasetModule"
+batch_size = 16
+num_workers = 10
+prefetch_factor = 2
+persistent_workers = false
+amp_phase = false
+fourier = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CALLBACKS
+# ─────────────────────────────────────────────────────────────────────────────
+[callbacks.checkpoint]
+every_n_epochs = 2
+save_top_k = -1
+
+[callbacks.batch_size_finder]
+mode = "binsearch"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LOGGING
+# ─────────────────────────────────────────────────────────────────────────────
+[logging]
+project_name = "Radionets Experiment"
+plot_n_epochs = 1
+scale = true
+comet_ml = true

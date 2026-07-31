@@ -16,6 +16,7 @@ env:
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
+    if: contains(github.event.pull_request.labels.*.name, 'skip-ci') == false
     strategy:
       matrix:
         include:
@@ -88,6 +89,7 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'skip-ci') == false
     steps:
       - uses: actions/checkout@v6
         with:

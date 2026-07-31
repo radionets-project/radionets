@@ -182,7 +182,7 @@ use the imperative, a short description as the first line, followed by a blank l
 and then followed by details if needed, e.g. as a bullet list.
 
 ```{seealso}
-[Convetional Commits][conventionalcommits] for examples and information
+[Conventional Commits][conventionalcommits] for examples and information
 on how to write good commit messages.
 ```
 Make sure you frequently test the code during development (see {ref}`testing`).
