@@ -59,6 +59,7 @@ plot = [
     "matplotlib>=3.10.5",
 ]
 comet = ["comet-ml>=3.50.0"]
+codecarbon = ["codecarbon"]
 
 [dependency-groups]
 tests = [
