@@ -3,6 +3,7 @@ from abc import ABC
 from pathlib import Path
 
 import lightning as L
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -23,6 +24,8 @@ from pydantic import BaseModel
 from radionets.evaluation.metrics import IntensityRatio, SourceAreaRatio
 from radionets.evaluation.utils import apply_symmetry, get_ifft
 from radionets.plotting.utils import get_vmin_vmax, set_cbar
+
+matplotlib.use("Agg")
 
 __all__ = [
     "Callbacks",
@@ -494,35 +497,46 @@ class LogAdditionalParamsCallback(LightningCallback):
             ) from e
 
     def _log_metrics(self, dataloader, pl_module):
-        area = []
-        total_flux = []
-        peak_flux = []
+        from radionets.evaluation.utils import _method_factory
+        from radionets.io.eval_config import EvaluationMethodsConfig
+
+        eval_methods = EvaluationMethodsConfig(
+            save_images=False,
+            viewing_angle=False,
+            dynamic_range=False,
+            intensity=True,
+            area=dict(mode="pixel"),
+            mean_diff=False,
+        )
+        _method_factory(eval_methods)
+
         for batch in dataloader:
-            preds = pl_module.predict_step(batch[0], batch_idx=0).detach().cpu()
-            targets = batch[1].detach().cpu()
+            pl_module.predict_step(
+                batch,
+                batch_idx=0,
+                eval_methods=eval_methods,
+            ).detach().cpu()
 
-            # check if images are half or full
-            if preds.shape[-2] != preds.shape[-1]:
-                preds = apply_symmetry(preds)
-                targets = apply_symmetry(targets)
-
-            ifft_preds = get_ifft(preds, amp_phase=self.amp_phase)
-            ifft_targets = get_ifft(targets, amp_phase=self.amp_phase)
-
-            area.extend(self.source_area_ratio(ifft_preds, ifft_targets))
-
-            total, peak = self.intensity_ratio(ifft_preds, ifft_targets)
-            total_flux.extend(total)
-            peak_flux.extend(peak)
+        metrics = {}
+        for field in eval_methods:
+            if hasattr(field[1], "met_cls"):
+                metrics[field[0]] = field[1].met_cls.compute()
 
         trainable_params = sum(
             p.numel() for p in pl_module.parameters() if p.requires_grad
         )
+
         additional_metrics = dict(
             num_trainable_parameters=trainable_params,
-            mean_area_ratio=np.abs(1.0 - np.mean(area)),
-            mean_total_flux=np.abs(1.0 - np.mean(total_flux)),
-            mean_peak_flux=np.abs(1.0 - np.mean(peak_flux)),
+            mean_area_ratio=np.abs(
+                1.0 - np.mean(metrics["area"]["source_area"].numpy())
+            ),
+            mean_integrated_flux=np.abs(
+                1.0 - np.mean(metrics["intensity"]["integrated_flux"].numpy())
+            ),
+            mean_peak_flux=np.abs(
+                1.0 - np.mean(metrics["intensity"]["peak_flux"].numpy())
+            ),
         )
 
         for key, val in additional_metrics.items():
