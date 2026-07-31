@@ -98,10 +98,8 @@ def apply_symmetry(image, uncertainty: bool = False) -> torch.Tensor:
     return full_image
 
 
-def _method_factory(eval_config):
+def _method_factory(evaluation):
     from radionets.evaluation import metrics
-
-    evaluation = eval_config.evaluation
 
     if evaluation.viewing_angle:
         evaluation.viewing_angle.met_cls = metrics.ViewingAngle(
