@@ -11,15 +11,15 @@ jobs:
   dist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: hynek/build-and-inspect-python-package@v2
+      - uses: actions/checkout@v7
+      - uses: hynek/build-and-inspect-python-package@v2.18.0
         with:
           path: .
 
   distlong:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
