@@ -8,8 +8,8 @@ import numpy as np
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LogNorm
 
-import radionets.simulations.layouts.layouts as layouts
 from radionets.evaluation.utils import make_axes_nice
+from radionets.simulations.layouts import layouts
 from radionets.simulations.uv_simulations import Antenna, Source
 
 
