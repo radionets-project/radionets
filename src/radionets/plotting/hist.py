@@ -67,7 +67,7 @@ class Hist:
             ),
         )
 
-    def _get_rect_patch(self) -> Rectangle | Rectangle:
+    def _get_rect_patch(self) -> Rectangle:
         kwargs = dict(
             width=1,
             height=1,

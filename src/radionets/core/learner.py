@@ -1,10 +1,10 @@
-import torch.nn as nn
 from fastai.callback.schedule import ParamScheduler, combined_cos
 from fastai.data.core import DataLoaders
 from fastai.learner import Learner
 from fastai.optimizer import Adam
+from torch import nn
 
-import radionets.core.loss_functions as loss_functions
+from radionets.core import loss_functions
 from radionets.core.callbacks import (
     AvgLossCallback,
     CometCallback,
@@ -16,7 +16,7 @@ from radionets.core.callbacks import (
 )
 from radionets.core.model import init_cnn
 
-__all__ = ["get_learner", "define_learner"]
+__all__ = ["define_learner", "get_learner"]
 
 
 def get_learner(data, arch, lr, loss_func=None, cb_funcs=None, opt_func=Adam, **kwargs):
