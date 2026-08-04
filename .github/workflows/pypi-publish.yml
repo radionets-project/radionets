@@ -14,21 +14,8 @@ jobs:
       - uses: actions/checkout@v5
       - uses: hynek/build-and-inspect-python-package@v2
         with:
-          path: .
-
-  distlong:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - uses: astral-sh/setup-uv@v7
-
-      - name: Build SDist and wheel
-        run: uvx --from build pyproject-build
-
-      - uses: actions/upload-artifact@v5
+          persist-credentials: false
+      - uses: hynek/build-and-inspect-python-package@d44ca7d91762de7a7d5436ddae667c6da6d1c3df # v2.18.0
         with:
           name: Packages-distlong-${{ github.job }}
           path: dist/*
