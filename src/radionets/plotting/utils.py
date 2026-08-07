@@ -19,7 +19,7 @@ def set_cbar(
     title: str,
     phase: bool = False,
     unc: bool = False,
-    unit=r"$\mathrm{Jy \cdot px^{-1}}$",
+    unit=r"\mathrm{Jy \cdot px^{-1}}",
     orientation="vertical",
     location="right",
 ) -> None:
@@ -62,7 +62,7 @@ def set_cbar(
             image,
             cax=cax,
             orientation=orientation,
-            label=rf"$\sigma$ \:/\: {unit}",
+            label=rf"$\sigma \:/\: {unit}$",
             location=location,
         )
     else:
