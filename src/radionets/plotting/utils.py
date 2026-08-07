@@ -19,6 +19,8 @@ def set_cbar(
     title: str,
     phase: bool = False,
     unc: bool = False,
+    unit=r"$\mathrm{Jy \cdot px^{-1}}$",
+    orientation="vertical",
 ) -> None:
     """Create nice colorbars with bigger label size
     for every axis in a subplot. Also use ticks for the phase.
@@ -43,7 +45,9 @@ def set_cbar(
     ax.set_title(title)
 
     if phase:
-        cbar = fig.colorbar(image, cax=cax, orientation="vertical", label="Phase / rad")
+        cbar = fig.colorbar(
+            image, cax=cax, orientation=orientation, label="Phase / rad"
+        )
         cbar.set_ticks(
             ticks=[-np.pi, -np.pi / 2, 0, np.pi / 2, np.pi],
             labels=[r"$-\pi$", r"$-\pi/2$", r"$0$", r"$\pi/2$", r"$\pi$"],
@@ -52,15 +56,15 @@ def set_cbar(
         cbar = fig.colorbar(
             image,
             cax=cax,
-            orientation="vertical",
-            label=r"$\sigma$ / $\mathrm{Jy \cdot px^{-1}}$",
+            orientation=orientation,
+            label=rf"$\sigma$ \:/\: {unit}",
         )
     else:
         cbar = fig.colorbar(
             image,
             cax=cax,
-            orientation="vertical",
-            label=r"$\mathrm{Flux \ density / Jy \cdot px^{-1}}$",
+            orientation=orientation,
+            label=rf"$\mathrm{{Flux Density}} \:/\: {unit}$",
         )
 
     return cbar
