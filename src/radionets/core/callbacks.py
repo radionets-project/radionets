@@ -25,8 +25,6 @@ from radionets.evaluation.metrics import IntensityRatio, SourceAreaRatio
 from radionets.evaluation.utils import apply_symmetry, get_ifft
 from radionets.plotting.utils import get_vmin_vmax, set_cbar
 
-matplotlib.use("Agg")
-
 __all__ = [
     "Callbacks",
     "CometCallback",
@@ -75,9 +73,11 @@ class Callbacks:
             callbacks.append(timer)
 
         if train_config.logging.comet_ml:
+            matplotlib.use("Agg")
             callbacks.append(CometCallback(train_config))
 
         if train_config.logging.mlflow:
+            matplotlib.use("Agg")
             callbacks.append(MLFlowCallback(train_config))
 
             if train_config.logging.codecarbon:
