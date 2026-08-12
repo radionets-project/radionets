@@ -99,6 +99,7 @@ class HistConfig(BaseSettings):
     bins: int = 60
     histtype: str = "step"
     linewidth: float = 1.5
+    stacked_label: bool = False
 
     model_config = ConfigDict(extra="allow")
 
