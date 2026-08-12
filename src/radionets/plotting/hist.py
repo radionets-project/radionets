@@ -26,8 +26,8 @@ def hist_label(model, mean, std):
     return label
 
 
-def set_label(model, mean_full, std_full, mean, std, stacked_label):
-    if stacked_label:
+def set_label(model, mean_full, std_full, mean, std, stacked):
+    if stacked:
         return stacked_label(model, mean_full, std_full, mean, std)
 
     return hist_label(model, mean, std)
