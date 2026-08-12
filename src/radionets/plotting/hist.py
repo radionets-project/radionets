@@ -157,7 +157,32 @@ class Hist:
             self.config.paths.data_paths, self.models, self.colors
         ):
             data = pd.read_csv(data_path / "viewing_angle.csv")["diff"]
-            self._hist(ax=ax, data=data, model=model, color=c, config=angle_cfg)
+            LOGGER.info(
+                f"{model}: {sum(data < angle_cfg.lower_bounds[0]) = } of {len(data)}"
+            )
+            LOGGER.info(
+                f"{model}: {sum(data > angle_cfg.upper_bounds[0]) = } of {len(data)}"
+            )
+
+            mean = data.mean()
+            std = data.std()
+
+            ax[0].hist(
+                data,
+                bins=angle_cfg.hist0.bins,
+                histtype=angle_cfg.hist0.histtype,
+                color=c,
+                range=(angle_cfg.lower_bounds[0], angle_cfg.upper_bounds[0]),
+                label=hist_label(model, mean, std),
+                linewidth=angle_cfg.hist0.linewidth,
+            )
+
+            LOGGER.info(
+                f"{model}: {sum(data < angle_cfg.lower_bounds[1]) = } of {len(data)}"
+            )
+            LOGGER.info(
+                f"{model}: {sum(data > angle_cfg.upper_bounds[1]) = } of {len(data)}"
+            )
 
             ax[1].hist(
                 data,
