@@ -471,3 +471,5 @@ class Hist:
                 if val and field not in {"paths", "general", "debug"}:
                     LOGGER.info(f"Plotting {field}:")
                     getattr(self, field)()
+
+        LOGGER.info(f"Saved plots to {self.config.paths.save_path}")
