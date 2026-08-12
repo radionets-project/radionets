@@ -1,5 +1,6 @@
 import cmasher as cmr
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from radionets.core.logging import _setup_logger
@@ -23,6 +24,13 @@ def hist_label(model, mean, std):
     label += rf"{{$\mu = \num{{{mean:.3f} \pm {std:.3f}}}$}}"
 
     return label
+
+
+def set_label(model, mean_full, std_full, mean, std, stacked_label):
+    if stacked_label:
+        return stacked_label(model, mean_full, std_full, mean, std)
+
+    return hist_label(model, mean, std)
 
 
 class Hist:
@@ -53,26 +61,7 @@ class Hist:
             self.config.paths.data_paths, self.models, self.colors
         ):
             data = pd.read_csv(data_path / "intensity.csv")["peak_flux"]
-
-            mean = data.mean()
-            std = data.std()
-
-            LOGGER.info(
-                f"{model}: {sum(data < peak_cfg.lower_bound) = } of {len(data)}"
-            )
-            LOGGER.info(
-                f"{model}: {sum(data > peak_cfg.upper_bound) = } of {len(data)}"
-            )
-
-            ax.hist(
-                data,
-                bins=peak_cfg.hist.bins,
-                histtype=peak_cfg.hist.histtype,
-                color=c,
-                range=(peak_cfg.lower_bound, peak_cfg.upper_bound),
-                label=hist_label(model, mean, std),
-                linewidth=peak_cfg.hist.linewidth,
-            )
+            self._hist(ax=ax, data=data, model=model, color=c, config=peak_cfg)
 
         _, ax_max = ax.get_ylim()
 
@@ -122,22 +111,7 @@ class Hist:
             self.config.paths.data_paths, self.models, self.colors
         ):
             data = pd.read_csv(data_path / "intensity.csv")["integrated_flux"]
-
-            mean = data.mean()
-            std = data.std()
-
-            LOGGER.info(f"{model}: {sum(data < int_cfg.lower_bound) = } of {len(data)}")
-            LOGGER.info(f"{model}: {sum(data > int_cfg.upper_bound) = } of {len(data)}")
-
-            ax.hist(
-                data,
-                bins=int_cfg.hist.bins,
-                histtype=int_cfg.hist.histtype,
-                color=c,
-                range=(int_cfg.lower_bound, int_cfg.upper_bound),
-                label=hist_label(model, mean, std),
-                linewidth=int_cfg.hist.linewidth,
-            )
+            self._hist(ax=ax, data=data, model=model, color=c, config=int_cfg)
 
         _, ax_max = ax.get_ylim()
 
@@ -183,33 +157,7 @@ class Hist:
             self.config.paths.data_paths, self.models, self.colors
         ):
             data = pd.read_csv(data_path / "viewing_angle.csv")["diff"]
-
-            LOGGER.info(
-                f"{model}: {sum(data < angle_cfg.lower_bounds[0]) = } of {len(data)}"
-            )
-            LOGGER.info(
-                f"{model}: {sum(data > angle_cfg.upper_bounds[0]) = } of {len(data)}"
-            )
-
-            mean = data.mean()
-            std = data.std()
-
-            ax[0].hist(
-                data,
-                bins=angle_cfg.hist0.bins,
-                histtype=angle_cfg.hist0.histtype,
-                color=c,
-                range=(angle_cfg.lower_bounds[0], angle_cfg.upper_bounds[0]),
-                label=hist_label(model, mean, std),
-                linewidth=angle_cfg.hist0.linewidth,
-            )
-
-            LOGGER.info(
-                f"{model}: {sum(data < angle_cfg.lower_bounds[1]) = } of {len(data)}"
-            )
-            LOGGER.info(
-                f"{model}: {sum(data > angle_cfg.upper_bounds[1]) = } of {len(data)}"
-            )
+            self._hist(ax=ax, data=data, model=model, color=c, config=angle_cfg)
 
             ax[1].hist(
                 data,
@@ -258,8 +206,14 @@ class Hist:
             outliers_l.append(sum(data < md_cfg.lower_bound))
             outliers_r.append(sum(data > md_cfg.upper_bound))
 
-            mean = data.mean()
-            std = data.std()
+            no_outliers = data[
+                ~np.logical_or(data < md_cfg.lower_bound, data > md_cfg.upper_bound)
+            ]
+            mean = no_outliers.mean()
+            std = no_outliers.std()
+
+            mean_full = data.mean()
+            std_full = data.std()
 
             ax.hist(
                 data,
@@ -267,7 +221,9 @@ class Hist:
                 histtype=md_cfg.hist.histtype,
                 color=c,
                 range=(md_cfg.lower_bound, md_cfg.upper_bound),
-                label=hist_label(model, mean, std),
+                label=set_label(
+                    model, mean_full, std_full, mean, std, md_cfg.hist.stacked_label
+                ),
                 linewidth=md_cfg.hist.linewidth,
             )
 
@@ -340,29 +296,7 @@ class Hist:
             self.config.paths.data_paths, self.models, self.colors
         ):
             data = pd.read_csv(data_path / "area.csv")["source_area"]
-
-            LOGGER.info(
-                f"{model}: {sum(data < area_cfg.lower_bound) = } of {len(data)}"
-            )
-            LOGGER.info(
-                f"{model}: {sum(data > area_cfg.upper_bound) = } of {len(data)}"
-            )
-
-            mean = data[data <= area_cfg.upper_bound].mean()
-            std = data[data <= area_cfg.upper_bound].std()
-
-            mean_full = data.mean()
-            std_full = data.std()
-
-            ax.hist(
-                data,
-                bins=area_cfg.hist.bins,
-                histtype=area_cfg.hist.histtype,
-                color=c,
-                range=(area_cfg.lower_bound, area_cfg.upper_bound),
-                label=stacked_label(model, mean_full, std_full, mean, std),
-                linewidth=area_cfg.hist.linewidth,
-            )
+            self._hist(ax=ax, data=data, model=model, color=c, config=area_cfg)
 
         _, ax_max = ax.get_ylim()
 
@@ -393,6 +327,28 @@ class Hist:
             / f"source_area_ratio.{self.config.general.file_format}"
         )
         fig.savefig(out_path, **area_cfg.fig.save.model_dump())
+
+    def _hist(self, ax, data, model, color, config):
+        LOGGER.info(f"{model}: {sum(data < config.lower_bound) = } of {len(data)}")
+        LOGGER.info(f"{model}: {sum(data > config.upper_bound) = } of {len(data)}")
+
+        mean = data[data <= config.upper_bound].mean()
+        std = data[data <= config.upper_bound].std()
+
+        mean_full = data.mean()
+        std_full = data.std()
+
+        ax.hist(
+            data,
+            bins=config.hist.bins,
+            histtype=config.hist.histtype,
+            color=color,
+            range=(config.lower_bound, config.upper_bound),
+            label=set_label(
+                model, mean_full, std_full, mean, std, config.hist.stacked_label
+            ),
+            linewidth=config.hist.linewidth,
+        )
 
     def _add_annotations(
         self,
