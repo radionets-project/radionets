@@ -366,7 +366,9 @@ class Hist:
 
         _, ax_max = ax.get_ylim()
 
-        for i, model in enumerate(self.models):
+        for i, (data_path, model) in enumerate(
+            zip(self.config.paths.data_paths, self.models)
+        ):
             data = pd.read_csv(data_path / "area.csv")["source_area"]
 
             self._add_annotations(
