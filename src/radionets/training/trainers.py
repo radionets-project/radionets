@@ -13,6 +13,18 @@ if TYPE_CHECKING:
     from radionets.io.eval_config import EvaluationMethodsConfig
 
 
+def norm(x, eps=1e-8):
+    min_val = x.amin(dim=[-2, -1], keepdim=True)
+    max_val = x.amax(dim=[-2, -1], keepdim=True)
+    range_val = max_val - min_val
+    return (x - min_val) / (range_val + eps), min_val, max_val
+
+
+def denorm(x, min_val, max_val, eps=1e-8):
+    range_val = max_val - min_val
+    return x * (range_val + eps) + min_val
+
+
 class TrainModule(LightningModule):
     def __init__(
         self,
@@ -45,13 +57,12 @@ class TrainModule(LightningModule):
         inputs, targets = self._extract_inputs_targets(batch)
 
         if self.normalize:
-            norm = Normalize(**self.normalize)
-            inputs = norm(inputs)
+            inputs, min_val, max_val = norm(inputs)
 
         preds = self(inputs)["pred"]
 
         if self.normalize:
-            preds = norm.denormalize(preds)
+            preds = denorm(preds, min_val, max_val)
 
         loss = self.loss_fn(preds, targets)
         self.log("train_loss", loss, prog_bar=True, sync_dist=True)
@@ -62,13 +73,12 @@ class TrainModule(LightningModule):
         inputs, targets = self._extract_inputs_targets(batch)
 
         if self.normalize:
-            norm = Normalize(**self.normalize)
-            inputs = norm(inputs)
+            inputs, min_val, max_val = norm(inputs)
 
         preds = self(inputs)["pred"]
 
         if self.normalize:
-            preds = norm.denormalize(preds)
+            preds = denorm(preds, min_val, max_val)
 
         loss = self.loss_fn(preds, targets)
         self.log("val_loss", loss, prog_bar=True, sync_dist=True)
@@ -77,13 +87,12 @@ class TrainModule(LightningModule):
         inputs, targets = self._extract_inputs_targets(batch)
 
         if self.normalize:
-            norm = Normalize(**self.normalize)
-            inputs = norm(inputs)
+            inputs, min_val, max_val = norm(inputs)
 
         preds = self(inputs)["pred"]
 
         if self.normalize:
-            preds = norm.denormalize(preds)
+            preds = denorm(preds, min_val, max_val)
 
         if targets is not None:
             loss = self.loss_fn(preds, targets)
@@ -98,13 +107,12 @@ class TrainModule(LightningModule):
         inputs, targets = self._extract_inputs_targets(batch)
 
         if self.normalize:
-            norm = Normalize(**self.normalize)
-            inputs = norm(inputs)
+            inputs, min_val, max_val = norm(inputs)
 
         preds = self(inputs)["pred"]
 
         if self.normalize:
-            preds = norm.denormalize(preds)
+            preds = denorm(preds, min_val, max_val)
 
         if targets is None:
             return preds
