@@ -323,7 +323,8 @@ class MLFlowCallback(PlottingCallbackABC):
                 self.base_dir = (
                     self.train_config.paths.model_path / f"mlflow/{self.logger._run_id}"
                 )
-                self.base_dir.mkdir(parents=True)
+                if trainer.is_global_zero:
+                    self.base_dir.mkdir(parents=True, exist_ok=True)
 
             except StopIteration as e:
                 raise ValueError(
