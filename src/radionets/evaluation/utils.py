@@ -29,10 +29,7 @@ def get_ifft(image, amp_phase=False, scale=False, uncertainty=False):
         )
 
         index = 2 if uncertainty else 1
-        a = amp * torch.cos(image[..., index, :, :])
-        b = amp * torch.sin(image[..., index, :, :])
-
-        compl = a + b * 1j
+        compl = amp * torch.exp(1j * image[..., index, :, :])
     else:
         compl = image[..., 0, :, :] + image[..., 1, :, :] * 1j
 
