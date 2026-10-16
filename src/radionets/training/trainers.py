@@ -7,7 +7,7 @@ import torch
 from lightning import LightningModule
 
 from radionets.evaluation.utils import apply_symmetry, get_ifft
-from radionets.utils.normalization import Normalize
+
 
 if TYPE_CHECKING:
     from radionets.io.eval_config import EvaluationMethodsConfig
