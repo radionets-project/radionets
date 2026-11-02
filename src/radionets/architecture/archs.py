@@ -13,14 +13,14 @@ from radionets.architecture.layers import (
 
 __all__ = [
     "SRResNet",
-    "SRResNetComplex",
     "SRResNet18",
-    "SRResNet18Complex",
     "SRResNet18AmpPhase",
+    "SRResNet18Complex",
     "SRResNet34",
     "SRResNet34AmpPhase",
     "SRResNet34_unc",
     "SRResNet34_unc_no_grad",
+    "SRResNetComplex",
 ]
 
 

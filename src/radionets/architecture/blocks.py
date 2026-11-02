@@ -7,12 +7,12 @@ from radionets.architecture.layers import (
 )
 
 __all__ = [
+    "BottleneckResBlock",
+    "ComplexSRBlock",
+    "Decoder",
+    "Encoder",
     "NNBlock",
     "SRBlock",
-    "ComplexSRBlock",
-    "BottleneckResBlock",
-    "Encoder",
-    "Decoder",
 ]
 
 

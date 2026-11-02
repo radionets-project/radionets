@@ -154,7 +154,7 @@ html_theme_options = {
             "name": "Radionets Project",
             "url": "https://github.com/radionets-project",
             "type": "url",
-            "icon": "https://avatars.githubusercontent.com/u/77392854?s=200&v=4",  # noqa: E501
+            "icon": "https://avatars.githubusercontent.com/u/77392854?s=200&v=4",
         },
     ],
     "logo": {

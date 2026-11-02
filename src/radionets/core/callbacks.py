@@ -25,15 +25,15 @@ from radionets.evaluation.utils import (
 )
 
 __all__ = [
-    "CometCallback",
     "AvgLossCallback",
-    "PredictionImageGradient",
-    "GradientCallback",
-    "SwitchLoss",
-    "SaveTempCallback",
-    "Normalize",
-    "DataAug",
+    "CometCallback",
     "CudaCallback",
+    "DataAug",
+    "GradientCallback",
+    "Normalize",
+    "PredictionImageGradient",
+    "SaveTempCallback",
+    "SwitchLoss",
 ]
 
 LOGGER = setup_logger(namespace=__name__)

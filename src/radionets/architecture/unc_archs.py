@@ -64,7 +64,7 @@ class UncertaintyWrapper(SRResNet34):
 
     def forward(self, x):
         # Get prediction from SRResNet34
-        pred = super.forward(x)
+        pred = super().forward(x)
         inp = x.clone()
 
         # x = torch.abs(pred - inp)
