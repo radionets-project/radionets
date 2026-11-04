@@ -111,9 +111,11 @@ class _FluxEmoioBase(ABC, nn.Module):
     component (amplitude, phase, real, imaginary) is used for the loss.
     """
 
-    def __init__(self, levels, weights, **kwargs):
+    def __init__(
+        self, levels: list | None = None, weights: list | None = None, **kwargs
+    ):
         super().__init__()
-        # maybe outsource if`s
+
         if not levels:
             levels = [0.88, 0.75, 0.63, 0.50, 0.38, 0.25, 0.13, 0.05]
         if not weights:
@@ -124,7 +126,6 @@ class _FluxEmoioBase(ABC, nn.Module):
                 f"{type(levels)} and {type(weights)} instead."
             )
 
-        # rewrite!!
         if not len(weights) == len(levels):
             raise ValueError("len(weights) has to be equal to len(levels)")
 
@@ -210,8 +211,8 @@ class _FluxEmoioBase(ABC, nn.Module):
             Scalar loss tensor.
         """
 
-        pred = apply_symmetry({"pred": x["pred"]})["pred"]
-        truth = apply_symmetry({"y": y})["y"]
+        pred = apply_symmetry(x)
+        truth = apply_symmetry(y)
 
         pred, truth = self._extract_components(pred, truth)
 
