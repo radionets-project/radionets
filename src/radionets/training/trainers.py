@@ -8,8 +8,21 @@ from lightning import LightningModule
 
 from radionets.evaluation.utils import apply_symmetry, get_ifft
 
+
 if TYPE_CHECKING:
     from radionets.io.eval_config import EvaluationMethodsConfig
+
+
+def norm(x, eps=1e-8):
+    min_val = x.amin(dim=[-2, -1], keepdim=True)
+    max_val = x.amax(dim=[-2, -1], keepdim=True)
+    range_val = max_val - min_val
+    return (x - min_val) / (range_val + eps), min_val, max_val
+
+
+def denorm(x, min_val, max_val, eps=1e-8):
+    range_val = max_val - min_val
+    return x * (range_val + eps) + min_val
 
 
 class TrainModule(LightningModule):
@@ -29,23 +42,29 @@ class TrainModule(LightningModule):
         self.train_length = train_length
         self.num_epochs = train_config["training"]["num_epochs"]
         self.batch_size = train_config["dataloader"]["batch_size"]
+        self.normalize = self.train_config["model"]["normalize"]
 
-        if eval_methods:
-            self.eval_methods = eval_methods
+        self.eval_methods = eval_methods
 
-            for field in eval_methods:
-                if hasattr(field[1], "met_cls"):
-                    setattr(self, field[0], field[1].met_cls)
+        if self.eval_methods:
+            self._setup_eval_methods()
 
     def forward(self, inputs):
         """Main forward feed call to the model."""
         return self.model(inputs)
 
-    def training_step(self, batch, batch_idinputs):
+    def training_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
 
-        logits = self(inputs)["pred"]
-        loss = self.loss_fn(logits, targets)
+        if self.normalize:
+            inputs, min_val, max_val = norm(inputs)
+
+        preds = self(inputs)["pred"]
+
+        if self.normalize:
+            preds = denorm(preds, min_val, max_val)
+
+        loss = self.loss_fn(preds, targets)
         self.log("train_loss", loss, prog_bar=True, sync_dist=True)
 
         return loss
@@ -53,9 +72,64 @@ class TrainModule(LightningModule):
     def validation_step(self, batch, batch_idx):
         inputs, targets = self._extract_inputs_targets(batch)
 
-        logits = self(inputs)["pred"]
-        loss = self.loss_fn(logits, targets)
+        if self.normalize:
+            inputs, min_val, max_val = norm(inputs)
+
+        preds = self(inputs)["pred"]
+
+        if self.normalize:
+            preds = denorm(preds, min_val, max_val)
+
+        loss = self.loss_fn(preds, targets)
         self.log("val_loss", loss, prog_bar=True, sync_dist=True)
+
+    def test_step(self, batch, batch_idx):
+        inputs, targets = self._extract_inputs_targets(batch)
+
+        if self.normalize:
+            inputs, min_val, max_val = norm(inputs)
+
+        preds = self(inputs)["pred"]
+
+        if self.normalize:
+            preds = denorm(preds, min_val, max_val)
+
+        if targets is not None:
+            loss = self.loss_fn(preds, targets)
+            self.log("test_loss", loss, prog_bar=True, sync_dist=True)
+
+    def predict_step(self, batch, batch_idx, eval_methods=None):
+        if eval_methods:
+            # local overwrite for callbacks
+            self.eval_methods = eval_methods
+            self._setup_eval_methods()
+
+        inputs, targets = self._extract_inputs_targets(batch)
+
+        if self.normalize:
+            inputs, min_val, max_val = norm(inputs)
+
+        preds = self(inputs)["pred"]
+
+        if self.normalize:
+            preds = denorm(preds, min_val, max_val)
+
+        if targets is None:
+            return preds
+
+        preds_ifft = get_ifft(apply_symmetry(preds))
+        targets_ifft = get_ifft(apply_symmetry(targets))
+
+        preds_ifft = preds_ifft.reshape(-1, *preds_ifft.shape[-2:])
+        targets_ifft = targets_ifft.reshape(-1, *targets_ifft.shape[-2:])
+
+        if self.eval_methods:
+            # Fields are tuples w/ format (name, value)
+            for field in self.eval_methods:
+                if hasattr(field[1], "met_cls"):
+                    getattr(self, field[0]).update(preds_ifft, targets_ifft)
+
+        return torch.stack((preds, targets), dim=1)
 
     def _extract_inputs_targets(self, batch):
         if isinstance(batch, dict):
@@ -71,37 +145,10 @@ class TrainModule(LightningModule):
 
         return inputs, targets
 
-    def test_step(
-        self,
-        batch,
-        batch_idx,
-    ):
-        inputs, targets = self._extract_inputs_targets(batch)
-        preds = self(inputs)["pred"]
-
-        if targets is not None:
-            loss = self.loss_fn(preds, targets)
-            self.log("test_loss", loss, prog_bar=True, sync_dist=True)
-
-    def predict_step(self, batch, batch_idx, dataloader_idx=0):
-        inputs, targets = self._extract_inputs_targets(batch)
-        preds = self(inputs)["pred"]
-
-        if targets is None:
-            return preds
-
-        preds_ifft = get_ifft(apply_symmetry(preds))
-        targets_ifft = get_ifft(apply_symmetry(targets))
-
-        preds_ifft = preds_ifft.reshape(-1, *preds_ifft.shape[-2:])
-        targets_ifft = targets_ifft.reshape(-1, *targets_ifft.shape[-2:])
-
-        # Fields are tuples w/ format (name, value)
+    def _setup_eval_methods(self):
         for field in self.eval_methods:
             if hasattr(field[1], "met_cls"):
-                getattr(self, field[0]).update(preds_ifft, targets_ifft)
-
-        return torch.stack((preds, targets), dim=1)
+                setattr(self, field[0], field[1].met_cls)
 
     def configure_optimizers(self):
         optimizer = self.optimizer(

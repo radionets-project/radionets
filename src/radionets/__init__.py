@@ -7,7 +7,6 @@ Licensed under a MIT style license - see LICENSE
 import rich_click as click
 from matplotlib import colormaps
 from rich.traceback import install
-from torch.serialization import add_safe_globals
 
 from radionets.core.logging import _setup_logger
 from radionets.plotting._puor import PuOr, PuOr_r

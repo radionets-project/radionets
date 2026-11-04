@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 from radionets.architecture.activation import GeneralELU
@@ -37,7 +38,7 @@ class Uncertainty(nn.Module):
             LocallyConnected2d(
                 64,
                 2,
-                [img_size // 2 + 1, img_size],
+                (img_size // 2 + 1, img_size),
                 1,
                 stride=1,
                 bias=False,
@@ -62,15 +63,24 @@ class UncertaintyWrapper(SRResNet34):
 
         self.uncertainty = Uncertainty(img_size)
 
-    def forward(self, x):
+    def forward(self, input):
         # Get prediction from SRResNet34
-        pred = super.forward(x)
-        inp = x.clone()
+        pred = super().forward(input)["pred"]
+        inp = input.clone()
+        print(pred.shape, inp.shape)
 
         # x = torch.abs(pred - inp)
         x = torch.cat([pred, inp], dim=1)
 
         unc = self.uncertainty(x)
+
+        if unc.shape[-2:] != pred.shape[-2:]:
+            unc = F.interpolate(
+                unc,
+                size=pred.shape[-2:],
+                mode="bilinear",
+                align_corners=False,
+            )
 
         val = torch.cat(
             [

@@ -6,9 +6,16 @@ from pathlib import Path
 from typing import Literal, Self
 
 import torch
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 from radionets.architecture import archs
+from radionets.exceptions import OptionalDependencyMissing
 
 from . import data
 from .training import (
@@ -39,11 +46,7 @@ class PathsConfig(BaseModel):
     @classmethod
     def expand_path(cls, v: Path) -> Path:
         """Expand and resolve paths."""
-
-        if v in {None, False}:
-            v = None
-        else:
-            v.expanduser().resolve()
+        v = None if v in {None, False} else v.expanduser().resolve()
 
         return v
 
@@ -53,6 +56,7 @@ class ModelConfig(BaseModel):
 
     arch_name: str | Callable = archs.SRResNet18
     normalize: bool = False
+    weights_only: bool = True
 
     @field_validator("arch_name")
     @classmethod
@@ -116,6 +120,7 @@ class DeviceConfig(BaseModel):
 
     accelerator: str = "auto"
     num_devices: str | list | int = "auto"
+    num_nodes: int = 1
     precision: str | int = "32-true"
     deepspeed: bool | str | DeepSpeedConfig = False
     strategy: str = "auto"
@@ -316,6 +321,11 @@ class LoggingConfig(BaseModel):
     @field_validator("codecarbon", mode="after")
     @classmethod
     def validate_codecarbon(cls, v: bool | CodeCarbonEmissionTrackerConfig):
+        try:
+            import codecarbon  # noqa: F401
+        except ImportError as e:
+            raise OptionalDependencyMissing("codecarbon") from e
+
         if isinstance(v, dict):
             return CodeCarbonEmissionTrackerConfig(
                 **v, project_name=cls.logging.project_name
@@ -336,7 +346,6 @@ class LoggingConfig(BaseModel):
 class TrainConfig(BaseModel):
     """Main training configuration."""
 
-    title: str = "Train configuration"
     paths: PathsConfig = Field(default_factory=PathsConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
     training: TrainingConfig = Field(default_factory=TrainingConfig)

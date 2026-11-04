@@ -32,7 +32,7 @@ requires-python = ">=3.11"
 
 dependencies = [
     "astropy>=7.1.0",
-    "comet-ml>=3.50.0",
+    "cmasher>=1.9.2",
     "h5py>=3.14.0",
     "lightning>=2.6.1",
     "natsort>=8.4.0",
@@ -58,6 +58,8 @@ Repository = "https://github.com/radionets-project/radionets"
 plot = [
     "matplotlib>=3.10.5",
 ]
+comet = ["comet-ml>=3.50.0"]
+codecarbon = ["codecarbon"]
 
 [dependency-groups]
 tests = [
@@ -120,6 +122,7 @@ include = ["src/radionets"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "configs" = "share/configs"
+"resources" = "share/resources"
 
 [tool.coverage.run]
 omit = [

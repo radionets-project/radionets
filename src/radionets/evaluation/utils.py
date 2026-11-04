@@ -29,10 +29,7 @@ def get_ifft(image, amp_phase=False, scale=False, uncertainty=False):
         )
 
         index = 2 if uncertainty else 1
-        a = amp * torch.cos(image[..., index, :, :])
-        b = amp * torch.sin(image[..., index, :, :])
-
-        compl = a + b * 1j
+        compl = amp * torch.exp(1j * image[..., index, :, :])
     else:
         compl = image[..., 0, :, :] + image[..., 1, :, :] * 1j
 
@@ -98,13 +95,13 @@ def apply_symmetry(image, uncertainty: bool = False) -> torch.Tensor:
     return full_image
 
 
-def _method_factory(eval_config):
+def _method_factory(evaluation):
     from radionets.evaluation import metrics
 
-    evaluation = eval_config.evaluation
-
     if evaluation.viewing_angle:
-        evaluation.viewing_angle.met_cls = metrics.ViewingAngle()
+        evaluation.viewing_angle.met_cls = metrics.ViewingAngle(
+            threshold=evaluation.viewing_angle.threshold
+        )
     if evaluation.dynamic_range:
         evaluation.dynamic_range.met_cls = metrics.DynamicRange(
             sensitivity=evaluation.dynamic_range.sensitivity

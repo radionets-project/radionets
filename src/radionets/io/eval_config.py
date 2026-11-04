@@ -20,6 +20,7 @@ from .evaluation import (
     DynamicRangeConfig,
     IntensityConfig,
     MeanDiffConfig,
+    SaveImagesConfig,
     ViewingAngleConfig,
 )
 from .train_config import DataLoaderConfig
@@ -49,7 +50,7 @@ class PathsConfig(BaseModel):
     """Paths to the pretrained model checkpoints."""
 
     save_path: Path = Path("./build")
-    """Path to the directory where evaluation results will be saved."""
+    """Path to the directory where the results will be saved."""
 
     @field_validator("data_path", "save_path")
     @classmethod
@@ -91,9 +92,19 @@ class ModelConfig(BaseModel):
     """Name/callable or list of two names/callables of the architecture(s)
     to use for evaluation."""
 
+    weights_only: list[bool] = Field(
+        default=[True],
+        min_length=1,
+        max_length=2,
+    )
+    """Whether PyTorch's unpickler should be restricted when loading checkpoints.
+    See `torch.load with weights_only=True <https://docs.pytorch.org/docs/2.12/notes/serialization.html#weights-only>`_
+    for more information.
+    """
+
     @field_validator("arch_name")
     @classmethod
-    def load_arch_instance(cls, arch_name: str | list):
+    def load_arch_instance(cls, arch_name: str | list) -> list:
         if isinstance(arch_name, str):
             arch_name = [arch_name]
 
@@ -117,6 +128,14 @@ class ModelConfig(BaseModel):
 
         return arch_list
 
+    @field_validator("weights_only", mode="before")
+    @classmethod
+    def validate_weights_only(cls, weights_only: bool | list[bool]) -> list:
+        if isinstance(weights_only, bool):
+            weights_only = [weights_only]
+
+        return weights_only
+
 
 class DeviceConfig(BaseModel):
     """Device configuration settings.
@@ -125,7 +144,7 @@ class DeviceConfig(BaseModel):
     the evaluation, as well as strategies for distribution.
     """
 
-    accelerator: str | list[str] = Field(
+    accelerator: list[str] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
@@ -136,14 +155,14 @@ class DeviceConfig(BaseModel):
     for more information.
     """
 
-    num_devices: str | int | list[str | list | int] = Field(
+    num_devices: list[str | list | int] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
     )
     """Number of devices to use."""
 
-    precision: str | int | list[str | int] = Field(
+    precision: list[str | int] = Field(
         default=["32-true"],
         min_length=1,
         max_length=2,
@@ -154,13 +173,12 @@ class DeviceConfig(BaseModel):
     for more information
     """
 
-    deepspeed: bool | str | DeepSpeedConfig | list[bool | str | DeepSpeedConfig] = (
-        Field(
-            default=[False],
-            min_length=1,
-            max_length=2,
-        )
+    deepspeed: list[bool | str | DeepSpeedConfig] = Field(
+        default=[False],
+        min_length=1,
+        max_length=2,
     )
+
     """Whether to use the deepspeed deep learning training optimization library.
     Set to ``True`` if you want to use the `default settings
     <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.strategies.DeepSpeedStrategy.html>`_,
@@ -177,7 +195,7 @@ class DeviceConfig(BaseModel):
     for more information.
     """
 
-    strategy: str | list[str] = Field(
+    strategy: list[str] = Field(
         default=["auto"],
         min_length=1,
         max_length=2,
@@ -186,6 +204,14 @@ class DeviceConfig(BaseModel):
     `What is a Strategy? <https://lightning.ai/docs/pytorch/stable/extensions/strategy.html>`_
     for more information.
     """
+
+    @field_validator("accelerator", "num_devices", "precision", "deepspeed", "strategy")
+    @classmethod
+    def validate_weights_only(cls, key) -> list:
+        if not isinstance(key, list):
+            key = [key]
+
+        return key
 
     @model_validator(mode="after")
     def check_device_count(self) -> Self:
@@ -226,10 +252,7 @@ class DeviceConfig(BaseModel):
 
     @field_validator("deepspeed", mode="after")
     @classmethod
-    def validate_deepspeed(cls, val: bool | str | DeepSpeedConfig | list):
-        if isinstance(val, str | bool | DeepSpeedConfig):
-            val = [val]
-
+    def validate_deepspeed(cls, val: list):
         result = []
         for v in val:
             if isinstance(v, str):
@@ -249,13 +272,20 @@ class EvaluationMethodsConfig(BaseModel):
     :mod:`~radionets.evaluation`.
     """
 
+    save_images: bool | dict | SaveImagesConfig = Field(
+        default=True, validate_default=True
+    )
+    """Whether to save images in .pt pickle files."""
+
     viewing_angle: bool = Field(default=True, validate_default=True)
     """Enable viewing angle evaluation of the source. ``radionets`` will
     use a PCA to estimate the relative source angle to the x-axis of the image
     and compare prediction and target angles.
     """
 
-    dynamic_range: bool = Field(default=True, validate_default=True)
+    dynamic_range: bool | dict | DynamicRangeConfig = Field(
+        default=True, validate_default=True
+    )
     """Enable dynamic range evaluation of the source flux. ``radionets`` will
     compute the RMS for both prediction and target and estimate the dynamic range
     of both images.
@@ -281,7 +311,7 @@ class EvaluationMethodsConfig(BaseModel):
     :func:`~radionets.evaluation.contour.eval_intensity`.
     """
 
-    mean_diff: bool = Field(default=True, validate_default=True)
+    mean_diff: bool | dict | MeanDiffConfig = Field(default=True, validate_default=True)
     """Enable mean difference computation between prediction and target.
     Sources are detected using a Laplacian of Gaussian approach
     (using skimage's :func:`~skimage.feature.blob_log`). The mean of the differences
@@ -311,6 +341,16 @@ class EvaluationMethodsConfig(BaseModel):
 
     predict_grad: bool = True
     evaluate_gan: bool = True
+
+    @field_validator("save_images", mode="after")
+    @classmethod
+    def validate_save_images_config(cls, v: bool | dict | SaveImagesConfig):
+        if isinstance(v, dict):
+            return SaveImagesConfig(**v)
+        elif v is True:
+            return SaveImagesConfig()  # Return defaults
+
+        return v
 
     @field_validator("viewing_angle", mode="after")
     @classmethod
