@@ -8,7 +8,6 @@ from lightning import LightningModule
 
 from radionets.evaluation.utils import apply_symmetry, get_ifft
 
-
 if TYPE_CHECKING:
     from radionets.io.eval_config import EvaluationMethodsConfig
 
