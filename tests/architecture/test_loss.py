@@ -1,10 +1,14 @@
 """Tests for src/radionets/architecture/loss.py"""
 
+import numpy as np
 import pytest
 import torch
 
 from radionets.architecture.loss import (
+    Amp,
+    AmpPhase,
     MaskedSplitL1Loss,
+    Phase,
     SplitL1Loss,
 )
 
@@ -177,3 +181,38 @@ class TestMaskedSplitL1Loss:
         loss = loss_fn(pred, target)
 
         assert torch.isfinite(loss)
+
+
+class TestAmp:
+    def test__extract_components(self):
+        loss_fn = Amp()
+
+        zeros = torch.zeros((4, 1, 16, 16))
+        ones = torch.ones((4, 1, 16, 16))
+
+        pred = torch.stack((ones, zeros), dim=1)
+        target = torch.stack((ones * 5, zeros), dim=1)
+
+        pc, tc = loss_fn._extract_components(pred, target)
+
+        assert isinstance(pc, torch.Tensor)
+        assert isinstance(tc, torch.Tensor)
+        np.testing.assert_array_equal(pc, ones)
+        np.testing.assert_array_equal(tc, ones * 5)
+
+
+class TestAmpPhase:
+    def test_forward(self):
+        loss_fn = AmpPhase()
+
+        pred = torch.randn(4, 2, 16, 16) * 100.0
+        target = torch.randn(4, 2, 16, 16) * 100.0
+        loss = loss_fn(pred, target)
+
+        loss_amp_fn = Amp()
+        loss_phase_fn = Phase()
+
+        loss_amp = loss_amp_fn(pred, target)
+        loss_phase = loss_phase_fn(pred, target)
+
+        assert loss == loss_amp + loss_phase
